@@ -89,6 +89,12 @@ jobs:
         echo "Updating app icon and splash..."
         node scripts/update-config.js
         echo "✅ App customization completed"
+
+        # Force remove adaptive icon XML to use plain PNG icon
+        rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+        rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+        echo "✅ Removed adaptive icon XML files"
+
       
     - name: Cache Gradle packages
       uses: actions/cache@v3
