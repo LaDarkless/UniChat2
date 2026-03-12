@@ -1,0 +1,173 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Setup Capacitor
+      run: |
+        # Ensure website is in www/ (Capacitor webDir)
+        if [ ! -f "www/index.html" ]; then
+          echo "Error: www/index.html not found" >&2
+          exit 1
+        fi
+
+        # Update configuration if apk-config.json exists
+        if [ -f "apk-config.json" ]; then
+          echo "Updating APK configuration..."
+          node scripts/update-config.js
+        fi
+
+        # Initialize Capacitor only if no existing config (non-JSON config like TS would break init)
+        if [ ! -f "capacitor.config.ts" ] && [ ! -f "capacitor.config.json" ] && [ ! -f "capacitor.config.js" ]; then
+          npx cap init "Web2App" "com.example.web2app"
+        else
+          echo "Capacitor already initialized (config file present)"
+        fi
+
+        # Clean up existing Android platform if it exists to ensure a fresh add
+        if [ -d "android" ]; then
+          echo "Removing existing Android platform for a clean re-add..."
+          rm -rf android
+        fi
+
+        # Add Android platform
+        echo "Adding Android platform..."
+        npx cap add android
+        echo "✅ Android platform added successfully"
+
+        # Sync files
+        echo "Syncing Capacitor files..."
+        npx cap sync
+        echo "✅ Capacitor sync completed"
+        
+        # Verify Android platform was created properly
+        if [ ! -d "android" ]; then
+          echo "Error: Android platform not created" >&2
+          exit 1
+        fi
+        
+        if [ ! -f "android/gradlew" ]; then
+          echo "Error: gradlew not found in android directory" >&2
+          echo "Android directory contents:" >&2
+          ls -la android/ >&2
+          exit 1
+        fi
+        
+        echo "✅ Android platform verified successfully"
+        
+        # Update app icon and splash after platform is created
+        echo "Updating app icon and splash..."
+        node scripts/update-config.js
+        echo "✅ App customization completed"
+      
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Make gradlew executable
+      run: |
+        if [ -f "android/gradlew" ]; then
+          chmod +x android/gradlew
+          echo "✅ gradlew made executable"
+        else
+          echo "❌ gradlew not found, listing android directory:"
+          ls -la android/ || echo "android directory doesn't exist"
+          exit 1
+        fi
+      
+    - name: Build APK
+      run: |
+        # Verify icon files before build
+        echo "🔍 Checking icon files before build..."
+        ls -la android/app/src/main/res/mipmap-mdpi/ic_launcher*.png
+        echo "📊 Icon file sizes:"
+        du -h android/app/src/main/res/mipmap-mdpi/ic_launcher*.png
+        
+        cd android
+        ./gradlew assembleDebug
+        
+        # Verify icon files after build
+        echo "🔍 Checking icon files after build..."
+        ls -la app/src/main/res/mipmap-mdpi/ic_launcher*.png
+        echo "📊 Icon file sizes after build:"
+        du -h app/src/main/res/mipmap-mdpi/ic_launcher*.png
+      env:
+        ANDROID_HOME: ${{ env.ANDROID_HOME }}
+        ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+        
+    - name: Copy APK to root
+      run: |
+        cp android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
+        
+        # Verify APK contains custom icon
+        echo "🔍 Verifying APK contains custom icon..."
+        unzip -l app-debug.apk | grep ic_launcher || echo "No ic_launcher found in APK"
+        echo "📊 APK file size: $(du -h app-debug.apk | cut -f1)"
+        
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug-apk
+        path: app-debug.apk
+        retention-days: 30
+        
+    - name: Create Release (on main branch)
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      continue-on-error: true
+      run: |
+        # Create release using GitHub CLI (optional - won't fail workflow if it fails)
+        gh release create "v${{ github.run_number }}" app-debug.apk \
+          --title "Release v${{ github.run_number }}" \
+          --notes "🚀 **Automated APK Build**
+          
+          This release contains the latest APK build from commit ${{ github.sha }}
+          
+          **Installation:**
+          1. Download the \`app-debug.apk\` file
+          2. Enable \"Install from unknown sources\" on your Android device
+          3. Install the APK file
+          
+          **Build Details:**
+          - Commit: ${{ github.sha }}
+          - Branch: ${{ github.ref_name }}
+          - Build Number: ${{ github.run_number }}
+          - Build Date: ${{ github.event.head_commit.timestamp }}" \
+          --latest || echo "Release creation failed, but APK is available in artifacts"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

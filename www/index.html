@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Studio Ultimate (ProxyAPI)</title>
+    
+    <!-- Подключение библиотек -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link id="hljs-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    
+    <!-- KaTeX для математики -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <!-- Шрифты -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        /* CSS VARIABLES & THEME */
+        :root {
+            --bg-main: #ffffff;
+            --bg-sidebar: #f9f9f9;
+            --bg-surface: #ffffff;
+            --bg-input: #f0f0f0;
+            --bg-hover: #eaeaea;
+            --bg-message-user: #f0f0f0;
+            --bg-message-ai: transparent;
+            --bg-thinking: #f4faff;
+            --text-primary: #0f0f0f;
+            --text-secondary: #666666;
+            --text-code: #24292e;
+            --border-color: #e5e5e5;
+            --primary-color: #10a37f;
+            --primary-hover: #0d8a6a;
+            --danger-color: #ef4444;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #212121;
+            --bg-sidebar: #171717;
+            --bg-surface: #2f2f2f;
+            --bg-input: #2f2f2f;
+            --bg-hover: #383838;
+            --bg-message-user: #2f2f2f;
+            --bg-message-ai: transparent;
+            --bg-thinking: #2a2a2a;
+            --text-primary: #ececec;
+            --text-secondary: #9b9b9b;
+            --text-code: #e6edf3;
+            --border-color: #424242;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body, html { height: 100%; font-family: 'Inter', sans-serif; background-color: var(--bg-main); color: var(--text-primary); overflow: hidden; transition: background-color 0.3s ease, color 0.3s ease; -webkit-font-smoothing: antialiased; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+        .app-container { display: flex; height: 100vh; width: 100vw; }
+        .sidebar { width: 280px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; flex-shrink: 0; }
+        .sidebar-header { padding: 16px; }
+        .new-chat-btn { width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 10px; padding: 12px 16px; background-color: transparent; border: 1px solid var(--border-color); color: var(--text-primary); border-radius: var(--radius-md); cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+        .new-chat-btn:hover { background-color: var(--bg-hover); }
+        .chat-list { flex: 1; overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+        .chat-item { padding: 10px 12px; border-radius: var(--radius-md); cursor: pointer; color: var(--text-primary); font-size: 14px; display: flex; align-items: center; justify-content: space-between; transition: background-color 0.2s; position: relative; overflow: hidden; }
+        .chat-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
+        .chat-item:hover { background-color: var(--bg-hover); }
+        .chat-item.active { background-color: var(--bg-hover); font-weight: 600; }
+        .chat-item .delete-btn { opacity: 0; background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px; display: flex; transition: opacity 0.2s; }
+        .chat-item:hover .delete-btn { opacity: 1; }
+        .chat-item .delete-btn:hover { color: var(--danger-color); }
+        .sidebar-footer { padding: 16px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 4px; }
+        .nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; background: none; border: none; color: var(--text-primary); cursor: pointer; border-radius: var(--radius-md); font-size: 14px; text-align: left; transition: background-color 0.2s; }
+        .nav-btn:hover { background-color: var(--bg-hover); }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; width: 100%; min-width: 0; }
+        .header { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background-color: var(--bg-main); border-bottom: 1px solid var(--border-color); z-index: 50; }
+        .header-left, .header-right { display: flex; align-items: center; gap: 12px; }
+
+        .custom-dropdown { position: relative; }
+        .dropdown-btn { display: flex; align-items: center; gap: 8px; background: transparent; border: none; color: var(--text-primary); font-size: 16px; font-weight: 600; padding: 8px; border-radius: var(--radius-md); cursor: pointer; transition: background-color 0.2s; }
+        .dropdown-btn:hover { background-color: var(--bg-hover); }
+        .dropdown-btn svg.chevron { transition: transform 0.2s; width: 16px; height: 16px; color: var(--text-secondary); }
+        .custom-dropdown.open .dropdown-btn svg.chevron { transform: rotate(180deg); }
+        .dropdown-menu { position: absolute; top: 120%; left: 0; width: 280px; background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); opacity: 0; pointer-events: none; transform: translateY(-10px); transition: all 0.2s ease; z-index: 200; padding: 6px; max-height: 80vh; overflow-y: auto; }
+        .custom-dropdown.open .dropdown-menu { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        .dropdown-group-label { padding: 8px 12px 4px; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; display: flex; justify-content: space-between; }
+        .dropdown-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px; transition: background-color 0.1s; }
+        .dropdown-item:hover { background-color: var(--bg-hover); }
+        .dropdown-item.selected { background-color: var(--bg-input); color: var(--primary-color); }
+
+        .icon-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 8px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; transition: background-color 0.2s, color 0.2s; }
+        .icon-btn:hover { color: var(--text-primary); background-color: var(--bg-hover); }
+        .mobile-menu-btn { display: none; }
+
+        .chat-history { flex: 1; overflow-y: auto; scroll-behavior: smooth; padding: 20px 0; display: flex; flex-direction: column; }
+        .message-row { display: flex; padding: 24px 20px; width: 100%; color: var(--text-primary); position: relative; }
+        .message-row.ai { background-color: var(--bg-message-ai); }
+        .message-content-wrapper { max-width: 800px; width: 100%; margin: 0 auto; display: flex; gap: 16px; position: relative; }
+        .message-row.user .message-content-wrapper { justify-content: flex-end; }
+        .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background-color: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-primary); }
+        .avatar.user-avatar { display: none; }
+        .avatar.ai-avatar { color: var(--primary-color); }
+        .avatar.agent-avatar { color: #8e44ad; }
+
+        .message-content { flex: 1; line-height: 1.6; min-width: 0; font-size: 15px; color: var(--text-primary); }
+        .message-row.user .message-content { flex: 0 1 auto; background-color: var(--bg-message-user); padding: 12px 16px; border-radius: 20px; border-bottom-right-radius: 4px; max-width: 85%; }
+        .message-content p { margin-bottom: 1em; }
+        .message-content p:last-child { margin-bottom: 0; }
+        .message-content code:not(pre code) { background-color: var(--bg-hover); padding: 2px 5px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.9em; color: var(--text-primary); }
+
+        .thinking-block { margin-bottom: 1em; border-left: 3px solid var(--border-color); background-color: var(--bg-thinking); border-radius: 0 8px 8px 0; overflow: hidden; }
+        .thinking-header { padding: 8px 12px; font-size: 13px; color: var(--text-secondary); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; user-select: none; transition: background-color 0.2s; }
+        .thinking-header:hover { background-color: var(--bg-hover); }
+        .thinking-content { padding: 12px; font-size: 14px; color: var(--text-secondary); display: none; border-top: 1px solid var(--border-color); white-space: pre-wrap; }
+        .thinking-block.open .thinking-content { display: block; }
+        .thinking-arrow { transition: transform 0.2s; font-size: 10px; }
+        .thinking-block.open .thinking-arrow { transform: rotate(90deg); }
+
+        .agent-status { padding: 10px 16px; background: var(--bg-hover); border-radius: var(--radius-md); color: var(--text-secondary); font-size: 13px; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; animation: pulse 2s infinite; }
+
+        .code-block-wrapper { margin: 1.5em 0; background-color: #1e1e1e; border-radius: var(--radius-md); overflow: hidden; font-family: 'JetBrains Mono', monospace; }
+        .code-block-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background-color: #2d2d2d; color: #b4b4b4; font-size: 12px; }
+        .copy-code-btn { background: none; border: none; color: #b4b4b4; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; transition: color 0.2s; }
+        .copy-code-btn:hover { color: #ffffff; }
+        .code-block-wrapper pre { margin: 0; padding: 16px; overflow-x: auto; color: #d4d4d4; }
+
+        .msg-images { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+        .msg-images img { max-width: 100%; max-height: 350px; border-radius: var(--radius-md); border: 1px solid var(--border-color); cursor: zoom-in; object-fit: contain; }
+
+        /* ACTIONS BLOCK */
+        .message-actions { position: absolute; bottom: -32px; left: 48px; display: flex; gap: 6px; opacity: 0; transition: opacity 0.2s; z-index: 10; }
+        .message-row:hover .message-actions { opacity: 1; }
+        .message-row.user .message-actions { left: auto; right: 0; }
+        .msg-action-btn { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; padding: 6px; border-radius: 4px; transition: background-color 0.2s, color 0.2s; }
+        .msg-action-btn:hover { color: var(--text-primary); background-color: var(--bg-hover); }
+
+        .input-area { padding: 24px 20px; background-color: var(--bg-main); position: relative; }
+        .input-wrapper { max-width: 800px; margin: 0 auto; position: relative; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 24px; padding: 12px 16px; display: flex; flex-direction: column; transition: border-color 0.3s, box-shadow 0.3s; }
+        .input-wrapper:focus-within { border-color: var(--text-secondary); box-shadow: var(--shadow-sm); }
+        .attachments-preview { display: flex; gap: 10px; flex-wrap: wrap; padding-bottom: 8px; margin-bottom: 4px; border-bottom: 1px solid transparent; }
+        .attachments-preview.has-items { border-color: var(--border-color); }
+        .attach-thumb { position: relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
+        .attach-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .attach-thumb .remove { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; }
+
+        .input-row { display: flex; align-items: flex-end; gap: 8px; }
+        .file-btn, .mic-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 8px; border-radius: 50%; transition: all 0.2s; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .file-btn:hover, .mic-btn:hover { background-color: var(--bg-hover); color: var(--text-primary); }
+        .mic-btn.recording { color: var(--danger-color); animation: pulse 1.5s infinite; background-color: rgba(239, 68, 68, 0.1); }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        textarea { flex: 1; background: transparent; border: none; color: var(--text-primary); font-family: inherit; font-size: 16px; resize: none; max-height: 200px; padding: 8px 4px; outline: none; line-height: 1.5; }
+        textarea::placeholder { color: var(--text-secondary); }
+
+        .send-btn { background-color: var(--text-primary); color: var(--bg-main); border: none; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: opacity 0.2s; flex-shrink: 0; z-index: 10; }
+        .send-btn svg { pointer-events: none; }
+        .send-btn:disabled { opacity: 0.3; cursor: not-allowed; background-color: var(--text-secondary); }
+        .stop-btn { background-color: var(--text-primary); color: var(--bg-main); border: none; width: 36px; height: 36px; border-radius: 10px; display: none; align-items: center; justify-content: center; cursor: pointer; }
+
+        .disclaimer { text-align: center; font-size: 12px; color: var(--text-secondary); margin-top: 12px; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); z-index: 1000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .modal-overlay.open { display: flex; opacity: 1; }
+        .modal-box { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); width: 90%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); transform: translateY(20px); transition: transform 0.3s; }
+        .modal-overlay.open .modal-box { transform: translateY(0); }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 18px; font-weight: 600; }
+        .modal-body { padding: 24px; overflow-y: auto; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 12px; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; }
+        .form-control { width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: var(--radius-md); font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s; }
+        .form-control:focus { border-color: var(--primary-color); }
+        
+        .btn { padding: 10px 18px; border-radius: var(--radius-md); border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: background 0.2s; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
+        .btn-secondary:hover { background: var(--bg-hover); }
+        .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger-color); border: 1px solid transparent; width: 100%; margin-top: 10px; }
+        .btn-danger:hover { border-color: var(--danger-color); }
+
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: var(--bg-surface); color: var(--text-primary); padding: 14px 20px; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 500; animation: slideIn 0.4s forwards; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .fs-image-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; cursor: zoom-out; padding: 20px; }
+        .fs-image-overlay img { max-width: 100%; max-height: 100%; border-radius: 8px; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+
+        .typing-indicator { padding: 10px 24px; display: none; gap: 6px; align-items: center; }
+        .dot { width: 6px; height: 6px; background: var(--text-secondary); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out; }
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        .agent-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-input); border-radius: var(--radius-md); margin-bottom: 10px; }
+        .agent-list-item h4 { margin: 0; font-size: 14px; }
+        .agent-list-item p { margin: 4px 0 0 0; font-size: 12px; color: var(--text-secondary); }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: flex; }
+            .sidebar { position: absolute; height: 100%; transform: translateX(-100%); box-shadow: 0 0 20px rgba(0,0,0,0.3); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { width: 100%; }
+            .message-content-wrapper { padding: 0; }
+            .message-row { padding: 16px 12px; }
+            .message-row.user .message-content { max-width: 90%; }
+            .input-area { padding: 12px 16px 16px; }
+        }
+    </style>
+</head>
+<body data-theme="dark">
+
+<div class="app-container">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="new-chat-btn" id="btn-new-chat">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Новый чат
+            </button>
+        </div>
+        <div class="chat-list" id="chat-list"></div>
+        <div class="sidebar-footer">
+            <button class="nav-btn" id="btn-export-chat">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Экспорт (.md)
+            </button>
+            <button class="nav-btn" id="btn-open-settings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                Настройки
+            </button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <button class="icon-btn mobile-menu-btn" id="mobile-menu-toggle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+                <div class="custom-dropdown" id="model-dropdown">
+                    <button class="dropdown-btn" id="dropdown-toggle">
+                        <span id="current-model-name">gpt-5.2</span>
+                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="dropdown-menu" id="model-dropdown-menu">
+                        <div id="custom-agents-container"></div>
+                        <div class="dropdown-group-label">OpenAI</div>
+                        <div class="dropdown-item" data-value="gpt-5.4-pro-2026-03-05"><span>gpt-5.4 PRO</span></div>
+                        <div class="dropdown-item" data-value="gpt-5.4-2026-03-05"><span>gpt-5.4</span></div>
+                        <div class="dropdown-item" data-value="gpt-5.2-chat-latest"><span>gpt-5.2</span></div>
+                        <div class="dropdown-item" data-value="gpt-5-nano-2025-08-07"><span>gpt-5 nano</span></div>
+                        <div class="dropdown-item" data-value="o4-mini-2025-04-16"><span>o4-mini</span></div>
+                        <div class="dropdown-item" data-value="gpt-4o-2024-08-06"><span>gpt-4o</span></div>
+                        <div class="dropdown-item" data-value="gpt-4o-search-preview-2025-03-11"><span>gpt-4o-search</span></div>
+                        <div class="dropdown-group-label" style="margin-top:8px;">✦ Google ✦</div>
+                        <div class="dropdown-item" data-value="gemini-3-flash-preview"><span>✦ gemini-3-flash</span></div>
+                        <div class="dropdown-item" data-value="gemini-3.1-pro-preview"><span>✦ gemini-3.1-pro</span></div>
+                        <div class="dropdown-item" data-value="gemini-2.0-flash"><span>gemini-2.0-flash</span></div>
+                        <div class="dropdown-group-label" style="margin-top:8px;">Anthropic</div>
+                        <div class="dropdown-item" data-value="claude-3-5-haiku-20241022"><span>Claude 3.7 Sonnet</span></div>
+                        <div class="dropdown-item" data-value="claude-3-7-sonnet-20250219"><span>Claude 4.6 Sonnet</span></div>
+                        <div class="dropdown-item" data-value="claude-sonnet-4-6"><span>Claude 3.5 Haiku</span></div>
+                        <div class="dropdown-item" data-value="claude-opus-4-6"><span>Claude 4.6 Opus</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <button class="icon-btn" id="theme-toggle" title="Тема">
+                    <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg class="moon-icon" style="display:none;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="chat-history" id="chat-history"></div>
+        <div class="typing-indicator" id="typing-indicator"><span style="font-size:13px; color:var(--text-secondary); margin-right:5px;">AI думает</span><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <div class="attachments-preview" id="attach-preview"></div>
+                <div class="input-row">
+                    <input type="file" id="file-input" accept="image/*" multiple style="display: none;">
+                    
+                    <button class="file-btn" id="attach-btn" title="Прикрепить изображение">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                    </button>
+                    
+                    <textarea id="user-input" rows="1" placeholder="Отправить сообщение..."></textarea>
+                    
+                    <button class="mic-btn" id="voice-btn" title="Голосовой ввод">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                    </button>
+                    
+                    <button id="send-btn" class="send-btn" disabled>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                    <button id="stop-btn" class="stop-btn" title="Остановить">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="0" y="0" width="24" height="24"></rect></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="disclaimer">AI Studio. Модель может допускать ошибки.</div>
+        </div>
+    </main>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">Настройки</div>
+            <button class="icon-btn" id="close-settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>ProxyAPI Ключ (Bearer)</label>
+                <input type="password" class="form-control" id="api-key" placeholder="sk-...">
+            </div>
+            <div class="form-group">
+                <label>Системный промпт (По умолчанию)</label>
+                <textarea class="form-control" id="system-prompt" placeholder="Ты — полезный ассистент..."></textarea>
+            </div>
+            <div style="display:flex; gap:15px;">
+                <div class="form-group" style="flex:1">
+                    <label>Температура: <span id="temp-display">1.0</span></label>
+                    <input type="range" id="temperature" min="0" max="2" step="0.1" value="1.0" style="width:100%">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>Макс. токенов</label>
+                    <input type="number" class="form-control" id="max-tokens" placeholder="Авто">
+                </div>
+            </div>
+            
+            <hr style="margin:20px 0; border:0; border-top:1px solid var(--border-color);">
+            
+            <div class="form-group">
+                <label style="display:flex; justify-content:space-between; align-items:center;">
+                    Пользовательские Агенты
+                    <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" id="btn-open-agent-creator">+ Создать</button>
+                </label>
+                <div id="settings-agent-list" style="margin-top:10px;"></div>
+            </div>
+
+            <hr style="margin:20px 0; border:0; border-top:1px solid var(--border-color);">
+            
+            <div class="form-group">
+                <label>Управление данными</label>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-secondary" id="btn-export-backup" style="flex:1">Скачать бэкап</button>
+                    <label class="btn btn-secondary" style="flex:1; text-align:center; cursor:pointer">
+                        Загрузить
+                        <input type="file" id="btn-import-backup" accept=".json" style="display:none">
+                    </label>
+                </div>
+                <button class="btn btn-danger" id="btn-clear-all">Удалить ВСЕ чаты</button>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancel-settings">Отмена</button>
+            <button class="btn btn-primary" id="save-settings">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- AGENT CREATOR MODAL -->
+<div class="modal-overlay" id="agent-modal" style="z-index: 1001;">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">Конструктор Агента</div>
+            <button class="icon-btn" id="close-agent-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Агент выполняет запрос в 3 этапа. Выберите модели для каждой роли.</p>
+            
+            <div class="form-group">
+                <label>Имя Агента</label>
+                <input type="text" class="form-control" id="agent-name" placeholder="Например: Super Researcher">
+            </div>
+
+            <div class="form-group">
+                <label>🕵️‍♂️ 1. Исследователь (Поиск и сбор фактов)</label>
+                <select class="form-control model-select-populate" id="agent-researcher"></select>
+            </div>
+
+            <div class="form-group">
+                <label>🧠 2. Аналитик (Осмысление и логика)</label>
+                <select class="form-control model-select-populate" id="agent-analyst"></select>
+            </div>
+
+            <div class="form-group">
+                <label>🗣 3. Спикер (Итоговый ответ)</label>
+                <select class="form-control model-select-populate" id="agent-finalizer"></select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancel-agent">Отмена</button>
+            <button class="btn btn-primary" id="save-agent">Создать Агента</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+<div class="fs-image-overlay" id="fs-image-overlay"><img id="fs-image" src="" alt="Fullscreen"></div>
+
+<script>
+    const chatHistoryDOM = document.getElementById('chat-history');
+    const chatListDOM = document.getElementById('chat-list');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const attachPreview = document.getElementById('attach-preview');
+    const fileInput = document.getElementById('file-input');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const voiceBtn = document.getElementById('voice-btn');
+    
+    let apiKey = localStorage.getItem('pa_api_key') || '';
+    let selectedModel = localStorage.getItem('pa_model') || 'gpt-5.2-chat-latest';
+    let sysPrompt = localStorage.getItem('pa_sysprompt') || '';
+    let temperature = parseFloat(localStorage.getItem('pa_temp') || '1.0');
+    let maxTokens = parseInt(localStorage.getItem('pa_maxtokens')) || null;
+    
+    let chats = {};
+    try { chats = JSON.parse(localStorage.getItem('pa_chats')) || {}; } catch(e) { chats = {}; }
+    let currentChatId = localStorage.getItem('pa_current_chat_id');
+    
+    let customAgents = {};
+    try { customAgents = JSON.parse(localStorage.getItem('pa_agents')) || {}; } catch(e) { customAgents = {}; }
+
+    let attachedImages = []; 
+    let abortController = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+
+    const AVAILABLE_MODELS = [
+        "gpt-5.4-pro-2026-03-05", "gpt-5.4-2026-03-05", "gpt-5.2-chat-latest", "gpt-5-nano-2025-08-07",
+        "o4-mini-2025-04-16", "gpt-4o-2024-08-06", "gpt-4o-search-preview-2025-03-11",
+        "gemini-3-flash-preview", "gemini-3.1-pro-preview", "gemini-2.0-flash",
+        "claude-3-5-haiku-20241022", "claude-3-7-sonnet-20250219", "claude-sonnet-4-6", "claude-opus-4-6"
+    ];
+
+    marked.setOptions({ breaks: true });
+    const renderer = new marked.Renderer();
+    renderer.code = function(code, lang) {
+        const language = lang || 'plaintext';
+        const highlighted = hljs.getLanguage(language) ? hljs.highlight(code, { language }).value : code;
+        return `<div class="code-block-wrapper"><div class="code-block-header"><span>${language}</span><button class="copy-code-btn" onclick="copyText('${btoa(unescape(encodeURIComponent(code)))}')">Копировать</button></div><pre><code class="hljs language-${language}">${highlighted}</code></pre></div>`;
+    };
+    marked.use({ renderer });
+
+    function showToast(msg, type='info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.style.borderLeft = `4px solid ${type === 'error' ? 'var(--danger-color)' : 'var(--primary-color)'}`;
+        toast.innerText = msg;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    window.copyText = function(base64) {
+        const text = decodeURIComponent(escape(atob(base64)));
+        navigator.clipboard.writeText(text).then(() => showToast('Скопировано!'));
+    };
+
+    function safeRenderMarkdown(text) {
+        let thinkingHtml = '';
+        text = text.replace(/<think>([\s\S]*?)<\/think>/gi, (match, content) => {
+            thinkingHtml += `<div class="thinking-block">
+                <div class="thinking-header" onclick="this.parentElement.classList.toggle('open')">
+                    <span class="thinking-arrow">▶</span><span>Процесс мысли</span>
+                </div>
+                <div class="thinking-content">${content.replace(/</g, '&lt;')}</div>
+            </div>`;
+            return ''; 
+        });
+
+        let mathBlocks = [];
+        text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, content) => {
+            mathBlocks.push({type: 'block', content});
+            return `___MATH_BLOCK_${mathBlocks.length-1}___`;
+        });
+        text = text.replace(/\$([^$]+?)\$/g, (match, content) => {
+            mathBlocks.push({type: 'inline', content});
+            return `___MATH_INLINE_${mathBlocks.length-1}___`;
+        });
+
+        let html = marked.parse(text);
+        html = html.replace(/___MATH_(BLOCK|INLINE)_(\d+)___/g, (match, type, index) => {
+            const item = mathBlocks[index];
+            try { return katex.renderToString(item.content, { displayMode: type === 'BLOCK', throwOnError: false }); } 
+            catch(e) { return item.content; }
+        });
+
+        return thinkingHtml + html;
+    }
+
+    function initTheme() {
+        const theme = localStorage.getItem('theme') || 'dark';
+        document.body.setAttribute('data-theme', theme);
+        document.querySelector('.sun-icon').style.display = theme === 'dark' ? 'block' : 'none';
+        document.querySelector('.moon-icon').style.display = theme === 'dark' ? 'none' : 'block';
+    }
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+        const current = document.body.getAttribute('data-theme');
+        localStorage.setItem('theme', current === 'dark' ? 'light' : 'dark');
+        initTheme();
+    });
+    initTheme();
+
+    document.getElementById('mobile-menu-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.add('open'));
+    document.addEventListener('click', (e) => {
+        const sidebar = document.getElementById('sidebar');
+        const btn = document.getElementById('mobile-menu-toggle');
+        if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !btn.contains(e.target)) sidebar.classList.remove('open');
+    });
+
+    function renderModelDropdown() {
+        const container = document.getElementById('custom-agents-container');
+        container.innerHTML = '';
+        const agentKeys = Object.keys(customAgents);
+        
+        if (agentKeys.length > 0) {
+            container.innerHTML += `<div class="dropdown-group-label">🤖 Мои Агенты</div>`;
+            agentKeys.forEach(id => {
+                container.innerHTML += `<div class="dropdown-item" data-value="${id}"><span>🤖 ${customAgents[id].name}</span></div>`;
+            });
+            container.innerHTML += `<hr style="border:0; border-top:1px solid var(--border-color); margin: 6px 0;">`;
+        }
+
+        const ddName = document.getElementById('current-model-name');
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', () => {
+                selectedModel = item.dataset.value; 
+                localStorage.setItem('pa_model', selectedModel);
+                document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected'); 
+                ddName.textContent = item.querySelector('span').textContent;
+                document.querySelector('.custom-dropdown').classList.remove('open');
+            });
+        });
+
+        const initialItem = document.querySelector(`.dropdown-item[data-value="${selectedModel}"]`);
+        if(initialItem) { 
+            ddName.textContent = initialItem.querySelector('span').textContent; 
+            initialItem.classList.add('selected'); 
+        } else if (agentKeys.length === 0 && selectedModel.startsWith('agent_')) {
+            selectedModel = 'gpt-5.2-chat-latest';
+            localStorage.setItem('pa_model', selectedModel);
+            renderModelDropdown();
+        }
+    }
+
+    const ddToggle = document.getElementById('dropdown-toggle');
+    const ddMenu = document.querySelector('.custom-dropdown');
+    ddToggle.addEventListener('click', (e) => { e.stopPropagation(); ddMenu.classList.toggle('open'); });
+    document.addEventListener('click', () => ddMenu.classList.remove('open'));
+
+    function saveChatsToStorage() {
+        try {
+            localStorage.setItem('pa_chats', JSON.stringify(chats));
+            localStorage.setItem('pa_current_chat_id', currentChatId);
+        } catch(e) {
+            showToast('Лимит памяти браузера. Удалите картинки или старые чаты.', 'error');
+        }
+    }
+
+    function renderChatList() {
+        chatListDOM.innerHTML = '';
+        Object.keys(chats).sort((a,b) => chats[b].updatedAt - chats[a].updatedAt).forEach(id => {
+            const div = document.createElement('div');
+            div.className = `chat-item ${id === currentChatId ? 'active' : ''}`;
+            div.innerHTML = `<span>${chats[id].title || 'Новый чат'}</span><button class="delete-btn" onclick="deleteChat(event, '${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`;
+            div.addEventListener('click', () => switchToChat(id));
+            chatListDOM.appendChild(div);
+        });
+    }
+
+    window.deleteChat = function(e, id) {
+        e.stopPropagation();
+        if(confirm('Удалить этот чат?')) {
+            delete chats[id];
+            if(currentChatId === id) currentChatId = Object.keys(chats)[0] || null;
+            saveChatsToStorage(); renderChatList(); loadCurrentChat();
+        }
+    }
+
+    function switchToChat(id) {
+        currentChatId = id; saveChatsToStorage(); renderChatList(); loadCurrentChat();
+        if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+        clearAttachments();
+    }
+
+    function createNewChat() {
+        if(abortController) abortController.abort();
+        const id = Date.now().toString(36) + Math.random().toString(36).substring(2);
+        chats[id] = { id, title: "Новый чат", messages: [], updatedAt: Date.now() };
+        currentChatId = id; saveChatsToStorage(); renderChatList(); loadCurrentChat();
+        if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+        clearAttachments(); userInput.value = ''; autoResizeInput(); userInput.focus();
+    }
+    document.getElementById('btn-new-chat').addEventListener('click', createNewChat);
+
+    function loadCurrentChat() {
+        chatHistoryDOM.innerHTML = '';
+        if(!currentChatId || !chats[currentChatId]) {
+            chatHistoryDOM.innerHTML = `<div class="message-row ai" style="justify-content:center; padding-top:50px;"><div style="text-align:center; color:var(--text-secondary);"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom:10px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><p>Начните новый диалог</p></div></div>`;
+            return;
+        }
+        chats[currentChatId].messages.forEach((msg, index) => appendMessageToDOM(msg, false, index));
+        chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+    }
+
+    // ВОССТАНОВЛЕНИЕ ФУНКЦИЙ РЕДАКТИРОВАНИЯ И КОПИРОВАНИЯ
+    window.editMessage = function(btn) {
+        if (!currentChatId || !chats[currentChatId]) return;
+        const row = btn.closest('.message-row');
+        const msgIndex = parseInt(row.dataset.msgIndex, 10);
+        if (isNaN(msgIndex)) return;
+
+        const chat = chats[currentChatId];
+        const msg = chat.messages[msgIndex];
+        if (!msg || msg.role !== 'user') return;
+
+        userInput.value = msg.content || '';
+        attachedImages = Array.isArray(msg.images) ? [...msg.images] : [];
+        renderAttachments();
+
+        chat.messages = chat.messages.slice(0, msgIndex);
+        saveChatsToStorage(); loadCurrentChat(); autoResizeInput(); userInput.focus();
+    };
+
+    window.copyMessageText = function(btn) {
+        const text = btn.closest('.message-row').querySelector('.message-content').innerText;
+        navigator.clipboard.writeText(text).then(() => showToast('Сообщение скопировано'));
+    }
+
+    window.regenerateLast = function() {
+        if(!currentChatId) return;
+        const chat = chats[currentChatId];
+        if(chat.messages.length < 2) return;
+        if(chat.messages[chat.messages.length-1].role === 'assistant') chat.messages.pop();
+        saveChatsToStorage(); loadCurrentChat();
+        
+        const aiMsg = { role: 'assistant', content: '' };
+        chat.messages.push(aiMsg);
+        const aiContentEl = appendMessageToDOM(aiMsg, true, chat.messages.length - 1);
+        
+        userInput.disabled = true; sendBtn.style.display = 'none'; stopBtn.style.display = 'flex'; typingIndicator.style.display = 'flex';
+        abortController = new AbortController();
+
+        (async () => {
+            try {
+                if (selectedModel.startsWith('agent_')) {
+                    await runAgentPipeline(chat, aiContentEl, aiMsg, selectedModel);
+                } else {
+                    if(selectedModel.startsWith('gemini')) await streamGemini(chat, aiContentEl, aiMsg);
+                    else if(selectedModel.startsWith('claude')) await streamAnthropic(chat, aiContentEl, aiMsg);
+                    else await streamOpenAI(chat, aiContentEl, aiMsg);
+                }
+            } catch(err) { showToast(err.message, 'error'); } 
+            finally {
+                userInput.disabled = false; sendBtn.style.display = 'flex'; stopBtn.style.display = 'none'; typingIndicator.style.display = 'none';
+                chat.updatedAt = Date.now(); saveChatsToStorage();
+            }
+        })();
+    };
+
+    function appendMessageToDOM(msg, animate=true, msgIndex=null) {
+        const div = document.createElement('div');
+        div.className = `message-row ${msg.role}`;
+        
+        let imagesHtml = '';
+        if(msg.images && msg.images.length > 0) {
+            imagesHtml = `<div class="msg-images">${msg.images.map(img => `<img src="${img}" onclick="openFullscreen('${img}')">`).join('')}</div>`;
+        }
+
+        let isAgent = msg.content && msg.content.includes('<think>🕵️‍♂️');
+        let avatarIcon = isAgent 
+            ? `<div class="avatar agent-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"></path><path d="M4.93 10.93l1.41 1.41"></path><path d="M2 18h20"></path><path d="M10 22v-4"></path><path d="M14 22v-4"></path><path d="M17.66 12.34l1.41-1.41"></path><path d="M12 10a6 6 0 0 0-6 6h12a6 6 0 0 0-6-6z"></path></svg></div>`
+            : `<div class="avatar ai-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z"/></svg></div>`;
+            
+        const avatar = msg.role === 'assistant' ? avatarIcon : `<div class="avatar user-avatar"></div>`;
+        
+        let actions = '';
+        if (msg.role === 'assistant') {
+            actions = `<div class="message-actions">
+                <button class="msg-action-btn" title="Копировать" onclick="copyMessageText(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+                <button class="msg-action-btn" title="Повторить" onclick="regenerateLast()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg></button>
+            </div>`;
+        } else if (msg.role === 'user') {
+            actions = `<div class="message-actions">
+                <button class="msg-action-btn" title="Редактировать" onclick="editMessage(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></button>
+            </div>`;
+        }
+
+        const htmlContent = msg.role === 'user' ? `<p>${msg.content.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</p>` : safeRenderMarkdown(msg.content);
+
+        div.innerHTML = `<div class="message-content-wrapper">${avatar}<div class="message-content">${imagesHtml}<div class="text-body">${htmlContent}</div></div>${actions}</div>`;
+        if (msgIndex !== null) div.dataset.msgIndex = msgIndex;
+        chatHistoryDOM.appendChild(div);
+        return div.querySelector('.text-body');
+    }
+
+    function autoResizeInput() {
+        userInput.style.height = 'auto';
+        userInput.style.height = Math.min(userInput.scrollHeight, 200) + 'px';
+        sendBtn.disabled = (!userInput.value.trim() && attachedImages.length === 0);
+    }
+    userInput.addEventListener('input', autoResizeInput);
+    userInput.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if(!sendBtn.disabled) handleSend(); } });
+
+    document.getElementById('attach-btn').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        if(!files.length) return;
+        for(let file of files) {
+            if(file.type.startsWith('image/')) {
+                try {
+                    const base64 = await resizeImage(file, 800); 
+                    attachedImages.push(base64);
+                } catch(err) { showToast('Ошибка обработки изображения', 'error'); }
+            }
+        }
+        renderAttachments(); fileInput.value = ''; autoResizeInput();
+    });
+
+    function resizeImage(file, maxDim) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if(w > h) { if(w > maxDim) { h = Math.round(h * maxDim/w); w = maxDim; } } else { if(h > maxDim) { w = Math.round(w * maxDim/h); h = maxDim; } }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL(file.type, 0.6));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function renderAttachments() {
+        attachPreview.innerHTML = '';
+        if(attachedImages.length > 0) {
+            attachPreview.classList.add('has-items');
+            attachedImages.forEach((src, idx) => {
+                const div = document.createElement('div');
+                div.className = 'attach-thumb';
+                div.innerHTML = `<img src="${src}"><button class="remove" onclick="removeAttachment(${idx})">✕</button>`;
+                attachPreview.appendChild(div);
+            });
+        } else { attachPreview.classList.remove('has-items'); }
+    }
+
+    window.removeAttachment = function(idx) { attachedImages.splice(idx, 1); renderAttachments(); autoResizeInput(); }
+    function clearAttachments() { attachedImages = []; renderAttachments(); autoResizeInput(); }
+    window.openFullscreen = function(src) { document.getElementById('fs-image').src = src; document.getElementById('fs-image-overlay').style.display = 'flex'; }
+    document.getElementById('fs-image-overlay').addEventListener('click', function() { this.style.display = 'none'; });
+
+// ==========================================
+    // ФОНОВЫЕ ФУНКЦИИ ДЛЯ АГЕНТОВ С ИСТОРИЕЙ
+    // ==========================================
+    async function runOpenAINonStream(model, messages, temp, abortSignal, sysInst) {
+        let formattedMessages = [];
+        const isStrict = model.startsWith('o') || model.includes('search');
+
+        if (sysInst && !isStrict) {
+            formattedMessages.push({ role: 'system', content: sysInst });
+        }
+
+        messages.forEach((m, i) => {
+            let text = m.content || '';
+            // Для o-моделей встраиваем системный промпт в первое сообщение безопасно
+            if (i === 0 && sysInst && isStrict) {
+                text = `<system_instructions>\n${sysInst}\n</system_instructions>\n\n` + text;
+            }
+
+            if (m.images && m.images.length > 0) {
+                const content = [{ type: 'text', text: text }];
+                m.images.forEach(img => content.push({ type: 'image_url', image_url: { url: img } }));
+                formattedMessages.push({ role: m.role, content });
+            } else {
+                formattedMessages.push({ role: m.role, content: text });
+            }
+        });
+
+        const body = { model, messages: formattedMessages, stream: false };
+        if (!isStrict) body.temperature = temp;
+
+        const res = await fetch('https://api.proxyapi.ru/openai/v1/chat/completions', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify(body), signal: abortSignal
+        });
+        if(!res.ok) { const e = await res.json(); throw new Error(`OpenAI: ${e.error?.message || res.status}`); }
+        const data = await res.json();
+        return data.choices?.[0]?.message?.content || '';
+    }
+
+    async function runGeminiNonStream(model, messages, temp, abortSignal, sysInst) {
+        const history = messages.map(m => {
+            const parts = [{ text: m.content || '' }];
+            if(m.images) { m.images.forEach(b64 => { const [meta, data] = b64.split(','); parts.push({ inline_data: { mime_type: meta.split(':')[1].split(';')[0], data: data } }); }); }
+            return { role: m.role === 'assistant' ? 'model' : 'user', parts };
+        });
+        const body = { contents: history, generationConfig: { temperature: temp } };
+        
+        // Нативный системный промпт Gemini
+        if (sysInst) body.systemInstruction = { parts: [{ text: sysInst }] }; 
+
+        const res = await fetch(`https://api.proxyapi.ru/google/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: abortSignal
+        });
+        if(!res.ok) { const e = await res.json(); throw new Error(`Gemini: ${e.error?.message || res.status}`); }
+        const data = await res.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }
+
+    async function runAnthropicNonStream(model, messages, temp, abortSignal, sysInst) {
+        const history = messages.map(m => {
+            let content = [];
+            if (m.images && m.images.length > 0) {
+                if (m.content) content.push({ type: "text", text: m.content });
+                m.images.forEach(img => {
+                    const [meta, base64] = img.split(',');
+                    content.push({ type: "image", source: { type: "base64", media_type: meta.split(':')[1].split(';')[0], data: base64 } });
+                });
+            } else {
+                content.push({ type: "text", text: m.content || '' });
+            }
+            return { role: m.role === 'assistant' ? 'assistant' : 'user', content };
+        });
+
+        const body = { model, max_tokens: maxTokens || 4000, temperature: temp, messages: history };
+        
+        // Нативный системный промпт Claude (исключает жалобы на prompt injection)
+        if (sysInst) body.system = sysInst;
+
+        const res = await fetch('https://api.proxyapi.ru/anthropic/v1/messages', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+            body: JSON.stringify(body), signal: abortSignal
+        });
+        if(!res.ok) { const e = await res.json(); throw new Error(`Anthropic: ${e.error?.message || res.status}`); }
+        const data = await res.json();
+        return data.content?.[0]?.text || '';
+    }
+
+    async function callNonStream(model, history, sysInst) {
+        if (model.startsWith('gemini')) return await runGeminiNonStream(model, history, temperature, abortController.signal, sysInst);
+        else if (model.startsWith('claude')) return await runAnthropicNonStream(model, history, temperature, abortController.signal, sysInst);
+        else return await runOpenAINonStream(model, history, temperature, abortController.signal, sysInst);
+    }
+
+    // ЛОГИКА АГЕНТОВ
+    async function runAgentPipeline(chat, domEl, msgObj, agentId) {
+        const agent = customAgents[agentId];
+        if(!agent) throw new Error("Агент не найден!");
+
+        const baseHistory = chat.messages.slice(0, -1); 
+        const originalUserMsgContent = baseHistory[baseHistory.length - 1].content || '';
+
+        const updateUI = (statusHtml) => {
+            domEl.innerHTML = statusHtml + safeRenderMarkdown(msgObj.content);
+            chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+        };
+
+        // ШАГ 1: ИССЛЕДОВАТЕЛЬ
+        updateUI(`<div class="agent-status">🕵️‍♂️ Исследователь (${agent.researcher}) ищет данные...</div>`);
+        const sys1 = `Ты — Агент-Исследователь. 
+ПРАВИЛО 1: Если запрос пользователя — это просто приветствие, прощание или короткий бытовой диалог, не ищи ничего. Ответь СТРОГО одной фразой: "БЕЗ_ИССЛЕДОВАНИЯ". 
+ПРАВИЛО 2: Если запрос сложный, собери всю нужную информацию, факты и контекст.`;
+        
+        let step1History = JSON.parse(JSON.stringify(baseHistory)); 
+        const researchData = await callNonStream(agent.researcher, step1History, sys1);
+        msgObj.content += `<think>🕵️‍♂️ Исследователь (${agent.researcher}):\n\n${researchData}</think>\n\n`;
+
+        // ШАГ 2: АНАЛИТИК
+        updateUI(`<div class="agent-status">🧠 Аналитик (${agent.analyst}) делает выводы...</div>`);
+        const sys2 = `Ты — Агент-Аналитик. 
+ПРАВИЛО: Если в "Данных от исследователя" написано "БЕЗ_ИССЛЕДОВАНИЯ", ответь СТРОГО одной фразой: "БЕЗ_АНАЛИЗА".
+ИНАЧЕ: Изучи запрос и данные Исследователя. Сделай логические выводы и составь подробный план итогового ответа.`;
+        
+        let step2History = JSON.parse(JSON.stringify(baseHistory));
+        // Используем XML теги для безопасности (защита от Prompt Injection)
+        step2History[step2History.length - 1].content = `<данные_от_исследователя>\n${researchData}\n</данные_от_исследователя>\n\n<запрос_пользователя>\n${originalUserMsgContent}\n</запрос_пользователя>`;
+        
+        const analystData = await callNonStream(agent.analyst, step2History, sys2);
+        msgObj.content += `<think>🧠 Аналитик (${agent.analyst}):\n\n${analystData}</think>\n\n`;
+
+        // ШАГ 3: ФИНАЛЬНЫЙ ОТВЕТ (со стримингом)
+        updateUI(`<div class="agent-status">🗣 Спикер (${agent.finalizer}) пишет ответ...</div>`);
+        
+        const sys3 = `Ты финальный Спикер. 
+Если данные исследователя и аналитика говорят "БЕЗ_ИССЛЕДОВАНИЯ" / "БЕЗ_АНАЛИЗА", просто общайся с пользователем естественно.
+В остальных случаях сформулируй развернутый, красивый ответ, строго опираясь на сырые факты и план аналитика. Не упоминай самих агентов в ответе.`;
+
+        let step3Chat = { messages: JSON.parse(JSON.stringify(baseHistory)) };
+        step3Chat.messages[step3Chat.messages.length - 1].content = `<факты_исследователя>\n${researchData}\n</факты_исследователя>\n\n<план_аналитика>\n${analystData}\n</план_аналитика>\n\n<запрос_пользователя>\n${originalUserMsgContent}\n</запрос_пользователя>\n\nСформулируй итоговый ответ.`;
+        step3Chat.messages.push({ role: 'assistant', content: '' });
+
+        domEl.innerHTML = safeRenderMarkdown(msgObj.content);
+
+        // Временно переопределяем глобальные переменные для стриминг-функций
+        const originalModel = selectedModel;
+        const originalSysPrompt = sysPrompt;
+        selectedModel = agent.finalizer;
+        sysPrompt = sys3; 
+
+        try {
+            if(selectedModel.startsWith('gemini')) await streamGemini(step3Chat, domEl, msgObj);
+            else if(selectedModel.startsWith('claude')) await streamAnthropic(step3Chat, domEl, msgObj);
+            else await streamOpenAI(step3Chat, domEl, msgObj);
+        } finally {
+            selectedModel = originalModel; 
+            sysPrompt = originalSysPrompt;
+        }
+    }
+
+    async function handleSend() {
+        const text = userInput.value.trim();
+        if(!text && attachedImages.length === 0) return;
+        if(!apiKey) { showToast('Укажите API ключ в настройках', 'error'); return; }
+
+        if(!currentChatId) createNewChat();
+        const chat = chats[currentChatId];
+        const userMsg = { role: 'user', content: text, images: [...attachedImages] };
+        chat.messages.push(userMsg);
+        
+        if(chat.messages.length === 1) { chat.title = text.substring(0, 30) || 'Изображение'; renderChatList(); }
+        
+        appendMessageToDOM(userMsg, true, chat.messages.length - 1);
+        chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+
+        userInput.value = ''; clearAttachments();
+        
+        const aiMsg = { role: 'assistant', content: '' };
+        chat.messages.push(aiMsg);
+        const aiContentEl = appendMessageToDOM(aiMsg, true, chat.messages.length - 1);
+        
+        userInput.disabled = true; sendBtn.style.display = 'none'; stopBtn.style.display = 'flex'; typingIndicator.style.display = 'flex';
+        chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+
+        abortController = new AbortController();
+
+        try {
+            if (selectedModel.startsWith('agent_')) {
+                await runAgentPipeline(chat, aiContentEl, aiMsg, selectedModel);
+            } else {
+                if(selectedModel.startsWith('gemini')) await streamGemini(chat, aiContentEl, aiMsg);
+                else if(selectedModel.startsWith('claude')) await streamAnthropic(chat, aiContentEl, aiMsg);
+                else await streamOpenAI(chat, aiContentEl, aiMsg);
+            }
+        } catch(err) {
+            if(err.name === 'AbortError') { aiMsg.content += " [Остановлено]"; aiContentEl.innerHTML = safeRenderMarkdown(aiMsg.content); } 
+            else { showToast(err.message, 'error'); aiMsg.content += `\n\n*[Ошибка: ${err.message}]*`; aiContentEl.innerHTML = safeRenderMarkdown(aiMsg.content); }
+        } finally {
+            userInput.disabled = false; sendBtn.style.display = 'flex'; stopBtn.style.display = 'none'; typingIndicator.style.display = 'none'; userInput.focus();
+            chat.updatedAt = Date.now(); saveChatsToStorage();
+        }
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    stopBtn.addEventListener('click', () => { if(abortController) abortController.abort(); });
+
+    async function streamGemini(chat, domEl, msgObj) {
+        const history = chat.messages.map(m => {
+            const parts = [{ text: m.content || '' }];
+            if(m.images) { m.images.forEach(base64 => { const [meta, data] = base64.split(','); parts.push({ inline_data: { mime_type: meta.split(':')[1].split(';')[0], data: data } }); }); }
+            return { role: m.role === 'assistant' ? 'model' : 'user', parts };
+        });
+
+        history.pop();
+
+        const body = { contents: history, generationConfig: { temperature: temperature } };
+        if(sysPrompt) body.systemInstruction = { parts: [{ text: sysPrompt }] };
+        if(maxTokens) body.generationConfig.maxOutputTokens = maxTokens;
+
+        const res = await fetch(`https://api.proxyapi.ru/google/v1beta/models/${selectedModel}:streamGenerateContent?alt=sse&key=${apiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: abortController.signal
+        });
+
+        if(!res.ok) throw new Error(`API Error: ${res.status}`);
+
+        const reader = res.body.getReader(); const decoder = new TextDecoder(); let buffer = '';
+        while(true) {
+            const { done, value } = await reader.read();
+            if(done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n'); buffer = lines.pop();
+            for(let line of lines) {
+                if(line.startsWith('data:')) {
+                    const jsonStr = line.replace('data:', '').trim();
+                    if(jsonStr === '[DONE]') break;
+                    try {
+                        const data = JSON.parse(jsonStr);
+                        const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if(txt) { msgObj.content += txt; domEl.innerHTML = safeRenderMarkdown(msgObj.content); chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight; }
+                    } catch(e) {}
+                }
+            }
+        }
+    }
+
+    async function streamOpenAI(chat, domEl, msgObj) {
+        const messages = [];
+        const isStrict = selectedModel.startsWith('o') || selectedModel.includes('search');
+        
+        if(sysPrompt && !isStrict) {
+            messages.push({ role: 'system', content: sysPrompt });
+        }
+        
+        chat.messages.slice(0, -1).forEach((m, i) => {
+            let text = m.content || '';
+            // Для строгих моделей безопасно оборачиваем системные инструкции
+            if (i === 0 && sysPrompt && isStrict) {
+                text = `<system_instructions>\n${sysPrompt}\n</system_instructions>\n\n` + text;
+            }
+
+            if(m.images && m.images.length > 0) {
+                const content = [{ type: 'text', text: text }];
+                m.images.forEach(img => content.push({ type: 'image_url', image_url: { url: img } }));
+                messages.push({ role: m.role, content });
+            } else { messages.push({ role: m.role, content: text }); }
+        });
+
+        const body = { model: selectedModel, messages: messages, stream: true };
+        
+        if(!isStrict) body.temperature = temperature;
+        if(maxTokens && !isStrict) body.max_tokens = maxTokens;
+
+        const res = await fetch('https://api.proxyapi.ru/openai/v1/chat/completions', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify(body), signal: abortController.signal
+        });
+
+        if(!res.ok) { const e = await res.json(); throw new Error(`API Error: ${e.error?.message || res.status}`); }
+
+        const reader = res.body.getReader(); const decoder = new TextDecoder(); let buffer = '';
+        while(true) {
+            const { done, value } = await reader.read();
+            if(done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n'); buffer = lines.pop();
+            for(let line of lines) {
+                if(line.startsWith('data:')) {
+                    const jsonStr = line.replace('data:', '').trim();
+                    if(jsonStr === '[DONE]') break;
+                    try {
+                        const data = JSON.parse(jsonStr);
+                        const txt = data.choices?.[0]?.delta?.content;
+                        if(txt) { msgObj.content += txt; domEl.innerHTML = safeRenderMarkdown(msgObj.content); chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight; }
+                    } catch(e) {}
+                }
+            }
+        }
+    }
+
+    async function streamAnthropic(chat, domEl, msgObj) {
+        const messages = chat.messages.slice(0, -1).map(m => {
+            let content = [];
+            if (m.images && m.images.length > 0) {
+                if (m.content) content.push({ type: "text", text: m.content });
+                m.images.forEach(img => {
+                    const [meta, base64] = img.split(',');
+                    const mime = meta.split(':')[1].split(';')[0];
+                    content.push({ type: "image", source: { type: "base64", media_type: mime, data: base64 } });
+                });
+            } else {
+                content.push({ type: "text", text: m.content || '' });
+            }
+            return { role: m.role === 'assistant' ? 'assistant' : 'user', content: content };
+        });
+
+        const body = { model: selectedModel, max_tokens: maxTokens || 4000, temperature: temperature, messages: messages, stream: true };
+        if (sysPrompt) body.system = sysPrompt;
+
+        const res = await fetch('https://api.proxyapi.ru/anthropic/v1/messages', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+            body: JSON.stringify(body), signal: abortController.signal
+        });
+
+        if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || res.status); }
+
+        const reader = res.body.getReader(); const decoder = new TextDecoder(); let buffer = '';
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n'); buffer = lines.pop();
+            for (let line of lines) {
+                if (line.startsWith('data:')) {
+                    const jsonStr = line.replace('data:', '').trim();
+                    if (jsonStr === '[DONE]') break;
+                    try {
+                        const data = JSON.parse(jsonStr);
+                        if (data.type === "content_block_delta") {
+                            const txt = data.delta?.text;
+                            if (txt) { msgObj.content += txt; domEl.innerHTML = safeRenderMarkdown(msgObj.content); chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight; }
+                        }
+                    } catch (e) {}
+                }
+            }
+        }
+    }
+
+    // CREATOR AGENTS
+    function renderSettingsAgentList() {
+        const listDOM = document.getElementById('settings-agent-list');
+        listDOM.innerHTML = '';
+        const keys = Object.keys(customAgents);
+        
+        if(keys.length === 0) {
+            listDOM.innerHTML = '<div style="color:var(--text-secondary); font-size:13px;">У вас пока нет агентов.</div>';
+            return;
+        }
+
+        keys.forEach(id => {
+            const agent = customAgents[id];
+            listDOM.innerHTML += `
+                <div class="agent-list-item">
+                    <div>
+                        <h4>🤖 ${agent.name}</h4>
+                        <p>1. ${agent.researcher} <br> 2. ${agent.analyst} <br> 3. ${agent.finalizer}</p>
+                    </div>
+                    <button class="icon-btn" onclick="deleteAgent('${id}')" style="color:var(--danger-color)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </div>
+            `;
+        });
+    }
+
+    window.deleteAgent = function(id) {
+        if(confirm('Удалить этого агента?')) {
+            delete customAgents[id];
+            localStorage.setItem('pa_agents', JSON.stringify(customAgents));
+            renderSettingsAgentList();
+            renderModelDropdown();
+        }
+    }
+
+    const agentModal = document.getElementById('agent-modal');
+    
+    document.getElementById('btn-open-agent-creator').addEventListener('click', () => {
+        document.querySelectorAll('.model-select-populate').forEach(select => {
+            select.innerHTML = AVAILABLE_MODELS.map(m => `<option value="${m}">${m}</option>`).join('');
+        });
+        
+        document.getElementById('agent-name').value = '';
+        document.getElementById('agent-researcher').value = 'gpt-4o-search-preview-2025-03-11';
+        document.getElementById('agent-analyst').value = 'o4-mini-2025-04-16';
+        document.getElementById('agent-finalizer').value = 'gpt-5.2-chat-latest';
+
+        agentModal.classList.add('open');
+    });
+
+    document.getElementById('close-agent-modal').addEventListener('click', () => agentModal.classList.remove('open'));
+    document.getElementById('cancel-agent').addEventListener('click', () => agentModal.classList.remove('open'));
+
+    document.getElementById('save-agent').addEventListener('click', () => {
+        const name = document.getElementById('agent-name').value.trim();
+        if(!name) return showToast('Введите имя агента', 'error');
+
+        const id = 'agent_' + Date.now().toString(36);
+        customAgents[id] = {
+            name: name,
+            researcher: document.getElementById('agent-researcher').value,
+            analyst: document.getElementById('agent-analyst').value,
+            finalizer: document.getElementById('agent-finalizer').value
+        };
+
+        localStorage.setItem('pa_agents', JSON.stringify(customAgents));
+        agentModal.classList.remove('open');
+        showToast('Агент создан!');
+        renderSettingsAgentList();
+        renderModelDropdown();
+    });
+
+    // VOICE INPUT
+    voiceBtn.addEventListener('click', async () => {
+        if(!apiKey) return showToast('Нужен API ключ', 'error');
+        if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); voiceBtn.classList.remove('recording'); return; }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            let mimeType = 'audio/webm';
+            if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+            
+            mediaRecorder = new MediaRecorder(stream, { mimeType });
+            audioChunks = [];
+            voiceBtn.classList.add('recording');
+            showToast('Запись...');
+
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                stream.getTracks().forEach(t => t.stop());
+                const blob = new Blob(audioChunks, { type: mimeType });
+                const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
+                
+                const formData = new FormData();
+                formData.append('file', blob, `voice.${ext}`);
+                formData.append('model', 'whisper-1');
+                formData.append('response_format', 'text');
+                
+                showToast('Распознавание...');
+                try {
+                    const res = await fetch('https://api.proxyapi.ru/openai/v1/audio/transcriptions', {
+                        method: 'POST', headers: { 'Authorization': `Bearer ${apiKey}` }, body: formData
+                    });
+                    if (!res.ok) throw new Error();
+                    const text = await res.text();
+                    if(text.trim()) { userInput.value += (userInput.value ? ' ' : '') + text.trim(); autoResizeInput(); }
+                } catch(e) { showToast('Ошибка распознавания', 'error'); }
+            };
+            mediaRecorder.start();
+        } catch(e) { showToast('Нужен HTTPS для микрофона', 'error'); }
+    });
+
+    // SETTINGS
+    const settingsModal = document.getElementById('settings-modal');
+    document.getElementById('btn-open-settings').addEventListener('click', () => {
+        document.getElementById('api-key').value = apiKey;
+        document.getElementById('system-prompt').value = sysPrompt;
+        document.getElementById('temperature').value = temperature;
+        document.getElementById('max-tokens').value = maxTokens || '';
+        document.getElementById('temp-display').textContent = temperature;
+        renderSettingsAgentList();
+        settingsModal.classList.add('open');
+    });
+    document.getElementById('close-settings').addEventListener('click', () => settingsModal.classList.remove('open'));
+    document.getElementById('cancel-settings').addEventListener('click', () => settingsModal.classList.remove('open'));
+    document.getElementById('temperature').addEventListener('input', (e) => document.getElementById('temp-display').textContent = e.target.value);
+
+    document.getElementById('save-settings').addEventListener('click', () => {
+        apiKey = document.getElementById('api-key').value.trim();
+        sysPrompt = document.getElementById('system-prompt').value.trim();
+        temperature = parseFloat(document.getElementById('temperature').value);
+        const mt = parseInt(document.getElementById('max-tokens').value);
+        maxTokens = isNaN(mt) ? null : mt;
+
+        localStorage.setItem('pa_api_key', apiKey);
+        localStorage.setItem('pa_sysprompt', sysPrompt);
+        localStorage.setItem('pa_temp', temperature);
+        if(maxTokens) localStorage.setItem('pa_maxtokens', maxTokens); else localStorage.removeItem('pa_maxtokens');
+
+        settingsModal.classList.remove('open');
+        showToast('Сохранено');
+    });
+
+    document.getElementById('btn-export-backup').addEventListener('click', () => {
+        const backup = { chats, agents: customAgents, settings: { apiKey, sysPrompt, temperature, maxTokens } };
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(backup)], {type: 'application/json'}));
+        a.download = 'ai_studio_backup.json'; a.click();
+    });
+    
+    document.getElementById('btn-import-backup').addEventListener('change', (e) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                if(data.chats) { chats = data.chats; saveChatsToStorage(); }
+                if(data.agents) { customAgents = data.agents; localStorage.setItem('pa_agents', JSON.stringify(customAgents)); }
+                if(data.settings) { apiKey = data.settings.apiKey; localStorage.setItem('pa_api_key', apiKey); }
+                renderChatList(); loadCurrentChat(); renderModelDropdown(); settingsModal.classList.remove('open');
+                showToast('Бэкап загружен');
+            } catch(e) { showToast('Ошибка файла', 'error'); }
+        };
+        if(e.target.files[0]) reader.readAsText(e.target.files[0]);
+    });
+
+    document.getElementById('btn-clear-all').addEventListener('click', () => {
+        if(confirm('Удалить всё?')) { chats = {}; localStorage.removeItem('pa_chats'); createNewChat(); settingsModal.classList.remove('open'); }
+    });
+    document.getElementById('btn-export-chat').addEventListener('click', () => {
+        if(!currentChatId) return;
+        let md = `# ${chats[currentChatId].title}\n\n`;
+        chats[currentChatId].messages.forEach(m => md += `### ${m.role}\n${m.content}\n\n`);
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([md], {type:'text/markdown'})); a.download = 'chat.md'; a.click();
+    });
+
+    // Init
+    renderModelDropdown();
+    if(Object.keys(chats).length === 0) createNewChat();
+    else { renderChatList(); loadCurrentChat(); }
+
+</script>
+</body>
+</html>
