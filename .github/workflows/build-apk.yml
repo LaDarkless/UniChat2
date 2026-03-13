@@ -140,12 +140,28 @@ jobs:
     - name: Sign APK with keystore
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
-        jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-          -keystore keystore.jks \
-          -storepass ${{ secrets.KEYSTORE_PASSWORD }} \
-          -keypass ${{ secrets.KEYSTORE_PASSWORD }} \
-          android/app/build/outputs/apk/debug/app-debug.apk ${{ secrets.KEY_ALIAS }}
+        
+        # Remove old signature first
+        ${ANDROID_HOME}/build-tools/$(ls ${ANDROID_HOME}/build-tools | tail -1)/zipalign \
+          -v -p 4 \
+          android/app/build/outputs/apk/debug/app-debug.apk \
+          android/app/build/outputs/apk/debug/app-aligned.apk
+        
+        # Sign with apksigner
+        ${ANDROID_HOME}/build-tools/$(ls ${ANDROID_HOME}/build-tools | tail -1)/apksigner sign \
+          --ks keystore.jks \
+          --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
+          --key-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
+          --ks-key-alias ${{ secrets.KEY_ALIAS }} \
+          --out android/app/build/outputs/apk/debug/app-signed.apk \
+          android/app/build/outputs/apk/debug/app-aligned.apk
+        
+        # Replace original with signed version
+        mv android/app/build/outputs/apk/debug/app-signed.apk \
+           android/app/build/outputs/apk/debug/app-debug.apk
+        
         echo "✅ APK signed successfully"
+
 
         
     - name: Copy APK to root
