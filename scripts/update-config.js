@@ -75,9 +75,16 @@ async function updateConfig() {
             /versionName\s+"[^"]*"/,
             `versionName "${config.version}"`
           );
+          const versionParts = config.version.split('.').map(Number);
+          const versionCode = versionParts[0] * 10000 + versionParts[1] * 100 + (versionParts[2] || 0);
+          buildGradle = buildGradle.replace(
+            /versionCode\s+\d+/,
+            `versionCode ${versionCode}`
+          );
           await fs.writeFile(buildGradlePath, buildGradle, 'utf8');
-          console.log(chalk.green(`✅ Version updated to ${config.version} in build.gradle`));
+          console.log(chalk.green(`✅ Version updated to ${config.version} (code: ${versionCode}) in build.gradle`));
         }
+
     
 
     console.log(chalk.green('🎉 APK configuration updated successfully!'));
