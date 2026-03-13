@@ -167,8 +167,22 @@ async function updateAppIcon(iconConfig, fullConfig) {
       /android:roundIcon="[^"]*"/,
       'android:roundIcon="@mipmap/ic_launcher_round"'
     );
+    // Add microphone and audio permissions
+    const permissionsToAdd = [
+      '<uses-permission android:name="android.permission.RECORD_AUDIO"/>',
+      '<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>',
+    ];
+    for (const perm of permissionsToAdd) {
+      if (!manifest.includes(perm)) {
+        manifest = manifest.replace(
+          '<application',
+          `${perm}\n    <application`
+        );
+      }
+    }
+
     await fs.writeFile(manifestPath, manifest);
-    console.log(chalk.gray('  ✅ Updated AndroidManifest.xml to use custom icon'));
+    console.log(chalk.gray('  ✅ Updated AndroidManifest.xml to use custom icon and added permissions'));
   }
 
   // Update app name in strings.xml

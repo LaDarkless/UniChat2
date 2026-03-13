@@ -5,8 +5,10 @@ const config: CapacitorConfig = {
   appName: 'UniChat',
   webDir: 'www',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    cleartext: true
   },
+
   android: {
     allowMixedContent: true
   }
