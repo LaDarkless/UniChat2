@@ -365,13 +365,12 @@
 <div id="auth-overlay">
     <div class="auth-box">
         <div class="auth-title">AI Studio Ultimate</div>
-        <div class="auth-subtitle">Войдите в систему для доступа к нейросетям</div>
+        <div class="auth-subtitle">Войдите в систему или продолжите без неё</div>
         
         <button class="auth-google-btn" id="btn-google-login">
             <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="G">
             Войти через Google
         </button>
-        <!-- Текстовое уточнение -->
         <div id="google-hint" style="font-size: 11px; color: var(--text-secondary); margin-bottom: 20px; opacity: 0.8; display: none;">
             * Google-авторизация работает только в веб-версии
         </div>
@@ -385,7 +384,8 @@
             <input type="password" class="form-control" id="auth-pass" placeholder="Пароль">
         </div>
 
-        <button class="btn btn-primary" style="width: 100%;" id="btn-email-action">Войти</button>
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" id="btn-email-action">Войти</button>
+        <button class="btn btn-secondary" style="width: 100%; border: 1px solid #444;" id="btn-skip-auth">Продолжить без входа</button>
         
         <div class="auth-toggle" id="auth-toggle-mode">Нет аккаунта? Зарегистрироваться</div>
     </div>
@@ -639,103 +639,106 @@
 </script>
 
 <script type="module">
-  // ==========================================
-  // FIREBASE AUTHENTICATION (MODULAR)
-  // ==========================================
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-  import { 
-      getAuth, 
-      signInWithEmailAndPassword, 
-      createUserWithEmailAndPassword, 
-      GoogleAuthProvider, 
-      signInWithPopup, 
-      onAuthStateChanged, 
-      signOut 
-  } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCUCoR0dJ548jpN6BfXnaQMy_-fyI3p2IU",
-    authDomain: "ai-studio-997c9.firebaseapp.com",
-    projectId: "ai-studio-997c9",
-    storageBucket: "ai-studio-997c9.firebasestorage.app",
-    messagingSenderId: "416238132541",
-    appId: "1:416238132541:web:0541004f5843cdadfc7954",
-    measurementId: "G-GHDE01V3ZC"
-  };
-
-  // ВСТАВЬТЕ ЭТО ДО btnGoogle.addEventListener
-  const isCapacitor = !!window.Capacitor || !!window.cordova;
+    // ==========================================
+    // FIREBASE AUTHENTICATION (MODULAR)
+    // ==========================================
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { 
+        getAuth, 
+        signInWithEmailAndPassword, 
+        createUserWithEmailAndPassword, 
+        GoogleAuthProvider, 
+        signInWithPopup, 
+        onAuthStateChanged, 
+        signOut 
+    } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   
-  if (isCapacitor) {
-      const hint = document.getElementById('google-hint');
-      if (hint) hint.style.display = 'block';
-  }
-
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-
-  const authOverlay = document.getElementById('auth-overlay');
-  const emailInput = document.getElementById('auth-email');
-  const passInput = document.getElementById('auth-pass');
-  const btnEmailAction = document.getElementById('btn-email-action');
-  const toggleModeBtn = document.getElementById('auth-toggle-mode');
-  const btnGoogle = document.getElementById('btn-google-login');
-  const btnLogout = document.getElementById('btn-logout');
-
-  let isLoginMode = true;
-
-  toggleModeBtn.addEventListener('click', () => {
-      isLoginMode = !isLoginMode;
-      if (isLoginMode) {
-          btnEmailAction.textContent = "Войти";
-          toggleModeBtn.textContent = "Нет аккаунта? Зарегистрироваться";
-      } else {
-          btnEmailAction.textContent = "Зарегистрироваться";
-          toggleModeBtn.textContent = "Уже есть аккаунт? Войти";
-      }
-  });
-
-
-  // Оставляем только этот блок, он заменяет предыдущий
-  btnGoogle.addEventListener('click', async () => {
-      // Проверяем, в приложении ли мы
-      if (isCapacitor) {
-          const confirmRedirect = confirm("Google-авторизация в приложении может работать нестабильно. Вы уверены, что хотите продолжить?");
-          if (!confirmRedirect) return;
-      }
-
-      const provider = new GoogleAuthProvider();
-      try {
-          // signInWithPopup — стандартный способ для Firebase Web SDK
-          await signInWithPopup(auth, provider);
-          window.showToast('Успешный вход через Google!');
-      } catch (error) {
-          console.error("Google Auth Error:", error);
-          // Выводим понятную ошибку
-          let msg = error.message;
-          if (error.code === 'auth/popup-blocked') msg = 'Всплывающее окно заблокировано';
-          if (error.code === 'auth/cancelled-popup-request') msg = 'Вход отменен';
-          window.showToast('Ошибка: ' + msg, 'error');
-      }
-  });
-
-  if(btnLogout) {
-      btnLogout.addEventListener('click', () => {
-          signOut(auth).then(() => window.showToast('Вы вышли из системы'));
-      });
-  }
-
-  onAuthStateChanged(auth, (user) => {
-      if (user) {
-          authOverlay.style.opacity = '0';
-          setTimeout(() => authOverlay.style.visibility = 'hidden', 500);
-      } else {
-          authOverlay.style.visibility = 'visible';
-          authOverlay.style.opacity = '1';
-      }
-  });
-</script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCUCoR0dJ548jpN6BfXnaQMy_-fyI3p2IU",
+      authDomain: "ai-studio-997c9.firebaseapp.com",
+      projectId: "ai-studio-997c9",
+      storageBucket: "ai-studio-997c9.firebasestorage.app",
+      messagingSenderId: "416238132541",
+      appId: "1:416238132541:web:0541004f5843cdadfc7954",
+      measurementId: "G-GHDE01V3ZC"
+    };
+  
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    window.auth = auth; // Делаем доступным глобально
+  
+    const authOverlay = document.getElementById('auth-overlay');
+    const emailInput = document.getElementById('auth-email');
+    const passInput = document.getElementById('auth-pass');
+    const btnEmailAction = document.getElementById('btn-email-action');
+    const btnSkipAuth = document.getElementById('btn-skip-auth');
+    const toggleModeBtn = document.getElementById('auth-toggle-mode');
+    const btnGoogle = document.getElementById('btn-google-login');
+    const btnLogout = document.getElementById('btn-logout');
+  
+    const isCapacitor = !!window.Capacitor || !!window.cordova;
+    if (isCapacitor) document.getElementById('google-hint').style.display = 'block';
+  
+    let isLoginMode = true;
+  
+    toggleModeBtn.addEventListener('click', () => {
+        isLoginMode = !isLoginMode;
+        btnEmailAction.textContent = isLoginMode ? "Войти" : "Зарегистрироваться";
+        toggleModeBtn.textContent = isLoginMode ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти";
+    });
+  
+    // Кнопка "Без входа"
+    btnSkipAuth.addEventListener('click', () => {
+        authOverlay.style.opacity = '0';
+        setTimeout(() => authOverlay.style.visibility = 'hidden', 500);
+        window.showToast('Гость: сохранение данных локально');
+    });
+  
+    btnEmailAction.addEventListener('click', async () => {
+        const email = emailInput.value.trim();
+        const pass = passInput.value.trim();
+        if (!email || !pass) return window.showToast('Введите email и пароль', 'error');
+  
+        try {
+            if (isLoginMode) {
+                await signInWithEmailAndPassword(auth, email, pass);
+                window.showToast('Успешный вход!');
+            } else {
+                await createUserWithEmailAndPassword(auth, email, pass);
+                window.showToast('Регистрация успешна!');
+            }
+        } catch (error) {
+            window.showToast('Ошибка: ' + error.message, 'error');
+        }
+    });
+  
+    btnGoogle.addEventListener('click', async () => {
+        if (isCapacitor && !confirm("Google-авторизация в приложении может работать нестабильно. Продолжить?")) return;
+        const provider = new GoogleAuthProvider();
+        try {
+            await signInWithPopup(auth, provider);
+            window.showToast('Успешный вход через Google!');
+        } catch (error) {
+            window.showToast('Ошибка Google: ' + error.message, 'error');
+        }
+    });
+  
+    if(btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            signOut(auth).then(() => window.showToast('Вы вышли из системы'));
+        });
+    }
+  
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            authOverlay.style.opacity = '0';
+            setTimeout(() => authOverlay.style.visibility = 'hidden', 500);
+        } else {
+            authOverlay.style.visibility = 'visible';
+            authOverlay.style.opacity = '1';
+        }
+    });
+  </script>
 
 <script>
     // ==========================================
