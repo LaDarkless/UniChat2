@@ -94,9 +94,14 @@
         .dropdown-menu { position: absolute; top: 120%; left: 0; width: 280px; background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); opacity: 0; pointer-events: none; transform: translateY(-10px); transition: all 0.2s ease; z-index: 200; padding: 6px; max-height: 80vh; overflow-y: auto; }
         .custom-dropdown.open .dropdown-menu { opacity: 1; pointer-events: auto; transform: translateY(0); }
         .dropdown-group-label { padding: 8px 12px 4px; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; display: flex; justify-content: space-between; }
-        .dropdown-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px; transition: background-color 0.1s; }
+        
+        .dropdown-item { display: flex; align-items: flex-start; flex-direction: column; gap: 2px; padding: 10px 12px; cursor: pointer; border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px; transition: background-color 0.1s; }
+        .dropdown-item > span:first-child { font-weight: 500; }
         .dropdown-item:hover { background-color: var(--bg-hover); }
-        .dropdown-item.selected { background-color: var(--bg-input); color: var(--primary-color); }
+        .dropdown-item.selected { background-color: var(--bg-input); }
+        .dropdown-item.selected > span:first-child { color: var(--primary-color); }
+        .dropdown-item-subtitle { font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;}
+
 
         .icon-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 8px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; transition: background-color 0.2s, color 0.2s; }
         .icon-btn:hover { color: var(--text-primary); background-color: var(--bg-hover); }
@@ -137,7 +142,6 @@
         .msg-images { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
         .msg-images img { max-width: 100%; max-height: 350px; border-radius: var(--radius-md); border: 1px solid var(--border-color); cursor: zoom-in; object-fit: contain; }
 
-        /* ACTIONS BLOCK */
         .message-actions { position: absolute; bottom: -32px; left: 48px; display: flex; gap: 6px; opacity: 0; transition: opacity 0.2s; z-index: 10; }
         .message-row:hover .message-actions { opacity: 1; }
         .message-row.user .message-actions { left: auto; right: 0; }
@@ -205,7 +209,22 @@
         
         .agent-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-input); border-radius: var(--radius-md); margin-bottom: 10px; }
         .agent-list-item h4 { margin: 0; font-size: 14px; }
-        .agent-list-item p { margin: 4px 0 0 0; font-size: 12px; color: var(--text-secondary); }
+        .agent-list-item-recipe { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .role-chip { background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 10px; padding: 3px 8px; border-radius: 12px; font-weight: 500;}
+
+        /* CRITIC PROMPT BOX */
+        .critic-prompt-box {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid var(--danger-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin: 15px 0;
+            animation: slideIn 0.3s ease-out;
+        }
+        .critic-prompt-box.accepted {
+            border-color: var(--primary-color);
+            background: rgba(16, 163, 127, 0.05);
+        }
 
         @media (max-width: 768px) {
             .mobile-menu-btn { display: flex; }
@@ -217,6 +236,7 @@
             .message-row.user .message-content { max-width: 90%; }
             .input-area { padding: 12px 16px 16px; }
         }
+
     </style>
 </head>
 <body data-theme="dark">
@@ -257,18 +277,23 @@
                         <div class="dropdown-item" data-value="gpt-5.4-pro-2026-03-05"><span>gpt-5.4 PRO</span></div>
                         <div class="dropdown-item" data-value="gpt-5.4-2026-03-05"><span>gpt-5.4</span></div>
                         <div class="dropdown-item" data-value="gpt-5.2-chat-latest"><span>gpt-5.2</span></div>
+                        <div class="dropdown-item" data-value="gpt-5-mini-2025-08-07"><span>gpt-5 mini</span></div>
                         <div class="dropdown-item" data-value="gpt-5-nano-2025-08-07"><span>gpt-5 nano</span></div>
                         <div class="dropdown-item" data-value="o4-mini-2025-04-16"><span>o4-mini</span></div>
                         <div class="dropdown-item" data-value="gpt-4o-2024-08-06"><span>gpt-4o</span></div>
+                        <div class="dropdown-item" data-value="gpt-4o-mini-2024-07-18"><span>gpt-4o mini</span></div>
                         <div class="dropdown-item" data-value="gpt-4o-search-preview-2025-03-11"><span>gpt-4o-search</span></div>
                         <div class="dropdown-group-label" style="margin-top:8px;">✦ Google ✦</div>
+                        <div class="dropdown-item" data-value="gemini-2.0-flash-lite"><span>✦ gemini-2.0-flash lite</span></div>
                         <div class="dropdown-item" data-value="gemini-3-flash-preview"><span>✦ gemini-3-flash</span></div>
+                        <div class="dropdown-item" data-value="gemini-3.1-flash-preview"><span>✦ gemini-3.1-flash lite</span></div>
                         <div class="dropdown-item" data-value="gemini-3.1-pro-preview"><span>✦ gemini-3.1-pro</span></div>
                         <div class="dropdown-item" data-value="gemini-2.0-flash"><span>gemini-2.0-flash</span></div>
                         <div class="dropdown-group-label" style="margin-top:8px;">Anthropic</div>
                         <div class="dropdown-item" data-value="claude-3-5-haiku-20241022"><span>Claude 3.7 Sonnet</span></div>
                         <div class="dropdown-item" data-value="claude-3-7-sonnet-20250219"><span>Claude 4.6 Sonnet</span></div>
                         <div class="dropdown-item" data-value="claude-sonnet-4-6"><span>Claude 3.5 Haiku</span></div>
+                        <div class="dropdown-item" data-value="claude-haiku-4-5-20251001"><span>Claude 4.5 Haiku</span></div>
                         <div class="dropdown-item" data-value="claude-opus-4-6"><span>Claude 4.6 Opus</span></div>
                     </div>
                 </div>
@@ -398,7 +423,12 @@
             </div>
 
             <div class="form-group">
-                <label>🗣 3. Спикер (Итоговый ответ)</label>
+                <label>🧐 3. Критик (Поиск ошибок в анализе)</label>
+                <select class="form-control model-select-populate" id="agent-critic"></select>
+            </div>
+
+            <div class="form-group">
+                <label>🗣 4. Спикер (Итоговый ответ)</label>
                 <select class="form-control model-select-populate" id="agent-finalizer"></select>
             </div>
         </div>
@@ -442,10 +472,10 @@
     let audioChunks = [];
 
     const AVAILABLE_MODELS = [
-        "gpt-5.4-pro-2026-03-05", "gpt-5.4-2026-03-05", "gpt-5.2-chat-latest", "gpt-5-nano-2025-08-07",
-        "o4-mini-2025-04-16", "gpt-4o-2024-08-06", "gpt-4o-search-preview-2025-03-11",
-        "gemini-3-flash-preview", "gemini-3.1-pro-preview", "gemini-2.0-flash",
-        "claude-3-5-haiku-20241022", "claude-3-7-sonnet-20250219", "claude-sonnet-4-6", "claude-opus-4-6"
+        "gpt-5.4-pro-2026-03-05", "gpt-5.4-2026-03-05", "gpt-5.2-chat-latest", "gpt-5-mini-2025-08-07", "gpt-5-nano-2025-08-07",
+        "o4-mini-2025-04-16", "gpt-4o-2024-08-06", "gpt-4o-mini-2024-07-18", "gpt-4o-search-preview-2025-03-11",
+        "gemini-2.0-flash-lite", "gemini-3-flash-preview", "gemini-3.1-flash-preview", "gemini-3.1-pro-preview", "gemini-2.0-flash",
+        "claude-3-5-haiku-20241022", "claude-3-7-sonnet-20250219", "claude-sonnet-4-6", "claude-haiku-4-5-20251001", "claude-opus-4-6"
     ];
 
     marked.setOptions({ breaks: true });
@@ -524,6 +554,13 @@
         if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !btn.contains(e.target)) sidebar.classList.remove('open');
     });
 
+    // Helper to get short model name
+    function getModelShortName(modelId) {
+        if (!modelId) return 'N/A';
+        const item = document.querySelector(`.dropdown-item[data-value="${modelId}"] > span`);
+        return item ? item.textContent : modelId;
+    }
+
     function renderModelDropdown() {
         const container = document.getElementById('custom-agents-container');
         container.innerHTML = '';
@@ -532,26 +569,42 @@
         if (agentKeys.length > 0) {
             container.innerHTML += `<div class="dropdown-group-label">🤖 Мои Агенты</div>`;
             agentKeys.forEach(id => {
-                container.innerHTML += `<div class="dropdown-item" data-value="${id}"><span>🤖 ${customAgents[id].name}</span></div>`;
+                const agent = customAgents[id];
+                const recipe = `${getModelShortName(agent.researcher)} → ${getModelShortName(agent.analyst)} → ${getModelShortName(agent.critic)} → ${getModelShortName(agent.finalizer)}`;
+                const item = document.createElement('div');
+                item.className = 'dropdown-item';
+                item.dataset.value = id;
+                item.innerHTML = `
+                    <span>🤖 ${agent.name}</span>
+                    <span class="dropdown-item-subtitle">${recipe}</span>
+                `;
+                container.appendChild(item);
             });
             container.innerHTML += `<hr style="border:0; border-top:1px solid var(--border-color); margin: 6px 0;">`;
         }
-
+        
+        // Re-attach listeners to ALL items
         const ddName = document.getElementById('current-model-name');
-        document.querySelectorAll('.dropdown-item').forEach(item => {
+        document.querySelectorAll('#model-dropdown-menu .dropdown-item').forEach(item => {
+            // Remove old listener to prevent duplicates
+            item.replaceWith(item.cloneNode(true));
+        });
+
+        document.querySelectorAll('#model-dropdown-menu .dropdown-item').forEach(item => {
             item.addEventListener('click', () => {
                 selectedModel = item.dataset.value; 
                 localStorage.setItem('pa_model', selectedModel);
                 document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
-                item.classList.add('selected'); 
-                ddName.textContent = item.querySelector('span').textContent;
+                item.classList.add('selected');
+                const mainText = item.querySelector('span:first-child').textContent;
+                ddName.textContent = mainText;
                 document.querySelector('.custom-dropdown').classList.remove('open');
             });
         });
-
+        
         const initialItem = document.querySelector(`.dropdown-item[data-value="${selectedModel}"]`);
         if(initialItem) { 
-            ddName.textContent = initialItem.querySelector('span').textContent; 
+            ddName.textContent = initialItem.querySelector('span:first-child').textContent; 
             initialItem.classList.add('selected'); 
         } else if (agentKeys.length === 0 && selectedModel.startsWith('agent_')) {
             selectedModel = 'gpt-5.2-chat-latest';
@@ -559,6 +612,7 @@
             renderModelDropdown();
         }
     }
+
 
     const ddToggle = document.getElementById('dropdown-toggle');
     const ddMenu = document.querySelector('.custom-dropdown');
@@ -620,7 +674,6 @@
         chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
     }
 
-    // ВОССТАНОВЛЕНИЕ ФУНКЦИЙ РЕДАКТИРОВАНИЯ И КОПИРОВАНИЯ
     window.editMessage = function(btn) {
         if (!currentChatId || !chats[currentChatId]) return;
         const row = btn.closest('.message-row');
@@ -900,29 +953,104 @@
         const analystData = await callNonStream(agent.analyst, step2History, sys2);
         msgObj.content += `<think>🧠 Аналитик (${agent.analyst}):\n\n${analystData}</think>\n\n`;
 
-        // ШАГ 3: ФИНАЛЬНЫЙ ОТВЕТ (со стримингом)
+        // Базовая переменная плана для Спикера
+        let finalAnalystPlan = analystData;
+
+        // ШАГ 3: КРИТИК (Если агент был создан с критиком и это не банальный запрос)
+        if (agent.critic && !analystData.includes('БЕЗ_АНАЛИЗА')) {
+            updateUI(`<div class="agent-status">🧐 Критик (${agent.critic}) проверяет план...</div>`);
+            
+            const sysCritic = `Ты — Агент-Критик. Твоя задача — жестко, но конструктивно критиковать план Аналитика. Найди логические ошибки, неточности, недостаток аргументации.
+ПРАВИЛО 1: Если план идеален и не требует правок, ответь СТРОГО одной фразой: "БЕЗ_ОШИБОК".
+ПРАВИЛО 2: Если есть ошибки, сформируй их СТРОГО в виде Markdown-таблицы с колонками: | № | Тип ошибки/Недочет | Предлагаемое исправление |`;
+
+            let step3History = JSON.parse(JSON.stringify(baseHistory));
+            step3History[step3History.length - 1].content = `<запрос_пользователя>\n${originalUserMsgContent}\n</запрос_пользователя>\n\n<план_аналитика>\n${analystData}\n</план_аналитика>`;
+            
+            const criticData = await callNonStream(agent.critic, step3History, sysCritic);
+
+            if (!criticData.includes('БЕЗ_ОШИБОК')) {
+                // Добавляем выводы критика в лог
+                const criticTag = `<think>🧐 Критик (${agent.critic}):\n\n${criticData}</think>\n\n`;
+                msgObj.content += criticTag;
+                updateUI(''); // Рендерим таблицу критика
+
+                // Создаем интерактивное окно с кнопками прямо внутри чата
+                const promptDiv = document.createElement('div');
+                promptDiv.className = 'critic-prompt-box';
+                promptDiv.innerHTML = `
+                    <div style="margin-bottom:10px; font-size:15px; font-weight:600; color:var(--danger-color);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: text-bottom; margin-right: 5px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        Критик нашёл возможные ошибки в анализе
+                    </div>
+                    <div style="margin-bottom:15px; font-size:13px; color:var(--text-secondary);">Хотите применить изменения (Аналитик перепишет план, игнорируя исследователя) или проигнорировать предупреждение?</div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-primary" id="critic-yes">Да, переписать план</button>
+                        <button class="btn btn-secondary" id="critic-no">Нет, игнорировать</button>
+                    </div>
+                `;
+                domEl.appendChild(promptDiv);
+                chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+
+                // ЖДЕМ РЕШЕНИЯ ПОЛЬЗОВАТЕЛЯ
+                const applyChanges = await new Promise(resolve => {
+                    document.getElementById('critic-yes').onclick = () => { 
+                        promptDiv.classList.add('accepted');
+                        promptDiv.innerHTML = '<span style="color:var(--primary-color); font-weight:500; font-size:13px;">✓ Замечания приняты в работу...</span>';
+                        resolve(true); 
+                    };
+                    document.getElementById('critic-no').onclick = () => { 
+                        promptDiv.remove(); 
+                        resolve(false); 
+                    };
+                });
+
+                if (applyChanges) {
+                    // ШАГ 3.5: ПОВТОРНЫЙ АНАЛИЗ (Игнорируя исследователя)
+                    // Убираем старый блок критика из DOM, чтобы не захламлять
+                    setTimeout(() => promptDiv.remove(), 2000); 
+
+                    updateUI(`<div class="agent-status">🧠 Аналитик (${agent.analyst}) пересматривает план...</div>`);
+                    const sysReAnalyst = `Ты — Агент-Аналитик. Критик нашел ошибки в твоем предыдущем плане. 
+Полностью перепиши план итогового ответа на основе исходного запроса пользователя и замечаний Критика.
+СТРОГО ИГНОРИРУЙ любые данные от исследователя, опирайся только на свои знания и критику.`;
+
+                    let step3_5History = JSON.parse(JSON.stringify(baseHistory));
+                    step3_5History[step3_5History.length - 1].content = `<запрос_пользователя>\n${originalUserMsgContent}\n</запрос_пользователя>\n\n<твой_прошлый_план>\n${analystData}\n</твой_прошлый_план>\n\n<замечания_критика>\n${criticData}\n</замечания_критика>`;
+                    
+                    finalAnalystPlan = await callNonStream(agent.analyst, step3_5History, sysReAnalyst);
+                    msgObj.content += `<think>🔄 Пересмотренный Анализ (${agent.analyst}):\n\n${finalAnalystPlan}</think>\n\n`;
+                } else {
+                    // ЕСЛИ ПОЛЬЗОВАТЕЛЬ ИГНОРИРУЕТ:
+                    // Полностью вырезаем тег Критика из текста, чтобы он исчез из видимости навсегда
+                    msgObj.content = msgObj.content.replace(criticTag, '');
+                }
+            }
+        }
+
+        // ШАГ 4: ФИНАЛЬНЫЙ ОТВЕТ (Спикер)
         updateUI(`<div class="agent-status">🗣 Спикер (${agent.finalizer}) пишет ответ...</div>`);
         
-        const sys3 = `Ты финальный Спикер. 
-Если данные исследователя и аналитика говорят "БЕЗ_ИССЛЕДОВАНИЯ" / "БЕЗ_АНАЛИЗА", просто общайся с пользователем естественно.
-В остальных случаях сформулируй развернутый, красивый ответ, строго опираясь на сырые факты и план аналитика. Не упоминай самих агентов в ответе.`;
+        const sysFinal = `Ты финальный Спикер. 
+Если данные говорят "БЕЗ_ИССЛЕДОВАНИЯ" / "БЕЗ_АНАЛИЗА", просто общайся с пользователем естественно.
+В остальных случаях сформулируй развернутый, красивый ответ, строго опираясь на план аналитика. Не упоминай самих агентов в ответе.`;
 
-        let step3Chat = { messages: JSON.parse(JSON.stringify(baseHistory)) };
-        step3Chat.messages[step3Chat.messages.length - 1].content = `<факты_исследователя>\n${researchData}\n</факты_исследователя>\n\n<план_аналитика>\n${analystData}\n</план_аналитика>\n\n<запрос_пользователя>\n${originalUserMsgContent}\n</запрос_пользователя>\n\nСформулируй итоговый ответ.`;
-        step3Chat.messages.push({ role: 'assistant', content: '' });
+        let finalChat = { messages: JSON.parse(JSON.stringify(baseHistory)) };
+        // Спикер получает ИЛИ оригинальный план + факты, ИЛИ переписанный план без фактов (зависит от решения юзера)
+        finalChat.messages[finalChat.messages.length - 1].content = `<план_от_аналитика>\n${finalAnalystPlan}\n</план_от_аналитика>\n\n<запрос_пользователя>\n${originalUserMsgContent}\n</запрос_пользователя>\n\nСформулируй итоговый ответ на основе плана.`;
+        finalChat.messages.push({ role: 'assistant', content: '' });
 
         domEl.innerHTML = safeRenderMarkdown(msgObj.content);
 
-        // Временно переопределяем глобальные переменные для стриминг-функций
         const originalModel = selectedModel;
         const originalSysPrompt = sysPrompt;
         selectedModel = agent.finalizer;
-        sysPrompt = sys3; 
+        sysPrompt = sysFinal; 
 
         try {
-            if(selectedModel.startsWith('gemini')) await streamGemini(step3Chat, domEl, msgObj);
-            else if(selectedModel.startsWith('claude')) await streamAnthropic(step3Chat, domEl, msgObj);
-            else await streamOpenAI(step3Chat, domEl, msgObj);
+            if(selectedModel.startsWith('gemini')) await streamGemini(finalChat, domEl, msgObj);
+            else if(selectedModel.startsWith('claude')) await streamAnthropic(finalChat, domEl, msgObj);
+            else await streamOpenAI(finalChat, domEl, msgObj);
         } finally {
             selectedModel = originalModel; 
             sysPrompt = originalSysPrompt;
@@ -1128,15 +1256,24 @@
 
         keys.forEach(id => {
             const agent = customAgents[id];
-            listDOM.innerHTML += `
-                <div class="agent-list-item">
-                    <div>
-                        <h4>🤖 ${agent.name}</h4>
-                        <p>1. ${agent.researcher} <br> 2. ${agent.analyst} <br> 3. ${agent.finalizer}</p>
-                    </div>
-                    <button class="icon-btn" onclick="deleteAgent('${id}')" style="color:var(--danger-color)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
+            const item = document.createElement('div');
+            item.className = 'agent-list-item';
+            
+            const recipeHtml = `
+                <span class="role-chip">🕵️‍♂️ ${getModelShortName(agent.researcher)}</span>
+                <span class="role-chip">🧠 ${getModelShortName(agent.analyst)}</span>
+                <span class="role-chip">🧐 ${getModelShortName(agent.critic)}</span>
+                <span class="role-chip">🗣 ${getModelShortName(agent.finalizer)}</span>
             `;
+
+            item.innerHTML = `
+                <div>
+                    <h4>🤖 ${agent.name}</h4>
+                    <div class="agent-list-item-recipe">${recipeHtml}</div>
+                </div>
+                <button class="icon-btn" onclick="deleteAgent('${id}')" style="color:var(--danger-color)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+            `;
+            listDOM.appendChild(item);
         });
     }
 
@@ -1153,12 +1290,13 @@
     
     document.getElementById('btn-open-agent-creator').addEventListener('click', () => {
         document.querySelectorAll('.model-select-populate').forEach(select => {
-            select.innerHTML = AVAILABLE_MODELS.map(m => `<option value="${m}">${m}</option>`).join('');
+            select.innerHTML = AVAILABLE_MODELS.map(m => `<option value="${m}">${getModelShortName(m)}</option>`).join('');
         });
         
         document.getElementById('agent-name').value = '';
         document.getElementById('agent-researcher').value = 'gpt-4o-search-preview-2025-03-11';
         document.getElementById('agent-analyst').value = 'o4-mini-2025-04-16';
+        document.getElementById('agent-critic').value = 'claude-3-5-haiku-20241022';
         document.getElementById('agent-finalizer').value = 'gpt-5.2-chat-latest';
 
         agentModal.classList.add('open');
@@ -1176,6 +1314,7 @@
             name: name,
             researcher: document.getElementById('agent-researcher').value,
             analyst: document.getElementById('agent-analyst').value,
+            critic: document.getElementById('agent-critic').value,
             finalizer: document.getElementById('agent-finalizer').value
         };
 
