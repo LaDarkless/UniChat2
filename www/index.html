@@ -417,7 +417,6 @@
         
         @media (max-width: 768px) {
             .compare-grid { flex-direction: column; gap: 10px; }
-            #model-dropdown-2 { display: none !important; }
             .mobile-menu-btn { display: flex; }
             .sidebar { position: absolute; height: 100%; transform: translateX(-100%); box-shadow: 0 0 30px rgba(0,0,0,0.5); }
             .sidebar.open { transform: translateX(0); }
@@ -906,43 +905,142 @@
     const MODELS_CONFIG = [
         { id: "gpt-5.4-pro-2026-03-05", name: "gpt-5.4 PRO", group: "OpenAI", provider: "proxy-api" },
         { id: "gpt-5.4-2026-03-05", name: "gpt-5.4", group: "OpenAI", provider: "proxy-api" },
-        { id: "gpt-5.3-chat-latest", name: "gpt-5.3", group: "OpenAI", provider: "proxy-api"},
-        { id: "gpt-5.3-codex", name: "gpt-5.3-codex", group: "OpenAI", provider: "proxy-api"},
+        { id: "gpt-5.3-chat-latest", name: "gpt-5.3", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5.3-codex", name: "gpt-5.3-codex", group: "OpenAI", provider: "proxy-api" },
         { id: "gpt-5.2-chat-latest", name: "gpt-5.2", group: "OpenAI", provider: "proxy-api" },
         { id: "o4-mini-2025-04-16", name: "o4-mini", group: "OpenAI", provider: "proxy-api" },
         { id: "gpt-4o-2024-08-06", name: "gpt-4o", group: "OpenAI", provider: "proxy-api" },
         { id: "gpt-4o-mini-2024-07-18", name: "gpt-4o mini", group: "OpenAI", provider: "proxy-api" },
         { id: "gpt-4o-search-preview-2025-03-11", name: "gpt-4o-search", group: "OpenAI", provider: "proxy-api" },
-        { id: "gemini-3.1-flash-preview", name: "✦ gemini-3.1-flash-preview", group: "Google", provider: "proxy-api"},
+
+        { id: "openai/o1", name: "o1", group: "OpenRouter", provider: "openrouter" },
+        { id: "openai/o1-mini", name: "o1-mini", group: "OpenRouter", provider: "openrouter" },
+        { id: "openai/gpt-4.1", name: "GPT-4.1", group: "OpenRouter", provider: "openrouter" },
+        { id: "openai/gpt-4.1-mini", name: "GPT-4.1 Mini", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "gemini-3.1-flash-preview", name: "✦ gemini-3.1-flash-preview", group: "Google", provider: "proxy-api" },
         { id: "gemini-2.0-flash-lite", name: "✦ gemini-2.0-flash lite", group: "Google", provider: "proxy-api" },
         { id: "gemini-3-flash-preview", name: "✦ gemini-3-flash", group: "Google", provider: "proxy-api" },
         { id: "gemini-3.1-pro-preview", name: "✦ gemini-3.1-pro", group: "Google", provider: "proxy-api" },
         { id: "gemini-2.5-pro", name: "✦ gemini-2.5-pro", group: "Google", provider: "proxy-api" },
         { id: "gemini-2.5-flash", name: "✦ gemini-2.5-flash", group: "Google", provider: "proxy-api" },
         { id: "gemini-2.5-flash-lite", name: "✦ gemini-2.5-flash-lite", group: "Google", provider: "proxy-api" },
-        { id: "gemini-3-pro-preview", name: "✦ gemini-3-pro-preview", group: "Google", provider: "proxy-api"},
+        { id: "gemini-3-pro-preview", name: "✦ gemini-3-pro-preview", group: "Google", provider: "proxy-api" },
         { id: "gemini-2.0-flash", name: "✦ gemini-2.0-flash", group: "Google", provider: "proxy-api" },
+        { id: "google/gemini-2.0-pro-exp-02-05", name: "Gemini 2.0 Pro Exp", group: "OpenRouter", provider: "openrouter" },
+        { id: "google/gemini-2.0-flash-exp", name: "Gemini 2.0 Flash Exp", group: "OpenRouter", provider: "openrouter" },
+        { id: "google/gemma-2-9b-it", name: "Gemma 2 9B", group: "OpenRouter", provider: "openrouter" }, // уже есть
+        { id: "google/gemini-2.0-flash-exp", name: "Gemini 2.0 Flash Exp", group: "OpenRouter", provider: "openrouter" },
+
         { id: "claude-3-5-haiku-20241022", name: "Claude 3.5 Haiku", group: "Anthropic", provider: "proxy-api" },
         { id: "claude-haiku-4-5", name: "Claude 4.5 Haiku", group: "Anthropic", provider: "proxy-api" },
         { id: "claude-3-7-sonnet-20250219", name: "Claude 3.7 Sonnet", group: "Anthropic", provider: "proxy-api" },
+        { id: "anthropic/claude-3-opus:beta", name: "Claude 3 Opus Beta", group: "OpenRouter", provider: "openrouter" },
         { id: "claude-sonnet-4-5", name: "Claude 4.5 Sonnet", group: "Anthropic", provider: "proxy-api" },
         { id: "claude-sonnet-4-6", name: "Claude 4.6 Sonnet", group: "Anthropic", provider: "proxy-api" },
+
         { id: "sonar", name: "Perplexity Sonar", group: "Perplexity", provider: "gen-api" },
         { id: "sonar-reasoning", name: "Perplexity Sonar Reasoning", group: "Perplexity", provider: "gen-api" },
+
+        // OpenRouter
         { id: "deepseek/deepseek-r1", name: "DeepSeek R1", group: "OpenRouter", provider: "openrouter" },
-        { id: "mistralai/mistral-large-2411", name: "Mistral Large 2", group: "OpenRouter", provider: "openrouter" },
-        { id: "meta-llama/llama-3.3-70b-instruct", name: "Llama 3.3 70B", group: "OpenRouter", provider: "openrouter" },
-        { id: "qwen/qwen-2.5-max", name: "Qwen 2.5 Max", group: "OpenRouter", provider: "openrouter" },
-        { id: "meta-llama/llama-3.1-405b", name: "Llama 3.1 405B", group: "OpenRouter", provider: "openrouter" },
-        { id: "qwen/qwen2.5-vl-72b-instruct", name: "Qwen 2.5 VL (Vision)", group: "OpenRouter", provider: "openrouter" },
-        { id: "google/gemma-2-27b-it", name: "Gemma 2 27B", group: "OpenRouter", provider: "openrouter" },
         { id: "deepseek/deepseek-chat", name: "DeepSeek V3", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "mistralai/mistral-large-2411", name: "Mistral Large 2", group: "OpenRouter", provider: "openrouter" },
+        { id: "mistralai/mistral-medium", name: "Mistral Medium", group: "OpenRouter", provider: "openrouter" },
+        { id: "mistralai/mistral-small", name: "Mistral Small", group: "OpenRouter", provider: "openrouter" },
+        { id: "mistralai/pixtral-large-2411", name: "Pixtral Large", group: "OpenRouter", provider: "openrouter" },
+        { id: "mistralai/pixtral-12b", name: "Pixtral 12B", group: "OpenRouter", provider: "openrouter" },
+        { id: "mistralai/codestral-latest", name: "Codestral", group: "OpenRouter", provider: "openrouter" },
+        { id: "mistralai/codestral-2501", name: "Codestral 2501", group: "OpenRouter", provider: "openrouter" },
+        { id: "mistralai/ministral-8b", name: "Ministral 8B", group: "OpenRouter", provider: "openrouter" },
+        { id: "mistralai/ministral-3b", name: "Ministral 3B", group: "OpenRouter", provider: "openrouter" },
+        { id: "mistralai/mixtral-8x7b-instruct", name: "Mixtral 8x7B", group: "OpenRouter", provider: "openrouter" },
+        { id: "mistralai/mixtral-8x22b-instruct", name: "Mixtral 8x22B", group: "OpenRouter", provider: "openrouter" },
+        { id: "mistralai/pixtral-large-latest", name: "Pixtral Large Latest", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "meta-llama/llama-3.3-70b-instruct", name: "Llama 3.3 70B", group: "OpenRouter", provider: "openrouter" },
+        { id: "meta-llama/llama-3.1-8b-instruct", name: "Llama 3.1 8B", group: "OpenRouter", provider: "openrouter" },
+        { id: "meta-llama/llama-3.1-70b-instruct", name: "Llama 3.1 70B", group: "OpenRouter", provider: "openrouter" },
+        { id: "meta-llama/llama-3.1-405b-instruct", name: "Llama 3.1 405B Instruct", group: "OpenRouter", provider: "openrouter" },
+        { id: "meta-llama/llama-3.2-1b-instruct", name: "Llama 3.2 1B (Ultra Fast)", group: "OpenRouter", provider: "openrouter" },
         { id: "meta-llama/llama-3.2-3b-instruct", name: "Llama 3.2 3B (Ultra Fast)", group: "OpenRouter", provider: "openrouter" },
+        { id: "meta-llama/llama-3.2-11b-vision-instruct", name: "Llama 3.2 11B Vision", group: "OpenRouter", provider: "openrouter" },
+        { id: "meta-llama/llama-3.2-90b-vision-instruct", name: "Llama 3.2 90B Vision", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "qwen/qwen-2.5-max", name: "Qwen 2.5 Max", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen-2.5-72b-instruct", name: "Qwen 2.5 72B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen-2.5-32b-instruct", name: "Qwen 2.5 32B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen-2.5-14b-instruct", name: "Qwen 2.5 14B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen-2.5-7b-instruct", name: "Qwen 2.5 7B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen-2.5-coder-32b-instruct", name: "Qwen 2.5 Coder 32B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen-2.5-coder-7b-instruct", name: "Qwen 2.5 Coder 7B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen2.5-vl-72b-instruct", name: "Qwen 2.5 VL (Vision)", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen2.5-vl-32b-instruct", name: "Qwen 2.5 VL 32B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen2.5-vl-7b-instruct", name: "Qwen 2.5 VL 7B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwq-32b", name: "QwQ 32B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen2.5-coder-14b-instruct", name: "Qwen 2.5 Coder 14B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen2.5-coder-3b-instruct", name: "Qwen 2.5 Coder 3B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen2-vl-72b-instruct", name: "Qwen 2 VL 72B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen-2.5-3b-instruct", name: "Qwen 2.5 3B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen-2.5-1.5b-instruct", name: "Qwen 2.5 1.5B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen2.5-coder-14b-instruct", name: "Qwen 2.5 Coder 14B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen-2.5-3b-instruct", name: "Qwen 2.5 3B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen-2.5-1.5b-instruct", name: "Qwen 2.5 1.5B", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "google/gemma-2-27b-it", name: "Gemma 2 27B", group: "OpenRouter", provider: "openrouter" },
+        { id: "google/gemma-2-9b-it", name: "Gemma 2 9B", group: "OpenRouter", provider: "openrouter" },
+        { id: "google/gemma-2-2b-it", name: "Gemma 2 2B", group: "OpenRouter", provider: "openrouter" },
+
         { id: "x-ai/grok-2-mini", name: "Grok 2 Mini", group: "OpenRouter", provider: "openrouter" },
         { id: "x-ai/grok-vision-beta", name: "Grok Vision", group: "OpenRouter", provider: "openrouter" },
         { id: "x-ai/grok-3", name: "Grok 3 (Flagship)", group: "OpenRouter", provider: "openrouter" },
         { id: "x-ai/grok-3-reasoning", name: "Grok 3 Reasoning", group: "OpenRouter", provider: "openrouter" },
-        { id: "x-ai/grok-2-1212", name: "Grok 2", group: "OpenRouter", provider: "openrouter" }
+        { id: "x-ai/grok-2-1212", name: "Grok 2", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", group: "OpenRouter", provider: "openrouter" },
+        { id: "anthropic/claude-sonnet-4", name: "Claude Sonnet 4", group: "OpenRouter", provider: "openrouter" },
+        { id: "anthropic/claude-opus-4", name: "Claude Opus 4", group: "OpenRouter", provider: "openrouter" },
+        { id: "anthropic/claude-3-opus", name: "Claude 3 Opus", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "openai/o3-mini", name: "o3-mini", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "deepseek/deepseek-r1-distill-llama-70b", name: "DeepSeek R1 Distill Llama 70B", group: "OpenRouter", provider: "openrouter" },
+        { id: "deepseek/deepseek-r1-distill-qwen-32b", name: "DeepSeek R1 Distill Qwen 32B", group: "OpenRouter", provider: "openrouter" },
+        { id: "deepseek/deepseek-r1-distill-qwen-14b", name: "DeepSeek R1 Distill Qwen 14B", group: "OpenRouter", provider: "openrouter" },
+        { id: "deepseek/deepseek-coder", name: "DeepSeek Coder", group: "OpenRouter", provider: "openrouter" },
+        { id: "deepseek/deepseek-coder-33b-instruct", name: "DeepSeek Coder 33B", group: "OpenRouter", provider: "openrouter" },
+        { id: "deepseek/deepseek-coder-v2", name: "DeepSeek Coder V2", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "cohere/command-r", name: "Command R", group: "OpenRouter", provider: "openrouter" },
+        { id: "cohere/command-r-plus", name: "Command R+", group: "OpenRouter", provider: "openrouter" },
+        { id: "cohere/command-r7b-12-2024", name: "Command R7B", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "microsoft/phi-3-medium-128k-instruct", name: "Phi-3 Medium 128K", group: "OpenRouter", provider: "openrouter" },
+        { id: "microsoft/phi-3-mini-128k-instruct", name: "Phi-3 Mini 128K", group: "OpenRouter", provider: "openrouter" },
+        { id: "microsoft/phi-3.5-mini-instruct", name: "Phi-3.5 Mini", group: "OpenRouter", provider: "openrouter" },
+        { id: "microsoft/phi-3.5-moe-instruct", name: "Phi-3.5 MoE", group: "OpenRouter", provider: "openrouter" },
+        { id: "microsoft/phi-4", name: "Phi-4", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "nousresearch/hermes-3-llama-3.1-70b", name: "Hermes 3 Llama 3.1 70B", group: "OpenRouter", provider: "openrouter" },
+        { id: "nousresearch/hermes-3-llama-3.1-8b", name: "Hermes 3 Llama 3.1 8B", group: "OpenRouter", provider: "openrouter" },
+        { id: "nousresearch/nous-hermes-2-mixtral-8x7b-dpo", name: "Nous Hermes 2 Mixtral", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "nvidia/llama-3.1-nemotron-70b-instruct", name: "Nemotron Llama 3.1 70B", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "01-ai/yi-large", name: "Yi Large", group: "OpenRouter", provider: "openrouter" },
+        { id: "01-ai/yi-34b-chat", name: "Yi 34B Chat", group: "OpenRouter", provider: "openrouter" },
+        { id: "zhipu/glm-4-9b-chat", name: "GLM-4 Chat", group: "OpenRouter", provider: "openrouter" },
+        { id: "zhipu/glm-4-plus", name: "GLM-4 Plus", group: "OpenRouter", provider: "openrouter" },
+        { id: "zhipu/glm-4v", name: "GLM-4V", group: "OpenRouter", provider: "openrouter" },
+        { id: "moonshotai/moonshot-v1-32k", name: "Kimi V1 (32k Context)", group: "OpenRouter", provider: "openrouter" },
+        { id: "moonshotai/moonshot-v1-128k", name: "Kimi V1 (128k Context)", group: "OpenRouter", provider: "openrouter" },
+        { id: "minimax/minimax-01", name: "MiniMax-01 (Flagship)", group: "OpenRouter", provider: "openrouter" },
+        { id: "minimax/minimax-vl-01", name: "MiniMax VL-01", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "allenai/olmo-2-13b-instruct", name: "OLMo 2 13B", group: "OpenRouter", provider: "openrouter" },
+        { id: "ibm/granite-3.1-8b-instruct", name: "Granite 3.1 8B", group: "OpenRouter", provider: "openrouter" },
+        { id: "rekaai/reka-core", name: "Reka Core", group: "OpenRouter", provider: "openrouter" },
     ];
 
     function getPrettyModelName(id) { const found = MODELS_CONFIG.find(m => m.id === id); return found ? found.name : id; }
