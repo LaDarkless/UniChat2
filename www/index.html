@@ -116,6 +116,16 @@
         .auth-toggle { margin-top: 20px; font-size: 13px; color: var(--text-secondary); cursor: pointer; transition: color 0.2s; }
         .auth-toggle:hover { color: var(--primary-color); text-decoration: underline; }
 
+        .usage-info {
+            font-size: 10px;
+            color: var(--text-secondary);
+            opacity: 0.5;
+            margin-top: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            gap: 10px;
+        }
+
         /* ==========================================
            SIDEBAR
            ========================================== */
@@ -426,6 +436,30 @@
             .message-row.user .message-content { max-width: 92%; }
             .input-area { padding: 12px 10px 16px; }
             .input-wrapper { border-radius: 20px; }
+        }
+
+        .dropdown-search-container {
+            padding: 8px;
+            position: sticky;
+            top: 0;
+            background: var(--glass-panel);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 5px;
+        }
+        .dropdown-search-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+        }
+        .dropdown-search-input:focus {
+            border-color: var(--primary-color);
         }
     </style>
 </head>
@@ -814,6 +848,33 @@
 
         return thinkingHtml + html;
     };
+
+    window.filterModels = function(input, menuId) {
+        const filter = input.value.toLowerCase();
+        const menu = document.getElementById(menuId);
+        const groups = menu.querySelectorAll('.dropdown-group-container');
+
+        groups.forEach(group => {
+            const items = group.querySelectorAll('.dropdown-item');
+            let hasVisibleItems = false;
+
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(filter)) {
+                    item.style.display = 'flex';
+                    hasVisibleItems = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Скрываем заголовок группы (например, "OpenAI"), если ни одна модель в ней не подошла
+            const label = group.querySelector('.dropdown-group-label');
+            if (label) {
+                group.style.display = hasVisibleItems ? 'block' : 'none';
+            }
+        });
+    };
 </script>
 
 <script type="module">
@@ -907,16 +968,31 @@
         { id: "gpt-5.4-2026-03-05", name: "gpt-5.4", group: "OpenAI", provider: "proxy-api" },
         { id: "gpt-5.3-chat-latest", name: "gpt-5.3", group: "OpenAI", provider: "proxy-api" },
         { id: "gpt-5.3-codex", name: "gpt-5.3-codex", group: "OpenAI", provider: "proxy-api" },
-        { id: "gpt-5.2-chat-latest", name: "gpt-5.2", group: "OpenAI", provider: "proxy-api" },
-        { id: "o4-mini-2025-04-16", name: "o4-mini", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5.2", name: "gpt-5.2", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5.2-chat-latest", name: "gpt-5.2-chat", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5.2-codex", name: "gpt-5.2-codex", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5.1", name: "gpt-5.1", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5.1-chat-latest", name: "gpt-5.1-chat", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5.1-codex-max", name: "gpt-5.1-codex-max", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5.1-codex", name: "gpt-5.1-codex", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5.1-codex-mini", name: "gpt-5.1-codex-mini", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5-chat-latest", name: "gpt-5-chat-latest", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5-mini", name: "gpt-5-mini", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5-nano", name: "gpt-5-nano", group: "OpenAI", provider: "proxy-api" },
         { id: "gpt-4o-2024-08-06", name: "gpt-4o", group: "OpenAI", provider: "proxy-api" },
-        { id: "gpt-4o-mini-2024-07-18", name: "gpt-4o mini", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5-codex", name: "gpt-5-codex", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-4.1", name: "gpt-4.1", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-4.1-mini", name: "gpt-4.1-mini", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-4.1-nano", name: "gpt-4.1-nano", group: "OpenAI", provider: "proxy-api" },
         { id: "gpt-4o-search-preview-2025-03-11", name: "gpt-4o-search", group: "OpenAI", provider: "proxy-api" },
 
-        { id: "openai/o1", name: "o1", group: "OpenRouter", provider: "openrouter" },
-        { id: "openai/o1-mini", name: "o1-mini", group: "OpenRouter", provider: "openrouter" },
-        { id: "openai/gpt-4.1", name: "GPT-4.1", group: "OpenRouter", provider: "openrouter" },
-        { id: "openai/gpt-4.1-mini", name: "GPT-4.1 Mini", group: "OpenRouter", provider: "openrouter" },
+        { id: "o4-mini", name: "o4-mini", group: "OpenAI-Reasoning", provider: "proxy-api" },
+        { id: "o3-pro", name: "o3-pro", group: "OpenAI-Reasoning", provider: "proxy-api" },
+        { id: "o3", name: "o3", group: "OpenAI-Reasoning", provider: "proxy-api" },
+        { id: "o3-mini", name: "o3-mini", group: "OpenAI-Reasoning", provider: "proxy-api" },
+        { id: "o1-pro", name: "o1-pro", group: "OpenAI-Reasoning", provider: "proxy-api" },
+        { id: "o1", name: "o1", group: "OpenAI-Reasoning", provider: "proxy-api" },
+        { id: "codex-mini-latest", name: "codex-mini-latest", group: "OpenAI-Reasoning", provider: "proxy-api" },
 
         { id: "gemini-3.1-flash-preview", name: "✦ gemini-3.1-flash-preview", group: "Google", provider: "proxy-api" },
         { id: "gemini-2.0-flash-lite", name: "✦ gemini-2.0-flash lite", group: "Google", provider: "proxy-api" },
@@ -997,13 +1073,15 @@
         { id: "x-ai/grok-3", name: "Grok 3 (Flagship)", group: "OpenRouter", provider: "openrouter" },
         { id: "x-ai/grok-3-reasoning", name: "Grok 3 Reasoning", group: "OpenRouter", provider: "openrouter" },
         { id: "x-ai/grok-2-1212", name: "Grok 2", group: "OpenRouter", provider: "openrouter" },
+        { id: "x-ai/grok-4.1", name: "Grok 4.1", group: "OpenRouter", provider: "openrouter" },
+        { id: "x-ai/grok-4.1-preview", name: "Grok 4.1 Preview", group: "OpenRouter", provider: "openrouter" },
+        { id: "x-ai/grok-4.1-vision", name: "Grok 4.1 Vision", group: "OpenRouter", provider: "openrouter" },
 
         { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", group: "OpenRouter", provider: "openrouter" },
         { id: "anthropic/claude-sonnet-4", name: "Claude Sonnet 4", group: "OpenRouter", provider: "openrouter" },
         { id: "anthropic/claude-opus-4", name: "Claude Opus 4", group: "OpenRouter", provider: "openrouter" },
         { id: "anthropic/claude-3-opus", name: "Claude 3 Opus", group: "OpenRouter", provider: "openrouter" },
 
-        { id: "openai/o3-mini", name: "o3-mini", group: "OpenRouter", provider: "openrouter" },
 
         { id: "deepseek/deepseek-r1-distill-llama-70b", name: "DeepSeek R1 Distill Llama 70B", group: "OpenRouter", provider: "openrouter" },
         { id: "deepseek/deepseek-r1-distill-qwen-32b", name: "DeepSeek R1 Distill Qwen 32B", group: "OpenRouter", provider: "openrouter" },
@@ -1249,47 +1327,61 @@
         const container = document.getElementById('model-dropdown-menu');
         const container2 = document.getElementById('model-dropdown-menu-2');
         if(!container) return;
-        container.innerHTML = '';
-        if(container2) container2.innerHTML = '';
-        
-        const agentKeys = Object.keys(customAgents);
-        if (agentKeys.length > 0) {
-            container.innerHTML += `<div class="dropdown-group-label">🤖 Мои Агенты</div>`;
-            agentKeys.forEach(id => {
-                const agent = customAgents[id];
-                container.innerHTML += `<div class="dropdown-item" data-value="${id}"><span>🤖 ${agent.name}</span></div>`;
-            });
-            container.innerHTML += `<hr style="border:0; border-top:1px solid var(--glass-border); margin: 6px 0;">`;
-        }
 
-        const groupedModels = MODELS_CONFIG.reduce((acc, curr) => {
-            if(!acc[curr.group]) acc[curr.group] = [];
-            acc[curr.group].push(curr); return acc;
-        }, {});
+        // Функция для создания содержимого меню
+        const buildMenuHtml = (menuId) => {
+            let html = `
+                <div class="dropdown-search-container">
+                    <input type="text" class="dropdown-search-input" placeholder="Поиск модели..." 
+                           onclick="event.stopPropagation()" oninput="filterModels(this, '${menuId}')">
+                </div>
+            `;
 
-        for (const [groupName, models] of Object.entries(groupedModels)) {
-            const groupHtml = `<div class="dropdown-group-label">${groupName}</div>`;
-            container.innerHTML += groupHtml;
-            if(container2) container2.innerHTML += groupHtml;
-            models.forEach(m => {
-                const itemHtml = `<div class="dropdown-item" data-value="${m.id}"><span>${m.name}</span></div>`;
-                container.innerHTML += itemHtml;
-                if(container2) container2.innerHTML += itemHtml;
-            });
-        }
+            const agentKeys = Object.keys(customAgents);
+            if (agentKeys.length > 0) {
+                html += `<div class="dropdown-group-container"><div class="dropdown-group-label">🤖 Мои Агенты</div>`;
+                agentKeys.forEach(id => {
+                    const agent = customAgents[id];
+                    html += `<div class="dropdown-item" data-value="${id}"><span>🤖 ${agent.name}</span></div>`;
+                });
+                html += `</div><hr style="border:0; border-top:1px solid var(--glass-border); margin: 6px 0;">`;
+            }
+
+            const groupedModels = MODELS_CONFIG.reduce((acc, curr) => {
+                if(!acc[curr.group]) acc[curr.group] = [];
+                acc[curr.group].push(curr); return acc;
+            }, {});
+
+            for (const [groupName, models] of Object.entries(groupedModels)) {
+                html += `<div class="dropdown-group-container">
+                            <div class="dropdown-group-label">${groupName}</div>`;
+                models.forEach(m => {
+                    html += `<div class="dropdown-item" data-value="${m.id}"><span>${m.name}</span></div>`;
+                });
+                html += `</div>`;
+            }
+            return html;
+        };
+
+        container.innerHTML = buildMenuHtml('model-dropdown-menu');
+        if(container2) container2.innerHTML = buildMenuHtml('model-dropdown-menu-2');
         
-        // Добавление обработчиков кликов
+        // Навешиваем клики
         [container, container2].forEach(list => {
             if(!list) return;
             list.querySelectorAll('.dropdown-item').forEach(item => {
                 item.addEventListener('click', (e) => {
                     const targetModel = item.dataset.value;
                     const isSecond = list.id === 'model-dropdown-menu-2';
-                    if(isSecond) { selectedModel2 = targetModel; localStorage.setItem('pa_model_2', selectedModel2); document.getElementById('current-model-name-2').textContent = item.textContent; }
-                    else { selectedModel = targetModel; localStorage.setItem('pa_model', selectedModel); document.getElementById('current-model-name').textContent = item.textContent; }
-                    
-                    list.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
-                    item.classList.add('selected');
+                    if(isSecond) { 
+                        selectedModel2 = targetModel; 
+                        localStorage.setItem('pa_model_2', selectedModel2); 
+                        document.getElementById('current-model-name-2').textContent = item.textContent; 
+                    } else { 
+                        selectedModel = targetModel; 
+                        localStorage.setItem('pa_model', selectedModel); 
+                        document.getElementById('current-model-name').textContent = item.textContent; 
+                    }
                     list.closest('.custom-dropdown').classList.remove('open');
                 });
             });
@@ -1500,8 +1592,16 @@
         }
 
         const htmlContent = msg.role === 'user' ? `<p>${msg.content.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</p>` : window.safeRenderMarkdown(msg.content);
-
         div.innerHTML = `<div class="message-content-wrapper">${avatar}<div class="message-content">${imagesHtml}<div class="text-body">${htmlContent}</div></div>${actions}</div>`;
+        // Добавляем проверку на наличие данных о расходе
+        let usageHtml = '';
+        if (msg.role === 'assistant' && msg.usage) {
+            const cost = msg.usage.cost ? `Cost: $${msg.usage.cost.toFixed(5)}` : '';
+            const tokens = msg.usage.total_tokens ? `Tokens: ${msg.usage.total_tokens}` : '';
+            usageHtml = `<div class="usage-info">${tokens} ${cost}</div>`;
+        }
+
+        div.innerHTML = `<div class="message-content-wrapper">${avatar}<div class="message-content">${imagesHtml}<div class="text-body">${htmlContent}</div>${usageHtml}</div>${actions}</div>`;
         if (msgIndex !== null) div.dataset.msgIndex = msgIndex;
         chatHistoryDOM.appendChild(div);
         return div.querySelector('.text-body');
@@ -1877,11 +1977,20 @@
     async function runStreamForModel(chat, domEl, msgObj, targetModel) {
         const config = MODELS_CONFIG.find(m => m.id === targetModel) || { provider: 'proxy-api' };
 
+        // 1. Сначала проверяем явного провайдера OpenRouter
+        if (config.provider === 'openrouter') {
+            await streamOpenRouter(chat, domEl, msgObj, targetModel);
+            return; // Выходим, чтобы не сработали проверки ниже
+        }
+
+        // 2. Проверяем Perplexity (GenAPI)
         if (config.provider === 'gen-api') {
             await streamGenApi(chat, domEl, msgObj, targetModel);
-        } else if (config.provider === 'openrouter') {
-            await streamOpenRouter(chat, domEl, msgObj, targetModel); // Вызываем стрим для OpenRouter
-        } else if(targetModel.startsWith('gemini')) {
+            return;
+        }
+
+        // 3. Остальное (ProxyAPI прямые вызовы)
+        if(targetModel.startsWith('gemini')) {
             await streamGemini(chat, domEl, msgObj, targetModel);
         } else if(targetModel.startsWith('claude')) {
             await streamAnthropic(chat, domEl, msgObj, targetModel);
@@ -1961,7 +2070,13 @@
             if(stopBtn) stopBtn.style.display = 'none'; 
             if(typingIndicator) typingIndicator.style.display = 'none'; 
             userInput.focus();
-            chat.updatedAt = Date.now(); saveChatsToStorage();
+            chat.updatedAt = Date.now(); 
+            saveChatsToStorage();
+            
+            // Вызываем авто-заголовок, если это первое сообщение
+            if (chat.messages.length >= 2 && !chat.titleGenerated) {
+                autoUpdateChatTitle(currentChatId);
+            }
         }
     }
 
@@ -2131,7 +2246,8 @@
                 model: model,
                 messages: messages,
                 temperature: temperature,
-                stream: true
+                stream: true,
+                stream_options: { "include_usage": true } // Просим прислать расход в последнем чанке
             }),
             signal: abortController.signal
         });
@@ -2157,6 +2273,10 @@
                     if(jsonStr === '[DONE]') break;
                     try {
                         const data = JSON.parse(jsonStr);
+                        // Сохраняем расход, если он пришел
+                        if (data.usage) {
+                            msgObj.usage = data.usage;
+                        }
                         const txt = data.choices?.[0]?.delta?.content;
                         if(txt) { 
                             msgObj.content += txt; 
@@ -2166,6 +2286,44 @@
                     } catch(e) {}
                 }
             }
+        }
+    }
+
+    async function autoUpdateChatTitle(chatId) {
+        const chat = chats[chatId];
+        if (!chat || chat.messages.length < 2 || chat.titleGenerated) return;
+
+        try {
+            // Используем самую дешевую и быструю модель для заголовка
+            const summaryModel = "gpt-4o-mini"; 
+            const userText = chat.messages[0].content;
+            const aiText = chat.messages[1].content;
+
+            const prompt = `Придумай короткое название для этого чата на основе первого вопроса и ответа. 
+            Используй максимум 3-4 слова. Ответь ТОЛЬКО названием, без кавычек и точек.
+            Вопрос: ${userText}
+            Ответ: ${aiText}`;
+
+            const res = await fetch('https://api.proxyapi.ru/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                body: JSON.stringify({
+                    model: summaryModel,
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0.5
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const newTitle = data.choices[0].message.content.trim();
+                chat.title = newTitle;
+                chat.titleGenerated = true; // Чтобы не переименовывать постоянно
+                saveChatsToStorage();
+                renderChatList();
+            }
+        } catch (e) {
+            console.error("Ошибка авто-заголовка:", e);
         }
     }
 
