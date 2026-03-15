@@ -1108,6 +1108,7 @@
 
         { id: "01-ai/yi-large", name: "Yi Large", group: "OpenRouter", provider: "openrouter" },
         { id: "01-ai/yi-34b-chat", name: "Yi 34B Chat", group: "OpenRouter", provider: "openrouter" },
+        { id: "z-ai/glm-5-turbo", name: "glm-5-turbo", group: "OpenRouter", provider: "openrouter" },
         { id: "zhipu/glm-4-9b-chat", name: "GLM-4 Chat", group: "OpenRouter", provider: "openrouter" },
         { id: "zhipu/glm-4-plus", name: "GLM-4 Plus", group: "OpenRouter", provider: "openrouter" },
         { id: "zhipu/glm-4v", name: "GLM-4V", group: "OpenRouter", provider: "openrouter" },
@@ -1119,6 +1120,10 @@
         { id: "allenai/olmo-2-13b-instruct", name: "OLMo 2 13B", group: "OpenRouter", provider: "openrouter" },
         { id: "ibm/granite-3.1-8b-instruct", name: "Granite 3.1 8B", group: "OpenRouter", provider: "openrouter" },
         { id: "rekaai/reka-core", name: "Reka Core", group: "OpenRouter", provider: "openrouter" },
+
+        { id: "stepfun/step-3.5-flash:free", name: "stepfun/step-3.5-flash:free", group: "OpenRouter", provider: "openrouter" },
+        { id: "moonshotai/kimi-k2.5", name: "kimi-k2.5", group: "OpenRouter", provider: "openrouter" },
+        { id: "upstage/solar-pro-3", name: "solar-pro-3", group: "OpenRouter", provider: "openrouter" },
     ];
 
     function getPrettyModelName(id) { const found = MODELS_CONFIG.find(m => m.id === id); return found ? found.name : id; }
@@ -1598,7 +1603,10 @@
         if (msg.role === 'assistant' && msg.usage) {
             const cost = msg.usage.cost ? `Cost: $${msg.usage.cost.toFixed(5)}` : '';
             const tokens = msg.usage.total_tokens ? `Tokens: ${msg.usage.total_tokens}` : '';
-            usageHtml = `<div class="usage-info">${tokens} ${cost}</div>`;
+            // Добавляем инфо о токенах рассуждения, если они есть
+            const reasoning = msg.usage.reasoning_tokens ? ` | Thinking: ${msg.usage.reasoning_tokens}` : '';
+            
+            usageHtml = `<div class="usage-info">${tokens}${reasoning} ${cost}</div>`;
         }
 
         div.innerHTML = `<div class="message-content-wrapper">${avatar}<div class="message-content">${imagesHtml}<div class="text-body">${htmlContent}</div>${usageHtml}</div>${actions}</div>`;
@@ -1739,13 +1747,24 @@
     }
 
     async function runOpenRouterNonStream(model, messages, temp, abortSignal, sysInst) {
-        let formattedMessages = [];
+        let formattedMessages =[];
         if (sysInst) formattedMessages.push({ role: 'system', content: sysInst });
         messages.forEach(m => {
-            formattedMessages.push({ role: m.role, content: m.content });
+            const textContent = typeof m.content === 'string' ? m.content : "";
+            formattedMessages.push({ role: m.role, content: textContent });
         });
 
-        // ИСПРАВЛЕН URL (добавили /openrouter/v1)
+        const bodyPayload = {
+            model: model,
+            messages: formattedMessages,
+            stream: false
+        };
+
+        // Убираем temperature для "думающих" моделей
+        if (!model.includes('o1') && !model.includes('o3') && !model.includes('deepseek-r1')) {
+            bodyPayload.temperature = temp;
+        }
+
         const res = await fetch('https://api.proxyapi.ru/openrouter/v1/chat/completions', {
             method: 'POST', 
             headers: { 
@@ -1754,20 +1773,18 @@
                 'HTTP-Referer': 'https://ai-studio-ultimate.com',
                 'X-Title': 'AI Studio Ultimate'
             },
-            body: JSON.stringify({
-                model: model,
-                messages: formattedMessages,
-                temperature: temp,
-                stream: false
-            }),
+            body: JSON.stringify(bodyPayload),
             signal: abortSignal
         });
 
         if(!res.ok) { 
-            const e = await res.json(); 
-            console.error("OpenRouter Error:", e);
-            throw new Error(`OpenRouter: ${e.error?.message || res.statusText}`); 
+            const errorText = await res.text();
+            console.error("OpenRouter Error:", errorText);
+            let errorMsg = res.status;
+            try { const e = JSON.parse(errorText); errorMsg = e.error?.message || res.status; } catch(err){}
+            throw new Error(`OpenRouter Error: ${errorMsg}`); 
         }
+        
         const data = await res.json();
         return data.choices?.[0]?.message?.content || '';
     }
@@ -2225,14 +2242,26 @@
 
     async function streamOpenRouter(chat, domEl, msgObj, overrideModel = null) {
         const model = overrideModel || selectedModel;
-        const messages = [];
+        const messages =[];
         if (sysPrompt) messages.push({ role: 'system', content: sysPrompt });
         
         chat.messages.slice(0, -1).forEach(m => {
-            if (m.content && m.content.trim() !== "") {
-                messages.push({ role: m.role, content: m.content });
-            }
+            // Гарантируем, что контент — строка
+            const textContent = typeof m.content === 'string' ? m.content : "";
+            messages.push({ role: m.role, content: textContent });
         });
+
+        // Формируем безопасный Payload
+        const bodyPayload = {
+            model: model,
+            messages: messages,
+            stream: true
+        };
+
+        // Убираем temperature для "думающих" моделей, иначе они выдадут 400 Bad Request
+        if (!model.includes('o1') && !model.includes('o3') && !model.includes('deepseek-r1')) {
+            bodyPayload.temperature = temperature;
+        }
 
         const res = await fetch('https://api.proxyapi.ru/openrouter/v1/chat/completions', {
             method: 'POST', 
@@ -2242,19 +2271,16 @@
                 'HTTP-Referer': 'https://ai-studio-ultimate.com',
                 'X-Title': 'AI Studio Ultimate'
             },
-            body: JSON.stringify({
-                model: model,
-                messages: messages,
-                temperature: temperature,
-                stream: true,
-                stream_options: { "include_usage": true } // Просим прислать расход в последнем чанке
-            }),
+            body: JSON.stringify(bodyPayload), // Используем безопасный объект без stream_options
             signal: abortController.signal
         });
 
         if(!res.ok) { 
-            const e = await res.json();
-            throw new Error(`OpenRouter Stream Error: ${e.error?.message || res.status}`); 
+            const errorText = await res.text();
+            console.error("OpenRouter Error:", errorText);
+            let errorMsg = res.status;
+            try { const e = JSON.parse(errorText); errorMsg = e.error?.message || res.status; } catch(err){}
+            throw new Error(`OpenRouter Stream Error: ${errorMsg}`); 
         }
 
         const reader = res.body.getReader(); 
@@ -2273,10 +2299,14 @@
                     if(jsonStr === '[DONE]') break;
                     try {
                         const data = JSON.parse(jsonStr);
-                        // Сохраняем расход, если он пришел
+                        
                         if (data.usage) {
                             msgObj.usage = data.usage;
+                            if (data.usage.reasoning_tokens) {
+                                console.log(`🚀 Модель использовала ${data.usage.reasoning_tokens} токенов для рассуждений`);
+                            }
                         }
+
                         const txt = data.choices?.[0]?.delta?.content;
                         if(txt) { 
                             msgObj.content += txt; 
