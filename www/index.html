@@ -387,7 +387,37 @@
         .dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
 
+        /* COMPARE MODE UI (PREMIUM) */
+        .compare-grid { display: flex; gap: 20px; width: 100%; margin-top: 15px; align-items: stretch; }
+        .compare-col { flex: 1; background: rgba(0,0,0,0.25); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-md); padding: 20px; display: flex; flex-direction: column; min-width: 0; box-shadow: inset 0 0 20px rgba(0,0,0,0.2); }
+        .compare-header { margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 15px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .compare-body { flex: 1; font-size: 14.5px; line-height: 1.6; overflow-x: auto; margin-bottom: 20px; color: #e2e8f0; }
+        .btn-choose-winner { width: 100%; padding: 12px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #fff; border-radius: var(--radius-md); cursor: pointer; font-weight: 600; transition: all 0.2s; margin-top: auto; display: flex; justify-content: center; align-items: center; gap: 8px;}
+        .btn-choose-winner:hover { background: var(--primary-color); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transform: translateY(-2px); }
+        .compare-col.right .btn-choose-winner { border-color: rgba(139, 92, 246, 0.4); background: rgba(139, 92, 246, 0.15); }
+        .compare-col.right .btn-choose-winner:hover { background: var(--agent-color); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
+        #btn-compare-mode.active { background: rgba(139, 92, 246, 0.2); color: var(--agent-color); border-color: var(--agent-color); box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); }
+        .compare-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: linear-gradient(90deg, var(--primary-color), var(--agent-color)); padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; color: white; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
+        
+        /* ==========================================
+           SUNO MUSIC & AUDIO PLAYER UI
+           ========================================== */
+           .suno-audio-player { width: 100%; margin-top: 15px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3); outline: none; }
+        .suno-audio-player audio { width: 100%; height: 44px; outline: none; border-radius: 12px; }
+        .suno-audio-player audio::-webkit-media-controls-panel { background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
+        .suno-audio-player audio::-webkit-media-controls-current-time-display,
+        .suno-audio-player audio::-webkit-media-controls-time-remaining-display { color: #fff; }
+        .suno-track-card { background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: var(--radius-md); padding: 15px; margin-top: 10px; }
+        .suno-track-title { font-size: 16px; font-weight: 700; color: #d8b4fe; margin-bottom: 5px; display: flex; align-items: center; gap: 8px;}
+        .suno-track-tags { font-size: 11px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
+        
+        .music-loading { display: flex; align-items: center; gap: 10px; color: #d8b4fe; font-weight: 500; font-size: 14px; padding: 10px 0;}
+        .music-loading svg { animation: spin 2s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
         @media (max-width: 768px) {
+            .compare-grid { flex-direction: column; gap: 10px; }
+            #model-dropdown-2 { display: none !important; }
             .mobile-menu-btn { display: flex; }
             .sidebar { position: absolute; height: 100%; transform: translateX(-100%); box-shadow: 0 0 30px rgba(0,0,0,0.5); }
             .sidebar.open { transform: translateX(0); }
@@ -442,6 +472,10 @@
         </div>
         <div class="chat-list" id="chat-list"></div>
         <div class="sidebar-footer">
+            <button class="nav-btn" id="btn-open-suno" style="color: #d8b4fe;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                Создать трек (Suno V5)
+            </button>
             <button class="nav-btn" id="btn-export-chat">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 Экспорт (.md)
@@ -461,14 +495,27 @@
         <header class="header">
             <div class="header-left">
                 <button class="icon-btn mobile-menu-btn" id="mobile-menu-toggle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+                
                 <div class="custom-dropdown" id="model-dropdown">
                     <button class="dropdown-btn" id="dropdown-toggle">
                         <span id="current-model-name">gpt-5.2</span>
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
-                    <div class="dropdown-menu" id="model-dropdown-menu">
-                        <!-- Populated by JS -->
-                    </div>
+                    <div class="dropdown-menu" id="model-dropdown-menu"></div>
+                </div>
+
+                <!-- Кнопка VS -->
+                <button class="icon-btn" id="btn-compare-mode" title="Сравнить две модели" style="margin-left: 5px; color: var(--text-secondary);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 21l6-6M4 4l5 5"></path></svg>
+                </button>
+
+                <!-- Вторая модель -->
+                <div class="custom-dropdown" id="model-dropdown-2" style="display: none; margin-left: 5px;">
+                    <button class="dropdown-btn" id="dropdown-toggle-2" style="border-color: var(--agent-color); background: rgba(139, 92, 246, 0.05);">
+                        <span id="current-model-name-2">claude-3.5-haiku</span>
+                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="dropdown-menu" id="model-dropdown-menu-2"></div>
                 </div>
             </div>
             
@@ -553,6 +600,10 @@
             <hr style="margin:25px 0; border:0; border-top:1px solid var(--glass-border);">
 
             <div class="form-group">
+                <div class="form-group">
+                    <label>🎵 GenAPI Ключ (Для Suno V5)</label>
+                    <input type="password" class="form-control" id="gen-api-key" placeholder="sk-...">
+                </div>
                 <label>🔑 ProxyAPI Ключ (Bearer)</label>
                 <input type="password" class="form-control" id="api-key" placeholder="sk-...">
             </div>
@@ -603,6 +654,48 @@
             
             <button class="btn btn-secondary" id="cancel-settings">Закрыть</button>
             <button class="btn btn-primary" id="save-settings">Сохранить всё</button>
+        </div>
+    </div>
+</div>
+
+<!-- SUNO GENERATOR MODAL -->
+<div class="modal-overlay" id="suno-modal" style="z-index: 1001;">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">Создание музыки (Suno V5)</div>
+            <button class="icon-btn" id="close-suno-modal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;">Сгенерируйте полноценную песню с инструментами и вокалом. Укажите стиль и текст.</p>
+            
+            <div style="display:flex; gap:15px;">
+                <div class="form-group" style="flex:2">
+                    <label>Название песни</label>
+                    <input type="text" class="form-control" id="suno-title" placeholder="Например: Свобода" value="Свобода">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>Версия Suno</label>
+                    <select class="form-control" id="suno-model" style="appearance: none; cursor: pointer; padding-right: 30px; background-image: url('data:image/svg+xml;utf8,<svg fill=%22white%22 height=%2224%22 viewBox=%220 0 24 24%22 width=%2224%22 xmlns=%22http://www.w3.org/2000/svg%22><path d=%22M7 10l5 5 5-5z%22/></svg>'); background-repeat: no-repeat; background-position-x: 95%; background-position-y: center;">
+                        <option value="v5" style="background: #1e1b4b;">Suno v5</option>
+                        <option value="v4.5" style="background: #1e1b4b;">Suno v4.5</option>
+                        <option value="v4" style="background: #1e1b4b;">Suno v4</option>
+                        <option value="v3.5" style="background: #1e1b4b;">Suno v3.5</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Музыкальный стиль (Tags)</label>
+                <input type="text" class="form-control" id="suno-tags" placeholder="Например: Рок, электронная музыка, мужской вокал..." value="Винтажный джаз-лаундж, классические стандарты, плавные соло на трубе, контрабас и знойный женский вокал.">
+            </div>
+            <div class="form-group">
+                <label>Текст песни (Prompt)</label>
+                <textarea class="form-control" id="suno-prompt" placeholder="[Куплет 1]&#10;Твой текст здесь...&#10;&#10;[Припев]&#10;Твой текст здесь..." style="height: 180px;"></textarea>
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 5px;">* Если оставить пустым, нейросеть сгенерирует инструментал или придумает текст сама.</div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancel-suno">Отмена</button>
+            <button class="btn btn-primary" id="start-suno-btn" style="background: linear-gradient(135deg, #8b5cf6, #c084fc); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);">🎵 Начать генерацию</button>
         </div>
     </div>
 </div>
@@ -677,6 +770,7 @@
     // TOAST HELPER (MUST BE GLOBAL)
     window.showToast = function(msg, type='info') {
         const container = document.getElementById('toast-container');
+        if(!container) return;
         const toast = document.createElement('div');
         toast.className = 'toast';
         toast.style.borderLeft = `4px solid ${type === 'error' ? 'var(--danger-color)' : 'var(--primary-color)'}`;
@@ -684,302 +778,11 @@
         container.appendChild(toast);
         setTimeout(() => toast.remove(), 4000);
     }
-</script>
 
-<script type="module">
-  // ==========================================
-  // FIREBASE AUTHENTICATION (MODULAR)
-  // ==========================================
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-  import { 
-      getAuth, 
-      signInWithEmailAndPassword, 
-      createUserWithEmailAndPassword, 
-      GoogleAuthProvider, 
-      signInWithPopup, 
-      onAuthStateChanged, 
-      signOut 
-  } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCUCoR0dJ548jpN6BfXnaQMy_-fyI3p2IU",
-    authDomain: "ai-studio-997c9.firebaseapp.com",
-    projectId: "ai-studio-997c9",
-    storageBucket: "ai-studio-997c9.firebasestorage.app",
-    messagingSenderId: "416238132541",
-    appId: "1:416238132541:web:0541004f5843cdadfc7954",
-    measurementId: "G-GHDE01V3ZC"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  window.auth = auth; // Делаем доступным глобально
-
-  const authOverlay = document.getElementById('auth-overlay');
-  const emailInput = document.getElementById('auth-email');
-  const passInput = document.getElementById('auth-pass');
-  const btnEmailAction = document.getElementById('btn-email-action');
-  const btnSkipAuth = document.getElementById('btn-skip-auth');
-  const toggleModeBtn = document.getElementById('auth-toggle-mode');
-  const btnGoogle = document.getElementById('btn-google-login');
-  const btnLogout = document.getElementById('btn-logout');
-
-  const isCapacitor = !!window.Capacitor || !!window.cordova;
-  if (isCapacitor) document.getElementById('google-hint').style.display = 'block';
-
-  let isLoginMode = true;
-
-  toggleModeBtn.addEventListener('click', () => {
-      isLoginMode = !isLoginMode;
-      btnEmailAction.textContent = isLoginMode ? "Войти" : "Зарегистрироваться";
-      toggleModeBtn.textContent = isLoginMode ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти";
-  });
-
-  // Кнопка "Без входа"
-  btnSkipAuth.addEventListener('click', () => {
-      authOverlay.style.opacity = '0';
-      setTimeout(() => authOverlay.style.visibility = 'hidden', 500);
-      window.showToast('Гость: сохранение данных локально');
-  });
-
-  btnEmailAction.addEventListener('click', async () => {
-      const email = emailInput.value.trim();
-      const pass = passInput.value.trim();
-      if (!email || !pass) return window.showToast('Введите email и пароль', 'error');
-
-      try {
-          if (isLoginMode) {
-              await signInWithEmailAndPassword(auth, email, pass);
-              window.showToast('Успешный вход!');
-          } else {
-              await createUserWithEmailAndPassword(auth, email, pass);
-              window.showToast('Регистрация успешна!');
-          }
-      } catch (error) {
-          window.showToast('Ошибка: ' + error.message, 'error');
-      }
-  });
-
-  btnGoogle.addEventListener('click', async () => {
-      if (isCapacitor && !confirm("Google-авторизация в приложении может работать нестабильно. Продолжить?")) return;
-      const provider = new GoogleAuthProvider();
-      try {
-          await signInWithPopup(auth, provider);
-          window.showToast('Успешный вход через Google!');
-      } catch (error) {
-          window.showToast('Ошибка Google: ' + error.message, 'error');
-      }
-  });
-
-  if(btnLogout) {
-      btnLogout.addEventListener('click', () => {
-          signOut(auth).then(() => window.showToast('Вы вышли из системы'));
-      });
-  }
-
-  onAuthStateChanged(auth, (user) => {
-      if (user) {
-          authOverlay.style.opacity = '0';
-          setTimeout(() => authOverlay.style.visibility = 'hidden', 500);
-      } else {
-          authOverlay.style.visibility = 'visible';
-          authOverlay.style.opacity = '1';
-      }
-  });
-</script>
-
-<script>
-    // ==========================================
-    // ДАННЫЕ О МОДЕЛЯХ (ЦЕНТРАЛИЗОВАНО)
-    // ==========================================
-    const MODELS_CONFIG = [
-        { id: "gpt-5.4-pro-2026-03-05", name: "gpt-5.4 PRO", group: "OpenAI" },
-        { id: "gpt-5.4-2026-03-05", name: "gpt-5.4", group: "OpenAI" },
-        { id: "gpt-5.2-chat-latest", name: "gpt-5.2", group: "OpenAI" },
-        { id: "gpt-5-mini-2025-08-07", name: "gpt-5 mini", group: "OpenAI" },
-        { id: "gpt-5-nano-2025-08-07", name: "gpt-5 nano", group: "OpenAI" },
-        { id: "o4-mini-2025-04-16", name: "o4-mini", group: "OpenAI" },
-        { id: "gpt-4o-2024-08-06", name: "gpt-4o", group: "OpenAI" },
-        { id: "gpt-4o-mini-2024-07-18", name: "gpt-4o mini", group: "OpenAI" },
-        { id: "gpt-4o-search-preview-2025-03-11", name: "gpt-4o-search", group: "OpenAI" },
-        
-        { id: "gemini-2.0-flash-lite", name: "✦ gemini-2.0-flash lite", group: "Google" },
-        { id: "gemini-3-flash-preview", name: "✦ gemini-3-flash", group: "Google" },
-        { id: "gemini-3.1-flash-preview", name: "✦ gemini-3.1-flash lite", group: "Google" },
-        { id: "gemini-3.1-pro-preview", name: "✦ gemini-3.1-pro", group: "Google" },
-        { id: "gemini-2.0-flash", name: "gemini-2.0-flash", group: "Google" },
-        
-        { id: "claude-3-5-haiku-20241022", name: "Claude 3.5 Haiku", group: "Anthropic" },
-        { id: "claude-haiku-4-5-20251001", name: "Claude 4.5 Haiku", group: "Anthropic" },
-        { id: "claude-3-7-sonnet-20250219", name: "Claude 3.7 Sonnet", group: "Anthropic" },
-        { id: "claude-sonnet-4-6", name: "Claude 4.6 Sonnet", group: "Anthropic" },
-        { id: "claude-opus-4-6", name: "Claude 4.6 Opus", group: "Anthropic" }
-    ];
-
-    function getPrettyModelName(id) {
-        const found = MODELS_CONFIG.find(m => m.id === id);
-        return found ? found.name : id;
-    }
-
-    // ==========================================
-    // ТЕМЫ И ГРАДИЕНТЫ (НОВАЯ ФИШКА)
-    // ==========================================
-    const THEMES = {
-        'dark-matter': { c1: '#0f172a', c2: '#1e1b4b', a: '135' },
-        'cyberpunk': { c1: '#2e0854', c2: '#0f172a', a: '135' },
-        'ocean': { c1: '#0f2027', c2: '#203a43', a: '135' }
-    };
-
-    function applyTheme() {
-        const preset = localStorage.getItem('pa_theme_preset') || 'dark-matter';
-        let c1, c2, a;
-        
-        if (preset === 'custom') {
-            c1 = localStorage.getItem('pa_theme_c1') || '#333333';
-            c2 = localStorage.getItem('pa_theme_c2') || '#111111';
-            a = localStorage.getItem('pa_theme_a') || '135';
-            document.getElementById('custom-color-controls').classList.add('show');
-            document.getElementById('color1').value = c1;
-            document.getElementById('color2').value = c2;
-            document.getElementById('grad-angle').value = a;
-            document.getElementById('angle-val').textContent = a;
-        } else {
-            document.getElementById('custom-color-controls').classList.remove('show');
-            c1 = THEMES[preset].c1;
-            c2 = THEMES[preset].c2;
-            a = THEMES[preset].a;
-        }
-
-        document.documentElement.style.setProperty('--bg-grad-color1', c1);
-        document.documentElement.style.setProperty('--bg-grad-color2', c2);
-        document.documentElement.style.setProperty('--bg-grad-angle', a + 'deg');
-
-        // Обновляем активный кружок в настройках
-        document.querySelectorAll('.theme-swatch').forEach(sw => {
-            sw.classList.toggle('active', sw.dataset.preset === preset);
-        });
-    }
-
-    // Слушатели для настройки темы
-    document.querySelectorAll('.theme-swatch').forEach(sw => {
-        sw.addEventListener('click', () => {
-            const preset = sw.dataset.preset;
-            localStorage.setItem('pa_theme_preset', preset);
-            applyTheme();
-        });
-    });
-
-    ['color1', 'color2', 'grad-angle'].forEach(id => {
-        document.getElementById(id).addEventListener('input', (e) => {
-            localStorage.setItem('pa_theme_preset', 'custom');
-            localStorage.setItem('pa_theme_c1', document.getElementById('color1').value);
-            localStorage.setItem('pa_theme_c2', document.getElementById('color2').value);
-            localStorage.setItem('pa_theme_a', document.getElementById('grad-angle').value);
-            applyTheme();
-        });
-    });
-
-
-    // ==========================================
-    // ИНИЦИАЛИЗАЦИЯ И STATE
-    // ==========================================
-    const dbName = "AIStudioDB";
-    const storeName = "chats";
-    let db;
-
-    function initDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(dbName, 1);
-            request.onupgradeneeded = (event) => {
-                db = event.target.result;
-                if (!db.objectStoreNames.contains(storeName)) {
-                    db.createObjectStore(storeName, { keyPath: "id" });
-                }
-            };
-            request.onsuccess = (event) => { db = event.target.result; resolve(); };
-            request.onerror = (event) => reject(event.target.error);
-        });
-    }
-
-    function saveChatToDB(chat) {
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction([storeName], "readwrite");
-            transaction.objectStore(storeName).put(chat);
-            transaction.oncomplete = resolve;
-            transaction.onerror = reject;
-        });
-    }
-
-    function loadAllChatsFromDB() {
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction([storeName], "readonly");
-            const request = transaction.objectStore(storeName).getAll();
-            request.onsuccess = () => {
-                const result = {};
-                request.result.forEach(c => result[c.id] = c);
-                resolve(result);
-            };
-            request.onerror = reject;
-        });
-    }
-
-    function deleteChatFromDB(id) {
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction([storeName], "readwrite");
-            transaction.objectStore(storeName).delete(id);
-            transaction.oncomplete = resolve;
-            transaction.onerror = reject;
-        });
-    }
-
-    function clearChatsFromDB() {
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction([storeName], "readwrite");
-            transaction.objectStore(storeName).clear();
-            transaction.oncomplete = resolve;
-            transaction.onerror = reject;
-        });
-    }
-
-    const chatHistoryDOM = document.getElementById('chat-history');
-    const chatListDOM = document.getElementById('chat-list');
-    const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
-    const stopBtn = document.getElementById('stop-btn');
-    const attachPreview = document.getElementById('attach-preview');
-    const fileInput = document.getElementById('file-input');
-    const typingIndicator = document.getElementById('typing-indicator');
-    const voiceBtn = document.getElementById('voice-btn');
-    
-    let apiKey = localStorage.getItem('pa_api_key') || '';
-    let selectedModel = localStorage.getItem('pa_model') || 'gpt-5.2-chat-latest';
-    let sysPrompt = localStorage.getItem('pa_sysprompt') || '';
-    let temperature = parseFloat(localStorage.getItem('pa_temp') || '1.0');
-    let maxTokens = parseInt(localStorage.getItem('pa_maxtokens')) || null;
-    
-    let chats = {}; 
-    let currentChatId = localStorage.getItem('pa_current_chat_id');
-    
-    let customAgents = {};
-    try { customAgents = JSON.parse(localStorage.getItem('pa_agents')) || {}; } catch(e) { customAgents = {}; }
-
-    let attachedImages = []; 
-    let abortController = null;
-    let mediaRecorder = null;
-    let audioChunks = [];
-    
-    // Переменная для счетчика динамических шагов
-    let customStepCounter = 0;
-
-    window.copyText = function(base64) {
-        const text = decodeURIComponent(escape(atob(base64)));
-        navigator.clipboard.writeText(text).then(() => window.showToast('Скопировано!'));
-    };
-
-    function safeRenderMarkdown(text) {
+    // ГЛОБАЛЬНАЯ ФУНКЦИЯ ДЛЯ MARKDOWN (Защита от ошибки safeRenderMarkdown is not defined)
+    window.safeRenderMarkdown = function(text) {
         let thinkingHtml = '';
         text = text.replace(/<think>([\s\S]*?)<\/think>/gi, (match, content) => {
-            // Добавляем красивую иконку мозга/шестеренки
             thinkingHtml += `<div class="thinking-block">
                 <div class="thinking-header" onclick="this.parentElement.classList.toggle('open')">
                     <div class="thinking-icon">
@@ -1011,119 +814,415 @@
         });
 
         return thinkingHtml + html;
+    };
+</script>
+
+<script type="module">
+  // ==========================================
+  // FIREBASE AUTHENTICATION 
+  // ==========================================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCUCoR0dJ548jpN6BfXnaQMy_-fyI3p2IU",
+    authDomain: "ai-studio-997c9.firebaseapp.com",
+    projectId: "ai-studio-997c9",
+    storageBucket: "ai-studio-997c9.firebasestorage.app",
+    messagingSenderId: "416238132541",
+    appId: "1:416238132541:web:0541004f5843cdadfc7954"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  window.auth = auth; 
+
+  const authOverlay = document.getElementById('auth-overlay');
+  const emailInput = document.getElementById('auth-email');
+  const passInput = document.getElementById('auth-pass');
+  const btnEmailAction = document.getElementById('btn-email-action');
+  const btnSkipAuth = document.getElementById('btn-skip-auth');
+  const toggleModeBtn = document.getElementById('auth-toggle-mode');
+  const btnGoogle = document.getElementById('btn-google-login');
+  const btnLogout = document.getElementById('btn-logout');
+
+  let isLoginMode = true;
+
+  if(toggleModeBtn) {
+      toggleModeBtn.addEventListener('click', () => {
+          isLoginMode = !isLoginMode;
+          btnEmailAction.textContent = isLoginMode ? "Войти" : "Зарегистрироваться";
+          toggleModeBtn.textContent = isLoginMode ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти";
+      });
+  }
+
+  if(btnSkipAuth) {
+      btnSkipAuth.addEventListener('click', () => {
+          authOverlay.style.opacity = '0';
+          setTimeout(() => authOverlay.style.visibility = 'hidden', 500);
+          window.showToast('Гость: сохранение данных локально');
+      });
+  }
+
+  if(btnEmailAction) {
+      btnEmailAction.addEventListener('click', async () => {
+          const email = emailInput.value.trim();
+          const pass = passInput.value.trim();
+          if (!email || !pass) return window.showToast('Введите email и пароль', 'error');
+          try {
+              if (isLoginMode) { await signInWithEmailAndPassword(auth, email, pass); window.showToast('Успешный вход!'); } 
+              else { await createUserWithEmailAndPassword(auth, email, pass); window.showToast('Регистрация успешна!'); }
+          } catch (error) { window.showToast('Ошибка: ' + error.message, 'error'); }
+      });
+  }
+
+  if(btnGoogle) {
+      btnGoogle.addEventListener('click', async () => {
+          const provider = new GoogleAuthProvider();
+          try { await signInWithPopup(auth, provider); window.showToast('Успешный вход через Google!'); } 
+          catch (error) { window.showToast('Ошибка Google: ' + error.message, 'error'); }
+      });
+  }
+
+  if(btnLogout) {
+      btnLogout.addEventListener('click', () => { signOut(auth).then(() => window.showToast('Вы вышли из системы')); });
+  }
+
+  onAuthStateChanged(auth, (user) => {
+      if (user) {
+          authOverlay.style.opacity = '0';
+          setTimeout(() => authOverlay.style.visibility = 'hidden', 500);
+      } else {
+          authOverlay.style.visibility = 'visible';
+          authOverlay.style.opacity = '1';
+      }
+  });
+</script>
+
+<script>
+    // ==========================================
+    // ОСНОВНАЯ ЛОГИКА ПРИЛОЖЕНИЯ
+    // ==========================================
+    const MODELS_CONFIG = [
+        { id: "gpt-5.4-pro-2026-03-05", name: "gpt-5.4 PRO", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5.4-2026-03-05", name: "gpt-5.4", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-5.3-chat-latest", name: "gpt-5.3", group: "OpenAI", provider: "proxy-api"},
+        { id: "gpt-5.3-codex", name: "gpt-5.3-codex", group: "OpenAI", provider: "proxy-api"},
+        { id: "gpt-5.2-chat-latest", name: "gpt-5.2", group: "OpenAI", provider: "proxy-api" },
+        { id: "o4-mini-2025-04-16", name: "o4-mini", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-4o-2024-08-06", name: "gpt-4o", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-4o-mini-2024-07-18", name: "gpt-4o mini", group: "OpenAI", provider: "proxy-api" },
+        { id: "gpt-4o-search-preview-2025-03-11", name: "gpt-4o-search", group: "OpenAI", provider: "proxy-api" },
+        { id: "gemini-3.1-flash-preview", name: "✦ gemini-3.1-flash-preview", group: "Google", provider: "proxy-api"},
+        { id: "gemini-2.0-flash-lite", name: "✦ gemini-2.0-flash lite", group: "Google", provider: "proxy-api" },
+        { id: "gemini-3-flash-preview", name: "✦ gemini-3-flash", group: "Google", provider: "proxy-api" },
+        { id: "gemini-3.1-pro-preview", name: "✦ gemini-3.1-pro", group: "Google", provider: "proxy-api" },
+        { id: "gemini-2.5-pro", name: "✦ gemini-2.5-pro", group: "Google", provider: "proxy-api" },
+        { id: "gemini-2.5-flash", name: "✦ gemini-2.5-flash", group: "Google", provider: "proxy-api" },
+        { id: "gemini-2.5-flash-lite", name: "✦ gemini-2.5-flash-lite", group: "Google", provider: "proxy-api" },
+        { id: "gemini-3-pro-preview", name: "✦ gemini-3-pro-preview", group: "Google", provider: "proxy-api"},
+        { id: "gemini-2.0-flash", name: "✦ gemini-2.0-flash", group: "Google", provider: "proxy-api" },
+        { id: "claude-3-5-haiku-20241022", name: "Claude 3.5 Haiku", group: "Anthropic", provider: "proxy-api" },
+        { id: "claude-haiku-4-5", name: "Claude 4.5 Haiku", group: "Anthropic", provider: "proxy-api" },
+        { id: "claude-3-7-sonnet-20250219", name: "Claude 3.7 Sonnet", group: "Anthropic", provider: "proxy-api" },
+        { id: "claude-sonnet-4-5", name: "Claude 4.5 Sonnet", group: "Anthropic", provider: "proxy-api" },
+        { id: "claude-sonnet-4-6", name: "Claude 4.6 Sonnet", group: "Anthropic", provider: "proxy-api" },
+        { id: "sonar", name: "Perplexity Sonar", group: "Perplexity", provider: "gen-api" },
+        { id: "sonar-reasoning", name: "Perplexity Sonar Reasoning", group: "Perplexity", provider: "gen-api" },
+        { id: "deepseek/deepseek-r1", name: "DeepSeek R1", group: "OpenRouter", provider: "openrouter" },
+        { id: "mistralai/mistral-large-2411", name: "Mistral Large 2", group: "OpenRouter", provider: "openrouter" },
+        { id: "meta-llama/llama-3.3-70b-instruct", name: "Llama 3.3 70B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen-2.5-max", name: "Qwen 2.5 Max", group: "OpenRouter", provider: "openrouter" },
+        { id: "meta-llama/llama-3.1-405b", name: "Llama 3.1 405B", group: "OpenRouter", provider: "openrouter" },
+        { id: "qwen/qwen2.5-vl-72b-instruct", name: "Qwen 2.5 VL (Vision)", group: "OpenRouter", provider: "openrouter" },
+        { id: "google/gemma-2-27b-it", name: "Gemma 2 27B", group: "OpenRouter", provider: "openrouter" },
+        { id: "deepseek/deepseek-chat", name: "DeepSeek V3", group: "OpenRouter", provider: "openrouter" },
+        { id: "meta-llama/llama-3.2-3b-instruct", name: "Llama 3.2 3B (Ultra Fast)", group: "OpenRouter", provider: "openrouter" },
+        { id: "x-ai/grok-2-mini", name: "Grok 2 Mini", group: "OpenRouter", provider: "openrouter" },
+        { id: "x-ai/grok-vision-beta", name: "Grok Vision", group: "OpenRouter", provider: "openrouter" },
+        { id: "x-ai/grok-3", name: "Grok 3 (Flagship)", group: "OpenRouter", provider: "openrouter" },
+        { id: "x-ai/grok-3-reasoning", name: "Grok 3 Reasoning", group: "OpenRouter", provider: "openrouter" },
+        { id: "x-ai/grok-2-1212", name: "Grok 2", group: "OpenRouter", provider: "openrouter" }
+    ];
+
+    function getPrettyModelName(id) { const found = MODELS_CONFIG.find(m => m.id === id); return found ? found.name : id; }
+
+    const THEMES = {
+        'dark-matter': { c1: '#0f172a', c2: '#1e1b4b', a: '135' },
+        'cyberpunk': { c1: '#2e0854', c2: '#0f172a', a: '135' },
+        'ocean': { c1: '#0f2027', c2: '#203a43', a: '135' }
+    };
+
+    function applyTheme() {
+        const preset = localStorage.getItem('pa_theme_preset') || 'dark-matter';
+        let c1, c2, a;
+        if (preset === 'custom') {
+            c1 = localStorage.getItem('pa_theme_c1') || '#333333';
+            c2 = localStorage.getItem('pa_theme_c2') || '#111111';
+            a = localStorage.getItem('pa_theme_a') || '135';
+            document.getElementById('custom-color-controls').classList.add('show');
+            document.getElementById('color1').value = c1;
+            document.getElementById('color2').value = c2;
+            document.getElementById('grad-angle').value = a;
+            document.getElementById('angle-val').textContent = a;
+        } else {
+            document.getElementById('custom-color-controls').classList.remove('show');
+            c1 = THEMES[preset].c1; c2 = THEMES[preset].c2; a = THEMES[preset].a;
+        }
+        document.documentElement.style.setProperty('--bg-grad-color1', c1);
+        document.documentElement.style.setProperty('--bg-grad-color2', c2);
+        document.documentElement.style.setProperty('--bg-grad-angle', a + 'deg');
+        document.querySelectorAll('.theme-swatch').forEach(sw => sw.classList.toggle('active', sw.dataset.preset === preset));
     }
 
-    function initThemeParams() {
-        const theme = localStorage.getItem('theme') || 'dark';
-        document.body.setAttribute('data-theme', theme);
-        document.querySelector('.sun-icon').style.display = theme === 'dark' ? 'block' : 'none';
-        document.querySelector('.moon-icon').style.display = theme === 'dark' ? 'none' : 'block';
+    document.querySelectorAll('.theme-swatch').forEach(sw => {
+        sw.addEventListener('click', () => { localStorage.setItem('pa_theme_preset', sw.dataset.preset); applyTheme(); });
+    });
+
+    ['color1', 'color2', 'grad-angle'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.addEventListener('input', () => {
+            localStorage.setItem('pa_theme_preset', 'custom');
+            localStorage.setItem('pa_theme_c1', document.getElementById('color1').value);
+            localStorage.setItem('pa_theme_c2', document.getElementById('color2').value);
+            localStorage.setItem('pa_theme_a', document.getElementById('grad-angle').value);
+            applyTheme();
+        });
+    });
+
+    // ==========================================
+    // БАЗА ДАННЫХ (БРОНЕБОЙНОЕ СОХРАНЕНИЕ)
+    // ==========================================
+    const dbName = "AIStudioDB";
+    const storeName = "chats";
+    let db = null;
+    let useFallbackStorage = false;
+
+    function initDB() {
+        return new Promise((resolve) => {
+            try {
+                const request = indexedDB.open(dbName, 1);
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    if (!db.objectStoreNames.contains(storeName)) db.createObjectStore(storeName, { keyPath: "id" });
+                };
+                request.onsuccess = (event) => { db = event.target.result; resolve(); };
+                request.onerror = () => { useFallbackStorage = true; resolve(); };
+            } catch(e) { useFallbackStorage = true; resolve(); }
+        });
     }
-    document.getElementById('theme-toggle').addEventListener('click', () => {
+
+    function saveChatToDB(chat) {
+        return new Promise((resolve) => {
+            if (useFallbackStorage || !db) {
+                try { localStorage.setItem('pa_chats_fallback', JSON.stringify(chats)); } catch(e){}
+                return resolve();
+            }
+            try {
+                const tx = db.transaction([storeName], "readwrite");
+                tx.objectStore(storeName).put(chat);
+                tx.oncomplete = resolve; tx.onerror = resolve;
+            } catch(e) { useFallbackStorage = true; resolve(); }
+        });
+    }
+
+    function loadAllChatsFromDB() {
+        return new Promise((resolve) => {
+            const fallback = localStorage.getItem('pa_chats_fallback');
+            let parsedFallback = {};
+            try { if (fallback) parsedFallback = JSON.parse(fallback); } catch(e) {}
+            if (useFallbackStorage || !db) return resolve(parsedFallback);
+
+            try {
+                const tx = db.transaction([storeName], "readonly");
+                const req = tx.objectStore(storeName).getAll();
+                req.onsuccess = () => {
+                    const result = {};
+                    req.result.forEach(c => result[c.id] = c);
+                    resolve(Object.keys(result).length > 0 ? result : parsedFallback);
+                };
+                req.onerror = () => resolve(parsedFallback);
+            } catch(e) { resolve(parsedFallback); }
+        });
+    }
+
+    function deleteChatFromDB(id) {
+        return new Promise((resolve) => {
+            if (useFallbackStorage || !db) return resolve();
+            try {
+                const tx = db.transaction([storeName], "readwrite");
+                tx.objectStore(storeName).delete(id);
+                tx.oncomplete = resolve;
+            } catch(e) { resolve(); }
+        });
+    }
+
+    function clearChatsFromDB() {
+        return new Promise((resolve) => {
+            try { localStorage.removeItem('pa_chats_fallback'); } catch(e){}
+            if (!db) return resolve();
+            try {
+                const tx = db.transaction([storeName], "readwrite");
+                tx.objectStore(storeName).clear();
+                tx.oncomplete = resolve;
+            } catch(e) { resolve(); }
+        });
+    }
+
+    // ==========================================
+    // STATE & VARIABLES
+    // ==========================================
+    const chatHistoryDOM = document.getElementById('chat-history');
+    const chatListDOM = document.getElementById('chat-list');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const attachPreview = document.getElementById('attach-preview');
+    const fileInput = document.getElementById('file-input');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const voiceBtn = document.getElementById('voice-btn');
+    
+    let apiKey = localStorage.getItem('pa_api_key') || '';
+    let genApiKey = localStorage.getItem('pa_gen_api_key') || '';
+    let selectedModel = localStorage.getItem('pa_model') || 'gpt-5.2-chat-latest';
+    let sysPrompt = localStorage.getItem('pa_sysprompt') || '';
+    let temperature = parseFloat(localStorage.getItem('pa_temp') || '1.0');
+    let maxTokens = parseInt(localStorage.getItem('pa_maxtokens')) || null;
+    
+    let chats = {}; 
+    let currentChatId = localStorage.getItem('pa_current_chat_id');
+    
+    let customAgents = {};
+    try { customAgents = JSON.parse(localStorage.getItem('pa_agents')) || {}; } catch(e) { customAgents = {}; }
+
+    let attachedImages = []; 
+    let abortController = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    
+    let customStepCounter = 0;
+    let isCompareMode = false;
+    let selectedModel2 = localStorage.getItem('pa_model_2') || 'claude-3-5-haiku-20241022';
+
+    // ==========================================
+    // UI LISTENERS
+    // ==========================================
+    const btnCompare = document.getElementById('btn-compare-mode');
+    const dd2 = document.getElementById('model-dropdown-2');
+    if (btnCompare && dd2) {
+        btnCompare.addEventListener('click', () => {
+            isCompareMode = !isCompareMode;
+            btnCompare.classList.toggle('active', isCompareMode);
+            dd2.style.display = isCompareMode ? 'flex' : 'none';
+        });
+        const ddToggle2 = document.getElementById('dropdown-toggle-2');
+        if(ddToggle2) ddToggle2.addEventListener('click', (e) => { e.stopPropagation(); dd2.classList.toggle('open'); });
+    }
+
+    const btnThemeToggle = document.getElementById('theme-toggle');
+    if(btnThemeToggle) btnThemeToggle.addEventListener('click', () => {
         const current = document.body.getAttribute('data-theme');
         localStorage.setItem('theme', current === 'dark' ? 'light' : 'dark');
-        initThemeParams();
-    });
-    
-    document.getElementById('mobile-menu-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.add('open'));
-    document.addEventListener('click', (e) => {
-        const sidebar = document.getElementById('sidebar');
-        const btn = document.getElementById('mobile-menu-toggle');
-        if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !btn.contains(e.target)) sidebar.classList.remove('open');
+        document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+        document.querySelector('.sun-icon').style.display = current === 'dark' ? 'none' : 'block';
+        document.querySelector('.moon-icon').style.display = current === 'dark' ? 'block' : 'none';
     });
 
-    // ==========================================
-    // ПОСТРОЕНИЕ СПИСКОВ МОДЕЛЕЙ (UI)
-    // ==========================================
+    const btnMobileMenu = document.getElementById('mobile-menu-toggle');
+    if(btnMobileMenu) btnMobileMenu.addEventListener('click', () => document.getElementById('sidebar').classList.add('open'));
+    
+    document.addEventListener('click', (e) => {
+        const sidebar = document.getElementById('sidebar');
+        if (window.innerWidth <= 768 && sidebar && sidebar.classList.contains('open') && !sidebar.contains(e.target) && btnMobileMenu && !btnMobileMenu.contains(e.target)) {
+            sidebar.classList.remove('open');
+        }
+        if (!e.target.closest('.custom-dropdown') && !e.target.closest('.dropdown-menu')) {
+             document.querySelectorAll('.dropdown-menu').forEach(m => m.closest('.custom-dropdown').classList.remove('open'));
+        }
+        if (!e.target.closest('.premium-model-selector')) {
+            document.querySelectorAll('.premium-model-list').forEach(l => l.classList.remove('open'));
+        }
+    });
+
+    const ddToggle = document.getElementById('dropdown-toggle');
+    if(ddToggle) ddToggle.addEventListener('click', (e) => { e.stopPropagation(); document.querySelector('.custom-dropdown').classList.toggle('open'); });
+
     function renderMainModelDropdown() {
         const container = document.getElementById('model-dropdown-menu');
+        const container2 = document.getElementById('model-dropdown-menu-2');
+        if(!container) return;
         container.innerHTML = '';
+        if(container2) container2.innerHTML = '';
         
         const agentKeys = Object.keys(customAgents);
         if (agentKeys.length > 0) {
-            container.innerHTML += `<div class="dropdown-group-label">🤖 Мои Агенты (Цепочки)</div>`;
+            container.innerHTML += `<div class="dropdown-group-label">🤖 Мои Агенты</div>`;
             agentKeys.forEach(id => {
                 const agent = customAgents[id];
-                
-                // Формируем рецепт агента с учетом кастомных специалистов
-                let recipe = `${getPrettyModelName(agent.researcher)} → ${getPrettyModelName(agent.analyst)}`;
-                if(agent.customSteps && agent.customSteps.length > 0) {
-                    recipe += ` → +${agent.customSteps.length} спец.`;
-                }
-                recipe += ` → ${getPrettyModelName(agent.critic)} → ${getPrettyModelName(agent.finalizer)}`;
-
-                container.innerHTML += `
-                <div class="dropdown-item" data-value="${id}">
-                    <span>🤖 ${agent.name}</span>
-                    <span class="dropdown-item-subtitle">${recipe}</span>
-                </div>`;
+                container.innerHTML += `<div class="dropdown-item" data-value="${id}"><span>🤖 ${agent.name}</span></div>`;
             });
             container.innerHTML += `<hr style="border:0; border-top:1px solid var(--glass-border); margin: 6px 0;">`;
         }
 
         const groupedModels = MODELS_CONFIG.reduce((acc, curr) => {
             if(!acc[curr.group]) acc[curr.group] = [];
-            acc[curr.group].push(curr);
-            return acc;
+            acc[curr.group].push(curr); return acc;
         }, {});
 
         for (const [groupName, models] of Object.entries(groupedModels)) {
-            container.innerHTML += `<div class="dropdown-group-label">${groupName}</div>`;
+            const groupHtml = `<div class="dropdown-group-label">${groupName}</div>`;
+            container.innerHTML += groupHtml;
+            if(container2) container2.innerHTML += groupHtml;
             models.forEach(m => {
-                container.innerHTML += `
-                <div class="dropdown-item" data-value="${m.id}">
-                    <span>${m.name}</span>
-                </div>`;
+                const itemHtml = `<div class="dropdown-item" data-value="${m.id}"><span>${m.name}</span></div>`;
+                container.innerHTML += itemHtml;
+                if(container2) container2.innerHTML += itemHtml;
             });
         }
         
-        const ddName = document.getElementById('current-model-name');
-        document.querySelectorAll('#model-dropdown-menu .dropdown-item').forEach(item => {
-            item.addEventListener('click', () => {
-                selectedModel = item.dataset.value; 
-                localStorage.setItem('pa_model', selectedModel);
-                document.querySelectorAll('#model-dropdown-menu .dropdown-item').forEach(i => i.classList.remove('selected'));
-                item.classList.add('selected');
-                ddName.textContent = item.querySelector('span:first-child').textContent;
-                document.querySelector('.custom-dropdown').classList.remove('open');
+        // Добавление обработчиков кликов
+        [container, container2].forEach(list => {
+            if(!list) return;
+            list.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const targetModel = item.dataset.value;
+                    const isSecond = list.id === 'model-dropdown-menu-2';
+                    if(isSecond) { selectedModel2 = targetModel; localStorage.setItem('pa_model_2', selectedModel2); document.getElementById('current-model-name-2').textContent = item.textContent; }
+                    else { selectedModel = targetModel; localStorage.setItem('pa_model', selectedModel); document.getElementById('current-model-name').textContent = item.textContent; }
+                    
+                    list.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selected'));
+                    item.classList.add('selected');
+                    list.closest('.custom-dropdown').classList.remove('open');
+                });
             });
         });
-        
-        const initialItem = document.querySelector(`#model-dropdown-menu .dropdown-item[data-value="${selectedModel}"]`);
-        if(initialItem) { 
-            ddName.textContent = initialItem.querySelector('span:first-child').textContent; 
-            initialItem.classList.add('selected'); 
-        } else {
-            selectedModel = 'gpt-5.2-chat-latest';
-            localStorage.setItem('pa_model', selectedModel);
-            renderMainModelDropdown();
-        }
     }
-
-    const ddToggle = document.getElementById('dropdown-toggle');
-    const ddMenu = document.querySelector('.custom-dropdown');
-    ddToggle.addEventListener('click', (e) => { e.stopPropagation(); ddMenu.classList.toggle('open'); });
-    document.addEventListener('click', () => ddMenu.classList.remove('open'));
-    
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.premium-model-selector')) {
-            document.querySelectorAll('.premium-model-list').forEach(l => l.classList.remove('open'));
-        }
-    });
-
     // ==========================================
-    // ЧАТ ЛОГИКА
+    // ЛОГИКА ЧАТА
     // ==========================================
+    window.copyText = function(base64) {
+        const text = decodeURIComponent(escape(atob(base64)));
+        navigator.clipboard.writeText(text).then(() => window.showToast('Скопировано!'));
+    };
+
     function saveChatsToStorage() {
         if (currentChatId) localStorage.setItem('pa_current_chat_id', currentChatId);
         else localStorage.removeItem('pa_current_chat_id');
+        
+        // ЖЕЛЕЗНОЕ ПРАВИЛО: Всегда делаем резервную копию в localStorage
+        try { localStorage.setItem('pa_chats_fallback', JSON.stringify(chats)); } catch(e) {}
 
-        if (currentChatId && chats[currentChatId]) {
-            saveChatToDB(chats[currentChatId]).catch(e => window.showToast('Ошибка сохранения в БД', 'error'));
+        // Если системная БД работает, пишем и туда
+        if (currentChatId && chats[currentChatId] && db && !useFallbackStorage) {
+            try {
+                const tx = db.transaction([storeName], "readwrite");
+                tx.objectStore(storeName).put(chats[currentChatId]);
+            } catch(e) { useFallbackStorage = true; }
         }
     }
 
     function renderChatList() {
+        if(!chatListDOM) return;
         chatListDOM.innerHTML = '';
         Object.keys(chats).sort((a,b) => chats[b].updatedAt - chats[a].updatedAt).forEach(id => {
             const div = document.createElement('div');
@@ -1146,7 +1245,8 @@
 
     function switchToChat(id) {
         currentChatId = id; saveChatsToStorage(); renderChatList(); loadCurrentChat();
-        if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+        const sb = document.getElementById('sidebar');
+        if(window.innerWidth <= 768 && sb) sb.classList.remove('open');
         clearAttachments();
     }
 
@@ -1155,12 +1255,16 @@
         const id = Date.now().toString(36) + Math.random().toString(36).substring(2);
         chats[id] = { id, title: "Новый чат", messages: [], updatedAt: Date.now() };
         currentChatId = id; saveChatsToStorage(); renderChatList(); loadCurrentChat();
-        if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
-        clearAttachments(); userInput.value = ''; autoResizeInput(); userInput.focus();
+        const sb = document.getElementById('sidebar');
+        if(window.innerWidth <= 768 && sb) sb.classList.remove('open');
+        clearAttachments(); 
+        if(userInput) { userInput.value = ''; autoResizeInput(); userInput.focus(); }
     }
-    document.getElementById('btn-new-chat').addEventListener('click', createNewChat);
+    const btnNewChat = document.getElementById('btn-new-chat');
+    if(btnNewChat) btnNewChat.addEventListener('click', createNewChat);
 
     function loadCurrentChat() {
+        if(!chatHistoryDOM) return;
         chatHistoryDOM.innerHTML = '';
         if(!currentChatId || !chats[currentChatId] || chats[currentChatId].messages.length === 0) {
             chatHistoryDOM.innerHTML = `<div class="message-row ai" style="justify-content:center; padding-top:50px;"><div style="text-align:center; color:var(--text-secondary);"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom:10px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><p>Начните новый диалог или выберите Агента</p></div></div>`;
@@ -1175,7 +1279,6 @@
         const row = btn.closest('.message-row');
         const msgIndex = parseInt(row.dataset.msgIndex, 10);
         if (isNaN(msgIndex)) return;
-
         const chat = chats[currentChatId];
         const msg = chat.messages[msgIndex];
         if (!msg || msg.role !== 'user') return;
@@ -1194,39 +1297,85 @@
     }
 
     window.regenerateLast = function() {
-        if(!currentChatId) return;
+        if(!currentChatId || !chats[currentChatId]) return;
         const chat = chats[currentChatId];
         if(chat.messages.length < 2) return;
         if(chat.messages[chat.messages.length-1].role === 'assistant') chat.messages.pop();
         saveChatsToStorage(); loadCurrentChat();
         
         const aiMsg = { role: 'assistant', content: '' };
+        if (isCompareMode) {
+            aiMsg.isCompare = true;
+            aiMsg.left = { model: selectedModel, content: '' };
+            aiMsg.right = { model: selectedModel2, content: '' };
+        }
         chat.messages.push(aiMsg);
         const aiContentEl = appendMessageToDOM(aiMsg, true, chat.messages.length - 1);
         
-        userInput.disabled = true; sendBtn.style.display = 'none'; stopBtn.style.display = 'flex'; typingIndicator.style.display = 'flex';
+        if(userInput) userInput.disabled = true; 
+        if(sendBtn) sendBtn.style.display = 'none'; 
+        if(stopBtn) stopBtn.style.display = 'flex'; 
+        if(typingIndicator) typingIndicator.style.display = 'flex';
         abortController = new AbortController();
 
         (async () => {
             try {
-                if (selectedModel.startsWith('agent_')) {
+                if (isCompareMode) {
+                    await Promise.allSettled([
+                        runStreamForModel(chat, aiContentEl.left, aiMsg.left, selectedModel),
+                        runStreamForModel(chat, aiContentEl.right, aiMsg.right, selectedModel2)
+                    ]);
+                } else if (selectedModel.startsWith('agent_')) {
                     await runAgentPipeline(chat, aiContentEl, aiMsg, selectedModel);
                 } else {
-                    if(selectedModel.startsWith('gemini')) await streamGemini(chat, aiContentEl, aiMsg);
-                    else if(selectedModel.startsWith('claude')) await streamAnthropic(chat, aiContentEl, aiMsg);
-                    else await streamOpenAI(chat, aiContentEl, aiMsg);
+                    await runStreamForModel(chat, aiContentEl, aiMsg, selectedModel);
                 }
             } catch(err) { window.showToast(err.message, 'error'); } 
             finally {
-                userInput.disabled = false; sendBtn.style.display = 'flex'; stopBtn.style.display = 'none'; typingIndicator.style.display = 'none';
+                if(userInput) userInput.disabled = false; 
+                if(sendBtn) sendBtn.style.display = 'flex'; 
+                if(stopBtn) stopBtn.style.display = 'none'; 
+                if(typingIndicator) typingIndicator.style.display = 'none';
                 chat.updatedAt = Date.now(); saveChatsToStorage();
             }
         })();
     };
 
     function appendMessageToDOM(msg, animate=true, msgIndex=null) {
+        if(!chatHistoryDOM) return;
         const div = document.createElement('div');
         div.className = `message-row ${msg.role}`;
+
+        if (msg.isCompare) {
+            div.style.maxWidth = "100%";
+            div.style.padding = "25px 5%";
+            div.innerHTML = `
+            <div class="message-content-wrapper" style="max-width: 1200px; width: 100%; position: relative; margin: 0 auto;">
+                <div class="compare-badge">РЕЖИМ СРАВНЕНИЯ</div>
+                <div class="compare-grid">
+                    <div class="compare-col left">
+                        <div class="compare-header"><span style="color: #93c5fd;">🤖 ${getPrettyModelName(msg.left.model)}</span></div>
+                        <div class="compare-body" id="comp-left-${msgIndex}">${window.safeRenderMarkdown(msg.left.content || '')}</div>
+                        <button class="btn-choose-winner" onclick="chooseCompareWinner('${msgIndex}', 'left')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Выбрать этот вариант
+                        </button>
+                    </div>
+                    <div class="compare-col right">
+                        <div class="compare-header"><span style="color: #d8b4fe;">🤖 ${getPrettyModelName(msg.right.model)}</span></div>
+                        <div class="compare-body" id="comp-right-${msgIndex}">${window.safeRenderMarkdown(msg.right.content || '')}</div>
+                        <button class="btn-choose-winner" onclick="chooseCompareWinner('${msgIndex}', 'right')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Выбрать этот вариант
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+            if (msgIndex !== null) div.dataset.msgIndex = msgIndex;
+            chatHistoryDOM.appendChild(div);
+            return {
+                left: div.querySelector(`#comp-left-${msgIndex}`),
+                right: div.querySelector(`#comp-right-${msgIndex}`)
+            };
+        }
         
         let imagesHtml = '';
         if(msg.images && msg.images.length > 0) {
@@ -1252,7 +1401,7 @@
             </div>`;
         }
 
-        const htmlContent = msg.role === 'user' ? `<p>${msg.content.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</p>` : safeRenderMarkdown(msg.content);
+        const htmlContent = msg.role === 'user' ? `<p>${msg.content.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</p>` : window.safeRenderMarkdown(msg.content);
 
         div.innerHTML = `<div class="message-content-wrapper">${avatar}<div class="message-content">${imagesHtml}<div class="text-body">${htmlContent}</div></div>${actions}</div>`;
         if (msgIndex !== null) div.dataset.msgIndex = msgIndex;
@@ -1260,28 +1409,46 @@
         return div.querySelector('.text-body');
     }
 
+    window.chooseCompareWinner = function(msgIndexStr, side) {
+        const msgIndex = parseInt(msgIndexStr, 10);
+        const chat = chats[currentChatId];
+        if(!chat || !chat.messages[msgIndex]) return;
+        const msg = chat.messages[msgIndex];
+        
+        msg.content = `> *Ответ сгенерирован: ${getPrettyModelName(msg[side].model)}*\n\n` + msg[side].content;
+        delete msg.isCompare; delete msg.left; delete msg.right;
+        
+        saveChatsToStorage(); loadCurrentChat();
+    };
+
     function autoResizeInput() {
+        if(!userInput || !sendBtn) return;
         userInput.style.height = 'auto';
         userInput.style.height = Math.min(userInput.scrollHeight, 200) + 'px';
         sendBtn.disabled = (!userInput.value.trim() && attachedImages.length === 0);
     }
-    userInput.addEventListener('input', autoResizeInput);
-    userInput.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if(!sendBtn.disabled) handleSend(); } });
+    if(userInput) {
+        userInput.addEventListener('input', autoResizeInput);
+        userInput.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if(!sendBtn.disabled) handleSend(); } });
+    }
 
-    document.getElementById('attach-btn').addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', async (e) => {
-        const files = Array.from(e.target.files);
-        if(!files.length) return;
-        for(let file of files) {
-            if(file.type.startsWith('image/')) {
-                try {
-                    const base64 = await resizeImage(file, 800); 
-                    attachedImages.push(base64);
-                } catch(err) { window.showToast('Ошибка обработки изображения', 'error'); }
+    const btnAttach = document.getElementById('attach-btn');
+    if(btnAttach && fileInput) {
+        btnAttach.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if(!files.length) return;
+            for(let file of files) {
+                if(file.type.startsWith('image/')) {
+                    try {
+                        const base64 = await resizeImage(file, 800); 
+                        attachedImages.push(base64);
+                    } catch(err) { window.showToast('Ошибка обработки изображения', 'error'); }
+                }
             }
-        }
-        renderAttachments(); fileInput.value = ''; autoResizeInput();
-    });
+            renderAttachments(); fileInput.value = ''; autoResizeInput();
+        });
+    }
 
     function resizeImage(file, maxDim) {
         return new Promise((resolve) => {
@@ -1303,6 +1470,7 @@
     }
 
     function renderAttachments() {
+        if(!attachPreview) return;
         attachPreview.innerHTML = '';
         if(attachedImages.length > 0) {
             attachPreview.classList.add('has-items');
@@ -1318,34 +1486,109 @@
     window.removeAttachment = function(idx) { attachedImages.splice(idx, 1); renderAttachments(); autoResizeInput(); }
     function clearAttachments() { attachedImages = []; renderAttachments(); autoResizeInput(); }
     window.openFullscreen = function(src) { document.getElementById('fs-image').src = src; document.getElementById('fs-image-overlay').style.display = 'flex'; }
-    document.getElementById('fs-image-overlay').addEventListener('click', function() { this.style.display = 'none'; });
+    const fsOverlay = document.getElementById('fs-image-overlay');
+    if(fsOverlay) fsOverlay.addEventListener('click', function() { this.style.display = 'none'; });
+
+    // ==========================================
+    // СЕТЕВЫЕ ЗАПРОСЫ
+    // ==========================================
+
+    async function streamGenApi(chat, domEl, msgObj, overrideModel = null) {
+        const model = overrideModel || selectedModel;
+        
+        // 1. Строгая подготовка сообщений
+        const formattedMessages = chat.messages.slice(0, -1)
+            .filter(m => m.content && typeof m.content === 'string' && m.content.trim() !== "")
+            .map(m => ({
+                role: m.role === 'system' ? 'system' : (m.role === 'assistant' ? 'assistant' : 'user'),
+                content: m.content
+            }));
+
+        window.showToast('Генерация через Perplexity...');
+
+        const requestPayload = {
+            model: model,
+            messages: formattedMessages,
+            callback_url: "https://localhost", // ИСПРАВЛЕНО: передаем валидный URL
+            is_sync: true,
+            temperature: temperature
+        };
+
+        const res = await fetch("https://api.gen-api.ru/api/v1/networks/perplexity", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${genApiKey}`
+            },
+            body: JSON.stringify(requestPayload),
+            signal: abortController.signal
+        });
+
+        if(!res.ok) { 
+            const e = await res.json(); 
+            throw new Error(`GenAPI Error ${res.status}: ${JSON.stringify(e)}`); 
+        }
+
+        const data = await res.json();
+        console.log("Полный ответ от GenAPI (streamGenApi):", data); // <--- ДОБАВЬТЕ ЭТУ СТРОКУ
+
+        // В синхронном ответе GenAPI результат обычно лежит в поле output
+        const finalOutput = data.response?.[0]?.choices?.[0]?.message?.content || "";
+
+        msgObj.content = finalOutput;
+        domEl.innerHTML = window.safeRenderMarkdown(msgObj.content);
+        chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+    }
+
+    async function runOpenRouterNonStream(model, messages, temp, abortSignal, sysInst) {
+        let formattedMessages = [];
+        if (sysInst) formattedMessages.push({ role: 'system', content: sysInst });
+        messages.forEach(m => {
+            formattedMessages.push({ role: m.role, content: m.content });
+        });
+
+        // ИСПРАВЛЕН URL (добавили /openrouter/v1)
+        const res = await fetch('https://api.proxyapi.ru/openrouter/v1/chat/completions', {
+            method: 'POST', 
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${apiKey}`,
+                'HTTP-Referer': 'https://ai-studio-ultimate.com',
+                'X-Title': 'AI Studio Ultimate'
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: formattedMessages,
+                temperature: temp,
+                stream: false
+            }),
+            signal: abortSignal
+        });
+
+        if(!res.ok) { 
+            const e = await res.json(); 
+            console.error("OpenRouter Error:", e);
+            throw new Error(`OpenRouter: ${e.error?.message || res.statusText}`); 
+        }
+        const data = await res.json();
+        return data.choices?.[0]?.message?.content || '';
+    }
 
     async function runOpenAINonStream(model, messages, temp, abortSignal, sysInst) {
         let formattedMessages = [];
         const isStrict = model.startsWith('o') || model.includes('search');
-
-        if (sysInst && !isStrict) {
-            formattedMessages.push({ role: 'system', content: sysInst });
-        }
-
+        if (sysInst && !isStrict) formattedMessages.push({ role: 'system', content: sysInst });
         messages.forEach((m, i) => {
             let text = m.content || '';
-            if (i === 0 && sysInst && isStrict) {
-                text = `<system_instructions>\n${sysInst}\n</system_instructions>\n\n` + text;
-            }
-
+            if (i === 0 && sysInst && isStrict) text = `<system_instructions>\n${sysInst}\n</system_instructions>\n\n` + text;
             if (m.images && m.images.length > 0) {
                 const content = [{ type: 'text', text: text }];
                 m.images.forEach(img => content.push({ type: 'image_url', image_url: { url: img } }));
                 formattedMessages.push({ role: m.role, content });
-            } else {
-                formattedMessages.push({ role: m.role, content: text });
-            }
+            } else { formattedMessages.push({ role: m.role, content: text }); }
         });
-
         const body = { model, messages: formattedMessages, stream: false };
         if (!isStrict) body.temperature = temp;
-
         const res = await fetch('https://api.proxyapi.ru/openai/v1/chat/completions', {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
             body: JSON.stringify(body), signal: abortSignal
@@ -1362,9 +1605,7 @@
             return { role: m.role === 'assistant' ? 'model' : 'user', parts };
         });
         const body = { contents: history, generationConfig: { temperature: temp } };
-        
         if (sysInst) body.systemInstruction = { parts: [{ text: sysInst }] }; 
-
         const res = await fetch(`https://api.proxyapi.ru/google/v1beta/models/${model}:generateContent?key=${apiKey}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: abortSignal
         });
@@ -1382,15 +1623,11 @@
                     const [meta, base64] = img.split(',');
                     content.push({ type: "image", source: { type: "base64", media_type: meta.split(':')[1].split(';')[0], data: base64 } });
                 });
-            } else {
-                content.push({ type: "text", text: m.content || '' });
-            }
+            } else { content.push({ type: "text", text: m.content || '' }); }
             return { role: m.role === 'assistant' ? 'assistant' : 'user', content };
         });
-
         const body = { model, max_tokens: maxTokens || 4000, temperature: temp, messages: history };
         if (sysInst) body.system = sysInst;
-
         const res = await fetch('https://api.proxyapi.ru/anthropic/v1/messages', {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
             body: JSON.stringify(body), signal: abortSignal
@@ -1399,8 +1636,50 @@
         const data = await res.json();
         return data.content?.[0]?.text || '';
     }
+    
+    async function runGenApiNonStream(model, messages, temp, abortSignal) {
+        const formattedMessages = messages
+            .filter(m => m.content && typeof m.content === 'string' && m.content.trim() !== "")
+            .map(m => ({
+                role: m.role === 'system' ? 'system' : (m.role === 'assistant' ? 'assistant' : 'user'),
+                content: String(m.content)
+            }));
+
+        const res = await fetch("https://api.gen-api.ru/api/v1/networks/perplexity", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${genApiKey}`
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: formattedMessages,
+                temperature: temp,
+                callback_url: "https://localhost", // ИСПРАВЛЕНО
+                is_sync: true
+            }),
+            signal: abortSignal
+        });
+
+        if(!res.ok) { 
+            const e = await res.json(); 
+            throw new Error(`GenAPI Error: ${e.message || res.status}`); 
+        }
+        const data = await res.json();
+        console.log("Полный ответ от GenAPI (runGenApiNonStream):", data);
+        return data.response?.[0]?.choices?.[0]?.message?.content || "";
+    }
 
     async function callNonStream(model, history, sysInst) {
+        const config = MODELS_CONFIG.find(m => m.id === model) || { provider: 'proxy-api' };
+        
+        if (config.provider === 'gen-api') {
+            return await runGenApiNonStream(model, history, temperature, abortController.signal);
+        } else if (config.provider === 'openrouter') {
+            return await runOpenRouterNonStream(model, history, temperature, abortController.signal, sysInst);
+        }
+
         if (model.startsWith('gemini')) return await runGeminiNonStream(model, history, temperature, abortController.signal, sysInst);
         else if (model.startsWith('claude')) return await runAnthropicNonStream(model, history, temperature, abortController.signal, sysInst);
         else return await runOpenAINonStream(model, history, temperature, abortController.signal, sysInst);
@@ -1414,64 +1693,42 @@
         const originalUserMsgContent = baseHistory[baseHistory.length - 1].content || '';
 
         const updateUI = (statusHtml) => {
-            domEl.innerHTML = statusHtml + safeRenderMarkdown(msgObj.content);
+            domEl.innerHTML = statusHtml + window.safeRenderMarkdown(msgObj.content);
             chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
         };
 
-        // ШАГ 1
         updateUI(`<div class="agent-status">🕵️‍♂️ Исследователь (${getPrettyModelName(agent.researcher)}) ищет данные...</div>`);
-        const sys1 = `Ты — Агент-Исследователь. 
-ПРАВИЛО 1: Если запрос пользователя — это просто приветствие, прощание или короткий бытовой диалог, не ищи ничего. Ответь СТРОГО одной фразой: "БЕЗ_ИССЛЕДОВАНИЯ". 
-ПРАВИЛО 2: Если запрос сложный, собери всю нужную информацию, факты и контекст.`;
-        
+        const sys1 = `Ты — Агент-Исследователь. ПРАВИЛО 1: Если запрос пользователя — это просто приветствие, прощание или короткий бытовой диалог, не ищи ничего. Ответь СТРОГО одной фразой: "БЕЗ_ИССЛЕДОВАНИЯ". ПРАВИЛО 2: Если запрос сложный, собери всю нужную информацию, факты и контекст.`;
         let step1History = JSON.parse(JSON.stringify(baseHistory)); 
         const researchData = await callNonStream(agent.researcher, step1History, sys1);
         msgObj.content += `<think>🕵️‍♂️ Исследователь (${getPrettyModelName(agent.researcher)}):\n\n${researchData}</think>\n\n`;
 
-        // ШАГ 2
         updateUI(`<div class="agent-status">🧠 Аналитик (${getPrettyModelName(agent.analyst)}) делает выводы...</div>`);
-        const sys2 = `Ты — Агент-Аналитик. 
-ПРАВИЛО: Если в "Данных от исследователя" написано "БЕЗ_ИССЛЕДОВАНИЯ", ответь СТРОГО одной фразой: "БЕЗ_АНАЛИЗА".
-ИНАЧЕ: Изучи запрос и данные Исследователя. Сделай логические выводы и составь подробный план итогового ответа.`;
-        
+        const sys2 = `Ты — Агент-Аналитик. ПРАВИЛО: Если в "Данных от исследователя" написано "БЕЗ_ИССЛЕДОВАНИЯ", ответь СТРОГО одной фразой: "БЕЗ_АНАЛИЗА". ИНАЧЕ: Изучи запрос и данные Исследователя. Сделай логические выводы и составь подробный план итогового ответа.`;
         let step2History = JSON.parse(JSON.stringify(baseHistory));
         step2History[step2History.length - 1].content = `<данные_от_исследователя>\n${researchData}\n</данные_от_исследователя>\n\n<запрос_пользователя>\n${originalUserMsgContent}\n</запрос_пользователя>`;
-        
         const analystData = await callNonStream(agent.analyst, step2History, sys2);
         msgObj.content += `<think>🧠 Аналитик (${getPrettyModelName(agent.analyst)}):\n\n${analystData}</think>\n\n`;
 
         let chainData = analystData;
 
-        // ДИНАМИЧЕСКИЕ ШАГИ
         if (agent.customSteps && agent.customSteps.length > 0 && !chainData.includes('БЕЗ_АНАЛИЗА')) {
             for (let i = 0; i < agent.customSteps.length; i++) {
                 const step = agent.customSteps[i];
                 updateUI(`<div class="agent-status">⚙️ Специалист: ${step.name} (${getPrettyModelName(step.model)}) работает...</div>`);
-                
-                const sysStep = `Ты — Агент-Специалист. Твоя роль: ${step.name}.
-ИНСТРУКЦИЯ: ${step.prompt}
-
-Выполни свою задачу, используя переданные тебе данные. Отвечай только по сути своей задачи.`;
-
+                const sysStep = `Ты — Агент-Специалист. Твоя роль: ${step.name}. ИНСТРУКЦИЯ: ${step.prompt} Выполни свою задачу, используя переданные тебе данные. Отвечай только по сути своей задачи.`;
                 let stepHistory = JSON.parse(JSON.stringify(baseHistory));
                 stepHistory[stepHistory.length - 1].content = `<входящие_данные>\n${chainData}\n</входящие_данные>\n\n<исходный_запрос>\n${originalUserMsgContent}\n</исходный_запрос>`;
-                
                 chainData = await callNonStream(step.model, stepHistory, sysStep);
                 msgObj.content += `<think>⚙️ Специалист: ${step.name} (${getPrettyModelName(step.model)}):\n\n${chainData}</think>\n\n`;
             }
         }
 
-        // ШАГ 3 (КРИТИК)
         if (agent.critic && !chainData.includes('БЕЗ_АНАЛИЗА')) {
             updateUI(`<div class="agent-status">🧐 Критик (${getPrettyModelName(agent.critic)}) проверяет результат...</div>`);
-            
-            const sysCritic = `Ты — Агент-Критик. Твоя задача — жестко, но конструктивно критиковать итоговый драфт ответа, который был сформирован предыдущими агентами. Найди логические ошибки, неточности, недостаток аргументации или несоответствие изначальному запросу.
-ПРАВИЛО 1: Если драфт идеален и не требует правок, ответь СТРОГО одной фразой: "БЕЗ_ОШИБОК".
-ПРАВИЛО 2: Если есть ошибки, сформируй их СТРОГО в виде Markdown-таблицы с колонками: | № | Тип ошибки/Недочет | Предлагаемое исправление |`;
-
+            const sysCritic = `Ты — Агент-Критик. Твоя задача — жестко, но конструктивно критиковать итоговый драфт ответа, который был сформирован предыдущими агентами. Найди логические ошибки, неточности, недостаток аргументации или несоответствие изначальному запросу. ПРАВИЛО 1: Если драфт идеален и не требует правок, ответь СТРОГО одной фразой: "БЕЗ_ОШИБОК". ПРАВИЛО 2: Если есть ошибки, сформируй их СТРОГО в виде Markdown-таблицы с колонками: | № | Тип ошибки/Недочет | Предлагаемое исправление |`;
             let step3History = JSON.parse(JSON.stringify(baseHistory));
             step3History[step3History.length - 1].content = `<запрос_пользователя>\n${originalUserMsgContent}\n</запрос_пользователя>\n\n<текущий_драфт_ответа>\n${chainData}\n</текущий_драфт_ответа>`;
-            
             const criticData = await callNonStream(agent.critic, step3History, sysCritic);
 
             if (!criticData.includes('БЕЗ_ОШИБОК')) {
@@ -1481,84 +1738,67 @@
 
                 const promptDiv = document.createElement('div');
                 promptDiv.className = 'critic-prompt-box';
-                promptDiv.innerHTML = `
-                    <div style="margin-bottom:10px; font-size:15px; font-weight:600; color:var(--danger-color);">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: text-bottom; margin-right: 5px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                        Критик нашёл возможные ошибки в цепочке
-                    </div>
-                    <div style="margin-bottom:15px; font-size:13px; color:var(--text-secondary);">Хотите применить изменения (Аналитик переделает финальный результат с учетом критики) или проигнорировать?</div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn btn-primary" id="critic-yes">Да, исправить ошибки</button>
-                        <button class="btn btn-secondary" id="critic-no">Нет, игнорировать</button>
-                    </div>
-                `;
+                promptDiv.innerHTML = `<div style="margin-bottom:10px; font-size:15px; font-weight:600; color:var(--danger-color);">Критик нашёл возможные ошибки в цепочке</div><div style="margin-bottom:15px; font-size:13px; color:var(--text-secondary);">Хотите применить изменения или проигнорировать?</div><div style="display:flex; gap:10px;"><button class="btn btn-primary" id="critic-yes">Да, исправить ошибки</button><button class="btn btn-secondary" id="critic-no">Нет, игнорировать</button></div>`;
                 domEl.appendChild(promptDiv);
                 chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
 
                 const applyChanges = await new Promise(resolve => {
-                    document.getElementById('critic-yes').onclick = () => { 
-                        promptDiv.classList.add('accepted');
-                        promptDiv.innerHTML = '<span style="color:var(--primary-color); font-weight:500; font-size:13px;">✓ Аналитик исправляет недочеты...</span>';
-                        resolve(true); 
-                    };
-                    document.getElementById('critic-no').onclick = () => { 
-                        promptDiv.remove(); 
-                        resolve(false); 
-                    };
+                    document.getElementById('critic-yes').onclick = () => { promptDiv.classList.add('accepted'); promptDiv.innerHTML = '<span style="color:var(--primary-color); font-weight:500; font-size:13px;">✓ Аналитик исправляет недочеты...</span>'; resolve(true); };
+                    document.getElementById('critic-no').onclick = () => { promptDiv.remove(); resolve(false); };
                 });
 
                 if (applyChanges) {
                     setTimeout(() => promptDiv.remove(), 2000); 
-
                     updateUI(`<div class="agent-status">🧠 Аналитик (${getPrettyModelName(agent.analyst)}) вносит исправления...</div>`);
-                    const sysReAnalyst = `Ты — Агент-Аналитик. Критик нашел ошибки в текущем драфте ответа. 
-Полностью перепиши и исправь драфт на основе исходного запроса пользователя и замечаний Критика. Убедись, что итоговый текст идеален.`;
-
+                    const sysReAnalyst = `Ты — Агент-Аналитик. Критик нашел ошибки в текущем драфте ответа. Полностью перепиши и исправь драфт на основе исходного запроса пользователя и замечаний Критика. Убедись, что итоговый текст идеален.`;
                     let step3_5History = JSON.parse(JSON.stringify(baseHistory));
                     step3_5History[step3_5History.length - 1].content = `<запрос_пользователя>\n${originalUserMsgContent}\n</запрос_пользователя>\n\n<текущий_драфт_с_ошибками>\n${chainData}\n</текущий_драфт_с_ошибками>\n\n<замечания_критика>\n${criticData}\n</замечания_критика>`;
-                    
                     chainData = await callNonStream(agent.analyst, step3_5History, sysReAnalyst);
                     msgObj.content += `<think>🔄 Исправленный результат (${getPrettyModelName(agent.analyst)}):\n\n${chainData}</think>\n\n`;
-                } else {
-                    msgObj.content = msgObj.content.replace(criticTag, '');
-                }
+                } else { msgObj.content = msgObj.content.replace(criticTag, ''); }
             }
         }
 
-        // ШАГ 4
         updateUI(`<div class="agent-status">🗣 Спикер (${getPrettyModelName(agent.finalizer)}) пишет ответ...</div>`);
-        
-        const sysFinal = `Ты финальный Спикер. 
-Если данные говорят "БЕЗ_ИССЛЕДОВАНИЯ" / "БЕЗ_АНАЛИЗА", просто общайся с пользователем естественно.
-В остальных случаях сформулируй развернутый, красивый ответ, строго опираясь на переданные тебе обработанные данные от специалистов. Не упоминай самих агентов в ответе.`;
-
+        const sysFinal = `Ты финальный Спикер. Если данные говорят "БЕЗ_ИССЛЕДОВАНИЯ" / "БЕЗ_АНАЛИЗА", просто общайся с пользователем естественно. В остальных случаях сформулируй развернутый, красивый ответ, строго опираясь на переданные тебе обработанные данные от специалистов. Не упоминай самих агентов в ответе.`;
         let finalChat = { messages: JSON.parse(JSON.stringify(baseHistory)) };
         finalChat.messages[finalChat.messages.length - 1].content = `<обработанные_данные_от_специалистов>\n${chainData}\n</обработанные_данные_от_специалистов>\n\n<запрос_пользователя>\n${originalUserMsgContent}\n</запрос_пользователя>\n\nСформулируй итоговый ответ.`;
         finalChat.messages.push({ role: 'assistant', content: '' });
 
-        domEl.innerHTML = safeRenderMarkdown(msgObj.content);
+        domEl.innerHTML = window.safeRenderMarkdown(msgObj.content);
 
-        const originalModel = selectedModel;
-        const originalSysPrompt = sysPrompt;
-        selectedModel = agent.finalizer;
-        sysPrompt = sysFinal; 
-
+        const originalModel = selectedModel; const originalSysPrompt = sysPrompt;
+        selectedModel = agent.finalizer; sysPrompt = sysFinal; 
         try {
             if(selectedModel.startsWith('gemini')) await streamGemini(finalChat, domEl, msgObj);
             else if(selectedModel.startsWith('claude')) await streamAnthropic(finalChat, domEl, msgObj);
             else await streamOpenAI(finalChat, domEl, msgObj);
-        } finally {
-            selectedModel = originalModel; 
-            sysPrompt = originalSysPrompt;
+        } finally { selectedModel = originalModel; sysPrompt = originalSysPrompt; }
+    }
+
+    async function runStreamForModel(chat, domEl, msgObj, targetModel) {
+        const config = MODELS_CONFIG.find(m => m.id === targetModel) || { provider: 'proxy-api' };
+
+        if (config.provider === 'gen-api') {
+            await streamGenApi(chat, domEl, msgObj, targetModel);
+        } else if (config.provider === 'openrouter') {
+            await streamOpenRouter(chat, domEl, msgObj, targetModel); // Вызываем стрим для OpenRouter
+        } else if(targetModel.startsWith('gemini')) {
+            await streamGemini(chat, domEl, msgObj, targetModel);
+        } else if(targetModel.startsWith('claude')) {
+            await streamAnthropic(chat, domEl, msgObj, targetModel);
+        } else {
+            await streamOpenAI(chat, domEl, msgObj, targetModel);
         }
     }
 
     async function handleSend() {
+        if(!userInput) return;
         const text = userInput.value.trim();
         if(!text && attachedImages.length === 0) return;
         if(!apiKey) { window.showToast('Укажите API ключ в настройках', 'error'); return; }
 
-        if(!currentChatId) createNewChat();
+        if(!currentChatId || !chats[currentChatId]) createNewChat();
         const chat = chats[currentChatId];
         const userMsg = { role: 'user', content: text, images: [...attachedImages] };
         chat.messages.push(userMsg);
@@ -1566,56 +1806,89 @@
         if(chat.messages.length === 1) { chat.title = text.substring(0, 30) || 'Изображение'; renderChatList(); }
         
         appendMessageToDOM(userMsg, true, chat.messages.length - 1);
-        chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+        if(chatHistoryDOM) chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
 
         userInput.value = ''; clearAttachments();
         
         const aiMsg = { role: 'assistant', content: '' };
+        if (isCompareMode) {
+            aiMsg.isCompare = true;
+            aiMsg.left = { model: selectedModel, content: '' };
+            aiMsg.right = { model: selectedModel2, content: '' };
+        }
         chat.messages.push(aiMsg);
         const aiContentEl = appendMessageToDOM(aiMsg, true, chat.messages.length - 1);
         
-        userInput.disabled = true; sendBtn.style.display = 'none'; stopBtn.style.display = 'flex'; typingIndicator.style.display = 'flex';
-        chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+        userInput.disabled = true; 
+        if(sendBtn) sendBtn.style.display = 'none'; 
+        if(stopBtn) stopBtn.style.display = 'flex'; 
+        if(typingIndicator) typingIndicator.style.display = 'flex';
+        if(chatHistoryDOM) chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
 
         abortController = new AbortController();
 
         try {
-            if (selectedModel.startsWith('agent_')) {
+            if (isCompareMode) {
+                await Promise.allSettled([
+                    runStreamForModel(chat, aiContentEl.left, aiMsg.left, selectedModel),
+                    runStreamForModel(chat, aiContentEl.right, aiMsg.right, selectedModel2)
+                ]);
+            } else if (selectedModel.startsWith('agent_')) {
                 await runAgentPipeline(chat, aiContentEl, aiMsg, selectedModel);
             } else {
-                if(selectedModel.startsWith('gemini')) await streamGemini(chat, aiContentEl, aiMsg);
-                else if(selectedModel.startsWith('claude')) await streamAnthropic(chat, aiContentEl, aiMsg);
-                else await streamOpenAI(chat, aiContentEl, aiMsg);
+                await runStreamForModel(chat, aiContentEl, aiMsg, selectedModel);
             }
         } catch(err) {
-            if(err.name === 'AbortError') { aiMsg.content += " [Остановлено]"; aiContentEl.innerHTML = safeRenderMarkdown(aiMsg.content); } 
-            else { window.showToast(err.message, 'error'); aiMsg.content += `\n\n*[Ошибка: ${err.message}]*`; aiContentEl.innerHTML = safeRenderMarkdown(aiMsg.content); }
+            if(err.name === 'AbortError') { 
+                if (isCompareMode) {
+                    aiMsg.left.content += " [Остановлено]"; aiMsg.right.content += " [Остановлено]";
+                    aiContentEl.left.innerHTML = window.safeRenderMarkdown(aiMsg.left.content);
+                    aiContentEl.right.innerHTML = window.safeRenderMarkdown(aiMsg.right.content);
+                } else {
+                    aiMsg.content += " [Остановлено]"; if(aiContentEl) aiContentEl.innerHTML = window.safeRenderMarkdown(aiMsg.content); 
+                }
+            } else { 
+                window.showToast(err.message, 'error'); 
+                if (isCompareMode) {
+                    aiMsg.left.content += `\n\n*[Ошибка: ${err.message}]*`; aiMsg.right.content += `\n\n*[Ошибка: ${err.message}]*`;
+                    aiContentEl.left.innerHTML = window.safeRenderMarkdown(aiMsg.left.content);
+                    aiContentEl.right.innerHTML = window.safeRenderMarkdown(aiMsg.right.content);
+                } else {
+                    aiMsg.content += `\n\n*[Ошибка: ${err.message}]*`; if(aiContentEl) aiContentEl.innerHTML = window.safeRenderMarkdown(aiMsg.content); 
+                }
+            }
         } finally {
-            userInput.disabled = false; sendBtn.style.display = 'flex'; stopBtn.style.display = 'none'; typingIndicator.style.display = 'none'; userInput.focus();
+            userInput.disabled = false; 
+            if(sendBtn) sendBtn.style.display = 'flex'; 
+            if(stopBtn) stopBtn.style.display = 'none'; 
+            if(typingIndicator) typingIndicator.style.display = 'none'; 
+            userInput.focus();
             chat.updatedAt = Date.now(); saveChatsToStorage();
         }
     }
 
-    sendBtn.addEventListener('click', handleSend);
-    stopBtn.addEventListener('click', () => { if(abortController) abortController.abort(); });
+    if(sendBtn) sendBtn.addEventListener('click', handleSend);
+    if(stopBtn) stopBtn.addEventListener('click', () => { if(abortController) abortController.abort(); });
 
-    async function streamGemini(chat, domEl, msgObj) {
-        const history = chat.messages.map(m => {
-            const parts = [{ text: m.content || '' }];
+    async function streamGemini(chat, domEl, msgObj, overrideModel = null) {
+        const history = chat.messages.slice(0, -1).reduce((acc, m) => {
+            let text = m.content || '';
+            // ЗАЩИТА: игнорируем пустые сообщения
+            if (!text.trim() && (!m.images || m.images.length === 0)) return acc;
+            
+            const parts = [{ text: text }];
             if(m.images) { m.images.forEach(base64 => { const [meta, data] = base64.split(','); parts.push({ inline_data: { mime_type: meta.split(':')[1].split(';')[0], data: data } }); }); }
-            return { role: m.role === 'assistant' ? 'model' : 'user', parts };
-        });
-
-        history.pop();
+            acc.push({ role: m.role === 'assistant' ? 'model' : 'user', parts });
+            return acc;
+        }, []);
 
         const body = { contents: history, generationConfig: { temperature: temperature } };
-        if(sysPrompt && !selectedModel.startsWith('agent_')) body.systemInstruction = { parts: [{ text: sysPrompt }] };
+        if(sysPrompt && !(overrideModel || selectedModel).startsWith('agent_')) body.systemInstruction = { parts: [{ text: sysPrompt }] };
         if(maxTokens) body.generationConfig.maxOutputTokens = maxTokens;
 
-        const res = await fetch(`https://api.proxyapi.ru/google/v1beta/models/${selectedModel}:streamGenerateContent?alt=sse&key=${apiKey}`, {
+        const res = await fetch(`https://api.proxyapi.ru/google/v1beta/models/${overrideModel || selectedModel}:streamGenerateContent?alt=sse&key=${apiKey}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: abortController.signal
         });
-
         if(!res.ok) throw new Error(`API Error: ${res.status}`);
 
         const reader = res.body.getReader(); const decoder = new TextDecoder(); let buffer = '';
@@ -1631,27 +1904,24 @@
                     try {
                         const data = JSON.parse(jsonStr);
                         const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                        if(txt) { msgObj.content += txt; domEl.innerHTML = safeRenderMarkdown(msgObj.content); chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight; }
+                        if(txt) { msgObj.content += txt; domEl.innerHTML = window.safeRenderMarkdown(msgObj.content); chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight; }
                     } catch(e) {}
                 }
             }
         }
     }
 
-    async function streamOpenAI(chat, domEl, msgObj) {
+    async function streamOpenAI(chat, domEl, msgObj, overrideModel = null) {
         const messages = [];
-        const isStrict = selectedModel.startsWith('o') || selectedModel.includes('search');
-        
-        if(sysPrompt && !isStrict) {
-            messages.push({ role: 'system', content: sysPrompt });
-        }
+        const target = overrideModel || selectedModel; const isStrict = target.startsWith('o') || target.includes('search');
+        if(sysPrompt && !isStrict) messages.push({ role: 'system', content: sysPrompt });
         
         chat.messages.slice(0, -1).forEach((m, i) => {
             let text = m.content || '';
-            if (i === 0 && sysPrompt && isStrict) {
-                text = `<system_instructions>\n${sysPrompt}\n</system_instructions>\n\n` + text;
-            }
-
+            // ЗАЩИТА: игнорируем пустые сообщения
+            if (!text.trim() && (!m.images || m.images.length === 0)) return;
+            
+            if (i === 0 && sysPrompt && isStrict) text = `<system_instructions>\n${sysPrompt}\n</system_instructions>\n\n` + text;
             if(m.images && m.images.length > 0) {
                 const content = [{ type: 'text', text: text }];
                 m.images.forEach(img => content.push({ type: 'image_url', image_url: { url: img } }));
@@ -1659,15 +1929,13 @@
             } else { messages.push({ role: m.role, content: text }); }
         });
 
-        const body = { model: selectedModel, messages: messages, stream: true };
-        
+        const body = { model: target, messages: messages, stream: true };
         if(!isStrict) body.temperature = temperature;
         if(maxTokens && !isStrict) body.max_tokens = maxTokens;
 
         const res = await fetch('https://api.proxyapi.ru/openai/v1/chat/completions', {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify(body), signal: abortController.signal
         });
-
         if(!res.ok) { const e = await res.json(); throw new Error(`API Error: ${e.error?.message || res.status}`); }
 
         const reader = res.body.getReader(); const decoder = new TextDecoder(); let buffer = '';
@@ -1683,37 +1951,40 @@
                     try {
                         const data = JSON.parse(jsonStr);
                         const txt = data.choices?.[0]?.delta?.content;
-                        if(txt) { msgObj.content += txt; domEl.innerHTML = safeRenderMarkdown(msgObj.content); chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight; }
+                        if(txt) { msgObj.content += txt; domEl.innerHTML = window.safeRenderMarkdown(msgObj.content); chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight; }
                     } catch(e) {}
                 }
             }
         }
     }
 
-    async function streamAnthropic(chat, domEl, msgObj) {
-        const messages = chat.messages.slice(0, -1).map(m => {
+    async function streamAnthropic(chat, domEl, msgObj, overrideModel = null) {
+        const messages = chat.messages.slice(0, -1).reduce((acc, m) => {
+            let text = m.content || '';
+            // ЗАЩИТА: игнорируем пустые сообщения
+            if (!text.trim() && (!m.images || m.images.length === 0)) return acc;
+            
             let content = [];
             if (m.images && m.images.length > 0) {
-                if (m.content) content.push({ type: "text", text: m.content });
+                if (text) content.push({ type: "text", text: text });
                 m.images.forEach(img => {
                     const [meta, base64] = img.split(',');
                     const mime = meta.split(':')[1].split(';')[0];
                     content.push({ type: "image", source: { type: "base64", media_type: mime, data: base64 } });
                 });
-            } else {
-                content.push({ type: "text", text: m.content || '' });
-            }
-            return { role: m.role === 'assistant' ? 'assistant' : 'user', content: content };
-        });
+            } else { content.push({ type: "text", text: text }); }
+            
+            acc.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: content });
+            return acc;
+        }, []);
 
-        const body = { model: selectedModel, max_tokens: maxTokens || 4000, temperature: temperature, messages: messages, stream: true };
-        if (sysPrompt && !selectedModel.startsWith('agent_')) body.system = sysPrompt;
+        const body = { model: overrideModel || selectedModel, max_tokens: maxTokens || 4000, temperature: temperature, messages: messages, stream: true };
+        if (sysPrompt && !(overrideModel || selectedModel).startsWith('agent_')) body.system = sysPrompt;
 
         const res = await fetch('https://api.proxyapi.ru/anthropic/v1/messages', {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
             body: JSON.stringify(body), signal: abortController.signal
         });
-
         if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || res.status); }
 
         const reader = res.body.getReader(); const decoder = new TextDecoder(); let buffer = '';
@@ -1730,7 +2001,7 @@
                         const data = JSON.parse(jsonStr);
                         if (data.type === "content_block_delta") {
                             const txt = data.delta?.text;
-                            if (txt) { msgObj.content += txt; domEl.innerHTML = safeRenderMarkdown(msgObj.content); chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight; }
+                            if (txt) { msgObj.content += txt; domEl.innerHTML = window.safeRenderMarkdown(msgObj.content); chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight; }
                         }
                     } catch (e) {}
                 }
@@ -1738,11 +2009,74 @@
         }
     }
 
+
+    async function streamOpenRouter(chat, domEl, msgObj, overrideModel = null) {
+        const model = overrideModel || selectedModel;
+        const messages = [];
+        if (sysPrompt) messages.push({ role: 'system', content: sysPrompt });
+        
+        chat.messages.slice(0, -1).forEach(m => {
+            if (m.content && m.content.trim() !== "") {
+                messages.push({ role: m.role, content: m.content });
+            }
+        });
+
+        const res = await fetch('https://api.proxyapi.ru/openrouter/v1/chat/completions', {
+            method: 'POST', 
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${apiKey}`,
+                'HTTP-Referer': 'https://ai-studio-ultimate.com',
+                'X-Title': 'AI Studio Ultimate'
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: messages,
+                temperature: temperature,
+                stream: true
+            }),
+            signal: abortController.signal
+        });
+
+        if(!res.ok) { 
+            const e = await res.json();
+            throw new Error(`OpenRouter Stream Error: ${e.error?.message || res.status}`); 
+        }
+
+        const reader = res.body.getReader(); 
+        const decoder = new TextDecoder(); 
+        let buffer = '';
+        
+        while(true) {
+            const { done, value } = await reader.read();
+            if(done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n'); 
+            buffer = lines.pop();
+            for(let line of lines) {
+                if(line.startsWith('data:')) {
+                    const jsonStr = line.replace('data:', '').trim();
+                    if(jsonStr === '[DONE]') break;
+                    try {
+                        const data = JSON.parse(jsonStr);
+                        const txt = data.choices?.[0]?.delta?.content;
+                        if(txt) { 
+                            msgObj.content += txt; 
+                            domEl.innerHTML = window.safeRenderMarkdown(msgObj.content); 
+                            chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight; 
+                        }
+                    } catch(e) {}
+                }
+            }
+        }
+    }
+
     // ==========================================
-    // CREATOR AGENTS
+    // AGENT CREATOR
     // ==========================================
     function renderSettingsAgentList() {
         const listDOM = document.getElementById('settings-agent-list');
+        if(!listDOM) return;
         listDOM.innerHTML = '';
         const keys = Object.keys(customAgents);
         
@@ -1770,10 +2104,7 @@
             `;
 
             item.innerHTML = `
-                <div>
-                    <h4>🤖 ${agent.name}</h4>
-                    <div class="agent-list-item-recipe">${recipeHtml}</div>
-                </div>
+                <div><h4>🤖 ${agent.name}</h4><div class="agent-list-item-recipe">${recipeHtml}</div></div>
                 <button class="icon-btn" onclick="deleteAgent('${id}')" style="color:var(--danger-color); margin-left: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
             `;
             listDOM.appendChild(item);
@@ -1784,15 +2115,14 @@
         if(confirm('Удалить этого агента?')) {
             delete customAgents[id];
             localStorage.setItem('pa_agents', JSON.stringify(customAgents));
-            renderSettingsAgentList();
-            renderMainModelDropdown();
+            renderSettingsAgentList(); renderMainModelDropdown();
         }
     }
 
     function buildPremiumSelect(listId, textId, hiddenInputId, defaultValue) {
         const listDOM = document.getElementById(listId);
+        if(!listDOM) return;
         listDOM.innerHTML = ''; 
-        
         const groupedModels = MODELS_CONFIG.reduce((acc, curr) => {
             if(!acc[curr.group]) acc[curr.group] = [];
             acc[curr.group].push(curr); return acc;
@@ -1807,8 +2137,7 @@
             models.forEach(m => {
                 const opt = document.createElement('div');
                 opt.className = 'premium-model-option' + (m.id === defaultValue ? ' selected' : '');
-                opt.textContent = m.name;
-                opt.dataset.value = m.id;
+                opt.textContent = m.name; opt.dataset.value = m.id;
                 
                 opt.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -1821,15 +2150,12 @@
                 listDOM.appendChild(opt);
             });
         }
-        
         document.getElementById(textId).textContent = getPrettyModelName(defaultValue);
         document.getElementById(hiddenInputId).value = defaultValue;
     }
 
     window.toggleModelList = function(listId) {
-        document.querySelectorAll('.premium-model-list').forEach(l => {
-            if(l.id !== listId) l.classList.remove('open');
-        });
+        document.querySelectorAll('.premium-model-list').forEach(l => { if(l.id !== listId) l.classList.remove('open'); });
         document.getElementById(listId).classList.toggle('open');
     }
 
@@ -1837,6 +2163,7 @@
         customStepCounter++;
         const stepId = 'cstep_' + Date.now() + '_' + customStepCounter;
         const container = document.getElementById('custom-steps-container');
+        if(!container) return;
 
         const stepDiv = document.createElement('div');
         stepDiv.className = 'custom-step-block';
@@ -1860,243 +2187,385 @@
             </div>
         `;
         container.appendChild(stepDiv);
-
         buildPremiumSelect(`list-${stepId}`, `text-${stepId}`, `input-${stepId}`, 'gpt-4o-mini-2024-07-18');
     }
 
     window.updateStepNumbers = function() {
         const blocks = document.querySelectorAll('.custom-step-block h5');
-        blocks.forEach((el, index) => {
-            el.textContent = 'Специалист ' + (index + 1);
-        });
+        blocks.forEach((el, index) => { el.textContent = 'Специалист ' + (index + 1); });
         customStepCounter = blocks.length;
     }
 
     const agentModal = document.getElementById('agent-modal');
-    
-    document.getElementById('btn-open-agent-creator').addEventListener('click', () => {
-        buildPremiumSelect('list-res', 'text-res', 'agent-researcher', 'gpt-4o-search-preview-2025-03-11');
-        buildPremiumSelect('list-ana', 'text-ana', 'agent-analyst', 'o4-mini-2025-04-16');
-        buildPremiumSelect('list-cri', 'text-cri', 'agent-critic', 'claude-3-5-haiku-20241022');
-        buildPremiumSelect('list-fin', 'text-fin', 'agent-finalizer', 'gpt-5.2-chat-latest');
-        
-        document.getElementById('agent-name').value = '';
-        document.getElementById('custom-steps-container').innerHTML = ''; // Очищаем динамические шаги
-        customStepCounter = 0;
-        agentModal.classList.add('open');
-    });
-
-    document.getElementById('close-agent-modal').addEventListener('click', () => agentModal.classList.remove('open'));
-    document.getElementById('cancel-agent').addEventListener('click', () => agentModal.classList.remove('open'));
-
-    document.getElementById('save-agent').addEventListener('click', () => {
-        const name = document.getElementById('agent-name').value.trim();
-        if(!name) return window.showToast('Введите имя агента', 'error');
-
-        // Собираем кастомные шаги
-        const customSteps = [];
-        document.querySelectorAll('.custom-step-block').forEach(block => {
-            const sName = block.querySelector('.step-name').value.trim() || 'Специалист';
-            const sPrompt = block.querySelector('.step-prompt').value.trim() || 'Обработай текст';
-            const sModel = block.querySelector('.step-model').value;
-            customSteps.push({ name: sName, prompt: sPrompt, model: sModel });
+    const btnOpenAgent = document.getElementById('btn-open-agent-creator');
+    if(btnOpenAgent) {
+        btnOpenAgent.addEventListener('click', () => {
+            buildPremiumSelect('list-res', 'text-res', 'agent-researcher', 'gpt-4o-search-preview-2025-03-11');
+            buildPremiumSelect('list-ana', 'text-ana', 'agent-analyst', 'o4-mini-2025-04-16');
+            buildPremiumSelect('list-cri', 'text-cri', 'agent-critic', 'claude-3-5-haiku-20241022');
+            buildPremiumSelect('list-fin', 'text-fin', 'agent-finalizer', 'gpt-5.2-chat-latest');
+            document.getElementById('agent-name').value = '';
+            document.getElementById('custom-steps-container').innerHTML = ''; 
+            customStepCounter = 0;
+            agentModal.classList.add('open');
         });
+    }
 
-        const id = 'agent_' + Date.now().toString(36);
-        customAgents[id] = {
-            name: name,
-            researcher: document.getElementById('agent-researcher').value,
-            analyst: document.getElementById('agent-analyst').value,
-            customSteps: customSteps,
-            critic: document.getElementById('agent-critic').value,
-            finalizer: document.getElementById('agent-finalizer').value
-        };
+    const btnCloseAgent = document.getElementById('close-agent-modal');
+    const btnCancelAgent = document.getElementById('cancel-agent');
+    if(btnCloseAgent) btnCloseAgent.addEventListener('click', () => agentModal.classList.remove('open'));
+    if(btnCancelAgent) btnCancelAgent.addEventListener('click', () => agentModal.classList.remove('open'));
 
-        localStorage.setItem('pa_agents', JSON.stringify(customAgents));
-        agentModal.classList.remove('open');
-        window.showToast('Агент создан!');
-        renderSettingsAgentList();
-        renderMainModelDropdown();
-    });
+    const btnSaveAgent = document.getElementById('save-agent');
+    if(btnSaveAgent) {
+        btnSaveAgent.addEventListener('click', () => {
+            const name = document.getElementById('agent-name').value.trim();
+            if(!name) return window.showToast('Введите имя агента', 'error');
+
+            const customSteps = [];
+            document.querySelectorAll('.custom-step-block').forEach(block => {
+                const sName = block.querySelector('.step-name').value.trim() || 'Специалист';
+                const sPrompt = block.querySelector('.step-prompt').value.trim() || 'Обработай текст';
+                const sModel = block.querySelector('.step-model').value;
+                customSteps.push({ name: sName, prompt: sPrompt, model: sModel });
+            });
+
+            const id = 'agent_' + Date.now().toString(36);
+            customAgents[id] = {
+                name: name,
+                researcher: document.getElementById('agent-researcher').value,
+                analyst: document.getElementById('agent-analyst').value,
+                customSteps: customSteps,
+                critic: document.getElementById('agent-critic').value,
+                finalizer: document.getElementById('agent-finalizer').value
+            };
+
+            localStorage.setItem('pa_agents', JSON.stringify(customAgents));
+            agentModal.classList.remove('open');
+            window.showToast('Агент создан!');
+            renderSettingsAgentList(); renderMainModelDropdown();
+        });
+    }
 
     // ==========================================
     // VOICE INPUT
     // ==========================================
-    voiceBtn.addEventListener('click', async () => {
-        if(!apiKey) return window.showToast('Нужен API ключ', 'error');
-        if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); voiceBtn.classList.remove('recording'); return; }
-
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            let mimeType = 'audio/webm';
-            if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
-            
-            mediaRecorder = new MediaRecorder(stream, { mimeType });
-            audioChunks = [];
-            voiceBtn.classList.add('recording');
-            window.showToast('Запись...');
-
-            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-            mediaRecorder.onstop = async () => {
-                stream.getTracks().forEach(t => t.stop());
-                const blob = new Blob(audioChunks, { type: mimeType });
-                const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
+    if(voiceBtn) {
+        voiceBtn.addEventListener('click', async () => {
+            if(!apiKey) return window.showToast('Нужен API ключ', 'error');
+            if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); voiceBtn.classList.remove('recording'); return; }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                let mimeType = 'audio/webm';
+                if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
                 
-                const formData = new FormData();
-                formData.append('file', blob, `voice.${ext}`);
-                formData.append('model', 'whisper-1');
-                formData.append('response_format', 'text');
-                
-                window.showToast('Распознавание...');
-                try {
-                    const res = await fetch('https://api.proxyapi.ru/openai/v1/audio/transcriptions', {
-                        method: 'POST', headers: { 'Authorization': `Bearer ${apiKey}` }, body: formData
-                    });
-                    if (!res.ok) throw new Error();
-                    const text = await res.text();
-                    if(text.trim()) { userInput.value += (userInput.value ? ' ' : '') + text.trim(); autoResizeInput(); }
-                } catch(e) { window.showToast('Ошибка распознавания', 'error'); }
-            };
-            mediaRecorder.start();
-        } catch(e) { window.showToast('Нужен HTTPS для микрофона', 'error'); }
-    });
+                mediaRecorder = new MediaRecorder(stream, { mimeType });
+                audioChunks = [];
+                voiceBtn.classList.add('recording');
+                window.showToast('Запись...');
+
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = async () => {
+                    stream.getTracks().forEach(t => t.stop());
+                    const blob = new Blob(audioChunks, { type: mimeType });
+                    const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
+                    
+                    const formData = new FormData();
+                    formData.append('file', blob, `voice.${ext}`);
+                    formData.append('model', 'whisper-1');
+                    formData.append('response_format', 'text');
+                    
+                    window.showToast('Распознавание...');
+                    try {
+                        const res = await fetch('https://api.proxyapi.ru/openai/v1/audio/transcriptions', {
+                            method: 'POST', headers: { 'Authorization': `Bearer ${apiKey}` }, body: formData
+                        });
+                        if (!res.ok) throw new Error();
+                        const text = await res.text();
+                        if(text.trim()) { userInput.value += (userInput.value ? ' ' : '') + text.trim(); autoResizeInput(); }
+                    } catch(e) { window.showToast('Ошибка распознавания', 'error'); }
+                };
+                mediaRecorder.start();
+            } catch(e) { window.showToast('Нужен HTTPS для микрофона', 'error'); }
+        });
+    }
 
     // ==========================================
     // SETTINGS & DATA MANAGEMENT
     // ==========================================
     const settingsModal = document.getElementById('settings-modal');
+    const btnOpenSettings = document.getElementById('btn-open-settings');
+    if(btnOpenSettings) {
+        btnOpenSettings.addEventListener('click', () => {
+            document.getElementById('gen-api-key').value = genApiKey;
+            document.getElementById('api-key').value = apiKey;
+            document.getElementById('system-prompt').value = sysPrompt;
+            document.getElementById('temperature').value = temperature;
+            document.getElementById('max-tokens').value = maxTokens || '';
+            document.getElementById('temp-display').textContent = temperature;
+            renderSettingsAgentList();
+            settingsModal.classList.add('open');
+        });
+    }
     
-    document.getElementById('btn-open-settings').addEventListener('click', () => {
-        document.getElementById('api-key').value = apiKey;
-        document.getElementById('system-prompt').value = sysPrompt;
-        document.getElementById('temperature').value = temperature;
-        document.getElementById('max-tokens').value = maxTokens || '';
-        document.getElementById('temp-display').textContent = temperature;
-        renderSettingsAgentList();
-        settingsModal.classList.add('open');
-    });
-    
-    document.getElementById('close-settings').addEventListener('click', () => settingsModal.classList.remove('open'));
-    document.getElementById('cancel-settings').addEventListener('click', () => settingsModal.classList.remove('open'));
-    document.getElementById('temperature').addEventListener('input', (e) => document.getElementById('temp-display').textContent = e.target.value);
+    const btnCloseSettings = document.getElementById('close-settings');
+    const btnCancelSettings = document.getElementById('cancel-settings');
+    const tempInput = document.getElementById('temperature');
+    if(btnCloseSettings) btnCloseSettings.addEventListener('click', () => settingsModal.classList.remove('open'));
+    if(btnCancelSettings) btnCancelSettings.addEventListener('click', () => settingsModal.classList.remove('open'));
+    if(tempInput) tempInput.addEventListener('input', (e) => document.getElementById('temp-display').textContent = e.target.value);
 
-    document.getElementById('save-settings').addEventListener('click', () => {
-        apiKey = document.getElementById('api-key').value.trim();
-        sysPrompt = document.getElementById('system-prompt').value.trim();
-        temperature = parseFloat(document.getElementById('temperature').value);
-        const mt = parseInt(document.getElementById('max-tokens').value);
-        maxTokens = isNaN(mt) ? null : mt;
+    const btnSaveSettings = document.getElementById('save-settings');
+    if(btnSaveSettings) {
+        btnSaveSettings.addEventListener('click', () => {
+            // Добавьте эти две строки
+            genApiKey = document.getElementById('gen-api-key').value.trim();
+            localStorage.setItem('pa_gen_api_key', genApiKey);
+            apiKey = document.getElementById('api-key').value.trim();
+            sysPrompt = document.getElementById('system-prompt').value.trim();
+            temperature = parseFloat(document.getElementById('temperature').value);
+            const mt = parseInt(document.getElementById('max-tokens').value);
+            maxTokens = isNaN(mt) ? null : mt;
 
-        localStorage.setItem('pa_api_key', apiKey);
-        localStorage.setItem('pa_sysprompt', sysPrompt);
-        localStorage.setItem('pa_temp', temperature);
-        if(maxTokens) localStorage.setItem('pa_maxtokens', maxTokens); else localStorage.removeItem('pa_maxtokens');
+            localStorage.setItem('pa_api_key', apiKey);
+            localStorage.setItem('pa_sysprompt', sysPrompt);
+            localStorage.setItem('pa_temp', temperature);
+            if(maxTokens) localStorage.setItem('pa_maxtokens', maxTokens); else localStorage.removeItem('pa_maxtokens');
 
-        settingsModal.classList.remove('open');
-        window.showToast('Сохранено');
-    });
-
-    document.getElementById('btn-export-backup').addEventListener('click', () => {
-        const backup = { chats, agents: customAgents, settings: { apiKey, sysPrompt, temperature, maxTokens } };
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([JSON.stringify(backup)], {type: 'application/json'}));
-        a.download = 'ai_studio_backup.json'; a.click();
-    });
-    
-    document.getElementById('btn-import-backup').addEventListener('change', (e) => {
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-            try {
-                const data = JSON.parse(ev.target.result);
-                if(data.chats) {
-                    chats = data.chats;
-                    await clearChatsFromDB(); 
-                    for (let key in chats) await saveChatToDB(chats[key]);
-                }
-                if(data.agents) { customAgents = data.agents; localStorage.setItem('pa_agents', JSON.stringify(customAgents)); }
-                if(data.settings) { apiKey = data.settings.apiKey; localStorage.setItem('pa_api_key', apiKey); }
-                saveChatsToStorage();
-                renderChatList(); loadCurrentChat(); renderMainModelDropdown(); settingsModal.classList.remove('open');
-                window.showToast('Бэкап загружен');
-            } catch(e) { window.showToast('Ошибка файла', 'error'); }
-        };
-        if(e.target.files[0]) reader.readAsText(e.target.files[0]);
-    });
-
-    document.getElementById('btn-clear-all').addEventListener('click', async () => {
-        if(confirm('Удалить всё?')) {
-            chats = {};
-            await clearChatsFromDB();
-            createNewChat();
             settingsModal.classList.remove('open');
-        }
-    });
+            window.showToast('Сохранено');
+        });
+    }
+
+    const btnExportBackup = document.getElementById('btn-export-backup');
+    if(btnExportBackup) {
+        btnExportBackup.addEventListener('click', () => {
+            const backup = { chats, agents: customAgents, settings: { apiKey, sysPrompt, temperature, maxTokens } };
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(backup)], {type: 'application/json'}));
+            a.download = 'ai_studio_backup.json'; a.click();
+        });
+    }
     
-    document.getElementById('btn-export-chat').addEventListener('click', () => {
-        if(!currentChatId) return;
-        let md = `# ${chats[currentChatId].title}\n\n`;
-        chats[currentChatId].messages.forEach(m => md += `### ${m.role}\n${m.content}\n\n`);
-        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([md], {type:'text/markdown'})); a.download = 'chat.md'; a.click();
-    });
+    const btnImportBackup = document.getElementById('btn-import-backup');
+    if(btnImportBackup) {
+        btnImportBackup.addEventListener('change', (e) => {
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if(data.chats) {
+                        chats = data.chats;
+                        await clearChatsFromDB(); 
+                        for (let key in chats) await saveChatToDB(chats[key]);
+                    }
+                    if(data.agents) { customAgents = data.agents; localStorage.setItem('pa_agents', JSON.stringify(customAgents)); }
+                    if(data.settings) { apiKey = data.settings.apiKey; localStorage.setItem('pa_api_key', apiKey); }
+                    saveChatsToStorage();
+                    renderChatList(); loadCurrentChat(); renderMainModelDropdown(); settingsModal.classList.remove('open');
+                    window.showToast('Бэкап загружен');
+                } catch(e) { window.showToast('Ошибка файла', 'error'); }
+            };
+            if(e.target.files[0]) reader.readAsText(e.target.files[0]);
+        });
+    }
+
+    const btnClearAll = document.getElementById('btn-clear-all');
+    if(btnClearAll) {
+        btnClearAll.addEventListener('click', async () => {
+            if(confirm('Удалить всё?')) {
+                chats = {};
+                await clearChatsFromDB();
+                createNewChat();
+                settingsModal.classList.remove('open');
+            }
+        });
+    }
+    
+    const btnExportChat = document.getElementById('btn-export-chat');
+    if(btnExportChat) {
+        btnExportChat.addEventListener('click', () => {
+            if(!currentChatId) return;
+            let md = `# ${chats[currentChatId].title}\n\n`;
+            chats[currentChatId].messages.forEach(m => md += `### ${m.role}\n${m.content}\n\n`);
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([md], {type:'text/markdown'})); a.download = 'chat.md'; a.click();
+        });
+    }
+
+    // EMAIL BACKUP
+    const btnEmailBackup = document.getElementById('btn-email-backup');
+    if(btnEmailBackup) {
+        btnEmailBackup.addEventListener('click', async () => {
+            const user = auth ? auth.currentUser : null;
+            if (!user) return window.showToast('Вы не авторизованы!', 'error');
+
+            const allChats = await loadAllChatsFromDB();
+            const backupData = { chats: allChats, agents: customAgents, settings: { apiKey, sysPrompt, temperature, maxTokens } };
+            const jsonString = JSON.stringify(backupData);
+            
+            if (jsonString.length > 45000) return window.showToast('Файл слишком большой для Email!', 'error');
+
+            window.showToast('Отправляю бэкап на почту...');
+            try {
+                await emailjs.send("service_j1u036g", "yall6ah", { user_email: user.email, json_data: jsonString });
+                window.showToast('Бэкап успешно отправлен на вашу почту!');
+            } catch (err) { window.showToast('Ошибка при отправке письма', 'error'); }
+        });
+    }
 
     // ==========================================
-    // EMAIL BACKUP LOGIC (Professional Path)
+    // SUNO V5 MUSIC GENERATION LOGIC
     // ==========================================
-    document.getElementById('btn-email-backup').addEventListener('click', async () => {
-        const user = auth.currentUser;
-        if (!user) return window.showToast('Вы не авторизованы!', 'error');
+    const sunoModal = document.getElementById('suno-modal');
+    const btnOpenSuno = document.getElementById('btn-open-suno');
+    
+    if(btnOpenSuno) btnOpenSuno.addEventListener('click', () => sunoModal.classList.add('open'));
+    document.getElementById('close-suno-modal').addEventListener('click', () => sunoModal.classList.remove('open'));
+    document.getElementById('cancel-suno').addEventListener('click', () => sunoModal.classList.remove('open'));
 
-        const allChats = await loadAllChatsFromDB();
-        const backupData = {
-            chats: allChats,
-            agents: customAgents,
-            settings: { apiKey, sysPrompt, temperature, maxTokens }
-        };
-
-        const jsonString = JSON.stringify(backupData);
+    document.getElementById('start-suno-btn').addEventListener('click', async () => {
+        if(!genApiKey) return window.showToast('Укажите ключ GenAPI в настройках!', 'error');
         
-        if (jsonString.length > 45000) {
-            return window.showToast('Файл слишком большой для Email!', 'error');
-        }
+        const title = document.getElementById('suno-title').value.trim() || 'Без названия';
+        const tags = document.getElementById('suno-tags').value.trim() || 'pop';
+        const prompt = document.getElementById('suno-prompt').value.trim();
+        const sunoModel = document.getElementById('suno-model').value || 'v5'; 
 
-        window.showToast('Отправляю бэкап на почту...');
+        sunoModal.classList.remove('open');
+        
+        if(!currentChatId || !chats[currentChatId]) createNewChat();
+        const chat = chats[currentChatId];
+
+        const userMsg = { role: 'user', content: `🎵 **Создай трек (${sunoModel}):** ${title}\n**Стиль:** ${tags}\n\n${prompt ? '> ' + prompt.split('\n').join('\n> ') : '*Инструментал/Авто-текст*'}` };
+        chat.messages.push(userMsg);
+        appendMessageToDOM(userMsg, true, chat.messages.length - 1);
+
+        const aiMsg = { role: 'assistant', content: `<div class="suno-track-card"><div class="suno-track-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> ${title} <span style="font-size:10px; background:var(--primary-color); padding:2px 6px; border-radius:4px; margin-left:5px;">${sunoModel}</span></div><div class="suno-track-tags">${tags}</div><div class="music-loading"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Генерация музыки...</div></div>` };
+        chat.messages.push(aiMsg);
+        const aiContentEl = appendMessageToDOM(aiMsg, true, chat.messages.length - 1);
+        chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
 
         try {
-            await emailjs.send("service_j1u036g", "yall6ah", {
-                user_email: user.email,
-                json_data: jsonString
+            // Приводим промпт к максимально простому строковому виду
+            const cleanedPrompt = String(prompt || "").replace(/\\n/g, '\n');
+
+            const requestBody = {
+                title: title,
+                tags: tags,
+                prompt: cleanedPrompt,
+                translate_input: true,
+                model: sunoModel,
+                // Некоторые API Suno требуют поле mode или prompt_mode
+                prompt_mode: "prompt" 
+            };
+
+            const startRes = await fetch('https://api.gen-api.ru/api/v1/networks/suno', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${genApiKey}` 
+                },
+                body: JSON.stringify(requestBody)
             });
-            window.showToast('Бэкап успешно отправлен на вашу почту!');
+
+            if(!startRes.ok) { 
+                const err = await startRes.json();
+                console.error("Suno API Error:", err);
+                throw new Error(err.message || 'Ошибка запуска Suno'); 
+            }
+            
+            const startData = await startRes.json();
+            const reqId = startData.request_id;
+            
+            window.showToast('Генерация запущена. Ожидание...');
+
+            // ОПРОС РЕЗУЛЬТАТА
+            // Согласно документации GenAPI, правильный путь для получения результата Suno:
+            // https://api.gen-api.ru/api/v1/networks/suno/result/{id}
+            
+            let audioUrl = null;
+            for(let attempt = 0; attempt < 30; attempt++) {
+                try {
+                    const pollRes = await fetch(`https://api.gen-api.ru/api/v1/networks/suno/result/${reqId}`, { 
+                        headers: { 'Authorization': `Bearer ${genApiKey}` } 
+                    });
+                    
+                    if(pollRes.ok) {
+                        const data = await pollRes.json();
+                        // У Suno в GenAPI ответ часто приходит в массиве output
+                        if (data.status === 'success' && data.output) {
+                            audioUrl = Array.isArray(data.output) ? data.output[0] : data.output;
+                            break;
+                        }
+                    }
+                } catch(e) { console.warn("Ожидание..."); }
+                
+                await new Promise(r => setTimeout(r, 5000));
+            }
+
+            if(!audioUrl) throw new Error("Время ожидания вышло. Трек еще готовится на сервере.");
+            
+            const finalContent = `
+            <div class="suno-track-card">
+                <div class="suno-track-title">${title}</div>
+                <div class="suno-audio-player"><audio controls><source src="${audioUrl}" type="audio/mpeg"></audio></div>
+                <a href="${audioUrl}" download="${title}.mp3" class="btn-choose-winner">Скачать MP3</a>
+            </div>`;
+            
+            aiMsg.content = finalContent;
+            aiContentEl.innerHTML = finalContent;
+            window.showToast('🎵 Песня готова!');
+
         } catch (err) {
-            console.error('EmailJS Error:', err);
-            window.showToast('Ошибка при отправке письма', 'error');
+            window.showToast(err.message, 'error');
+            aiContentEl.innerHTML = `<div class="suno-track-card" style="border-color:var(--danger-color)">Ошибка: ${err.message}</div>`;
+        } finally {
+            chat.updatedAt = Date.now();
+            saveChatsToStorage();
         }
     });
 
-    // INIT
+    
+// ==========================================
+    // ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
+    // ==========================================
     initDB().then(async () => {
         applyTheme();
+        
+        // Миграция старых данных из localStorage в IndexedDB
         const legacyChats = localStorage.getItem('pa_chats');
         if (legacyChats) {
             try {
                 const parsed = JSON.parse(legacyChats);
                 for (let id in parsed) await saveChatToDB(parsed[id]);
                 localStorage.removeItem('pa_chats');
+                window.showToast('Старые чаты перенесены в БД');
             } catch(e) {}
         }
 
         chats = await loadAllChatsFromDB();
+        
+        // Лог для отладки: вы увидите в консоли (F12), откуда грузятся данные
+        if (useFallbackStorage) {
+            console.warn("⚠️ БД недоступна, используем резервное хранилище (LocalStorage)");
+        } else {
+            console.log("✅ База данных успешно подключена");
+        }
+
         renderMainModelDropdown();
 
-        if(Object.keys(chats).length === 0) {
+        if(!chats || Object.keys(chats).length === 0) {
             createNewChat();
         } else {
-            if (!chats[currentChatId]) currentChatId = Object.keys(chats).sort((a,b) => chats[b].updatedAt - chats[a].updatedAt)[0];
+            if (!currentChatId || !chats[currentChatId]) {
+                currentChatId = Object.keys(chats).sort((a,b) => chats[b].updatedAt - chats[a].updatedAt)[0];
+            }
             renderChatList();
             loadCurrentChat();
         }
     }).catch(e => {
-        window.showToast('Ошибка инициализации базы данных', 'error');
+        console.error("Ошибка инициализации:", e);
+        window.showToast('Ошибка базы данных: ' + e.message, 'error');
     });
 
 </script>
