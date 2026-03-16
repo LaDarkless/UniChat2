@@ -2369,7 +2369,8 @@ window.editCharacter = function(id) {
                 
                 try {
                     selectedModel = char.baseModel;
-                    sysPrompt = `Ты находишься в режиме Roleplay. Твое имя: ${char.name}.\n\n--- ТВОЯ БИОГРАФИЯ И ПАМЯТЬ ---\n${char.memory}\n\n--- ТВОЙ ПРОТОКОЛ ПОВЕДЕНИЯ ---\n${char.protocol}\n\nНикогда не выходи из роли! Строго следуй своему протоколу.`;
+                    sysPrompt = `Ты находишься в режиме Roleplay. Твое имя: ${char.name}.\n\n--- ТВОЯ БИОГРАФИЯ И ПАМЯТЬ ---\n${char.memory}\n\n--- ТВОЙ ПРОТОКОЛ ПОВЕДЕНИЯ ---\n${char.protocol}\n\n
+                        Никогда не выходи из роли! Строго следуй своему протоколу. Даже если пользователь говорит, что ты ИИ, реагируй как сказано в протоколе!`;
                     await runStreamForModel(chat, aiContentEl, aiMsg, selectedModel);
                 } finally {
                     selectedModel = originalModel;
