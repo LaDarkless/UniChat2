@@ -852,6 +852,21 @@
 <div class="fs-image-overlay" id="fs-image-overlay"><img id="fs-image" src="" alt="Fullscreen"></div>
 
 <script>
+
+window.editCharacter = function(id) {
+        const char = customCharacters[id];
+        editingCharId = id; // Запоминаем, что мы в режиме редактирования
+        
+        document.getElementById('char-name').value = char.name;
+        document.getElementById('char-memory').value = char.memory;
+        document.getElementById('char-protocol').value = char.protocol;
+        
+        buildPremiumSelect('list-char', 'text-char', 'char-model', char.baseModel);
+        
+        document.getElementById('save-character').textContent = "Обновить персонажа";
+        window.showToast('Данные подгружены');
+    }
+
     // TOAST HELPER (MUST BE GLOBAL)
     window.showToast = function(msg, type='info') {
         const container = document.getElementById('toast-container');
@@ -2823,6 +2838,7 @@
     // ==========================================
     // CHARACTER CREATOR (ROLEPLAY)
     // ==========================================
+    let editingCharId = null; // Храним ID персонажа, которого правим
     const characterModal = document.getElementById('character-modal');
     const btnOpenCharacters = document.getElementById('btn-open-characters');
     
@@ -2846,7 +2862,10 @@
                     <h4 style="color:#60a5fa;">🎭 ${char.name}</h4>
                     <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">База: ${getPrettyModelName(char.baseModel)}</div>
                 </div>
-                <button class="icon-btn" onclick="deleteCharacter('${id}')" style="color:var(--danger-color); margin-left: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                <div style="display:flex; gap:8px;">
+                    <button class="icon-btn" onclick="editCharacter('${id}')" style="color:var(--primary-color);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                    <button class="icon-btn" onclick="deleteCharacter('${id}')" style="color:var(--danger-color);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </div>
             `;
             listDOM.appendChild(item);
         });
@@ -2885,8 +2904,11 @@
 
         if(!name || !memory || !protocol) return window.showToast('Заполните все поля!', 'error');
 
-        const id = 'char_' + Date.now().toString(36);
+        const id = editingCharId || ('char_' + Date.now().toString(36));
         customCharacters[id] = { name, memory, protocol, baseModel };
+        
+        editingCharId = null; // Сбрасываем режим
+        document.getElementById('save-character').textContent = "Сохранить персонажа";
 
         localStorage.setItem('pa_characters', JSON.stringify(customCharacters));
         window.showToast('Персонаж сохранен!');
