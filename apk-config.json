@@ -1,9 +1,9 @@
 {
   "appName": "UniChat",
   "appId": "com.ksyr.app",
-  "version": "9.5.2 (BETA)",
+  "version": "9.5.2",
   "description": "My converted web app",
-  "icon": {ы
+  "icon": {
     "enabled": true,
     "path": "www/icon.png"
   },
