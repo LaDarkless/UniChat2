@@ -28,23 +28,25 @@
         /* ==========================================
            PREMIUM UI VARIABLES (GLASSMORPHISM)
            ========================================== */
-        :root {
+           :root {
             --bg-grad-color1: #0f172a;
             --bg-grad-color2: #1e1b4b;
             --bg-grad-angle: 135deg;
             
-            --glass-panel: rgba(15, 15, 20, 0.65);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-hover: rgba(255, 255, 255, 0.12);
+            /* Улучшенное стекло с большей прозрачностью для видимости сфер */
+            --glass-panel: rgba(15, 15, 22, 0.55);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-hover: rgba(255, 255, 255, 0.15);
             --glass-input: rgba(0, 0, 0, 0.4);
-            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            /* Комбинированная тень: внешняя тьма + внутренний блик сверху */
+            --glass-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
             
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
             
             --primary-color: #3b82f6; 
             --primary-hover: #2563eb;
-            --primary-glow: rgba(59, 130, 246, 0.5);
+            --primary-glow: rgba(59, 130, 246, 0.6);
             
             --agent-color: #8b5cf6;
             --danger-color: #ef4444;
@@ -54,27 +56,26 @@
             --radius-lg: 24px;
         }
 
-        [data-theme="light"] {
-            --bg-grad-color1: #f1f5f9;
-            --bg-grad-color2: #e2e8f0;
-            --glass-panel: rgba(255, 255, 255, 0.7);
-            --glass-border: rgba(0, 0, 0, 0.08);
-            --glass-hover: rgba(0, 0, 0, 0.05);
-            --glass-input: rgba(255, 255, 255, 0.9);
-            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-            
-            --text-primary: #0f172a;
-            --text-secondary: #64748b;
+        /* АНИМАЦИЯ ФОНОВЫХ СФЕР */
+        .animated-bg {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1; overflow: hidden; background: linear-gradient(var(--bg-grad-angle), var(--bg-grad-color1), var(--bg-grad-color2));
         }
+        .blob {
+            position: absolute; filter: blur(90px); border-radius: 50%;
+            animation: floatBlob 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.6;
+        }
+        .blob-1 { width: 50vw; height: 50vw; background: var(--primary-color); top: -10%; left: -10%; animation-duration: 25s; }
+        .blob-2 { width: 40vw; height: 40vw; background: var(--agent-color); bottom: -10%; right: -10%; animation-duration: 22s; animation-direction: alternate-reverse; }
+        .blob-3 { width: 35vw; height: 35vw; background: #ec4899; top: 40%; left: 30%; animation-duration: 28s; mix-blend-mode: screen; }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        body, html { 
-            height: 100%; font-family: 'Inter', sans-serif; 
-            background: linear-gradient(var(--bg-grad-angle), var(--bg-grad-color1), var(--bg-grad-color2));
-            background-attachment: fixed; color: var(--text-primary); 
-            overflow: hidden; -webkit-font-smoothing: antialiased; transition: background 0.5s ease;
+        @keyframes floatBlob {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(10%, 15%) scale(1.1); }
+            100% { transform: translate(-5%, 10%) scale(0.95); }
         }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -507,11 +508,31 @@
             50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 40px rgba(59, 130, 246, 0.4); }
             100% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 rgba(59, 130, 246, 0); }
         }
+        
+        /* ПРОФЕССИОНАЛЬНОЕ МЕНЮ НАСТРОЕК (ВКЛАДКИ) */
+        .settings-tabs { display: flex; border-bottom: 1px solid var(--glass-border); margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; }
+        .settings-tabs::-webkit-scrollbar { display: none; }
+        .settings-tab { padding: 12px 16px; cursor: pointer; color: var(--text-secondary); font-size: 14px; font-weight: 600; border-bottom: 2px solid transparent; white-space: nowrap; transition: 0.2s; }
+        .settings-tab:hover { color: var(--text-primary); }
+        .settings-tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+        .settings-pane { display: none; animation: fadeIn 0.3s; }
+        .settings-pane.active { display: block; }
+        
+        /* ДИНАМИЧЕСКИЕ ШРИФТЫ */
+        body { font-family: var(--dynamic-font, 'Inter'), sans-serif; }
+        .message-content { font-size: var(--dynamic-font-size, 15.5px); }
     </style>
 </head>
 <body data-theme="dark">
 
-<!-- SPLASH SCREEN -->
+    <!-- АНИМИРОВАННЫЙ ФОН (ГЛУБИНА) -->
+    <div class="animated-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    
+    <!-- SPLASH SCREEN -->
 <div id="splash-screen">
     <!-- Изображение для ПК (16:9) -->
     <img src="https://i.imgur.com/OV2b6TD.jpeg" id="splash-pc" class="splash-media" alt="Loading PC...">
@@ -557,6 +578,7 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 Новый чат
             </button>
+            <input type="text" id="chat-search-input" placeholder="Поиск чатов..." style="width:100%; margin-top:10px; padding:8px 12px; background:rgba(0,0,0,0.2); border:1px solid var(--glass-border); border-radius:var(--radius-md); color:var(--text-primary); outline:none; font-size:13px;" oninput="renderChatList()">
         </div>
         <div class="chat-list" id="chat-list"></div>
         <div class="sidebar-footer">
@@ -615,12 +637,20 @@
             </div>
             
             <div class="header-right">
+                <button class="icon-btn" id="btn-clear-current-chat" title="Очистить сообщения в этом чате" style="color: var(--danger-color); margin-right: 5px;" onclick="clearCurrentChatMessages()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
                 <button class="icon-btn" id="theme-toggle" title="Переключить Glass Theme (Светлая/Темная база)">
                     <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                     <svg class="moon-icon" style="display:none;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 </button>
             </div>
         </header>
+        
+        <!-- Новая кнопка прокрутки вниз -->
+        <button id="scroll-bottom-btn" onclick="document.getElementById('chat-history').scrollTop = document.getElementById('chat-history').scrollHeight" style="position:absolute; bottom:120px; right:30px; background:var(--glass-panel); border:1px solid var(--glass-border); color:var(--text-primary); width:40px; height:40px; border-radius:50%; display:none; align-items:center; justify-content:center; cursor:pointer; z-index:100; box-shadow:0 4px 15px rgba(0,0,0,0.3); backdrop-filter:blur(10px); transition:0.2s;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
 
         <div class="chat-history" id="chat-history"></div>
         <div class="typing-indicator" id="typing-indicator">
@@ -652,101 +682,128 @@
                     </button>
                 </div>
             </div>
-            <div class="disclaimer">AI Studio Ultimate. Модель может допускать ошибки. Проверяйте важную информацию.</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px;">
+                <div class="disclaimer" style="margin-top: 8px; text-align: left;">UniChat. Модель может допускать ошибки.</div>
+                <div id="char-counter" style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; font-family: 'JetBrains Mono', monospace;">0 символов</div>
+            </div>
         </div>
     </main>
 </div>
 
-<!-- SETTINGS MODAL -->
+<!-- SETTINGS MODAL (ПРОФЕССИОНАЛЬНОЕ МЕНЮ) -->
 <div class="modal-overlay" id="settings-modal">
-    <div class="modal-box" style="max-width: 600px;">
+    <div class="modal-box" style="max-width: 650px;">
         <div class="modal-header">
             <div class="modal-title">Настройки системы</div>
             <button class="icon-btn" id="close-settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="padding-top: 0;">
             
-            <!-- THEME SECTION -->
-            <div class="form-group">
-                <label>🎨 Внешний вид (Градиент Фона)</label>
-                <div class="theme-picker-row">
-                    <div class="theme-swatch" data-preset="dark-matter" style="background: linear-gradient(135deg, #0f172a, #1e1b4b);">Dark Matter</div>
-                    <div class="theme-swatch" data-preset="cyberpunk" style="background: linear-gradient(135deg, #2e0854, #0f172a);">Cyberpunk</div>
-                    <div class="theme-swatch" data-preset="ocean" style="background: linear-gradient(135deg, #0f2027, #203a43);">Deep Ocean</div>
-                    <div class="theme-swatch" data-preset="custom" style="background: linear-gradient(135deg, #333, #111);">Custom</div>
+            <!-- НАВИГАЦИЯ ПО ВКЛАДКАМ -->
+            <div class="settings-tabs">
+                <div class="settings-tab active" data-target="pane-appearance">🎨 Внешний вид</div>
+                <div class="settings-tab" data-target="pane-models">⚙️ Модели и API</div>
+                <div class="settings-tab" data-target="pane-agents">🤖 Агенты и Данные</div>
+                <div class="settings-tab" data-target="pane-advanced">🛠 Дополнительно</div>
+            </div>
+
+            <!-- ВКЛАДКА: ВНЕШНИЙ ВИД -->
+            <div class="settings-pane active" id="pane-appearance">
+                <div class="form-group">
+                    <label>🎨 Внешний вид (Градиент Фона)</label>
+                    <div class="theme-picker-row">
+                        <div class="theme-swatch" data-preset="dark-matter" style="background: linear-gradient(135deg, #0f172a, #1e1b4b);">Dark Matter</div>
+                        <div class="theme-swatch" data-preset="cyberpunk" style="background: linear-gradient(135deg, #2e0854, #0f172a);">Cyberpunk</div>
+                        <div class="theme-swatch" data-preset="ocean" style="background: linear-gradient(135deg, #0f2027, #203a43);">Deep Ocean</div>
+                        <div class="theme-swatch" data-preset="custom" style="background: linear-gradient(135deg, #333, #111);">Custom</div>
+                    </div>
+                    <div class="custom-colors" id="custom-color-controls">
+                        <div style="flex:1;"><span style="font-size: 11px; color: var(--text-secondary);">Цвет 1</span><input type="color" id="color1" value="#0f172a" style="width:100%; height:30px;"></div>
+                        <div style="flex:1;"><span style="font-size: 11px; color: var(--text-secondary);">Цвет 2</span><input type="color" id="color2" value="#1e1b4b" style="width:100%; height:30px;"></div>
+                        <div style="flex:2;"><span style="font-size: 11px; color: var(--text-secondary);">Угол (<span id="angle-val">135</span>°)</span><input type="range" id="grad-angle" min="0" max="360" value="135" style="width:100%; margin-top:5px;"></div>
+                    </div>
                 </div>
-                
-                <div class="custom-colors" id="custom-color-controls">
-                    <div style="flex:1;">
-                        <span style="font-size: 11px; color: var(--text-secondary);">Цвет 1</span>
-                        <input type="color" id="color1" value="#0f172a" style="width:100%; height:30px;">
+                <div style="display:flex; gap:15px;">
+                    <div class="form-group" style="flex:1">
+                        <label>📝 Шрифт интерфейса</label>
+                        <select class="form-control" id="ui-font-family" style="appearance: none; cursor:pointer;">
+                            <option value="'Inter', sans-serif">Inter (По умолчанию)</option>
+                            <option value="'Roboto', sans-serif">Roboto</option>
+                            <option value="'Open Sans', sans-serif">Open Sans</option>
+                            <option value="'JetBrains Mono', monospace">JetBrains Mono (Для кода)</option>
+                            <option value="system-ui, sans-serif">System UI (Системный)</option>
+                        </select>
                     </div>
-                    <div style="flex:1;">
-                        <span style="font-size: 11px; color: var(--text-secondary);">Цвет 2</span>
-                        <input type="color" id="color2" value="#1e1b4b" style="width:100%; height:30px;">
-                    </div>
-                    <div style="flex:2;">
-                        <span style="font-size: 11px; color: var(--text-secondary);">Угол (<span id="angle-val">135</span>°)</span>
-                        <input type="range" id="grad-angle" min="0" max="360" value="135" style="width:100%; margin-top:5px;">
+                    <div class="form-group" style="flex:1">
+                        <label>🔍 Размер текста в чате: <span id="font-size-display">15.5px</span></label>
+                        <input type="range" id="ui-font-size" min="12" max="22" step="0.5" value="15.5" style="width:100%; margin-top: 10px;">
                     </div>
                 </div>
             </div>
 
-            <hr style="margin:25px 0; border:0; border-top:1px solid var(--glass-border);">
-
-            <div class="form-group">
+            <!-- ВКЛАДКА: МОДЕЛИ И API -->
+            <div class="settings-pane" id="pane-models">
                 <div class="form-group">
-                    <label>🎵 GenAPI Ключ (Для Suno V5)</label>
+                    <label>🎵 GenAPI Ключ (Для Suno V5 / Perplexity)</label>
                     <input type="password" class="form-control" id="gen-api-key" placeholder="sk-...">
                 </div>
-                <label>🔑 ProxyAPI Ключ (Bearer)</label>
-                <input type="password" class="form-control" id="api-key" placeholder="sk-...">
-            </div>
-            <div class="form-group">
-                <label>📝 Системный промпт (По умолчанию)</label>
-                <textarea class="form-control" id="system-prompt" placeholder="Ты — полезный ассистент..." style="height: 80px;"></textarea>
-            </div>
-            <div style="display:flex; gap:15px;">
-                <div class="form-group" style="flex:1">
-                    <label>🌡 Температура: <span id="temp-display">1.0</span></label>
-                    <input type="range" id="temperature" min="0" max="2" step="0.1" value="1.0" style="width:100%; margin-top: 10px;">
+                <div class="form-group">
+                    <label>🔑 ProxyAPI / OpenRouter Ключ (Bearer)</label>
+                    <input type="password" class="form-control" id="api-key" placeholder="sk-...">
                 </div>
-                <div class="form-group" style="flex:1">
-                    <label>📏 Макс. токенов</label>
-                    <input type="number" class="form-control" id="max-tokens" placeholder="Авто">
+                <div class="form-group">
+                    <label>📝 Системный промпт (Глобальный)</label>
+                    <textarea class="form-control" id="system-prompt" placeholder="Ты — полезный ассистент..." style="height: 80px;"></textarea>
                 </div>
-            </div>
-            
-            <hr style="margin:25px 0; border:0; border-top:1px solid var(--glass-border);">
-            
-            <div class="form-group">
-                <label style="display:flex; justify-content:space-between; align-items:center;">
-                    🤖 Пользовательские Агенты
-                    <button class="btn btn-primary" style="padding: 6px 14px; font-size: 12px; border-radius: 20px;" id="btn-open-agent-creator">+ Создать Агента</button>
-                </label>
-                <div id="settings-agent-list" style="margin-top:15px;"></div>
+                <div style="display:flex; gap:15px;">
+                    <div class="form-group" style="flex:1">
+                        <label>🌡 Температура: <span id="temp-display">1.0</span></label>
+                        <input type="range" id="temperature" min="0" max="2" step="0.1" value="1.0" style="width:100%; margin-top: 10px;">
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>📏 Макс. токенов</label>
+                        <input type="number" class="form-control" id="max-tokens" placeholder="Авто">
+                    </div>
+                </div>
             </div>
 
-            <hr style="margin:25px 0; border:0; border-top:1px solid var(--glass-border);">
-            
-            <div class="form-group">
-                <label>💾 Управление данными</label>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn btn-secondary" id="btn-export-backup" style="flex:1">Скачать Backup</button>
-                    <label class="btn btn-secondary" style="flex:1; text-align:center; cursor:pointer">
-                        Загрузить Backup
-                        <input type="file" id="btn-import-backup" accept=".json" style="display:none">
+            <!-- ВКЛАДКА: АГЕНТЫ И ДАННЫЕ -->
+            <div class="settings-pane" id="pane-agents">
+                <div class="form-group">
+                    <label style="display:flex; justify-content:space-between; align-items:center;">
+                        🤖 Пользовательские Агенты
+                        <button class="btn btn-primary" style="padding: 6px 14px; font-size: 12px; border-radius: 20px;" id="btn-open-agent-creator" onclick="document.getElementById('settings-modal').classList.remove('open');">+ Создать Агента</button>
                     </label>
+                    <div id="settings-agent-list" style="margin-top:15px;"></div>
                 </div>
-                <button class="btn btn-danger" id="btn-clear-all">Удалить ВСЕ чаты из базы</button>
+                <hr style="margin:25px 0; border:0; border-top:1px solid var(--glass-border);">
+                <div class="form-group">
+                    <label>💾 Управление данными</label>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-secondary" id="btn-export-backup" style="flex:1">Скачать Backup</button>
+                        <label class="btn btn-secondary" style="flex:1; text-align:center; cursor:pointer">
+                            Загрузить Backup
+                            <input type="file" id="btn-import-backup" accept=".json" style="display:none">
+                        </label>
+                    </div>
+                    <button class="btn btn-secondary" id="btn-email-backup" style="width: 100%; margin-top: 10px; border: 1px solid var(--primary-color); color: var(--primary-color);">📤 Отправить бэкап на почту</button>
+                    <button class="btn btn-danger" id="btn-clear-all" style="margin-top: 10px;">Удалить ВСЕ чаты из базы</button>
+                </div>
             </div>
+
+            <!-- ВКЛАДКА: ДОПОЛНИТЕЛЬНО -->
+            <div class="settings-pane" id="pane-advanced">
+                <div class="form-group">
+                    <label>⌨️ Отправка сообщения</label>
+                    <select class="form-control" id="send-behavior" style="appearance: none; cursor:pointer;">
+                        <option value="enter">Enter — Отправить, Shift+Enter — Перенос строки</option>
+                        <option value="shift-enter">Shift+Enter — Отправить, Enter — Перенос строки</option>
+                    </select>
+                </div>
+            </div>
+
         </div>
         <div class="modal-footer">
-            <!-- Кнопка отправки бэкапа -->
-            <button class="btn btn-secondary" id="btn-email-backup" style="margin-right: auto; border: 1px solid var(--primary-color); color: var(--primary-color);">
-                📤 Отправить бэкап на почту
-            </button>
-            
             <button class="btn btn-secondary" id="cancel-settings">Закрыть</button>
             <button class="btn btn-primary" id="save-settings">Сохранить всё</button>
         </div>
@@ -1791,10 +1848,16 @@ window.editCharacter = function(id) {
     function renderChatList() {
         if(!chatListDOM) return;
         chatListDOM.innerHTML = '';
+        const searchInput = document.getElementById('chat-search-input');
+        const query = searchInput ? searchInput.value.toLowerCase() : '';
+        
         Object.keys(chats).sort((a,b) => chats[b].updatedAt - chats[a].updatedAt).forEach(id => {
+            const title = chats[id].title || 'Новый чат';
+            if (query && !title.toLowerCase().includes(query)) return; // Фильтрация
+            
             const div = document.createElement('div');
             div.className = `chat-item ${id === currentChatId ? 'active' : ''}`;
-            div.innerHTML = `<span>${chats[id].title || 'Новый чат'}</span><button class="delete-btn" onclick="deleteChat(event, '${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`;
+            div.innerHTML = `<span>${title}</span><button class="delete-btn" onclick="deleteChat(event, '${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`;
             div.addEventListener('click', () => switchToChat(id));
             chatListDOM.appendChild(div);
         });
@@ -1862,6 +1925,18 @@ window.editCharacter = function(id) {
         const text = btn.closest('.message-row').querySelector('.message-content').innerText;
         navigator.clipboard.writeText(text).then(() => window.showToast('Сообщение скопировано'));
     }
+
+    window.downloadSingleMessage = function(btn) {
+        const row = btn.closest('.message-row');
+        const msgIndex = parseInt(row.dataset.msgIndex, 10);
+        if (isNaN(msgIndex) || !chats[currentChatId]) return;
+        
+        const content = chats[currentChatId].messages[msgIndex].content;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([content], {type: 'text/markdown'}));
+        a.download = `Message_${Date.now()}.md`;
+        a.click();
+    };
 
     window.regenerateLast = function() {
         if(!currentChatId || !chats[currentChatId]) return;
@@ -1975,7 +2050,9 @@ window.editCharacter = function(id) {
         if (msg.role === 'assistant') {
             actions = `<div class="message-actions">
                 <button class="msg-action-btn" title="Копировать" onclick="copyMessageText(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+                <button class="msg-action-btn" title="Скачать как .md" onclick="downloadSingleMessage(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
                 <button class="msg-action-btn" title="Повторить" onclick="regenerateLast()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg></button>
+                <button class="msg-action-btn" title="Редактировать ответ" onclick="editAIMessage(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></button>
             </div>`;
         } else if (msg.role === 'user') {
             actions = `<div class="message-actions">
@@ -2014,15 +2091,37 @@ window.editCharacter = function(id) {
         saveChatsToStorage(); loadCurrentChat();
     };
 
+    window.clearCurrentChatMessages = function() {
+        if(!currentChatId || !chats[currentChatId]) return;
+        if(confirm('Удалить ВСЕ сообщения в текущем чате? Само название чата останется.')) {
+            chats[currentChatId].messages =[];
+            saveChatsToStorage();
+            loadCurrentChat();
+            window.showToast('Сообщения очищены');
+        }
+    };
+
     function autoResizeInput() {
         if(!userInput || !sendBtn) return;
         userInput.style.height = 'auto';
         userInput.style.height = Math.min(userInput.scrollHeight, 200) + 'px';
         sendBtn.disabled = (!userInput.value.trim() && attachedImages.length === 0);
+        
+        const counterEl = document.getElementById('char-counter');
+        if(counterEl) counterEl.textContent = userInput.value.length + ' символов';
     }
     if(userInput) {
         userInput.addEventListener('input', autoResizeInput);
-        userInput.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if(!sendBtn.disabled) handleSend(); } });
+        userInput.addEventListener('keydown', (e) => { 
+            if(e.key === 'Enter') {
+                const behavior = localStorage.getItem('pa_send_behavior') || 'enter';
+                if (behavior === 'enter' && !e.shiftKey) {
+                    e.preventDefault(); if(!sendBtn.disabled) handleSend();
+                } else if (behavior === 'shift-enter' && e.shiftKey) {
+                    e.preventDefault(); if(!sendBtn.disabled) handleSend();
+                }
+            } 
+        });
     }
 
     const btnAttach = document.getElementById('attach-btn');
@@ -3073,18 +3172,75 @@ window.editCharacter = function(id) {
     }
 
     // ==========================================
-    // SETTINGS & DATA MANAGEMENT
+    // ЛОГИКА РЕДАКТИРОВАНИЯ ОТВЕТА ИИ
+    // ==========================================
+    window.editAIMessage = function(btn) {
+        const row = btn.closest('.message-row');
+        const msgIndex = parseInt(row.dataset.msgIndex, 10);
+        if (isNaN(msgIndex) || !chats[currentChatId]) return;
+
+        const chat = chats[currentChatId];
+        const msg = chat.messages[msgIndex];
+        
+        const contentDiv = row.querySelector('.text-body');
+        const currentText = msg.content;
+        
+        // Превращаем текст в редактируемую зону
+        contentDiv.innerHTML = `
+        <textarea class="form-control" style="width:100%; min-height:150px; background:rgba(0,0,0,0.4); color:white; border:1px solid var(--primary-color); resize:vertical;">${currentText}</textarea>
+        <div style="margin-top:10px; display:flex; gap:10px;">
+            <button class="btn btn-primary btn-save-edit" style="padding: 6px 12px; font-size: 12px;">Сохранить изменения</button>
+            <button class="btn btn-secondary btn-cancel-edit" style="padding: 6px 12px; font-size: 12px;">Отмена</button>
+        </div>`;
+        
+        row.querySelector('.message-actions').style.display = 'none'; // Прячем кнопки действий
+        
+        const textarea = contentDiv.querySelector('textarea');
+        textarea.focus();
+        
+        contentDiv.querySelector('.btn-save-edit').onclick = () => {
+            msg.content = textarea.value;
+            saveChatsToStorage();
+            loadCurrentChat(); // Перерендеривает чат со стилями Markdown и кнопками
+        };
+        
+        contentDiv.querySelector('.btn-cancel-edit').onclick = () => {
+            loadCurrentChat(); // Отменяет изменения
+        };
+    };
+
+    // ==========================================
+    // SETTINGS & DATA MANAGEMENT (ПРОФЕССИОНАЛЬНОЕ МЕНЮ)
     // ==========================================
     const settingsModal = document.getElementById('settings-modal');
+    
+    // Логика переключения вкладок
+    document.querySelectorAll('.settings-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.settings-pane').forEach(p => p.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.target).classList.add('active');
+        });
+    });
+
     const btnOpenSettings = document.getElementById('btn-open-settings');
     if(btnOpenSettings) {
         btnOpenSettings.addEventListener('click', () => {
+            // Подтягиваем значения в поля
             document.getElementById('gen-api-key').value = genApiKey;
             document.getElementById('api-key').value = apiKey;
             document.getElementById('system-prompt').value = sysPrompt;
             document.getElementById('temperature').value = temperature;
             document.getElementById('max-tokens').value = maxTokens || '';
             document.getElementById('temp-display').textContent = temperature;
+            
+            // Новые настройки интерфейса
+            document.getElementById('ui-font-family').value = localStorage.getItem('pa_font_family') || "'Inter', sans-serif";
+            document.getElementById('ui-font-size').value = localStorage.getItem('pa_font_size') || "15.5";
+            document.getElementById('font-size-display').textContent = document.getElementById('ui-font-size').value + 'px';
+            document.getElementById('send-behavior').value = localStorage.getItem('pa_send_behavior') || 'enter';
+
             renderSettingsAgentList();
             settingsModal.classList.add('open');
         });
@@ -3093,32 +3249,53 @@ window.editCharacter = function(id) {
     const btnCloseSettings = document.getElementById('close-settings');
     const btnCancelSettings = document.getElementById('cancel-settings');
     const tempInput = document.getElementById('temperature');
+    const fontSizeInput = document.getElementById('ui-font-size');
+    
     if(btnCloseSettings) btnCloseSettings.addEventListener('click', () => settingsModal.classList.remove('open'));
     if(btnCancelSettings) btnCancelSettings.addEventListener('click', () => settingsModal.classList.remove('open'));
+    
     if(tempInput) tempInput.addEventListener('input', (e) => document.getElementById('temp-display').textContent = e.target.value);
+    if(fontSizeInput) fontSizeInput.addEventListener('input', (e) => document.getElementById('font-size-display').textContent = e.target.value + 'px');
+
+    // Функция применения интерфейсных настроек
+    window.applyUISettings = function() {
+        const fontFamily = localStorage.getItem('pa_font_family') || "'Inter', sans-serif";
+        const fontSize = localStorage.getItem('pa_font_size') || "15.5";
+        document.documentElement.style.setProperty('--dynamic-font', fontFamily);
+        document.documentElement.style.setProperty('--dynamic-font-size', fontSize + 'px');
+    };
 
     const btnSaveSettings = document.getElementById('save-settings');
     if(btnSaveSettings) {
         btnSaveSettings.addEventListener('click', () => {
-            // Добавьте эти две строки
             genApiKey = document.getElementById('gen-api-key').value.trim();
-            localStorage.setItem('pa_gen_api_key', genApiKey);
             apiKey = document.getElementById('api-key').value.trim();
             sysPrompt = document.getElementById('system-prompt').value.trim();
             temperature = parseFloat(document.getElementById('temperature').value);
             const mt = parseInt(document.getElementById('max-tokens').value);
             maxTokens = isNaN(mt) ? null : mt;
 
+            // Новые настройки
+            const fontFamily = document.getElementById('ui-font-family').value;
+            const fontSize = document.getElementById('ui-font-size').value;
+            const sendBehavior = document.getElementById('send-behavior').value;
+
+            localStorage.setItem('pa_gen_api_key', genApiKey);
             localStorage.setItem('pa_api_key', apiKey);
             localStorage.setItem('pa_sysprompt', sysPrompt);
             localStorage.setItem('pa_temp', temperature);
             if(maxTokens) localStorage.setItem('pa_maxtokens', maxTokens); else localStorage.removeItem('pa_maxtokens');
+            
+            localStorage.setItem('pa_font_family', fontFamily);
+            localStorage.setItem('pa_font_size', fontSize);
+            localStorage.setItem('pa_send_behavior', sendBehavior);
+
+            applyUISettings(); // Применяем шрифты сразу
 
             settingsModal.classList.remove('open');
-            window.showToast('Сохранено');
+            window.showToast('Настройки успешно сохранены');
         });
     }
-
     const btnExportBackup = document.getElementById('btn-export-backup');
     if(btnExportBackup) {
         btnExportBackup.addEventListener('click', () => {
@@ -3311,8 +3488,22 @@ window.editCharacter = function(id) {
 // ==========================================
     // ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
     // ==========================================
+
+    // Логика кнопки "Прокрутить вниз"
+    if (chatHistoryDOM) {
+        chatHistoryDOM.addEventListener('scroll', () => {
+            const btnScroll = document.getElementById('scroll-bottom-btn');
+            // Если мы не в самом низу (с запасом в 100px), показываем кнопку
+            if (chatHistoryDOM.scrollHeight - chatHistoryDOM.scrollTop - chatHistoryDOM.clientHeight > 100) {
+                btnScroll.style.display = 'flex';
+            } else {
+                btnScroll.style.display = 'none';
+            }
+        });
+    }
     initDB().then(async () => {
         applyTheme();
+        applyUISettings(); // Применение кастомных шрифтов и размеров
         
         // Миграция старых данных из localStorage в IndexedDB
         const legacyChats = localStorage.getItem('pa_chats');
