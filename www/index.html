@@ -458,12 +458,67 @@
             font-size: 14px;
             outline: none;
         }
-        .dropdown-search-input:focus {
-            border-color: var(--primary-color);
+        /* ==========================================
+           SPLASH SCREEN
+           ========================================== */
+           #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000; /* Черный фон, пока грузится картинка */
+            z-index: 20000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s ease-out;
+            overflow: hidden;
+        }
+
+        .splash-media {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Важно: заполняет экран без искажений */
+            display: none; /* По умолчанию скрываем обе */
+        }
+
+        /* Если ширина экрана больше высоты (ПК и планшеты в альбоме) */
+        @media (orientation: landscape) {
+            #splash-pc {
+                display: block;
+            }
+        }
+
+        /* Если высота больше ширины (Телефоны) */
+        @media (orientation: portrait) {
+            #splash-mobile {
+                display: block;
+            }
+        }
+
+        #splash-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        @keyframes splashPulse {
+            0% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 rgba(59, 130, 246, 0); }
+            50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 40px rgba(59, 130, 246, 0.4); }
+            100% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 rgba(59, 130, 246, 0); }
         }
     </style>
 </head>
 <body data-theme="dark">
+
+<!-- SPLASH SCREEN -->
+<div id="splash-screen">
+    <!-- Изображение для ПК (16:9) -->
+    <img src="https://i.imgur.com/OV2b6TD.jpeg" id="splash-pc" class="splash-media" alt="Loading PC...">
+    
+    <!-- Изображение для Телефона (9:16) -->
+    <img src="https://i.imgur.com/OV2b6TD.jpeg" id="splash-mobile" class="splash-media" alt="Loading Mobile...">
+</div>
 
 <!-- AUTH SCREEN -->
 <div id="auth-overlay">
@@ -1027,6 +1082,43 @@ window.editCharacter = function(id) {
 </script>
 
 <script>
+
+    // ==========================================
+    // ЛОГИКА SPLASH-ЭКРАНА
+    // ==========================================
+
+    window.addEventListener('load', () => {
+        const splash = document.getElementById('splash-screen');
+        
+        // Принудительная установка размера для мобильных браузеров
+        function setFullScreen() {
+            if (splash) {
+                splash.style.height = window.innerHeight + 'px';
+            }
+        }
+        window.addEventListener('resize', setFullScreen);
+        setFullScreen();
+
+        const hideSplash = () => {
+            if (splash) {
+                splash.classList.add('hidden');
+                setTimeout(() => { 
+                    if (splash) splash.remove(); 
+                    window.removeEventListener('resize', setFullScreen);
+                }, 1000);
+            }
+        };
+
+        // Логика видео или таймера (оставляем как было)
+        const splashVideo = document.getElementById('splash-video');
+        if (splashVideo) {
+            splashVideo.addEventListener('ended', hideSplash);
+            setTimeout(hideSplash, 7000); // Видео может быть дольше, чем гифка
+        } else {
+            setTimeout(hideSplash, 3000); 
+        }
+    });
+
     // ==========================================
     // ОСНОВНАЯ ЛОГИКА ПРИЛОЖЕНИЯ
     // ==========================================
