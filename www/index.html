@@ -22,9 +22,24 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     
     <!-- Шрифты -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Шрифты -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700
+    &family=JetBrains+Mono:wght@400;500
+    &family=Montserrat:wght@400;700
+    &family=Oswald:wght@400;700
+    &family=Playfair+Display:ital,wght@0,400..900;1,400..900
+    &family=Quicksand:wght@300..700
+    &family=Edu+AU+VIC+WA+NT+Guides:wght@400..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Quicksand:wght@300..700&display=swap&display=swap&display=swap" rel="stylesheet">
 
     <style>
+
+@font-face {
+        font-family: 'MyCustomFont';
+        src: url('fonts/myfont.woff2') format('woff2'),
+             url('fonts/myfont.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
         /* ==========================================
            PREMIUM UI VARIABLES (GLASSMORPHISM)
            ========================================== */
@@ -535,7 +550,7 @@
     <!-- SPLASH SCREEN -->
 <div id="splash-screen">
     <!-- Изображение для ПК (16:9) -->
-    <img src="https://i.imgur.com/OV2b6TD.jpeg" id="splash-pc" class="splash-media" alt="Loading PC...">
+    <img src="https://i.imgur.com/XG3o6Ap.jpeg" id="splash-pc" class="splash-media" alt="Loading PC...">
     
     <!-- Изображение для Телефона (9:16) -->
     <img src="https://i.imgur.com/OV2b6TD.jpeg" id="splash-mobile" class="splash-media" alt="Loading Mobile...">
@@ -726,13 +741,14 @@
                 <div style="display:flex; gap:15px;">
                     <div class="form-group" style="flex:1">
                         <label>📝 Шрифт интерфейса</label>
-                        <select class="form-control" id="ui-font-family" style="appearance: none; cursor:pointer;">
-                            <option value="'Inter', sans-serif">Inter (По умолчанию)</option>
-                            <option value="'Roboto', sans-serif">Roboto</option>
-                            <option value="'Open Sans', sans-serif">Open Sans</option>
-                            <option value="'JetBrains Mono', monospace">JetBrains Mono (Для кода)</option>
-                            <option value="system-ui, sans-serif">System UI (Системный)</option>
-                        </select>
+                            <select class="form-control" id="ui-font-family" style="appearance: none; cursor:pointer;">
+                                <option value="'Inter', sans-serif">Inter (По умолчанию)</option>
+                                <option value="'Quicksand', sans-serif">Quicksand (Современный)</option>
+                                <option value="'Playfair Display', serif">Playfair Display (Классический)</option>
+                                <option value="'JetBrains Mono', monospace">JetBrains Mono (Для кода)</option>
+                                <option value="AU+VIC+WA+NT, AU+VIC+WA+NT">AU+VIC+WA+NT</option>
+                                <option value="system-ui, sans-serif">System UI (Системный)</option>
+                            </select>
                     </div>
                     <div class="form-group" style="flex:1">
                         <label>🔍 Размер текста в чате: <span id="font-size-display">15.5px</span></label>
