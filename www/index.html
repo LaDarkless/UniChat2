@@ -29,7 +29,8 @@
     &family=Oswald:wght@400;700
     &family=Playfair+Display:ital,wght@0,400..900;1,400..900
     &family=Quicksand:wght@300..700
-    &family=Edu+AU+VIC+WA+NT+Guides:wght@400..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Quicksand:wght@300..700&display=swap&display=swap&display=swap" rel="stylesheet">
+    &family=Edu+AU+VIC+WA+NT+Guides:wght@400..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900
+    &display=swap&display=swap&display=swap" rel="stylesheet">
 
     <style>
         @font-face {
@@ -73,25 +74,196 @@
             --radius-lg: 18px;
             
             /* Тени */
-            --pro-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
-            --pro-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.5);
+        --pro-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+        --pro-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.5);
+        
+        /* Цвет сетки по умолчанию (светлый) */
+        --grid-color: rgba(255, 255, 255, 0.03); 
+    }
+
+    /* АНИМИРОВАННЫЙ ФОН (СЕТКА / КЛЕТОЧКИ) */
+    .animated-bg {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        z-index: -1; 
+        background-color: var(--app-bg);
+        /* Строгая сетка с использованием переменной */
+        background-image: 
+            linear-gradient(var(--grid-color) 1px, transparent 1px), 
+            linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+        background-size: 30px 30px;
+    }
+
+    /* ==========================================
+       СВЕТЛАЯ ТЕМА (LIGHT MODE)
+       ========================================== */
+       [data-theme="light"] {
+        --app-bg: #f9fafb;
+        --app-surface: #ffffff;
+        --app-panel: #f3f4f6;
+        --app-border: #e5e7eb;
+        --app-border-hover: #d1d5db;
+        
+        --text-primary: #111827;
+        --text-secondary: #4b5563;
+        --text-muted: #9ca3af;
+        
+        --primary-bg: #000000;
+        --primary-text: #ffffff;
+        --primary-hover: #374151;
+        --primary-glow: rgba(0, 0, 0, 0.1);
+        
+        --agent-color: #6b7280;
+        --grid-color: rgba(0, 0, 0, 0.05); /* Темная сеточка */
+        
+        --pro-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        --pro-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    /* ==========================================
+           ПРЕМИАЛЬНЫЙ ДИЗАЙН НАСТРОЕК (PRO UI)
+           ========================================== */
+           .settings-tabs {
+            display: flex; gap: 6px; padding: 6px; 
+            background: rgba(128, 128, 128, 0.1); 
+            border-radius: var(--radius-md); border: none; margin-bottom: 24px;
+            overflow-x: auto;
+        }
+        .settings-tab {
+            flex: 1; text-align: center; padding: 10px 14px; 
+            border-radius: var(--radius-sm); border: none; 
+            color: var(--text-secondary); font-weight: 500; font-size: 13px;
+            transition: all 0.2s; white-space: nowrap; border-bottom: none;
+        }
+        .settings-tab:hover { color: var(--text-primary); background: rgba(128, 128, 128, 0.05); }
+        .settings-tab.active { 
+            background: var(--app-surface); color: var(--text-primary); 
+            box-shadow: var(--pro-shadow-sm); font-weight: 600; border: 1px solid var(--app-border);
         }
 
-        /* АНИМИРОВАННЫЙ ФОН (СЕТКА / КЛЕТОЧКИ) */
-        .animated-bg {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: -1; 
-            background-color: var(--app-bg);
-            /* Строгая сетка */
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px), 
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 30px 30px;
+        .settings-card {
+            background: rgba(128, 128, 128, 0.03);
+            border: 1px solid var(--app-border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-bottom: 16px;
         }
+        .settings-card-title {
+            font-size: 14px; font-weight: 600; color: var(--text-primary); 
+            margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+        }
+        
+        /* Красивые ползунки (Range Sliders) */
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent; margin: 10px 0;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; 
+            border-radius: 50%; background: #fff;
+            cursor: pointer; margin-top: -7px; box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            border: 1px solid #ccc;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px; cursor: pointer;
+            background: var(--app-border); border-radius: 4px;
+        }
+        input[type=range]:focus { outline: none; }
+
+        /* ==========================================
+           ИДЕАЛЬНАЯ СВЕТЛАЯ ТЕМА (ПОЛНАЯ ЧИТАЕМОСТЬ)
+           ========================================== */
+        [data-theme="light"] {
+            --app-bg: #f3f4f6;
+            --app-surface: #ffffff;
+            --app-panel: #f9fafb;
+            --app-border: #e5e7eb;
+            --app-border-hover: #d1d5db;
+            
+            --text-primary: #111827 !important; /* Строгий почти-черный */
+            --text-secondary: #4b5563 !important; /* Темно-серый */
+            --text-muted: #6b7280 !important;
+            
+            --primary-bg: #111827;
+            --primary-text: #ffffff;
+            --primary-hover: #374151;
+            
+            --grid-color: rgba(0, 0, 0, 0.05); 
+            --pro-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            --pro-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Принудительная окраска всех критичных текстов в черный */
+        [data-theme="light"] body,
+        [data-theme="light"] .message-content,[data-theme="light"] .modal-box,
+        [data-theme="light"] .auth-title,[data-theme="light"] .chat-item span,
+        [data-theme="light"] .dropdown-btn,
+        [data-theme="light"] .dropdown-item,
+        [data-theme="light"] .compare-body,
+        [data-theme="light"] .suno-track-title,
+        [data-theme="light"] .agent-list-item h4,[data-theme="light"] label,
+        [data-theme="light"] .settings-card-title {
+            color: #111827 !important;
+        }
+
+        /* Поля ввода и текстареи в светлой теме */
+        [data-theme="light"] textarea,
+        [data-theme="light"] .form-control,
+        [data-theme="light"] .dropdown-search-input {
+            background: #f9fafb !important;
+            border: 1px solid #d1d5db !important;
+            color: #111827 !important;
+        }[data-theme="light"] textarea::placeholder,
+        [data-theme="light"] .form-control::placeholder {
+            color: #9ca3af !important;
+        }
+
+        /* Второстепенные элементы (серые в светлой теме) */
+        [data-theme="light"] .text-secondary,[data-theme="light"] .thinking-header,
+        [data-theme="light"] .thinking-content,
+        [data-theme="light"] .usage-info,
+        [data-theme="light"] .disclaimer,
+        [data-theme="light"] .nav-btn,[data-theme="light"] .dropdown-item-subtitle,
+        [data-theme="light"] .agent-status {
+            color: #4b5563 !important;
+        }
+
+        /* Внешний вид самого сообщения от пользователя */
+        [data-theme="light"] .message-row.user .message-content {
+            background: #ffffff !important;
+            color: #111827 !important;
+            border: 1px solid #e5e7eb !important;
+            box-shadow: var(--pro-shadow-sm) !important;
+        }
+
+        /* Фоны панелей */
+        [data-theme="light"] .sidebar,
+        [data-theme="light"] .header,
+        [data-theme="light"] .input-wrapper,
+        [data-theme="light"] .modal-box,[data-theme="light"] .dropdown-menu,
+        [data-theme="light"] .premium-model-list,
+        [data-theme="light"] .agent-status,
+        [data-theme="light"] .code-block-wrapper,
+        [data-theme="light"] .settings-card {
+            background: #ffffff !important;
+            border-color: #e5e7eb !important;
+        }
+
+        [data-theme="light"] input[type=range]::-webkit-slider-thumb {
+            background: #111827; border: 2px solid #fff;
+        }
+        
         /* Отключаем цветные сферы */
         .blob { display: none !important; }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        /* Жесткий запрет ложной прокрутки страницы */
+        body, html {
+            overflow: hidden !important;
+            width: 100%;
+            height: 100%;
+            margin: 0; 
+            padding: 0;
+        }
 
         /* Строгий скроллбар */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -464,6 +636,287 @@
             background-color: var(--app-bg); 
         }
         .message-content { font-size: var(--dynamic-font-size, 15px); }
+
+
+        /* ==========================================
+           ФИКС ИСЧЕЗАЮЩИХ И ЧЕРНЫХ ИКОНОК (СВЕТЛАЯ ТЕМА)
+           ========================================== */
+        
+        /* Фикс кнопки выпадающего списка (светлая тема) */
+        [data-theme="light"] .dropdown-btn:hover {
+            background: #f3f4f6 !important;
+            border-color: #d1d5db !important;
+        }
+
+        /* Цвет иконок скрепки, микрофона и действий в состоянии покоя */
+        [data-theme="light"] .file-btn,
+        [data-theme="light"] .mic-btn,
+        [data-theme="light"] .icon-btn,[data-theme="light"] .msg-action-btn {
+            color: #4b5563 !important;
+        }
+
+        /* Делаем фон серым, а саму иконку темной при наведении (чтобы не исчезали) */
+        [data-theme="light"] .file-btn:hover,
+        [data-theme="light"] .mic-btn:hover,
+        [data-theme="light"] .icon-btn:hover,
+        [data-theme="light"] .msg-action-btn:hover {
+            background: rgba(0, 0, 0, 0.05) !important;
+            color: #111827 !important;
+        }[data-theme="light"] .pane-title { color: #111827 !important; }
+
+        /* 1. Элегантная анимация индикатора печати */
+        .typing-indicator { 
+            width: 100%; display: none; padding: 10px 20px; 
+            animation: fadeIn 0.3s forwards;
+        }
+        .typing-indicator .dot {
+            width: 4px; height: 4px; border-radius: 50%; background: var(--text-secondary);
+            animation: typingBounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator .dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator .dot:nth-child(2) { animation-delay: -0.16s; }
+        .typing-indicator .dot:nth-child(3) { animation-delay: 0s; }
+        @keyframes typingBounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        /* ==========================================
+           АБСОЛЮТНЫЙ ПРЕМИУМ ДЛЯ НАСТРОЕК (ULTRA PRO UI)
+           ========================================== */
+        .settings-fullscreen-box {
+            background: rgba(10, 10, 12, 0.65); /* Полупрозрачный фон */
+            backdrop-filter: blur(40px); /* Сильное размытие как в macOS/iOS */
+            -webkit-backdrop-filter: blur(40px);
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: row;
+            animation: slideUpFS 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            color: var(--text-primary);
+        }
+        
+        [data-theme="light"] .settings-fullscreen-box {
+            background: rgba(249, 250, 251, 0.75);
+        }
+
+        /* Боковая панель */
+        .settings-sidebar-fs {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.02);
+            border-right: 1px solid var(--app-border);
+            display: flex; flex-direction: column;
+            padding: 40px 24px; flex-shrink: 0; z-index: 10;
+        }
+        [data-theme="light"] .settings-sidebar-fs { background: rgba(0, 0, 0, 0.01); border-right-color: rgba(0,0,0,0.06); }
+
+        .settings-header-fs {
+            font-size: 26px; font-weight: 700; margin-bottom: 40px;
+            padding: 0 16px; color: var(--text-primary); letter-spacing: -0.5px;
+        }
+
+        .settings-tabs-fs { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+
+        /* Табы в стиле Vercel/Apple */
+        .settings-sidebar-fs .settings-tab {
+            text-align: left; padding: 12px 16px; border-radius: 12px;
+            color: var(--text-secondary); font-size: 14px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s ease; border: none;
+            background: transparent; display: flex; align-items: center; gap: 12px;
+        }
+
+        .settings-sidebar-fs .settings-tab:hover {
+            color: var(--text-primary); background: rgba(128, 128, 128, 0.08);
+        }
+
+        /* Активный таб: инверсия цветов */
+        .settings-sidebar-fs .settings-tab.active {
+            background: var(--text-primary);
+            color: var(--app-bg) !important;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        [data-theme="light"] .settings-sidebar-fs .settings-tab.active { background: #111827; color: #ffffff !important; }
+
+        /* Контентная часть */
+        .settings-content-fs {
+            flex: 1; padding: 50px 80px; overflow-y: auto; scroll-behavior: smooth;
+        }
+        
+        .settings-pane {
+            max-width: 800px; margin: 0 auto; display: none;
+            animation: paneFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .settings-pane.active { display: block; }
+
+        /* Градиентный красивый заголовок */
+        .settings-content-fs .pane-title {
+            font-size: 32px; font-weight: 700; margin-bottom: 35px;
+            letter-spacing: -0.5px; border: none; padding-bottom: 0;
+            background: linear-gradient(90deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        /* Парящие карточки */
+        .settings-card {
+            background: var(--app-surface);
+            border: 1px solid var(--app-border);
+            border-radius: 16px; padding: 24px; margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .settings-card:hover {
+            transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+        }
+        [data-theme="light"] .settings-card { box-shadow: 0 4px 20px rgba(0,0,0,0.02); }[data-theme="light"] .settings-card:hover { box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
+
+        .settings-card-title {
+            font-size: 15px; font-weight: 600; color: var(--text-primary); 
+            margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+        }
+        .settings-card-title svg { color: var(--text-secondary); }
+
+        .settings-sidebar-footer { margin-top: auto; display: flex; flex-direction: column; gap: 12px; padding-top: 20px; }
+
+        /* Анимации */
+        @keyframes slideUpFS {
+            from { transform: translateY(30px) scale(0.98); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes paneFadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Мобильная адаптация */
+        @media (max-width: 768px) {
+            .settings-fullscreen-box { flex-direction: column; }
+            .settings-sidebar-fs { width: 100%; border-right: none; border-bottom: 1px solid var(--app-border); padding: 20px 16px; }
+            .settings-header-fs { margin-bottom: 20px; font-size: 22px; }
+            .settings-tabs-fs { flex-direction: row; overflow-x: auto; gap: 8px; }
+            .settings-sidebar-fs .settings-tab { white-space: nowrap; padding: 10px 14px; }
+            .settings-content-fs { padding: 30px 20px; }
+            .settings-content-fs .pane-title { font-size: 24px; margin-bottom: 24px; }
+            .settings-sidebar-footer { flex-direction: row; margin-top: 15px; padding-top: 15px; }
+        }
+
+
+        /* ==========================================
+           ФИКСЫ МЕЛКИХ НЕДОЧЕТОВ (ЧАТЫ И СЕЛЕКТЫ)
+           ========================================== */
+
+        /* 1. Читабельный активный чат в светлой теме */
+        [data-theme="light"] .chat-item.active {
+            background: #e5e7eb !important;
+            color: #111827 !important;
+            border-color: #d1d5db !important;
+        }
+        [data-theme="light"] .chat-item:hover {
+            background: #f3f4f6 !important;
+            color: #111827 !important;
+        }
+
+        /* 2. Адаптивный фон для элементов списка <option> */
+        select.form-control option {
+            background: var(--app-surface) !important;
+            color: var(--text-primary) !important;
+        }
+
+        /* 3. Красивая стрелочка для селектов (ФИКС РАЗМНОЖЕНИЯ) */
+        select.form-control {
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 14px center !important;
+            background-size: 14px !important;
+            padding-right: 36px !important;
+        }
+        
+        [data-theme="light"] select.form-control {
+            background-color: #f9fafb !important; /* Явно задаем цвет фона, чтобы не стереть настройки картинки */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111827' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important; /* Запрещаем стрелочке размножаться в светлой теме */
+            background-position: right 14px center !important;
+            background-size: 14px !important;
+        }
+
+        /* Фикс для читаемости активной вкладки в светлой теме (на всякий случай) */
+        [data-theme="light"] .settings-tab.active {
+            color: #111827 !important;
+        }
+        /* 4. Фикс выделения и наведения на модели в списках (Светлая тема) */
+        [data-theme="light"] .dropdown-item:hover,[data-theme="light"] .premium-model-option:hover {
+            background-color: #f3f4f6 !important; /* Приятный светло-серый фон при наведении */
+            color: #111827 !important;
+        }
+
+        /* Фикс для уже выбранной модели (активной) */[data-theme="light"] .dropdown-item.selected,
+        [data-theme="light"] .premium-model-option.selected {
+            background-color: #e5e7eb !important; /* Чуть более плотный серый фон */
+            color: #111827 !important;
+            border-left-color: #111827 !important; /* Черная полосочка слева */
+        }
+        /* ==========================================
+           5. ПРОФЕССИОНАЛЬНЫЙ СЕРЫЙ ВМЕСТО ЧЕРНОГО (СВЕТЛАЯ ТЕМА)
+           ========================================== */
+
+        /* Главные кнопки (Новый чат, Отправить) */
+        [data-theme="light"] {
+            --primary-bg: #4b5563 !important; /* Мягкий графитовый цвет (Slate Gray) */
+            --primary-hover: #374151 !important; /* Чуть темнее при наведении */
+            --primary-text: #ffffff !important;
+        }
+
+        /* Обычные кнопки (Сохранить, Создать, Google Auth) */
+        [data-theme="light"] .btn-primary,
+        [data-theme="light"] .auth-google-btn {
+            background-color: #4b5563 !important;
+            color: #ffffff !important;
+            border: 1px solid #4b5563 !important;
+        }[data-theme="light"] .btn-primary:hover,
+        [data-theme="light"] .auth-google-btn:hover {
+            background-color: #374151 !important;
+            border-color: #374151 !important;
+        }
+
+        /* Ползунки (кружочки) в настройках */
+        [data-theme="light"] input[type=range]::-webkit-slider-thumb {
+            background: #4b5563 !important;
+            border: 2px solid #ffffff !important;
+        }
+
+        /* Аватарка AI в чате */
+        [data-theme="light"] .avatar.ai-avatar {
+            background: #4b5563 !important;
+            color: #ffffff !important;
+        }
+
+        /* Мелкие чипы ролей (Метки "Спикер", "Аналитик" в настройках) */[data-theme="light"] .role-chip {
+            background: #e5e7eb !important;
+            color: #374151 !important;
+            border: 1px solid #d1d5db !important;
+        }
+
+        /* Всплывающие уведомления (Тоасты) внизу справа */
+        [data-theme="light"] .toast {
+            background: #374151 !important;
+            border: 1px solid #4b5563 !important;
+            color: #ffffff !important;
+        }
+
+        /* Кнопка "Сравнить модели" (VS) */[data-theme="light"] #btn-compare-mode.active {
+            background: #4b5563 !important;
+            color: #ffffff !important;
+            border-color: #4b5563 !important;
+        }
+        
+        [data-theme="light"] .btn-choose-winner {
+            border-color: #d1d5db !important;
+            color: #4b5563 !important;
+        }
+        [data-theme="light"] .btn-choose-winner:hover {
+            background: #4b5563 !important;
+            color: #ffffff !important;
+            border-color: #4b5563 !important;
+        }
     </style>
 </head>
 <body data-theme="dark">
@@ -615,9 +1068,18 @@
 
         <div class="chat-history" id="chat-history"></div>
         <div class="typing-indicator" id="typing-indicator">
-            <span>Синтезирую ответ</span>
-        <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
-    </div>
+            <div class="message-content-wrapper">
+                <div class="avatar ai-avatar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z"/></svg>
+                </div>
+                <div class="message-content" style="display: flex; align-items: center; gap: 8px; height: 34px;">
+                    <span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Думаю...</span>
+                    <div style="display: flex; gap: 4px; margin-top: 4px;">
+                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="input-area">
             <div class="input-wrapper">
@@ -651,154 +1113,158 @@
     </main>
 </div>
 
-<!-- SETTINGS MODAL (ПРОФЕССИОНАЛЬНОЕ МЕНЮ) -->
-<div class="modal-overlay" id="settings-modal">
-    <div class="modal-box" style="max-width: 650px;">
-        <div class="modal-header">
-            <div class="modal-title">Настройки системы</div>
-            <button class="icon-btn" id="close-settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-        </div>
-        <div class="modal-body" style="padding-top: 0;">
-            
-            <!-- НАВИГАЦИЯ ПО ВКЛАДКАМ -->
-            <div class="settings-tabs">
-                <div class="settings-tab active" data-target="pane-appearance">🎨 Внешний вид</div>
-                <div class="settings-tab" data-target="pane-models">⚙️ Модели и API</div>
-                <div class="settings-tab" data-target="pane-agents">🤖 Агенты и Данные</div>
-                <div class="settings-tab" data-target="pane-advanced">🛠 Дополнительно</div>
-                <div class="settings-tab" data-target="pane-about">ℹ️ О приложении</div>
+<!-- SETTINGS MODAL (ПОЛНОЭКРАННОЕ МЕНЮ) -->
+<div class="modal-overlay" id="settings-modal" style="z-index: 1001;">
+    <div class="settings-fullscreen-box">
+        
+        <!-- ЛЕВОЕ БОКОВОЕ МЕНЮ -->
+        <div class="settings-sidebar-fs">
+            <div class="settings-header-fs">Настройки</div>
+            <div class="settings-tabs-fs">
+                <div class="settings-tab active" data-target="pane-appearance">🎨 Оформление</div>
+                <div class="settings-tab" data-target="pane-models">⚙️ Нейросети</div>
+                <div class="settings-tab" data-target="pane-agents">🤖 База и Агенты</div>
+                <div class="settings-tab" data-target="pane-about">ℹ️ Инфо</div>
             </div>
+            
+            <div class="settings-sidebar-footer">
+                <button class="btn btn-secondary" id="cancel-settings" style="width: 100%;">Закрыть</button>
+                <button class="btn btn-primary" id="save-settings" style="width: 100%;">Сохранить всё</button>
+            </div>
+        </div>
 
+        <!-- ПРАВАЯ ОБЛАСТЬ КОНТЕНТА -->
+        <div class="settings-content-fs">
+            
             <!-- ВКЛАДКА: ВНЕШНИЙ ВИД -->
             <div class="settings-pane active" id="pane-appearance">
-                <div class="form-group">
-                    <label>🎨 Внешний вид (Градиент Фона)</label>
-                    <div class="theme-picker-row">
-                        <div class="theme-swatch" data-preset="dark-matter" style="background: linear-gradient(135deg, #0f172a, #1e1b4b);">Dark Matter</div>
-                        <div class="theme-swatch" data-preset="cyberpunk" style="background: linear-gradient(135deg, #2e0854, #0f172a);">Cyberpunk</div>
-                        <div class="theme-swatch" data-preset="ocean" style="background: linear-gradient(135deg, #0f2027, #203a43);">Deep Ocean</div>
-                        <div class="theme-swatch" data-preset="custom" style="background: linear-gradient(135deg, #333, #111);">Custom</div>
-                    </div>
-                    <div class="custom-colors" id="custom-color-controls">
-                        <div style="flex:1;"><span style="font-size: 11px; color: var(--text-secondary);">Цвет 1</span><input type="color" id="color1" value="#0f172a" style="width:100%; height:30px;"></div>
-                        <div style="flex:1;"><span style="font-size: 11px; color: var(--text-secondary);">Цвет 2</span><input type="color" id="color2" value="#1e1b4b" style="width:100%; height:30px;"></div>
-                        <div style="flex:2;"><span style="font-size: 11px; color: var(--text-secondary);">Угол (<span id="angle-val">135</span>°)</span><input type="range" id="grad-angle" min="0" max="360" value="135" style="width:100%; margin-top:5px;"></div>
+                <h3 class="pane-title">Оформление интерфейса</h3>
+                
+                <div class="settings-card">
+                    <div class="settings-card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg> Типографика и Чтение</div>
+                    <div style="display:flex; gap:15px; flex-wrap: wrap;">
+                        <div class="form-group" style="flex:1; min-width: 200px;">
+                            <label>📝 Шрифт интерфейса</label>
+                            <select class="form-control" id="ui-font-family" style="appearance: none; cursor:pointer;">
+                                <option value="'Inter', sans-serif">Inter (Строгий)</option>
+                                <option value="'Quicksand', sans-serif">Quicksand (Округлый)</option>
+                                <option value="'Playfair Display', serif">Playfair Display (Классика)</option>
+                                <option value="'JetBrains Mono', monospace">JetBrains Mono (Для кода)</option>
+                                <option value="system-ui, sans-serif">System UI (Системный)</option>
+                                <option value="'Edu+AU+VIC+WA+NT', sans-serif">AU+VIC (Каллиграфия)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1; min-width: 200px;">
+                            <label style="display: flex; justify-content: space-between;"><span>🔍 Размер текста</span> <span id="font-size-display" style="font-weight:bold;">15.5px</span></label>
+                            <input type="range" id="ui-font-size" min="12" max="22" step="0.5" value="15.5">
+                        </div>
                     </div>
                 </div>
-                <div style="display:flex; gap:15px;">
-                    <div class="form-group" style="flex:1">
-                        <label>📝 Шрифт интерфейса</label>
-                            <select class="form-control" id="ui-font-family" style="appearance: none; cursor:pointer;">
-                                <option value="'Inter', sans-serif">Inter (По умолчанию)</option>
-                                <option value="'Quicksand', sans-serif">Quicksand (Современный)</option>
-                                <option value="'Playfair Display', serif">Playfair Display (Классический)</option>
-                                <option value="'JetBrains Mono', monospace">JetBrains Mono (Для кода)</option>
-                                <option value="AU+VIC+WA+NT, AU+VIC+WA+NT">AU+VIC+WA+NT</option>
-                                <option value="system-ui, sans-serif">System UI (Системный)</option>
-                            </select>
-                    </div>
-                    <div class="form-group" style="flex:1">
-                        <label>🔍 Размер текста в чате: <span id="font-size-display">15.5px</span></label>
-                        <input type="range" id="ui-font-size" min="12" max="22" step="0.5" value="15.5" style="width:100%; margin-top: 10px;">
+
+                <div class="settings-card">
+                    <div class="settings-card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg> Дополнительно</div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>⌨️ Отправка сообщения</label>
+                        <select class="form-control" id="send-behavior" style="appearance: none; cursor:pointer;">
+                            <option value="enter">Enter — Отправить, Shift+Enter — Перенос строки</option>
+                            <option value="shift-enter">Shift+Enter — Отправить, Enter — Перенос</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
             <!-- ВКЛАДКА: МОДЕЛИ И API -->
             <div class="settings-pane" id="pane-models">
-                <div class="form-group">
-                    <label>🎵 GenAPI Ключ (Для Suno V5 / Perplexity)</label>
-                    <input type="password" class="form-control" id="gen-api-key" placeholder="sk-...">
-                </div>
-                <div class="form-group">
-                    <label>🔑 ProxyAPI / OpenRouter Ключ (Bearer)</label>
-                    <input type="password" class="form-control" id="api-key" placeholder="sk-...">
-                </div>
-                <div class="form-group">
-                    <label>📝 Системный промпт (Глобальный)</label>
-                    <textarea class="form-control" id="system-prompt" placeholder="Ты — полезный ассистент..." style="height: 80px;"></textarea>
-                </div>
-                <div style="display:flex; gap:15px;">
-                    <div class="form-group" style="flex:1">
-                        <label>🌡 Температура: <span id="temp-display">1.0</span></label>
-                        <input type="range" id="temperature" min="0" max="2" step="0.1" value="1.0" style="width:100%; margin-top: 10px;">
+                <h3 class="pane-title">Ключи и Параметры</h3>
+                
+                <div class="settings-card">
+                    <div class="settings-card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Ключи доступа (API)</div>
+                    <div class="form-group">
+                        <label>🎵 GenAPI Ключ (Suno V5 / Perplexity)</label>
+                        <input type="password" class="form-control" id="gen-api-key" placeholder="sk-...">
                     </div>
-                    <div class="form-group" style="flex:1">
-                        <label>📏 Макс. токенов</label>
-                        <input type="number" class="form-control" id="max-tokens" placeholder="Авто">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>🔑 ProxyAPI / OpenRouter Ключ</label>
+                        <input type="password" class="form-control" id="api-key" placeholder="sk-...">
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="settings-card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Параметры нейросетей</div>
+                    <div class="form-group">
+                        <label>📝 Глобальный системный промпт</label>
+                        <textarea class="form-control" id="system-prompt" placeholder="Ты — полезный ассистент..." style="height: 70px;"></textarea>
+                    </div>
+                    <div style="display:flex; gap:20px; flex-wrap: wrap;">
+                        <div class="form-group" style="flex:2; min-width: 180px;">
+                            <label style="display: flex; justify-content: space-between;"><span>🌡 Температура (Креативность)</span> <span id="temp-display" style="font-weight:bold;">1.0</span></label>
+                            <input type="range" id="temperature" min="0" max="2" step="0.1" value="1.0">
+                        </div>
+                        <div class="form-group" style="flex:1; min-width: 100px;">
+                            <label>📏 Токены</label>
+                            <input type="number" class="form-control" id="max-tokens" placeholder="Авто">
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- ВКЛАДКА: АГЕНТЫ И ДАННЫЕ -->
             <div class="settings-pane" id="pane-agents">
-                <div class="form-group">
-                    <label style="display:flex; justify-content:space-between; align-items:center;">
-                        🤖 Пользовательские Агенты
-                        <button class="btn btn-primary" style="padding: 6px 14px; font-size: 12px; border-radius: 20px;" id="btn-open-agent-creator" onclick="document.getElementById('settings-modal').classList.remove('open');">+ Создать Агента</button>
-                    </label>
-                    <div id="settings-agent-list" style="margin-top:15px;"></div>
+                <h3 class="pane-title">Агенты и Память</h3>
+                
+                <div class="settings-card">
+                    <div class="settings-card-title" style="justify-content: space-between;">
+                        <span>🤖 Ваши Агенты</span>
+                        <button class="btn btn-primary" style="padding: 4px 10px; font-size: 11px; border-radius: 12px;" id="btn-open-agent-creator" onclick="document.getElementById('settings-modal').classList.remove('open');">+ Создать</button>
+                    </div>
+                    <div id="settings-agent-list"></div>
                 </div>
-                <hr style="margin:25px 0; border:0; border-top:1px solid var(--glass-border);">
-                <div class="form-group">
-                    <label>💾 Управление данными</label>
+                
+                <div class="settings-card">
+                    <div class="settings-card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Управление памятью</div>
                     <div style="display:flex; gap:10px;">
-                        <button class="btn btn-secondary" id="btn-export-backup" style="flex:1">Скачать Backup</button>
-                        <label class="btn btn-secondary" style="flex:1; text-align:center; cursor:pointer">
-                            Загрузить Backup
+                        <button class="btn btn-secondary" id="btn-export-backup" style="flex:1; font-size: 12px;">⬇️ Скачать бэкап</button>
+                        <label class="btn btn-secondary" style="flex:1; text-align:center; cursor:pointer; font-size: 12px;">
+                            ⬆️ Загрузить бэкап
                             <input type="file" id="btn-import-backup" accept=".json" style="display:none">
                         </label>
                     </div>
-                    <button class="btn btn-secondary" id="btn-email-backup" style="width: 100%; margin-top: 10px; border: 1px solid var(--primary-color); color: var(--primary-color);">📤 Отправить бэкап на почту</button>
-                    <button class="btn btn-danger" id="btn-clear-all" style="margin-top: 10px;">Удалить ВСЕ чаты из базы</button>
-                </div>
-            </div>
-
-            <!-- ВКЛАДКА: ДОПОЛНИТЕЛЬНО -->
-            <div class="settings-pane" id="pane-advanced">
-                <div class="form-group">
-                    <label>⌨️ Отправка сообщения</label>
-                    <select class="form-control" id="send-behavior" style="appearance: none; cursor:pointer;">
-                        <option value="enter">Enter — Отправить, Shift+Enter — Перенос строки</option>
-                        <option value="shift-enter">Shift+Enter — Отправить, Enter — Перенос строки</option>
-                    </select>
+                    <button class="btn btn-secondary" id="btn-email-backup" style="width: 100%; margin-top: 10px; border: 1px solid #3b82f6; color: #3b82f6; font-size: 12px;">📤 Отправить бэкап на Email</button>
+                    <button class="btn btn-danger" id="btn-clear-all" style="width: 100%; margin-top: 10px; font-size: 12px;">🗑 Удалить все чаты</button>
                 </div>
             </div>
 
             <!-- ВКЛАДКА: О ПРИЛОЖЕНИИ -->
             <div class="settings-pane" id="pane-about">
-                <div style="text-align: center; padding: 10px 0;">
-                    <h3 style="color: var(--text-primary); margin-bottom: 5px;">UniChat Ultimate</h3>
-                    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 20px;">Professional AI Solution</p>
+                <h3 class="pane-title">Информация</h3>
+                
+                <div style="text-align: center; padding: 20px 0;">
+                    <h3 style="color: var(--text-primary); margin-bottom: 5px; font-size: 24px;">UniChat Ultimate</h3>
+                    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 30px;">Professional AI Solution</p>
                     
-                    <div style="background: rgba(0,0,0,0.25); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--glass-border); text-align: left; font-size: 13.5px; line-height: 1.6;">
-                        <p style="color: var(--text-primary); margin-bottom: 12px;"><strong>Автор:</strong> Amane KSyR</p>
+                    <div class="settings-card" style="text-align: left; font-size: 14px; line-height: 1.6;">
+                        <p style="color: var(--text-primary); margin-bottom: 15px;"><strong>Автор:</strong> Amane KSyR</p>
                         
-                        <div style="margin-bottom: 12px; padding: 10px; background: rgba(59, 130, 246, 0.1); border-left: 3px solid var(--primary-color); border-radius: 4px;">
-                            <strong style="color: var(--primary-color); display: block; margin-bottom: 4px;">💻 Программный код</strong>
-                            Лицензировано по <a href="https://github.com/LaDarkless/UniChat2/blob/master/LICENSE" target="_blank" style="color: #fff; text-decoration: underline;">MIT License</a>.
+                        <div style="margin-bottom: 15px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; border-radius: 4px;">
+                            <strong style="color: #3b82f6; display: block; margin-bottom: 4px;">💻 Программный код</strong>
+                            Лицензировано по <a href="https://github.com/LaDarkless/UniChat2/blob/master/LICENSE" target="_blank" style="color: var(--text-primary); text-decoration: underline;">MIT License</a>.
                         </div>
 
-                        <div style="margin-bottom: 12px; padding: 10px; background: rgba(139, 92, 246, 0.1); border-left: 3px solid var(--agent-color); border-radius: 4px;">
-                            <strong style="color: var(--agent-color); display: block; margin-bottom: 4px;">🎨 Дизайн и Графика</strong>
+                        <div style="margin-bottom: 15px; padding: 12px; background: rgba(139, 92, 246, 0.1); border-left: 3px solid #8b5cf6; border-radius: 4px;">
+                            <strong style="color: #8b5cf6; display: block; margin-bottom: 4px;">🎨 Дизайн и Графика</strong>
                             CC BY-NC-ND 4.0. Копирование и изменение дизайна запрещено.
                         </div>
 
-                        <p style="color: var(--text-secondary); font-size: 12px;">
-                            <strong>Репозиторий:</strong> <a href="https://github.com/LaDarkless/UniChat2" target="_blank" style="color: var(--primary-color);">github.com/LaDarkless/UniChat2</a><br>
-                            <strong>Версия ПО:</strong> 9.7.0.1 (Build 2026.03.17)<br>
+                        <p style="color: var(--text-secondary); font-size: 13px; border-top: 1px solid var(--app-border); padding-top: 15px; margin-top: 15px;">
+                            <strong>Репозиторий:</strong> <a href="https://github.com/LaDarkless/UniChat2" target="_blank" style="color: #3b82f6;">GitHub Link</a><br>
+                            <strong>Версия ПО:</strong> 9.8.4.6 (Build 2026.03.18)<br>
                             <strong>Связь:</strong> ksyr2025@gmail.com
                         </p>
                     </div>
-
-                    <p style="color: var(--text-secondary); font-size: 11px; margin-top: 20px; opacity: 0.7;">© 2026 Amane KSyR. Все права защищены.</p>
+                    <p style="color: var(--text-secondary); font-size: 12px; margin-top: 20px; opacity: 0.7;">© 2026 Amane KSyR. Все права защищены.</p>
                 </div>
             </div>
 
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" id="cancel-settings">Закрыть</button>
-            <button class="btn btn-primary" id="save-settings">Сохранить всё</button>
         </div>
     </div>
 </div>
@@ -1347,7 +1813,6 @@ window.editCharacter = function(id) {
         { id: "anthropic/claude-sonnet-4", name: "Claude-sonnet-4", group: "Anthropic", provider: "openrouter" },
         { id: "anthropic/claude-opus-4", name: "Claude-opus-4", group: "Anthropic", provider: "openrouter" },
         { id: "anthropic/claude-3.5-sonnet", name: "Claude-3.5-sonnet", group: "Anthropic", provider: "openrouter" },
-        { id: "claude-haiku-4-5", name: "Claude 4.5 Haiku", group: "Anthropic", provider: "proxy-api" },
         { id: "anthropic/claude-3.7-sonnet:thinking", name: "Claude 3.7 Sonnet (Thinking)", group: "Anthropic", provider: "openrouter" },
         { id: "anthropic/claude-3.7-sonnet", name: "Claude 3.7 Sonnet", group: "Anthropic", provider: "openrouter" },
         { id: "anthropic/claude-3-opus:beta", name: "Claude 3 Opus Beta", group: "Anthropic", provider: "openrouter" },
@@ -1430,6 +1895,7 @@ window.editCharacter = function(id) {
         { id: "meta-llama/llama-3-8b-instruct", name: "Llama-3-8b-instruct", group: "Meta | Llama", provider: "openrouter"},
 
         //MiniMax:
+        { id: "minimax/minimax-m2.7", name: "Minimax-m2.7", group: "Minimax", provider: "openrouter"},
         { id: "minimax/minimax-m2.5", name: "Minimax-m2.5", group: "Minimax", provider: "openrouter"},
         { id: "minimax/minimax-m2-her", name: "Minimax-m2-her", group: "Minimax", provider: "openrouter"},
         { id: "minimax/minimax-m2.1", name: "Minimax-m2.1", group: "Minimax", provider: "openrouter"},
@@ -1438,68 +1904,15 @@ window.editCharacter = function(id) {
         { id: "minimax/minimax-01", name: "Minimax-01", group: "Minimax", provider: "openrouter"},
 
         //Qwen:
-        { id: "qwen/qwen3.5-9b", name: "Qwen3.5-9b", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3.5-35b-a3b", name: "qwen3.5-35b-a3b", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3.5-27b", name: "qwen3.5-27b", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3.5-122b-a10b", name: "qwen3.5-122b-a10b", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3.5-flash-02-23", name: "qwen3.5-flash-02-23", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3.5-plus-02-15", name: "qwen3.5-plus-02-15", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3.5-397b-a17b", name: "qwen3.5-397b-a17b", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-max-thinking", name: "qwen3-max-thinking", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-coder-next", name: "qwen3-coder-next", group: "Qwen", provider: "openrouter"},
-        //{ id: "qwen/qwen3-embedding-0.6b", name: "qwen3-embedding-0.6b", group: "Qwen", provider: "openrouter"},
-        //{ id: "qwen/qwen3-embedding-8b", name: "qwen3-embedding-8b", group: "Qwen", provider: "openrouter"},
-        //{ id: "qwen/qwen3-embedding-4b", name: "qwen3-embedding-4b", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-vl-32b-instruct", name: "qwen3-vl-32b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-vl-8b-thinking", name: "qwen3-vl-8b-thinking", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-vl-8b-instruct", name: "qwen3-vl-8b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-vl-30b-a3b-thinking", name: "qwen3-vl-30b-a3b-thinking", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-vl-235b-a22b-thinking", name: "qwen3-vl-235b-a22b-thinking", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-vl-235b-a22b-instruct", name: "qwen3-vl-235b-a22b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-max", name: "Qwen3-max", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-coder-plus", name: "qwen3-coder-plus", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-coder-flash", name: "qwen3-coder-flash", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-next-80b-a3b-thinking", name: "qwen3-next-80b-a3b-thinking", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-next-80b-a3b-instruct", name: "qwen3-next-80b-a3b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-plus-2025-07-28", name: "qwen-plus-2025-07-28", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-plus-2025-07-28:thinking", name: "qwen-plus-2025-07-28:thinking", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-30b-a3b-thinking-2507", name: "qwen3-30b-a3b-thinking-2507", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-coder-30b-a3b-instruct", name: "qwen3-coder-30b-a3b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-30b-a3b-instruct-2507", name: "qwen3-30b-a3b-instruct-2507", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-235b-a22b-thinking-2507", name: "qwen3-235b-a22b-thinking-2507", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-coder", name: "qwen3-coder", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-235b-a22b-2507", name: "qwen3-235b-a22b-2507", group: "Qwen", provider: "openrouter"},
-        //{ id: "qwen/qwen3-0.6b-04-28", name: "qwen3-0.6b-04-28", group: "Qwen", provider: "openrouter"},
-        //{ id: "qwen/qwen3-1.7b", name: "qwen3-1.7b", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-30b-a3b", name: "Qwen3-30b-a3b", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-8b", name: "Qwen3-8b", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-14b", name: "Qwen3-14b", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-32b", name: "Qwen3-32b", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen3-235b-a22b", name: "Qwen3-235b-a22b    ", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen2.5-coder-7b-instruct", name: "Qwen2.5-coder-7b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen2.5-vl-3b-instruct", name: "Qwen2.5-vl-3b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen2.5-vl-32b-instruct", name: "Qwen2.5-vl-32b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwq-32b", name: "QwQ-32b", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen2.5-32b-instruct", name: "Qwen2.5-32b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-vl-plus", name: "Qwen-vl-plus", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-vl-max", name: "Qwen-vl-max", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-turbo", name: "Qwen-turbo", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen2.5-vl-72b-instruct", name: "Qwen2.5-vl-72b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-plus", name: "Qwen-plus", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-max", name: "Qwen-max", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwq-32b-preview", name: "QwQ-32b-preview", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-2.5-coder-32b-instruct", name: "Qwen-2.5-coder-32b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-2.5-7b-instruct", name: "Qwen-2.5-7b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-2.5-72b-instruct", name: "Qwen-2.5-72b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-2.5-vl-7b-instruct", name: "Qwen-2.5-vl-7b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-2-7b-instruct", name: "Qwen 2-7b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-2-72b-instruct", name: "Qwen 2-72b-instruct", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-4b-chat", name: "Qwen-4b-chat", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-7b-chat", name: "Qwen-7b-chat", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-14b-chat", name: "Qwen-14b-chat", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-32b-chat", name: "Qwen-32b-chat", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-72b-chat", name: "Qwen-72b-chat", group: "Qwen", provider: "openrouter"},
-        { id: "qwen/qwen-110b-chat", name: "qwen-110b-chat", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3.5-9b", name: "Qwen 3.5-9b", group: "Qwen | Alibaba", provider: "openrouter"},
+        { id: "qwen/qwen3.5-35b-a3b", name: "Qwen 3.5-35b", group: "Qwen | Alibaba", provider: "openrouter"},
+        { id: "qwen/qwen3.5-27b", name: "Qwen 3.5-27b", group: "Qwen | Alibaba", provider: "openrouter"},
+        { id: "qwen/qwen3.5-122b-a10b", name: "Qwen3.5-122b", group: "Qwen | Alibaba", provider: "openrouter"},
+        { id: "qwen/qwen3.5-flash-02-23", name: "Qwen3.5 FLASH", group: "Qwen | Alibaba", provider: "openrouter"},
+        { id: "qwen/qwen3.5-plus-02-15", name: "Qwen3.5 PLUS", group: "Qwen | Alibaba", provider: "openrouter"},
+        { id: "qwen/qwen3.5-397b-a17b", name: "Qwen3.5-397b", group: "Qwen | Alibaba", provider: "openrouter"},
+        { id: "qwen/qwen3-max-thinking", name: "Qwen3-max-thinking", group: "Qwen | Alibaba", provider: "openrouter"},
+        { id: "qwen/qwen3-coder-next", name: "Qwen3-coder-next", group: "Qwen | Alibaba", provider: "openrouter"},
 
         //arcee-ai:
         { id: "arcee-ai/trinity-large-preview:free", name: "Trinity Large Preview (free)", group: "arcee-ai", provider: "openrouter" },
@@ -3611,8 +4024,20 @@ window.editCharacter = function(id) {
         });
     }
     initDB().then(async () => {
-        applyTheme();
-        applyUISettings(); // Применение кастомных шрифтов и размеров
+        // ---- ИНИЦИАЛИЗАЦИЯ СВЕТЛОЙ/ТЕМНОЙ ТЕМЫ ----
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.body.setAttribute('data-theme', savedTheme);
+        const sunIcon = document.querySelector('.sun-icon');
+        const moonIcon = document.querySelector('.moon-icon');
+        if (sunIcon && moonIcon) {
+            if (savedTheme === 'light') {
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'block';
+            } else {
+                sunIcon.style.display = 'block';
+                moonIcon.style.display = 'none';
+            }
+        }
         
         // Миграция старых данных из localStorage в IndexedDB
         const legacyChats = localStorage.getItem('pa_chats');
