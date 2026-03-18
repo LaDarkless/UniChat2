@@ -911,20 +911,46 @@
     ];
 
     // --- ДАННЫЕ АГЕНТОВ ---
-    let agents =[
-      {
-        id: "agent_" + Date.now(),
-        name: "Аналитик / Мыслитель",
-        model: "deepseek/deepseek-r1",
-        prompt: "Ты научный исследователь. Глубоко рассуждай перед ответом (если модель поддерживает это). Собери ключевые факты и структуру ответа. Пользователь не видит твой ответ, он поступает следующей модели по агентской цепочке"
-      },
-      {
-        id: "agent_" + (Date.now() + 1),
-        name: "Главный Редактор",
-        model: "openai/gpt-4o",
-        prompt: "Ты профессиональный редактор. Тебе на вход поступят сырые факты от исследователя. Твоя задача — написать красивый, увлекательный текст. Используй форматирование Markdown."
+    let agents =[];
+    
+    // Пытаемся загрузить агентов из localStorage
+    const savedAgents = localStorage.getItem('pa_agents');
+    if (savedAgents) {
+      try {
+        const parsed = JSON.parse(savedAgents);
+        // ВАЖНО: Проверяем, что загрузился именно массив, а не объект или null
+        if (Array.isArray(parsed)) {
+          agents = parsed;
+        }
+      } catch (e) {
+        console.error("Ошибка парсинга агентов", e);
       }
-    ];
+    }
+
+    // Если в памяти пусто или загрузился битый формат, задаем дефолтных агентов
+    if (agents.length === 0) {
+      agents =[
+        {
+          id: "agent_" + Date.now(),
+          name: "Аналитик / Мыслитель",
+          model: "deepseek/deepseek-r1",
+          prompt: "Ты научный исследователь. Глубоко рассуждай перед ответом (если модель поддерживает это). Собери ключевые факты и структуру ответа. Пользователь не видит твой ответ, он поступает следующей модели по агентской цепочке"
+        },
+        {
+          id: "agent_" + (Date.now() + 1),
+          name: "Главный Редактор",
+          model: "openai/gpt-4o",
+          prompt: "Ты профессиональный редактор. Тебе на вход поступят сырые факты от исследователя. Твоя задача — написать красивый, увлекательный текст. Используй форматирование Markdown."
+        }
+      ];
+      // Сразу перезаписываем кривой кэш правильными данными
+      saveAgentsToLocal();
+    }
+
+    // Функция для сохранения агентов в память
+    function saveAgentsToLocal() {
+      localStorage.setItem('pa_agents', JSON.stringify(agents));
+    }
 
     const agentsContainer = document.getElementById('agentsContainer');
     const runChainBtn = document.getElementById('runChainBtn');
@@ -933,21 +959,30 @@
 
 
     // =========================================================================
-    // СИНХРОНИЗАЦИЯ API КЛЮЧА С ОСНОВНЫМ UNICHAT
+    // СИНХРОНИЗАЦИЯ НАСТРОЕК (API КЛЮЧ И НАЧАЛЬНАЯ ЗАДАЧА)
     // =========================================================================
     
-    // Подтягиваем ключ при загрузке страницы
+    // Подтягиваем ключ и начальную задачу при загрузке страницы
     document.addEventListener('DOMContentLoaded', () => {
       const savedKey = localStorage.getItem('pa_api_key');
       if (savedKey) {
         apiKeyInput.value = savedKey;
       }
+
+      const savedTask = localStorage.getItem('pa_initial_task');
+      if (savedTask) {
+        initialTaskInput.value = savedTask;
+      }
     });
 
-    // Сохраняем ключ локально при каждом изменении (вводе)
+    // Сохраняем ключ локально при каждом изменении
     apiKeyInput.addEventListener('input', (e) => {
-      const key = e.target.value.trim();
-      localStorage.setItem('pa_api_key', key);
+      localStorage.setItem('pa_api_key', e.target.value.trim());
+    });
+
+    // Сохраняем текст задачи локально при каждом изменении
+    initialTaskInput.addEventListener('input', (e) => {
+      localStorage.setItem('pa_initial_task', e.target.value);
     });
 
     // =========================================================================
@@ -1050,14 +1085,26 @@
       });
     }
 
-    window.removeAgent = (id) => { agents = agents.filter(a => a.id !== id); renderAgents(); };
-    window.updateAgent = (id, field, value) => { const agent = agents.find(a => a.id === id); if (agent) agent[field] = value; };
+    window.removeAgent = (id) => { 
+      agents = agents.filter(a => a.id !== id); 
+      saveAgentsToLocal(); // Сохраняем после удаления
+      renderAgents(); 
+    };
+    
+    window.updateAgent = (id, field, value) => { 
+      const agent = agents.find(a => a.id === id); 
+      if (agent) {
+        agent[field] = value; 
+        saveAgentsToLocal(); // Сохраняем после изменения (имени, модели, промпта)
+      }
+    };
 
     document.getElementById('addAgentBtn').addEventListener('click', () => {
       agents.push({
         id: "agent_" + Date.now(),
         name: "Новый Агент", model: "openai/gpt-4o-mini", prompt: "Проанализируй текст и выполни инструкцию."
       });
+      saveAgentsToLocal(); // Сохраняем после добавления
       renderAgents();
     });
 
