@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Agent Builder - ProxyAPI OpenRouter (Streaming & Thoughts)</title>
+  <style>
+    :root {
+      /* Общая тема (тёмная) */
+      --app-bg: #070709;
+      --app-surface: #0f0f13;
+      --app-border: #1f1f25;
+      --text-main: #e0e0e0;
+      --text-muted: #888890;
+      
+      /* Тема для цепочек агентов (Черно-серая премиальная) */
+      --chain-bg: #000000;
+      --chain-surface: #0a0a0a;
+      --chain-card: #111111;
+      --chain-border: #222222;
+      --chain-glow: rgba(255, 255, 255, 0.06);
+      --chain-text: #f5f5f5;
+      --chain-muted: #666666;
+      
+      --radius-lg: 20px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      color: var(--text-main);
+      background-color: var(--app-bg);
+      padding: 24px;
+      line-height: 1.5;
+    }
+
+    .app-container {
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 480px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .app-container { grid-template-columns: 1fr; }
+    }
+
+    /* --- ЛЕВАЯ ПАНЕЛЬ (Настройки и Билдер) --- */
+    .builder-panel {
+      background: var(--app-surface);
+      border: 1px solid var(--app-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    .header-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin: 0 0 4px;
+      color: #fff;
+    }
+
+    .header-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .input-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .ui-input, .ui-textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--app-border);
+      color: var(--text-main);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 14px;
+      transition: all 0.2s;
+      outline: none;
+    }
+
+    .ui-input:focus, .ui-textarea:focus {
+      border-color: rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .ui-textarea { min-height: 80px; resize: vertical; }
+
+    /* Кастомный Dropdown с поиском */
+    .dropdown-wrapper { position: relative; }
+    .dropdown-list {
+      position: absolute;
+      top: 100%; left: 0; right: 0;
+      background: #111113;
+      border: 1px solid #333;
+      border-radius: var(--radius-md);
+      margin-top: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 100;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+      display: none;
+    }
+    .dropdown-list.open { display: block; }
+    .dropdown-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      color: #bbb;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: background 0.1s, color 0.1s;
+    }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover { background: #222; color: #fff; }
+    .dropdown-item-id {
+      display: block; font-size: 11px; color: #666; font-family: monospace; margin-top: 2px;
+    }
+
+    /* Список агентов */
+    .agents-list { display: flex; flex-direction: column; gap: 16px; }
+    .agent-card {
+      background: rgba(0,0,0,0.3);
+      border: 1px dashed var(--app-border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      position: relative;
+    }
+    .agent-card-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+    }
+    .agent-number {
+      font-size: 11px; text-transform: uppercase; background: #222; padding: 4px 10px; border-radius: 12px; font-weight: 600; color: #fff;
+    }
+    .btn-remove { background: none; border: none; color: #ff5555; cursor: pointer; font-size: 12px; padding: 4px; opacity: 0.8; }
+    .btn-remove:hover { opacity: 1; }
+
+    /* Кнопки */
+    .btn {
+      background: #1a1a1f; color: #fff; border: 1px solid #2a2a32;
+      padding: 14px 16px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+    }
+    .btn:hover { background: #22222a; border-color: #33333d; }
+    .btn.primary { background: #fff; color: #000; border-color: #fff; }
+    .btn.primary:hover { background: #e0e0e0; transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* --- ПРАВАЯ ПАНЕЛЬ (Black & Grey Thinking UI) --- */
+    agent-chain-runner { display: block; height: 100%; }
+
+    .terminal {
+      background: var(--chain-bg); border: 1px solid var(--chain-border);
+      border-radius: var(--radius-lg); padding: 32px; min-height: 100%;
+      box-shadow: inset 0 0 100px rgba(255,255,255,0.015);
+      position: relative; overflow: hidden;
+    }
+
+    /* Эффект сетки на фоне */
+    .terminal::before {
+      content: ""; position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+      background-size: 24px 24px; pointer-events: none; z-index: 0;
+    }
+
+    .terminal > * { position: relative; z-index: 1; }
+
+    .terminal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--chain-border); padding-bottom: 20px; margin-bottom: 30px;
+    }
+
+    .terminal-title {
+      font-size: 16px; font-weight: 400; letter-spacing: 0.1em; color: var(--chain-text);
+      text-transform: uppercase; display: flex; align-items: center; gap: 12px;
+    }
+
+    .status-dot { width: 8px; height: 8px; background: #333; border-radius: 50%; transition: all 0.3s; }
+    .status-dot.active {
+      background: #fff; box-shadow: 0 0 12px rgba(255,255,255,0.8);
+      animation: pulse-dot 1.5s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .chain-timeline { display: flex; flex-direction: column; gap: 0; }
+    .chain-step { display: grid; grid-template-columns: 44px 1fr; position: relative; padding-bottom: 40px; opacity: 0.5; transition: opacity 0.5s; }
+    .chain-step.active, .chain-step.done { opacity: 1; }
+    
+    .chain-step:not(:last-child)::after {
+      content: ""; position: absolute; left: 21px; top: 40px; bottom: -10px;
+      width: 2px; background: var(--chain-border); z-index: 0;
+    }
+    .chain-step.done:not(:last-child)::after { background: linear-gradient(to bottom, #555, var(--chain-border)); }
+
+    .step-icon-wrapper {
+      width: 44px; height: 44px; border-radius: 50%; background: var(--chain-surface);
+      border: 1px solid var(--chain-border); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2;
+    }
+    .chain-step.active .step-icon-wrapper { border-color: #fff; box-shadow: 0 0 24px var(--chain-glow); }
+    .chain-step.done .step-icon-wrapper { background: #fff; border-color: #fff; }
+    
+    .step-icon { width: 18px; height: 18px; fill: var(--chain-muted); }
+    .chain-step.active .step-icon { fill: #fff; }
+    .chain-step.done .step-icon { fill: #000; }
+
+    .step-content { padding-left: 20px; padding-top: 10px; }
+    .step-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .step-name { font-size: 17px; font-weight: 500; color: var(--chain-text); margin: 0; }
+    .step-model { font-size: 11px; font-family: monospace; color: var(--chain-muted); background: rgba(255,255,255,0.03); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--chain-border); }
+
+    .step-output {
+      background: var(--chain-card); border: 1px solid var(--chain-border);
+      border-radius: var(--radius-md); padding: 24px; font-size: 15px; line-height: 1.6;
+      color: #ddd; white-space: pre-wrap; position: relative; overflow: hidden; display: none;
+      word-break: break-word;
+    }
+    .chain-step.active .step-output, .chain-step.done .step-output { display: block; }
+
+    /* Дизайн Блока Рассуждений (Мыслей) */
+    .thinking-process {
+      background: rgba(255,255,255,0.02);
+      border-left: 2px solid #444;
+      padding: 16px;
+      margin-bottom: 16px;
+      border-radius: 0 8px 8px 0;
+      color: #999;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .thinking-label {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: #666; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+    }
+    .thinking-label::before {
+      content: ""; display: inline-block; width: 6px; height: 6px; background: #666; border-radius: 50%;
+    }
+
+    /* Анимация сканирования при ожидании потока */
+    .step-output.waiting::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(255,255,255,0.03) 50%, transparent);
+      animation: scan 1.5s linear infinite; pointer-events: none;
+    }
+    @keyframes scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+
+    /* Скелетон загрузки */
+    .skeleton-line { height: 12px; background: #1a1a1a; border-radius: 4px; margin-bottom: 12px; position: relative; overflow: hidden; }
+    .skeleton-line:last-child { width: 60%; margin-bottom: 0; }
+    .skeleton-line::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+      transform: translateX(-100%); animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer { 100% { transform: translateX(100%); } }
+
+    /* Мигающий курсор при потоковой передаче */
+    .cursor-blink {
+      display: inline-block; width: 8px; height: 15px; background: #fff;
+      vertical-align: middle; margin-left: 4px; animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* ==========================================
+       MOBILE RESPONSIVENESS (AGENT CHAINS PRO)
+       ========================================== */
+       @media (max-width: 768px) {
+      /* 1. Уменьшаем глобальные отступы, чтобы дать место контенту */
+      body {
+        padding: 12px; 
+      }
+      .app-container {
+        gap: 16px;
+      }
+      
+      /* 2. Делаем левую панель билдера компактнее */
+      .builder-panel {
+        padding: 16px; 
+      }
+      .agent-card-header {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      /* 3. Оптимизируем терминал справа */
+      .terminal {
+        padding: 16px; /* Возвращаем драгоценное пространство */
+      }
+      .terminal-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      
+      /* 4. Настраиваем шаги генерации */
+      .step-content {
+        padding-left: 12px; /* Уменьшаем пробел между иконкой и текстом */
+      }
+      .step-header {
+        flex-direction: column; /* Имя и длинную модель ставим друг под другом */
+        align-items: flex-start;
+        gap: 6px;
+      }
+      .step-output {
+        padding: 14px;
+        font-size: 14px; /* Чуть уменьшаем шрифт логов для мобилок */
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- ЛЕВАЯ ПАНЕЛЬ -->
+    <aside class="builder-panel">
+      <div>
+        <h1 class="header-title">Agent Chains Pro</h1>
+        <aside class="builder-panel">
+            <div>
+              <h1 class="header-title">UniChat</h1>
+              <p class="header-subtitle">Streaming & Reasoning via ProxyAPI (OpenRouter)</p>
+            </div>
+      
+            <!-- КНОПКА ВОЗВРАТА В UNICHAT -->
+            <button onclick="window.location.href='index.html'" class="btn" style="background: transparent; border-color: var(--app-border); color: var(--text-muted); margin-top: -10px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+              Вернуться в UniChat
+            </button>
+      
+            <!-- Дальше идет твой код: input-group для ключа и т.д. -->
+            <div class="input-group">
+              <label class="input-label">Ключ ProxyAPI</label>
+              <input type="password" id="apiKey" class="ui-input" placeholder="sk-..." />
+            </div>
+        <p class="header-subtitle">Streaming & Reasoning via ProxyAPI (OpenRouter)</p>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Ключ ProxyAPI</label>
+        <input type="password" id="apiKey" class="ui-input" placeholder="sk-..." />
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Начальная задача (User Prompt)</label>
+        <textarea id="initialTask" class="ui-textarea" placeholder="Введи задачу...">Напиши подробную, но понятную статью про устройство черных дыр. Рассуждай глубоко.</textarea>
+      </div>
+
+      <div id="agentsContainer" class="agents-list"></div>
+
+      <button id="addAgentBtn" class="btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Добавить агента
+      </button>
+
+      <button id="runChainBtn" class="btn primary" style="margin-top: 16px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 3l14 9-14 9V3z"/></svg>
+        Запустить цепочку агентов
+      </button>
+    </aside>
+
+    <!-- ПРАВАЯ ПАНЕЛЬ -->
+    <agent-chain-runner id="chainRunner"></agent-chain-runner>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // БАЗА МОДЕЛЕЙ (ДОБАВЛЯЙТЕ СЮДА ЛЮБЫЕ МОДЕЛИ ИЗ OPENROUTER)
+    // =========================================================================
+    const AVAILABLE_MODELS =[
+    { id: "openai/gpt-5.4-pro", name: "GPT-5.4 PRO", group: "OpenAI", provider: "openrouter", inputPrice: "30/M input tokens", outputPrice: "180/M output tokens" },
+        { id: "gpt-5.4", name: "GPT-5.4", group: "OpenAI", provider: "proxy-api", inputPrice: "2.50/M input token", outputPrice: "15/M output tokens" },
+        { id: "gpt-5.3-chat-latest", name: "GPT-5.3", group: "OpenAI", provider: "proxy-api", inpuPrice: "1.75/M input tokens", ouputPrice: "14/M output tokens" },
+        { id: "gpt-5.3-codex", name: "GPT-5.3-codex", group: "OpenAI", provider: "proxy-api", inpuPrice: "1.75/M input tokens", ouputPrice: "14/M output tokens" },
+        { id: "gpt-5.2-pro", name: "GPT-5.2 PRO", group: "OpenAI", provider: "proxy-api", inpuPrice: "1.75/M input tokens", ouputPrice: "168/M output tokens" },
+        { id: "gpt-5.2", name: "GPT-5.2", group: "OpenAI", provider: "proxy-api", inputPrice: "21/M input tokens", outputPrice: "168/M output tokens"},
+        { id: "gpt-5.2-chat-latest", name: "GPT-5.2-chat", group: "OpenAI", provider: "proxy-api", inputPrice: "1.75/M input tokens", outputPrice: "14/M output tokens" },
+        { id: "gpt-5.2-codex", name: "GPT-5.2-codex", group: "OpenAI", provider: "proxy-api", inputPrice: "1.75/M input tokens", outputPrice: "14/M output tokens"},
+        { id: "gpt-5.1", name: "GPT-5.1", group: "OpenAI", provider: "proxy-api", inputPrice: "1.25/M input tokens", outputPrice: "10/M output tokens" },
+        { id: "gpt-5.1-chat-latest", name: "GPT-5.1-chat", group: "OpenAI", provider: "proxy-api", inputPrice: "1.25/M input tokens", outputPrice: "10/M output tokens" },
+        { id: "gpt-5.1-codex-max", name: "GPT-5.1-codex-max", group: "OpenAI", provider: "proxy-api", inputPrice: "1.25/M input token", outputPrice: "10/M output tokens" },
+        { id: "gpt-5.1-codex", name: "GPT-5.1-codex", group: "OpenAI", provider: "proxy-api", inputPrice: "1.25/M input tokens", outputPrice: "10/M output tokens" },
+        { id: "gpt-5.1-codex-mini", name: "GPT-5.1-codex-mini", group: "OpenAI", provider: "proxy-api", inputPrice: "0.25/M input tokens", outputPrice: "2/M output tokens" },
+        { id: "openai/gpt-5-pro", name: "GPT-5-pro", group: "OpenAI", provider: "openrouter", inputPrice: "15/M input tokens", outputPrice: "120/M output tokens" },
+        { id: "gpt-5-chat-latest", name: "GPT-5-chat-latest", group: "OpenAI", provider: "proxy-api", inputPrice: "1.25/M input tokens", outputPrice: "10/M output tokens" },
+        { id: "gpt-5-codex", name: "GPT-5-codex", group: "OpenAI", provider: "proxy-api", inputPrice: "1.25/M input tokens", outputPrice: "10/M output tokens" },
+        { id: "gpt-5", name: "GPT-5", group: "OpenAI", provider: "proxy-api", inputPrice: "1.25/M input tokens", outputPrice: "10/M output tokens" },
+        { id: "gpt-5-mini", name: "GPT-5-mini", group: "OpenAI", provider: "proxy-api", inputPrice: "0.25/M input tokens", outputPrice: "2/M output tokens" },
+        { id: "openai/gpt-5-nano", name: "GPT-5-nano"},
+        { id: "openai/gpt-4o:extended", name: "gpt-4o (extended)", group: "OpenAI", provider: "openrouter", inputPrice: "6/M input tokens", outputPrice: "18/M output tokens" },
+        { id: "openai/gpt-4o-2024-11-20", name: "GPTt-4o-2024-11-20", group: "OpenAI", provider: "openrouter", inputPrice: "2.50/M input tokens", outputPrice: "10/M output tokens" },
+        { id: "openai/gpt-4o-mini", name: "GPT-4o-mini", group: "OpenAI", provider: "openrouter", inputPrice: "0.15/M input tokens", outputPrice: "0.60/M output tokens" },
+        { id: "openai/gpt-4-turbo", name: "GPT-4-turbo", group: "OpenAI", provider: "openrouter", inputPrice: "10/M input tokens", outputPrice: "30/M output tokens" },
+        { id: "gpt-4.1", name: "GPT-4.1", group: "OpenAI", provider: "proxy-api", inputPrice: "2/M input tokens", outputPrice: "8/M output tokens" },
+        { id: "gpt-4.1-mini", name: "GPTt-4.1-mini", group: "OpenAI", provider: "proxy-api", inputPrice: "0.40/M input tokens", outputPrice: "1.60/M output tokens" },
+        { id: "gpt-4.1-nano", name: "GPT-4.1-nano", group: "OpenAI", provider: "proxy-api", inputPrice: "0.10/M input tokens", outputPrice: "0.40/M output tokens" },
+        { id: "gpt-4o-search-preview-2025-03-11", name: "GPT-4o-search", group: "OpenAI", provider: "proxy-api", inputPrice: "2.50/M input tokens", outputPrice: "10/M output tokens" },
+        { id: "openai/gpt-4o-mini-search-preview", name: "GPT-4o-mini-search-preview", group: "OpenAI", provider: "openrouter", inputPrice: "0.15/M input tokens", outputPrice: "0.60/M output tokens" },
+        { id: "openai/gpt-oss-120b", name: "GPT-oss-120b", group: "OpenAI", provider: "openrouter", inputPrice: "0.039/M input tokens", outputPrice: "0.19/M output tokens" },
+        { id: "openai/gpt-oss-20b", name: "GPT-oss-20b", group: "OpenAI", provider: "openrouter", inputPrice: "0.03/M input tokens", outputPrice: "0.14/M output tokens" },
+        //{ id: "openai/gpt-4.5-preview", name: "GPT-4.5-preview", group: "OpenAI", provider: "openrouter", inputPrice: "", outputPrice: "" },
+        { id: "openai/gpt-3.5-turbo", name: "GPT-3.5-Turbo", group: "OpenAI", provider: "openrouter", inputPrice: "0.50/M input tokens", outputPrice: "1.50/M output token"},
+        
+        //OpenAI-Reasoner:
+        { id: "openai/o4-mini-deep-research", name: "o4-mini-deep-research", group: "OpenAI-Reasoning", provider: "openrouter", inputPrice: "2/M input tokens", outputPrice: "8/M output tokens"},
+        { id: "o4-mini", name: "o4-mini", group: "OpenAI-Reasoning", provider: "proxy-api", inputPrice: "1.10/M input tokens", outputPrice: "4.40/M output tokens" },
+        { id: "openai/o3-deep-research", name: "o3-deep-research", group: "OpenAI-Reasoning", provider: "openrouter", inputPrice: "10/M input tokens", outputPrice: "40/M output tokens"},
+        { id: "o3-pro", name: "o3-pro", group: "OpenAI-Reasoning", provider: "proxy-api", inputPrice: "20/M input tokens", outputPrice: "80/M output tokens" },
+        { id: "o3", name: "o3", group: "OpenAI-Reasoning", provider: "proxy-api", inputPrice: "2/M input tokens", outputPrice: "8/M output tokens" },
+        { id: "o3-mini", name: "o3-mini", group: "OpenAI-Reasoning", provider: "proxy-api", inputPrice: "1.10/M input tokens", outputPrice: "4.40/M output tokens" },
+        { id: "o1-pro", name: "o1-pro", group: "OpenAI-Reasoning", provider: "proxy-api", inputPrice: "150/M input tokens", outputPrice: "600/M output tokens" },
+        { id: "o1", name: "o1", group: "OpenAI-Reasoning", provider: "proxy-api", inputPrice: "15/M input tokens", outputPrice: "60/M output token" },
+        { id: "codex-mini-latest", name: "codex-mini-latest", group: "OpenAI-Reasoning", provider: "proxy-api", inputPrice: "", outputPrice: "" },
+
+        //Gemini:
+        { id: "gemini-2.0-flash-lite", name: "✦ Gemini-2.0-flash lite", group: "Gemini", provider: "proxy-api", inputPrice: "0.075/M input tokens", outputPrice: "0.30/M output tokens" },
+        { id: "gemini-2.0-flash", name: "✦ Gemini-2.0-flash", group: "Gemini", provider: "proxy-api", inputPrice: "0.10/M input tokens", outputPrice: "0.40/M output tokens" },
+        { id: "google/gemini-2.5-flash-lite", name: "✦ Gemini-2.5-flash-lite", group: "Gemini", provider: "operouter", inputPrice: "0.10/M input tokens", outputPrice: "0.40/M output tokens" },
+        { id: "gemini-2.5-flash", name: "✦ Gemini-2.5-flash", group: "Gemini", provider: "proxy-api", inputPrice: "0.30/M input tokens", outputPrice: "2.50/M output tokens" },
+        { id: "gemini-2.5-pro", name: "✦ Gemini-2.5-pro", group: "Gemini", provider: "proxy-api", inputPrice: "1.25/M input tokens", outputPrice: "10/M output tokens" },
+        { id: "gemini-3-flash-preview", name: "✦ Gemini-3-flash-preview", group: "Gemini", provider: "proxy-api", inputPrice: "0.50/M input tokens", outputPrice: "3/M output tokens" },
+        { id: "gemini-3-pro-preview", name: "✦ Gemini-3-pro-preview", group: "Gemini", provider: "proxy-api", inputPrice: "2/M input tokens", outputPrice: "12/M output tokens" },
+        { id: "google/gemini-3.1-flash-lite-preview", name: "✦ Gemini-3.1-flash-lite-preview", group: "Gemini", provider: "proxy-api", inputPrice: "0.25/M input tokens", outputPrice: "1.50/M output tokens" },
+        { id: "google/gemini-3.1-pro-preview-customtools", name: "✦ Gemini-3.1-pro", group: "Gemini", provider: "openrouter", inputPrice: "2/M input tokens", outputPrice: "12/M output tokens" },
+
+        //Gemma:
+        { id: "google/gemma-3-27b-it", name: "Gemma-3-27b-it", group: "Gemma", provider: "openrouter"},
+        { id: "google/gemma-3-12b-it", name: "Gemma-3-12b-it", group: "Gemma", provider: "openrouter"},
+        { id: "google/gemma-3n-e4b-it", name: "Gemma-3n-e4b-it", group: "Gemma", provider: "openrouter"},
+        { id: "google/gemma-2-9b-it", name: "Gemma-2-9b-it", group: "Gemma", provider: "openrouter"},
+        { id: "google/gemma-3-4b-it", name: "Gemma-3-4b-it", group: "Gemma", provider: "openrouter"},
+        { id: "google/gemma-2-27b-it", name: "Gemma-2-27b-it", group: "Gemma", provider: "openrouter"},
+        { id: "google/gemma-2b-it", name: "Gemma-2b-it", group: "Gemma", provider: "openrouter"},
+        { id: "google/gemma-3-1b-it", name: "Gemma-3-1b-it", group: "Gemma", provider: "openrouter"},
+        { id: "google/gemma-7b-it", name: "Gemma-7b-it", group: "Gemma", provider: "openrouter"},
+
+        //Claude:
+        { id: "anthropic/claude-3-haiku", name: "Claude-3-haiku", group: "Anthropic", provider: "openrouter" },
+        { id: "anthropic/claude-3-sonnet", name: "Claude-3-sonnet", group: "Anthropic", provider: "openrouter" },
+        { id: "anthropic/claude-3.5-haiku", name: "Claude 3.5 Haiku", group: "Anthropic", provider: "openrouter" },
+        { id: "anthropic/claude-opus-4.1", name: "Claude-opus-4.1", group: "Anthropic", provider: "openrouter" },
+        { id: "anthropic/claude-sonnet-4", name: "Claude-sonnet-4", group: "Anthropic", provider: "openrouter" },
+        { id: "anthropic/claude-opus-4", name: "Claude-opus-4", group: "Anthropic", provider: "openrouter" },
+        { id: "anthropic/claude-3.5-sonnet", name: "Claude-3.5-sonnet", group: "Anthropic", provider: "openrouter" },
+        { id: "claude-haiku-4-5", name: "Claude 4.5 Haiku", group: "Anthropic", provider: "proxy-api" },
+        { id: "anthropic/claude-3.7-sonnet:thinking", name: "Claude 3.7 Sonnet (Thinking)", group: "Anthropic", provider: "openrouter" },
+        { id: "anthropic/claude-3.7-sonnet", name: "Claude 3.7 Sonnet", group: "Anthropic", provider: "openrouter" },
+        { id: "anthropic/claude-3-opus:beta", name: "Claude 3 Opus Beta", group: "Anthropic", provider: "openrouter" },
+        { id: "anthropic/claude-haiku-4.5", name: "Claude 4.5 Haiku", group: "Anthropic", provider: "proxy-api" },
+        { id: "claude-sonnet-4-5", name: "Claude 4.5 Sonnet", group: "Anthropic", provider: "proxy-api" },
+        { id: "anthropic/claude-opus-4.5", name: "Claude-opus-4.5", group: "Anthropic", provider: "openrouter" },
+        { id: "anthropic/claude-opus-4.6", name: "Claude 4.6 Opus", group: "Anthropic", provider: "openrouter" },
+        { id: "claude-sonnet-4-6", name: "Claude 4.6 Sonnet", group: "Anthropic", provider: "proxy-api" },
+
+        //Liquid:
+        { id: "liquid/lfm-2-24b-a2b", name: "lfm-2-24b-a2b", group: "Liquid", provider: "openrouter"},
+        { id: "liquid/lfm-2.5-1.2b-instruct:free", name: "lfm-2.5-1.2b-instruct (free)", group: "Liquid", provider: "openrouter"},
+        { id: "liquid/lfm2-8b-a1b", name: "lfm2-8b-a1b", group: "Liquid", provider: "openrouter"},
+        { id: "liquid/lfm-2.2-6b", name: "lfm-2.2-6b", group: "Liquid", provider: "openrouter"},
+
+        //Mercury:
+        { id: "inception/mercury-2", name: "Mercury-2", group: "Mercury", provider: "openrouter"},
+        { id: "inception/mercury", name: "Mercury", group: "Mercury", provider: "openrouter"},
+        { id: "inception/mercury-coder", name: "Mercury-coder", group: "Mercury", provider: "openrouter"},
+
+        //Perplexity:
+        { id: "perplexity/sonar-pro-search", name: "Perplexity sonar-pro-search", group: "Perplexity", provider: "openrouter" },
+        { id: "perplexity/sonar-reasoning-pro", name: "Perplexity sonar-reasoning-pro", group: "Perplexity", provider: "openrouter" },
+        { id: "perplexity/sonar-pro", name: "Perplexity sonar-pro", group: "Perplexity", provider: "openrouter" },
+        { id: "perplexity/sonar-deep-research", name: "Perplexity sonar-deep-research", group: "Perplexity", provider: "openrouter" },
+        { id: "perplexity/sonar", name: "Perplexity sonar", group: "Perplexity", provider: "openrouter" },
+
+        //Sourceful IMG:
+        /*
+        { id: "sourceful/riverflow-v2-pro", name: "", group: "", provider: "openrouter"},
+        { id: "sourceful/riverflow-v2-fast", name: "", group: "", provider: "openrouter"},
+        { id: "sourceful/riverflow-v2-max-preview", name: "", group: "", provider: "openrouter"},
+        { id: "sourceful/riverflow-v2-standard-preview", name: "", group: "", provider: "openrouter"},
+        { id: "sourceful/riverflow-v2-fast-preview", name: "Riverflow-v2-fast-preview", group: "Sourceful", provider: "openrouter"},
+         */
+
+        //MistralAI:
+        { id: "mistralai/mistral-small-creative", name: "Mistral-small-creative", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/devstral-2512", name: "Devstral-2512", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/ministral-14b-2512", name: "Ministral-14b-251", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/ministral-8b-2512", name: "Ministral-8b-2512", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/ministral-3b-2512", name: "Ministral-3b-2512", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mistral-large-2512", name: "Mistral-large-2512", group: "MistralAI", provider: "openrouter"},
+        //{ id: "mistralai/mistral-embed-2312", name: "Mistral-embed-2312", group: "MistralAI", provider: "openrouter"},
+        //{ id: "mistralai/codestral-embed-2505", name: "Codestral-embed-2505", group: "MistralAI", provider: "openrouter"},
+        //{ id: "mistralai/voxtral-small-24b-2507", name: "Voxtral-small-24b-2507", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mistral-medium-3.1", name: "Mistral-medium-3.1", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/codestral-2508", name: "Codestral-2508", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/devstral-medium", name: "Devstral-medium", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/devstral-small", name: "Devstral-small", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mistral-small-3.2-24b-instruct", name: "Mistral-small-3.2-24b-instruct", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mistral-medium-3", name: "Mistral-medium-3", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mistral-small-3.1-24b-instruct", name: "Mistral-small-3.1-24b-instruct", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mistral-saba", name: "Mistral-saba", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mistral-small-24b-instruct-2501", name: "Mistral-small-24b-instruct-2501", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mistral-large-2411", name: "Mistral-large-2411", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mistral-large-2407", name: "Mistral-large-2407", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/pixtral-large-2411", name: "Pixtral-large-2411", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mistral-nemo", name: "Mistral-nemo", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mixtral-8x22b-instruct", name: "Mixtral-8x22b-instruct", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mistral-large", name: "Mistral-large", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mixtral-8x7b-instruct", name: "Mixtral-8x7b-instruct", group: "MistralAI", provider: "openrouter"},
+        { id: "mistralai/mistral-7b-instruct-v0.1", name: "Mistral-7b-instruct-v0.1", group: "MistralAI", provider: "openrouter"},
+
+        //Meta Llama
+        { id: "meta-llama/llama-guard-4-12b", name: "Llama-guard-4-12b", group: "Meta | Llama", provider: "openrouter"},
+        { id: "meta-llama/llama-4-maverick", name: "Llama-4-maveric", group: "Meta | Llama", provider: "openrouter"},
+        { id: "meta-llama/llama-4-scout", name: "Llama/llama-4-scout", group: "Meta | Llama", provider: "openrouter"},
+        { id: "meta-llama/llama-guard-3-8b", name: "Llama-guard-3-8b", group: "Meta | Llama", provider: "openrouter"},
+        { id: "meta-llama/llama-3.3-70b-instruct", name: "Llama-3.3-70b-instruct", group: "Meta | Llama", provider: "openrouter"},
+        //{ id: "meta-llama/llama-3.3-70b-instruct:free", name: "Llama-3.3-70b-instruct (free)", group: "Meta | Llama", provider: "openrouter"},
+        { id: "meta-llama/llama-3.2-3b-instruct", name: "Llama-3.2-3b-instruct", group: "Meta | Llama", provider: "openrouter"},
+        //{ id: "meta-llama/llama-3.2-3b-instruct:free", name: "Llama-3.2-3b-instruct (free)", group: "Meta | Llama", provider: "openrouter"},
+        { id: "meta-llama/llama-3.2-1b-instruct", name: "Llama-3.2-1b-instruct", group: "Meta | Llama", provider: "openrouter"},
+        { id: "meta-llama/llama-3.2-11b-vision-instruct", name: "Llama-3.2-11b-vision-instruct", group: "Meta | Llama", provider: "openrouter"},
+        { id: "meta-llama/llama-3.1-405b", name: "Llama-3.1-405b", group: "Meta | Llama", provider: "openrouter"},
+        { id: "meta-llama/llama-3.1-8b-instruct", name: "Llama-3.1-8b-instruct", group: "Meta | Llama", provider: "openrouter"},
+        { id: "meta-llama/llama-3-70b-instruct", name: "Llama-3-70b-instruct", group: "Meta | Llama", provider: "openrouter"},
+        { id: "meta-llama/llama-3.1-70b-instruct", name: "Llama-3.1-70b-instruct", group: "Meta | Llama", provider: "openrouter"},
+        { id: "meta-llama/llama-3-8b-instruct", name: "Llama-3-8b-instruct", group: "Meta | Llama", provider: "openrouter"},
+
+        //MiniMax:
+        { id: "minimax/minimax-m2.5", name: "Minimax-m2.5", group: "Minimax", provider: "openrouter"},
+        { id: "minimax/minimax-m2-her", name: "Minimax-m2-her", group: "Minimax", provider: "openrouter"},
+        { id: "minimax/minimax-m2.1", name: "Minimax-m2.1", group: "Minimax", provider: "openrouter"},
+        { id: "minimax/minimax-m2", name: "Minimax-m", group: "Minimax", provider: "openrouter"},
+        { id: "minimax/minimax-m1", name: "Minimax-m1", group: "Minimax", provider: "openrouter"},
+        { id: "minimax/minimax-01", name: "Minimax-01", group: "Minimax", provider: "openrouter"},
+
+        //Qwen:
+        { id: "qwen/qwen3.5-9b", name: "Qwen3.5-9b", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3.5-35b-a3b", name: "qwen3.5-35b-a3b", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3.5-27b", name: "qwen3.5-27b", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3.5-122b-a10b", name: "qwen3.5-122b-a10b", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3.5-flash-02-23", name: "qwen3.5-flash-02-23", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3.5-plus-02-15", name: "qwen3.5-plus-02-15", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3.5-397b-a17b", name: "qwen3.5-397b-a17b", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-max-thinking", name: "qwen3-max-thinking", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-coder-next", name: "qwen3-coder-next", group: "Qwen", provider: "openrouter"},
+        //{ id: "qwen/qwen3-embedding-0.6b", name: "qwen3-embedding-0.6b", group: "Qwen", provider: "openrouter"},
+        //{ id: "qwen/qwen3-embedding-8b", name: "qwen3-embedding-8b", group: "Qwen", provider: "openrouter"},
+        //{ id: "qwen/qwen3-embedding-4b", name: "qwen3-embedding-4b", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-vl-32b-instruct", name: "qwen3-vl-32b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-vl-8b-thinking", name: "qwen3-vl-8b-thinking", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-vl-8b-instruct", name: "qwen3-vl-8b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-vl-30b-a3b-thinking", name: "qwen3-vl-30b-a3b-thinking", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-vl-235b-a22b-thinking", name: "qwen3-vl-235b-a22b-thinking", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-vl-235b-a22b-instruct", name: "qwen3-vl-235b-a22b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-max", name: "Qwen3-max", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-coder-plus", name: "qwen3-coder-plus", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-coder-flash", name: "qwen3-coder-flash", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-next-80b-a3b-thinking", name: "qwen3-next-80b-a3b-thinking", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-next-80b-a3b-instruct", name: "qwen3-next-80b-a3b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-plus-2025-07-28", name: "qwen-plus-2025-07-28", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-plus-2025-07-28:thinking", name: "qwen-plus-2025-07-28:thinking", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-30b-a3b-thinking-2507", name: "qwen3-30b-a3b-thinking-2507", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-coder-30b-a3b-instruct", name: "qwen3-coder-30b-a3b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-30b-a3b-instruct-2507", name: "qwen3-30b-a3b-instruct-2507", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-235b-a22b-thinking-2507", name: "qwen3-235b-a22b-thinking-2507", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-coder", name: "qwen3-coder", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-235b-a22b-2507", name: "qwen3-235b-a22b-2507", group: "Qwen", provider: "openrouter"},
+        //{ id: "qwen/qwen3-0.6b-04-28", name: "qwen3-0.6b-04-28", group: "Qwen", provider: "openrouter"},
+        //{ id: "qwen/qwen3-1.7b", name: "qwen3-1.7b", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-30b-a3b", name: "Qwen3-30b-a3b", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-8b", name: "Qwen3-8b", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-14b", name: "Qwen3-14b", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-32b", name: "Qwen3-32b", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen3-235b-a22b", name: "Qwen3-235b-a22b    ", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen2.5-coder-7b-instruct", name: "Qwen2.5-coder-7b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen2.5-vl-3b-instruct", name: "Qwen2.5-vl-3b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen2.5-vl-32b-instruct", name: "Qwen2.5-vl-32b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwq-32b", name: "QwQ-32b", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen2.5-32b-instruct", name: "Qwen2.5-32b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-vl-plus", name: "Qwen-vl-plus", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-vl-max", name: "Qwen-vl-max", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-turbo", name: "Qwen-turbo", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen2.5-vl-72b-instruct", name: "Qwen2.5-vl-72b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-plus", name: "Qwen-plus", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-max", name: "Qwen-max", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwq-32b-preview", name: "QwQ-32b-preview", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-2.5-coder-32b-instruct", name: "Qwen-2.5-coder-32b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-2.5-7b-instruct", name: "Qwen-2.5-7b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-2.5-72b-instruct", name: "Qwen-2.5-72b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-2.5-vl-7b-instruct", name: "Qwen-2.5-vl-7b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-2-7b-instruct", name: "Qwen 2-7b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-2-72b-instruct", name: "Qwen 2-72b-instruct", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-4b-chat", name: "Qwen-4b-chat", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-7b-chat", name: "Qwen-7b-chat", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-14b-chat", name: "Qwen-14b-chat", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-32b-chat", name: "Qwen-32b-chat", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-72b-chat", name: "Qwen-72b-chat", group: "Qwen", provider: "openrouter"},
+        { id: "qwen/qwen-110b-chat", name: "qwen-110b-chat", group: "Qwen", provider: "openrouter"},
+
+        //arcee-ai:
+        { id: "arcee-ai/trinity-large-preview:free", name: "Trinity Large Preview (free)", group: "arcee-ai", provider: "openrouter" },
+        { id: "arcee-ai/trinity-mini", name: "Trinity-mini", group: "arcee-ai", provider: "openrouter" },
+        { id: "arcee-ai/trinity-mini:free", name: "Trinity-mini (free)", group: "arcee-ai", provider: "openrouter" },
+        //{ id: "arcee-ai/afm-4.5b", name: "AFM 4.5B", group: "arcee-ai", provider: "openrouter" },
+        //{ id: "arcee-ai/caller-large", name: "Caller Large", group: "arcee-ai", provider: "openrouter" },
+        //{ id: "arcee-ai/spotlight", name: "spotlight", group: "arcee-ai", provider: "openrouter" },
+        { id: "arcee-ai/maestro-reasoning", name: "Maestro-reasoning", group: "arcee-ai", provider: "openrouter" },
+        { id: "arcee-ai/virtuoso-large", name: "Virtuoso-large", group: "arcee-ai", provider: "openrouter" },
+        { id: "arcee-ai/coder-large", name: "Coder-large", group: "arcee-ai", provider: "openrouter" },
+        //{ id: "arcee-ai/virtuoso-medium-v2", name: "Virtuoso-medium-v2", group: "arcee-ai", provider: "openrouter" },
+        //{ id: "arcee-ai/arcee-blitz", name: "Arcee-blitz", group: "arcee-ai", provider: "openrouter" },
+
+        //Moonshotai:
+        { id: "moonshotai/kimi-k2.5", name: "Kimi-k2.5", group: "Kimi", provider: "openrouter"},
+        { id: "moonshotai/kimi-k2-thinking", name: "Kimi-k2-thinking", group: "Kimi", provider: "openrouter"},
+        { id: "moonshotai/kimi-k2-0905", name: "Kimi-k2-0905", group: "Kimi", provider: "openrouter"},
+        { id: "moonshotai/kimi-k2", name: "Kimi-k2", group: "Kimi", provider: "openrouter"},
+
+        //DeepSeekAI:
+        { id: "deepseek/deepseek-r1-distill-llama-70b", name: "DeepSeek R1 Distill Llama 70B", group: "DeepSeek", provider: "openrouter" },
+        { id: "deepseek/deepseek-r1-distill-qwen-32b", name: "DeepSeek R1 Distill Qwen 32B", group: "DeepSeek", provider: "openrouter" },
+        { id: "deepseek/deepseek-r1-distill-qwen-14b", name: "DeepSeek R1 Distill Qwen 14B", group: "DeepSeek", provider: "openrouter" },
+        { id: "deepseek/deepseek-coder-33b-instruct", name: "DeepSeek Coder 33B", group: "DeepSeek", provider: "openrouter" },
+        { id: "deepseek/deepseek-coder-v2", name: "DeepSeek Coder V2", group: "DeepSeek", provider: "openrouter" },
+        { id: "deepseek/deepseek-r1", name: "DeepSeek R1", group: "DeepSeek", provider: "openrouter" },
+        { id: "deepseek/deepseek-chat", name: "DeepSeek V3", group: "DeepSeek", provider: "openrouter" },
+        { id: "nex-agi/deepseek-v3.1-nex-n", name: "Nex-agi/deepseek-v3.1-nex-n", group: "DeepSeek", provider: "openrouter" },
+
+        //stepfun:
+        { id: "stepfun/step-3.5-flash", name: "stepfun/step-3.5-flash", group: "Stepfun", provider: "openrouter" },
+        { id: "stepfun/step-3.5-flash:free", name: "stepfun/step-3.5-flash (free)", group: "Stepfun", provider: "openrouter" },
+
+        //Microsoft
+        { id: "microsoft/phi-4", name: "phi-4", group: "Microsoft", provider: "openrouter"},
+        { id: "microsoft/wizardlm-2-8x22b", name: "Wizardlm-2-8x22b", group: "Microsoft", provider: "openrouter"},
+
+        //Nous Research
+        { id: "nousresearch/hermes-4-70b", name: "Hermes-4-70b", group: "Nous", provider: "openrouter"},
+        { id: "nousresearch/hermes-4-405b", name: "Hermes-4-405b", group: "Nous", provider: "openrouter"},
+        { id: "nousresearch/hermes-3-llama-3.1-70b", name: "Hermes-3-llama-3.1-70b", group: "Nous", provider: "openrouter"},
+        { id: "nousresearch/hermes-3-llama-3.1-405b", name: "Hermes-3-llama-3.1-405b", group: "Nous", provider: "openrouter"},
+        { id: "nousresearch/hermes-2-pro-llama-3-8b", name: "Hermes-2-pro-llama-3-8b", group: "Nous", provider: "openrouter"},
+
+        //Cohere
+        { id: "cohere/command-a", name: "Command-a", group: "Cohere", provider: "openrouter"},
+        { id: "cohere/command-r7b-12-2024", name: "Command-r7b-12-2024", group: "Cohere", provider: "openrouter"},
+        { id: "cohere/command-r-08-2024", name: "Command-r-08-2024", group: "Cohere", provider: "openrouter"},
+        { id: "cohere/command-r-plus-08-2024", name: "Command-r-plus-08-2024", group: "Cohere", provider: "openrouter"},
+
+        // NVIDIA
+        { id: "nvidia/llama-3.1-nemotron-70b-instruct", name: "Nemotron Llama 3.1 70B", group: "Nvidia", provider: "openrouter" },
+        { id: "nvidia/nemotron-3-nano-30b-a3b", name: "Nemotron-3-nano-30b-a3b", group: "Nvidia", provider: "openrouter"},
+        { id: "nvidia/nemotron-nano-12b-v2-vl", name: "Nemotron-nano-12b-v2-vl", group: "Nvidia", provider: "openrouter"},
+        { id: "nvidia/llama-3.3-nemotron-super-49b-v1.5", name: "Nemotron Llama Super 49b v1.5", group: "Nvidia", provider: "openrouter"},
+        { id: "nvidia/nemotron-nano-9b-v2", name: "Nemotron-nano-9b-v2", group: "Nvidia", provider: "openrouter"},
+        { id: "nvidia/nemotron-nano-9b-v2:free", name: "nvidia/nemotron-nano-9b-v2:free", group: "Nvidia", provider: "openrouter"},
+        { id: "nvidia/llama-3.1-nemotron-70b-instruct", name: "llama-3.1-nemotron-70b-instruct", group: "Nvidia", provider: "openrouter"},
+
+        //Aion
+        { id: "aion-labs/aion-2.0", name: "Aion-2.0", group: "Aion", provider: "openrouter"},
+        { id: "aion-labs/aion-1.0", name: "Aion-1.0", group: "Aion", provider: "openrouter"},
+        { id: "aion-labs/aion-1.0-mini", name: "Aion-1.0-mini", group: "Aion", provider: "openrouter"},
+        { id: "aion-labs/aion-rp-llama-3.1-8b", name: "Aion-rp-llama-3.1-8b", group: "Aion", provider: "openrouter"},
+
+        { id: "allenai/olmo-2-13b-instruct", name: "OLMo 2 13B", group: "OpenRouter", provider: "openrouter" },
+        { id: "undi95/remm-slerp-l2-13b", name: "Remm-slerp-l2-13b", group: "OpenRouter", provider: "openrouter" },
+
+        //AI2:
+        { id: "allenai/molmo-2-8b", name: "Molmo-2-8b", group: "Olmo | AI2", provider: "openrouter" },
+        { id: "allenai/olmo-3.1-32b-instruct", name: "Olmo-3.1-32b-instruct", group: "Olmo | AI2", provider: "openrouter"},
+        { id: "allenai/olmo-3.1-32b-think", name: "Olmo-3.1-32b-think", group: "Olmo | AI2", provider: "openrouter"},
+        { id: "allenai/olmo-3-32b-think", name: "Olmo-3-32b-think", group: "Olmo | AI2", provider: "openrouter"},
+        { id: "allenai/olmo-3-7b-instruct", name: "Olmo-3-7b-instruct", group: "Olmo | AI2", provider: "openrouter"},
+        { id: "allenai/olmo-3-7b-think", name: "Olmo-3-7b-think", group: "Olmo | AI2", provider: "openrouter"},
+        { id: "allenai/olmo-2-0325-32b-instruct", name: "Olmo-2-0325-32b-instruct", group: "Olmo | AI2", provider: "openrouter"},
+
+        //1
+        { id: "alibaba/tongyi-deepresearch-30b-a3b", name: "Tongyi-deepresearch-30b-a3b", group: "OpenRouter", provider: "openrouter" },
+        { id: "writer/palmyra-x5", name: "Palmyra-x5", group: "OpenRouter", provider: "openrouter" },
+        { id: "upstage/solar-pro-3", name: "solar-pro-3", group: "OpenRouter", provider: "openrouter" },
+        { id: "xiaomi/mimo-v2-flash", name: "xiaomi/mimo-v2-flash", group: "OpenRouter", provider: "openrouter" },
+        { id: "ibm-granite/granite-4.0-h-micro", name: "Granite-4.0-h-micro", group: "OpenRouter", provider: "openrouter" },
+        { id: "deepcogito/cogito-v2.1-671b", name: "Cogito-v2.1-671b", group: "OpenRouter", provider: "openrouter" },
+        //Эти две модели использовать в одном AI-агенте:
+        { id: "relace/relace-apply-3", name: "Relace-apply-3", group: "OpenRouter", provider: "openrouter" },
+        { id: "relace/relace-search", name: "Relace-search", group: "OpenRouter", provider: "openrouter" },
+
+        //baidu:
+        { id: "baidu/ernie-4.5-21b-a3b-thinking", name: "Baidu 4.5-21b Thinking", group: "Baidu", provider: "openrouter"},
+        { id: "baidu/ernie-4.5-21b-a3b", name: "Baidu 4.5-21b", group: "Baidu", provider: "openrouter"},
+        { id: "baidu/ernie-4.5-vl-28b-a3b", name: "Baidu 4.5-vl-28b", group: "Baidu", provider: "openrouter"},
+        { id: "baidu/ernie-4.5-vl-424b-a47b", name: "Baidu 4.5-vl-424b", group: "Baidu", provider: "openrouter"},
+        { id: "baidu/ernie-4.5-300b-a47b", name: "Baidu 4.5-300b", group: "Baidu", provider: "openrouter"},
+
+        //GLM:
+        { id: "z-ai/glm-5-turbo", name: "glm-5-turbo", group: "OpenRouter-Z-AI", provider: "openrouter" },
+        { id: "z-ai/glm-5", name: "glm-5", group: "OpenRouter-Z-AI", provider: "openrouter" },
+        { id: "z-ai/glm-4.7-flash", name: "glm-4.7 flash", group: "OpenRouter-Z-AI", provider: "openrouter" },
+        { id: "z-ai/glm-4.7", name: "glm-4.7", group: "OpenRouter-Z-AI", provider: "openrouter" },
+        { id: "z-ai/glm-4.6v", name: "glm-4.6v", group: "OpenRouter-Z-AI", provider: "openrouter" },
+        { id: "z-ai/glm-4.6", name: "glm-4.6", group: "OpenRouter-Z-AI", provider: "openrouter" },
+        { id: "z-ai/glm-4.5v", name: "glm-4.5v", group: "OpenRouter-Z-AI", provider: "openrouter" },
+        { id: "z-ai/glm-4.5", name: "glm-4.5", group: "OpenRouter-Z-AI", provider: "openrouter" },
+        { id: "z-ai/glm-4.5-air", name: "glm-4.5-air"},
+        { id: "z-ai/glm-4.5-air:free", name: "glm-4.5-air (free)", group: "OpenRouter-Z-AI"},
+        { id: "z-ai/glm-4-32b", name: "glm-4-32b", group: "OpenRouter-Z-AI"},
+
+        //Grok:
+        { id: "x-ai/grok-4.20-multi-agent-beta", name: "grok-4.20-multi-agent-beta"},
+        { id: "x-ai/grok-4.20-beta", name: "grok-4.20-beta", group: "X-AI-Grok"},
+        { id: "x-ai/grok-4.1-fast", name: "grok-4.1-fast", group: "X-AI-Grok"},
+        { id: "x-ai/grok-4-fast", name: "grok-4-fast", group: "X-AI-Grok"},
+        { id: "x-ai/grok-code-fast-1", name: "grok-code-fast-1"},
+        { id: "x-ai/grok-4", name: "grok-4", group: "X-AI-Grok"},
+        { id: "x-ai/grok-3-mini", name: "grok-3-mini"},
+        { id: "x-ai/grok-3", name: "grok-3"},
+    ];
+
+    // --- ДАННЫЕ АГЕНТОВ ---
+    let agents =[
+      {
+        id: "agent_" + Date.now(),
+        name: "Аналитик / Мыслитель",
+        model: "deepseek/deepseek-r1",
+        prompt: "Ты научный исследователь. Глубоко рассуждай перед ответом (если модель поддерживает это). Собери ключевые факты и структуру ответа."
+      },
+      {
+        id: "agent_" + (Date.now() + 1),
+        name: "Главный Редактор",
+        model: "openai/gpt-4o",
+        prompt: "Ты профессиональный редактор. Тебе на вход поступят сырые факты от исследователя. Твоя задача — написать красивый, увлекательный текст. Используй форматирование Markdown."
+      }
+    ];
+
+    const agentsContainer = document.getElementById('agentsContainer');
+    const runChainBtn = document.getElementById('runChainBtn');
+    const apiKeyInput = document.getElementById('apiKey');
+    const initialTaskInput = document.getElementById('initialTask');
+    const chainRunner = document.getElementById('chainRunner');
+
+    // --- UI ЛОГИКА КАСТОМНОГО СЕЛЕКТА ---
+    window.toggleDropdown = (id, forceState) => {
+      const list = document.getElementById(`list-${id}`);
+      if (!list) return;
+      if (forceState === true) list.classList.add('open');
+      else if (forceState === false) list.classList.remove('open');
+      else list.classList.toggle('open');
+    };
+
+    window.filterDropdown = (id, query) => {
+      const q = query.toLowerCase();
+      const list = document.getElementById(`list-${id}`);
+      list.innerHTML = AVAILABLE_MODELS
+        .filter(m => m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q))
+        .map(m => `<div class="dropdown-item" onclick="selectModel('${id}', '${m.id}', '${m.name}')">
+                     ${m.name} <span class="dropdown-item-id">${m.id}</span>
+                   </div>`).join('');
+      toggleDropdown(id, true);
+      // Обновляем модель в стейте на случай ручного ввода ID
+      updateAgent(id, 'model', query);
+    };
+
+    window.selectModel = (agentId, modelId, modelName) => {
+      const input = document.getElementById(`input-${agentId}`);
+      input.value = modelId;
+      updateAgent(agentId, 'model', modelId);
+      toggleDropdown(agentId, false);
+    };
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.dropdown-wrapper')) {
+        document.querySelectorAll('.dropdown-list').forEach(l => l.classList.remove('open'));
+      }
+    });
+
+    // Отрисовка списка агентов
+    function renderAgents() {
+      agentsContainer.innerHTML = '';
+      agents.forEach((agent, index) => {
+        const div = document.createElement('div');
+        div.className = 'agent-card';
+        div.innerHTML = `
+          <div class="agent-card-header">
+            <span class="agent-number">Агент ${index + 1}</span>
+            ${agents.length > 1 ? `<button class="btn-remove" onclick="removeAgent('${agent.id}')">Удалить</button>` : ''}
+          </div>
+          <div class="input-group" style="margin-bottom: 12px;">
+            <label class="input-label">Имя / Роль</label>
+            <input type="text" class="ui-input" value="${agent.name}" onchange="updateAgent('${agent.id}', 'name', this.value)">
+          </div>
+          <div class="input-group" style="margin-bottom: 12px;">
+            <label class="input-label">Модель ИИ</label>
+            <div class="dropdown-wrapper">
+              <input type="text" id="input-${agent.id}" class="ui-input" value="${agent.model}" 
+                     placeholder="Поиск или ввод ID..." 
+                     onfocus="filterDropdown('${agent.id}', this.value)" 
+                     oninput="filterDropdown('${agent.id}', this.value)">
+              <div class="dropdown-list" id="list-${agent.id}"></div>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Системный Промпт (Инструкция)</label>
+            <textarea class="ui-textarea" onchange="updateAgent('${agent.id}', 'prompt', this.value)">${agent.prompt}</textarea>
+          </div>
+        `;
+        agentsContainer.appendChild(div);
+      });
+    }
+
+    window.removeAgent = (id) => { agents = agents.filter(a => a.id !== id); renderAgents(); };
+    window.updateAgent = (id, field, value) => { const agent = agents.find(a => a.id === id); if (agent) agent[field] = value; };
+
+    document.getElementById('addAgentBtn').addEventListener('click', () => {
+      agents.push({
+        id: "agent_" + Date.now(),
+        name: "Новый Агент", model: "openai/gpt-4o-mini", prompt: "Проанализируй текст и выполни инструкцию."
+      });
+      renderAgents();
+    });
+
+    renderAgents();
+
+    // =========================================================================
+    // ЛОГИКА ПОТОКОВОЙ ПЕРЕДАЧИ (STREAMING SSE)
+    // =========================================================================
+    async function callOpenRouterStream(apiKey, model, systemPrompt, userContent, onChunk) {
+      const response = await fetch("https://api.proxyapi.ru/openrouter/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model,
+          stream: true, // ВАЖНО: Включаем потоковую передачу
+          messages:[
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errStr = await response.text();
+        throw new Error(`Ошибка API: ${response.status} - ${errStr}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        let lines = buffer.split("\n");
+        buffer = lines.pop(); // Оставляем неполную строку в буфере
+
+        for (let line of lines) {
+          line = line.trim();
+          if (!line.startsWith("data: ")) continue;
+          
+          const dataStr = line.slice(6);
+          if (dataStr === "[DONE]") return;
+          
+          try {
+            const data = JSON.parse(dataStr);
+            const delta = data.choices[0]?.delta || {};
+            
+            // OpenRouter может передавать мысли в reasoning_content (DeepSeek R1)
+            const reasoningDelta = delta.reasoning_content || "";
+            const contentDelta = delta.content || "";
+            
+            if (reasoningDelta || contentDelta) {
+              onChunk(contentDelta, reasoningDelta);
+            }
+          } catch (e) {
+            // Игнорируем ошибки парсинга неполных JSON-кусков
+          }
+        }
+      }
+    }
+
+    // =========================================================================
+    // WEB COMPONENT: BLACK & GREY THINKING UI
+    // =========================================================================
+    class AgentChainRunner extends HTMLElement {
+      constructor() {
+        super();
+        this.state = { status: 'idle', steps:[] };
+      }
+
+      connectedCallback() { this.renderFull(); }
+
+      initChain(agentsArray) {
+        this.state.status = 'running';
+        this.state.steps = agentsArray.map(a => ({
+          name: a.name, model: a.model, 
+          rawContent: "", rawReasoning: "",
+          status: 'pending', isReceiving: false
+        }));
+        this.renderFull();
+      }
+
+      setStepActive(index) {
+        this.state.steps[index].status = 'active';
+        this.renderFull();
+      }
+
+      setStepDone(index) {
+        this.state.steps[index].status = 'done';
+        this.state.steps[index].isReceiving = false;
+        this.updateStepDOM(index); // Обновляем только DOM шага, чтобы убрать курсор
+        
+        // Перерисовываем полностью только для обновления полосы таймлайна
+        setTimeout(() => this.renderFull(), 50); 
+      }
+
+      setStepError(index, errorMsg) {
+        this.state.steps[index].status = 'error';
+        this.state.steps[index].rawContent = `[ОШИБКА]: ${errorMsg}`;
+        this.state.status = 'error';
+        this.renderFull();
+      }
+
+      finishChain() {
+        this.state.status = 'finished';
+        this.renderFull();
+      }
+
+      escapeHtml(str) {
+        return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+
+      // Добавление чанка (кусочка данных) из стрима
+      appendChunk(index, contentDelta, reasoningDelta) {
+        const step = this.state.steps[index];
+        step.isReceiving = true;
+
+        if (reasoningDelta) step.rawReasoning += reasoningDelta;
+        if (contentDelta) step.rawContent += contentDelta;
+
+        this.updateStepDOM(index);
+      }
+
+      // Функция превращения текста + мыслей в красивый HTML
+      getFormattedOutput(step) {
+        let html = "";
+
+        // 1. Если есть нативные мысли (через reasoning_content)
+        if (step.rawReasoning) {
+          html += `<div class="thinking-process"><div class="thinking-label">Системное рассуждение</div>${this.escapeHtml(step.rawReasoning)}</div>`;
+        }
+
+        // 2. Экранируем основной текст
+        let mainText = this.escapeHtml(step.rawContent || "");
+
+        // 3. Обрабатываем теги <think>, которые некоторые модели суют прямо в контент
+        mainText = mainText.replace(/&lt;think(ing)?&gt;/gi, '<div class="thinking-process"><div class="thinking-label">Мышление модели</div>');
+        mainText = mainText.replace(/&lt;\/think(ing)?&gt;/gi, '</div>');
+
+        html += mainText;
+
+        // Если все еще получаем данные, добавляем мигающий курсор
+        if (step.isReceiving && step.status === 'active') {
+          html += `<span class="cursor-blink"></span>`;
+        }
+
+        return html;
+      }
+
+      // Обновление только конкретного блока без полного ререндера (для производительности при стриминге)
+      updateStepDOM(index) {
+        const outputEl = this.querySelector(`#step-output-${index}`);
+        if (!outputEl) return;
+        
+        const step = this.state.steps[index];
+        outputEl.classList.remove('waiting');
+        outputEl.innerHTML = this.getFormattedOutput(step);
+      }
+
+      getIcon(status) {
+        if (status === 'done') return `<svg class="step-icon" viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>`;
+        if (status === 'error') return `<svg class="step-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`;
+        return `<svg class="step-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="24" stroke-dashoffset="0"/></svg>`;
+      }
+
+      renderFull() {
+        const { status, steps } = this.state;
+        
+        let content = '';
+        if (steps.length === 0) {
+          content = `<div style="color: var(--chain-muted); text-align: center; margin-top: 100px;">Готов к потоковому выполнению.</div>`;
+        } else {
+          content = `<div class="chain-timeline">`;
+          steps.forEach((step, index) => {
+            
+            // Если активно, но данные еще не пошли (скелетон)
+            let outputContent = '';
+            let classes = `step-output`;
+            if (step.status === 'active' && !step.isReceiving) {
+              classes += ` waiting`;
+              outputContent = `<div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div>`;
+            } else if (step.status === 'error') {
+              outputContent = this.escapeHtml(step.rawContent);
+            } else {
+              outputContent = this.getFormattedOutput(step);
+            }
+
+            content += `
+              <div class="chain-step ${step.status}" id="step-container-${index}">
+                <div class="step-icon-wrapper">${this.getIcon(step.status)}</div>
+                <div class="step-content">
+                  <div class="step-header">
+                    <h3 class="step-name">${step.name}</h3>
+                    <span class="step-model">${step.model}</span>
+                  </div>
+                  <div id="step-output-${index}" class="${classes}" style="color: ${step.status === 'error' ? '#ff5555' : '#ddd'}">
+                    ${outputContent}
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+          content += `</div>`;
+          
+          if (status === 'finished') {
+            content += `<div style="margin-top: 40px; border-top: 1px solid var(--chain-border); padding-top: 20px; color: var(--chain-muted); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;">Цепочка завершена</div>`;
+          }
+        }
+
+        this.innerHTML = `
+          <div class="terminal">
+            <div class="terminal-header">
+              <div class="terminal-title">
+                <div class="status-dot ${status === 'running' ? 'active' : ''}"></div>
+                Stream Reasoning
+              </div>
+              <div style="font-size: 11px; color: var(--chain-muted); font-family: monospace;">
+                STATE: ${status.toUpperCase()}
+              </div>
+            </div>
+            ${content}
+          </div>
+        `;
+      }
+    }
+    customElements.define('agent-chain-runner', AgentChainRunner);
+
+    // =========================================================================
+    // ВЫПОЛНЕНИЕ ЦЕПОЧКИ (СВЯЗКА АГЕНТОВ + ПОТОК)
+    // =========================================================================
+    runChainBtn.addEventListener('click', async () => {
+      const apiKey = apiKeyInput.value.trim();
+      const initialTask = initialTaskInput.value.trim();
+
+      if (!apiKey) return alert("Введите API Ключ ProxyAPI");
+      if (!initialTask) return alert("Введите начальную задачу");
+      if (agents.length === 0) return alert("Добавьте хотя бы одного агента");
+
+      runChainBtn.disabled = true;
+      runChainBtn.innerHTML = "Синтез данных...";
+      
+      chainRunner.initChain(agents);
+
+      let currentInputContext = initialTask;
+
+      try {
+        for (let i = 0; i < agents.length; i++) {
+          const agent = agents[i];
+          chainRunner.setStepActive(i);
+
+          let userPrompt = i === 0 
+            ? `Задача: ${currentInputContext}` 
+            : `Оригинальная задача: ${initialTask}\n\nВходные данные от предыдущего агента:\n---\n${currentInputContext}\n---\nВыполни свою задачу на основе этих данных.`;
+
+          // Запуск потокового запроса
+          await callOpenRouterStream(apiKey, agent.model, agent.prompt, userPrompt, (contentChunk, reasoningChunk) => {
+             // Этот коллбек дергается каждый раз, когда прилетает кусочек данных от ProxyAPI
+             chainRunner.appendChunk(i, contentChunk, reasoningChunk);
+          });
+          
+          chainRunner.setStepDone(i);
+          
+          // Результат текущего агента (полный текст) становится контекстом для следующего
+          currentInputContext = chainRunner.state.steps[i].rawContent; 
+        }
+        chainRunner.finishChain();
+      } catch (error) {
+        const activeIndex = chainRunner.state.steps.findIndex(s => s.status === 'active');
+        if (activeIndex !== -1) chainRunner.setStepError(activeIndex, error.message);
+      } finally {
+        runChainBtn.disabled = false;
+        runChainBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 3l14 9-14 9V3z"/></svg>
+          Запустить цепочку агентов
+        `;
+      }
+    });
+
+  </script>
+</body>
+</html>

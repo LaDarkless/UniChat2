@@ -1,7 +1,7 @@
 {
   "appName": "UniChat",
   "appId": "com.ksyr.app",
-  "version": "9.6.0",
+  "version": "9.7.0.1",
   "description": "My converted web app",
   "icon": {
     "enabled": true,
