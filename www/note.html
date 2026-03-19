@@ -762,12 +762,46 @@
             bottom: -2px;
         }
     }
+
+    /* --- НОВЫЕ СТИЛИ ДЛЯ ИКОНОК-КАРТИНОК И ПЕРЕТАСКИВАНИЯ --- */
+
+.dock-icon {
+    width: 20px; /* Размер ваших иконок */
+    height: 20px;
+    object-fit: contain; /* Чтобы картинка не искажалась */
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+    /* Важно! Запрещаем перетаскивать саму картинку браузером */
+    pointer-events: none; 
+    user-select: none;
+}
+
+@media (max-width: 768px) {
+    .dock-icon {
+        width: 24px; /* На телефоне иконки чуть больше */
+        height: 24px;
+    }
+}
+
+/* Курсоры для кнопки перетаскивания */
+.fab-button {
+    cursor: grab;
+    touch-action: none; /* Запрещаем скролл страницы при касании кнопки на телефоне */
+}
+
+.fab-button:active {
+    cursor: grabbing;
+}
+
+/* Класс для плавного возврата в границы экрана (если меню открыли у самого края) */
+.fab-wrapper.snap-transition {
+    transition: left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
 </style>
 
 <div class="fab-wrapper" id="fabWrapper">
-    <!-- Кнопка открытия/закрытия меню -->
+    <!-- Кнопка открытия/закрытия меню (она же ручка для перетаскивания) -->
     <button class="fab-button" id="fabToggleBtn" title="Навигация">
-        <!-- Красивая иконка Grid (Сетка приложений) -->
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7" rx="1"></rect>
             <rect x="14" y="3" width="7" height="7" rx="1"></rect>
@@ -777,45 +811,186 @@
     </button>
 
     <!-- Сама панель (Dock) -->
-    <div class="global-dock">
-        <a href="index.html" class="dock-item"><span class="dock-icon">🏠</span><span class="dock-text">Menu</span></a>
-        <a href="ai.html" class="dock-item"><span class="dock-icon">🧠</span><span class="dock-text">AI</span></a>
-        <a href="agent.html" class="dock-item"><span class="dock-icon">🕵️‍♂️</span><span class="dock-text">Agent</span></a>
-        <a href="music.html" class="dock-item"><span class="dock-icon">🎧</span><span class="dock-text">Music</span></a>
-        <a href="googleweb.html" class="dock-item"><span class="dock-icon">🌌</span><span class="dock-text">Google</span></a>
-        <a href="browser.html" class="dock-item"><span class="dock-icon">🌐</span><span class="dock-text">SearX</span></a>
+    <div class="global-dock" id="globalDock">
+        <a href="index.html" class="dock-item">
+            <img src="https://i.imgur.com/tpFK0jG.png" alt="Menu" class="dock-icon">
+            <span class="dock-text">Menu</span>
+        </a>
+        <a href="ai.html" class="dock-item">
+            <img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon">
+            <span class="dock-text">AI</span>
+        </a>
+        <a href="agent.html" class="dock-item">
+            <img src="https://i.imgur.com/jNkaBVw.png" alt="Agent" class="dock-icon">
+            <span class="dock-text">Agent</span>
+        </a>
+        <a href="music.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/2995/2995101.png" alt="Music" class="dock-icon">
+            <span class="dock-text">Music</span>
+        </a>
+        <a href="note.html" class="dock-item">
+            <img src="https://i.imgur.com/GcjfCTh.png" alt="Note" class="dock-icon">
+            <span class="dock-text">Note</span>
+        </a>
+        <a href="googleweb.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="dock-icon">
+            <span class="dock-text">Google</span>
+        </a>
+        <a href="browser.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX" class="dock-icon">
+            <span class="dock-text">SearX</span>
+        </a>
     </div>
 </div>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        const fabWrapper = document.getElementById('fabWrapper');
-        const fabToggleBtn = document.getElementById('fabToggleBtn');
-
-        // 1. Открытие/закрытие по клику на кнопку
-        fabToggleBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Предотвращаем закрытие при клике на саму кнопку
-            fabWrapper.classList.toggle('open');
-        });
-
-        // 2. Закрытие меню при клике в любое другое место на сайте
-        document.addEventListener('click', (e) => {
-            if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains('open')) {
-                fabWrapper.classList.remove('open');
-            }
-        });
-
-        // 3. Автоматическая подсветка активного сайта
-        let currentPath = window.location.pathname.split('/').pop();
-        if (currentPath === '') currentPath = 'index.html'; // На случай, если открыт корень сайта
-
-        document.querySelectorAll('.dock-item').forEach(item => {
-            const href = item.getAttribute('href');
-            if (currentPath === href) {
-                item.classList.add('active');
-            }
-        });
+    const fabWrapper = document.getElementById('fabWrapper');
+    const fabToggleBtn = document.getElementById('fabToggleBtn');
+    
+    // Подсветка активной ссылки (ваш код)
+    let currentPath = window.location.pathname.split('/').pop();
+    if (currentPath === '') currentPath = 'index.html';
+    document.querySelectorAll('.dock-item').forEach(item => {
+        const href = item.getAttribute('href');
+        if (currentPath === href) {
+            item.classList.add('active');
+        }
     });
+
+    // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
+    let isDragging = false;
+    let hasMoved = false; // Отличаем клик от перетаскивания
+    let startX, startY;
+    let initialLeft, initialTop;
+
+    function dragStart(e) {
+        if (e.type === 'touchstart') {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        } else {
+            startX = e.clientX;
+            startY = e.clientY;
+            e.preventDefault(); // Предотвращаем стандартное выделение на ПК
+        }
+
+        // Получаем текущие координаты элемента на экране
+        const rect = fabWrapper.getBoundingClientRect();
+        
+        // Отключаем bottom/right, переходим на жесткое позиционирование left/top
+        fabWrapper.style.bottom = 'auto';
+        fabWrapper.style.right = 'auto';
+        fabWrapper.style.left = rect.left + 'px';
+        fabWrapper.style.top = rect.top + 'px';
+
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        isDragging = true;
+        hasMoved = false;
+        
+        // Убираем плавность при самом перетаскивании
+        fabWrapper.classList.remove('snap-transition');
+
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchmove', dragMove, { passive: false });
+        document.addEventListener('touchend', dragEnd);
+    }
+
+    function dragMove(e) {
+        if (!isDragging) return;
+
+        let currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        let currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+        let deltaX = currentX - startX;
+        let deltaY = currentY - startY;
+
+        // Если сдвинули больше чем на 5 пикселей, считаем это перетаскиванием, а не кликом
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+            hasMoved = true;
+            if (e.type === 'touchmove') e.preventDefault(); // Блокируем скролл страницы
+        }
+
+        if (hasMoved) {
+            let newLeft = initialLeft + deltaX;
+            let newTop = initialTop + deltaY;
+
+            // --- ОГРАНИЧЕНИЕ ВЫХОДА ЗА ПРЕДЕЛЫ ЭКРАНА ---
+            const rect = fabWrapper.getBoundingClientRect();
+            const maxLeft = window.innerWidth - rect.width;
+            const maxTop = window.innerHeight - rect.height;
+
+            // Запрещаем уходить за левый/правый и верхний/нижний края
+            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+
+            fabWrapper.style.left = newLeft + 'px';
+            fabWrapper.style.top = newTop + 'px';
+        }
+    }
+
+    function dragEnd() {
+        isDragging = false;
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('mouseup', dragEnd);
+        document.removeEventListener('touchmove', dragMove);
+        document.removeEventListener('touchend', dragEnd);
+    }
+
+    // Слушатели для начала перетаскивания (с кнопки)
+    fabToggleBtn.addEventListener('mousedown', dragStart);
+    fabToggleBtn.addEventListener('touchstart', dragStart, { passive: true });
+
+    // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ ---
+    fabToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Если было перетаскивание, отменяем клик!
+        if (hasMoved) {
+            e.preventDefault();
+            return;
+        }
+
+        fabWrapper.classList.toggle('open');
+        
+        // Если меню открылось и вылезло за края экрана (т.к. стало шире),
+        // плавно задвигаем его обратно в пределы экрана.
+        if (fabWrapper.classList.contains('open')) {
+            setTimeout(keepInBounds, 50); // Ждем долю секунды, чтобы CSS применил ширину
+        }
+    });
+
+    // Функция возврата в рамки экрана при изменении ширины меню
+    function keepInBounds() {
+        const rect = fabWrapper.getBoundingClientRect();
+        const maxLeft = window.innerWidth - rect.width;
+        const maxTop = window.innerHeight - rect.height;
+
+        let correctedLeft = Math.max(0, Math.min(rect.left, maxLeft));
+        let correctedTop = Math.max(0, Math.min(rect.top, maxTop));
+
+        // Если позиция нуждается в корректировке
+        if (correctedLeft !== rect.left || correctedTop !== rect.top) {
+            fabWrapper.classList.add('snap-transition'); // Добавляем плавность
+            fabWrapper.style.left = correctedLeft + 'px';
+            fabWrapper.style.top = correctedTop + 'px';
+        }
+    }
+
+    // Закрытие меню при клике в любое другое место
+    document.addEventListener('click', (e) => {
+        if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains('open')) {
+            fabWrapper.classList.remove('open');
+            // При закрытии (ширина уменьшилась) тоже проверяем границы на всякий случай
+            setTimeout(keepInBounds, 300); 
+        }
+    });
+
+    // Пересчет границ при повороте экрана телефона / изменении размера окна
+    window.addEventListener('resize', keepInBounds);
+});
 </script>
 <!-- ========================================== -->
 </html>
