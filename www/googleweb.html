@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minimal Web Browser</title>
+    <style>
+        :root {
+            --bg-dark: #000000;
+            --grid-color: rgba(255, 255, 255, 0.12);
+            --border-color: rgba(255, 255, 255, 0.2);
+            --text-color: #ffffff;
+            --input-bg: rgba(20, 20, 20, 0.9);
+            --accent: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .browser-window {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: transparent;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 6px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--accent);
+            color: var(--bg-dark);
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .address-bar-wrapper {
+            flex-grow: 1;
+            display: flex;
+            position: relative;
+        }
+
+        #address-input {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0 16px;
+            height: 36px;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+            letter-spacing: 0.5px;
+        }
+
+        #address-input:focus {
+            border-color: var(--accent);
+            background-color: #0a0a0a;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        #address-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        #btn-go {
+            width: auto;
+            padding: 0 16px;
+            font-weight: 500;
+        }
+
+        .proxy-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .proxy-toggle input {
+            cursor: pointer;
+            accent-color: #ffffff;
+        }
+
+        .viewport {
+            flex-grow: 1;
+            background-color: #ffffff;
+            position: relative;
+            width: 100%;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            background-color: #ffffff; /* Белый фон для загрузки */
+        }
+
+        @media (max-width: 650px) {
+            .toolbar {
+                padding: 8px;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .address-bar-wrapper {
+                order: -1;
+                width: 100%;
+                flex-basis: 100%;
+            }
+            .proxy-toggle {
+                margin-left: auto;
+            }
+            #btn-go span {
+                display: none;
+            }
+            #btn-go::after {
+                content: "🔍";
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="browser-window">
+        <header class="toolbar">
+            <div class="nav-buttons">
+                <button id="btn-back" title="Назад">&#8592;</button>
+                <button id="btn-forward" title="Вперед">&#8594;</button>
+                <button id="btn-refresh" title="Обновить">&#10227;</button>
+            </div>
+            
+            <div class="address-bar-wrapper">
+                <input type="text" id="address-input" placeholder="Введите сайт или поисковый запрос..." autocomplete="off">
+            </div>
+            
+            <button id="btn-go" title="Перейти"><span>Enter</span></button>
+
+            <label class="proxy-toggle" title="Попытаться обойти блокировки сайтов">
+                <input type="checkbox" id="use-proxy"> Anti-Block
+            </label>
+        </header>
+
+        <main class="viewport">
+            <iframe id="webview" src="about:blank" sandbox="allow-same-origin allow-scripts allow-popups allow-forms"></iframe>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const addressInput = document.getElementById("address-input");
+            const btnGo = document.getElementById("btn-go");
+            const btnBack = document.getElementById("btn-back");
+            const btnForward = document.getElementById("btn-forward");
+            const btnRefresh = document.getElementById("btn-refresh");
+            const webview = document.getElementById("webview");
+            const proxyToggle = document.getElementById("use-proxy");
+
+            let historyStack =[];
+            let currentIndex = -1;
+
+            function updateNavButtons() {
+                btnBack.disabled = currentIndex <= 0;
+                btnForward.disabled = currentIndex >= historyStack.length - 1;
+            }
+
+            function navigateTo(url, isHistoryAction = false) {
+                let finalUrl = url.trim();
+                let displayUrl = finalUrl;
+                
+                if (!finalUrl) return;
+
+                const isDomain = /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}([\/\w \.-]*)*\/?$/.test(finalUrl) || finalUrl.startsWith("http");
+
+                if (isDomain) {
+                    if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://")) {
+                        finalUrl = "https://" + finalUrl;
+                        displayUrl = finalUrl;
+                    }
+                    
+                    if (proxyToggle.checked) {
+                        finalUrl = "https://corsproxy.io/?" + encodeURIComponent(finalUrl);
+                    }
+                } else {
+                    // Оставляем рабочий fmhy.net (без слешей в начале, чтобы код работал!)
+                    //finalUrl = "https://www.google.com/search?q=" + encodeURIComponent(finalUrl) + "&igu=1";
+                    finalUrl = "https://searx.fmhy.net/search?q=" + encodeURIComponent(finalUrl) + "&language=ru&theme=simple";
+                    displayUrl = finalUrl; 
+                }
+
+                addressInput.value = displayUrl;
+
+                if (!isHistoryAction) {
+                    historyStack = historyStack.slice(0, currentIndex + 1);
+                    historyStack.push(displayUrl);
+                    currentIndex++;
+                }
+
+                // МАГИЯ ДЛЯ APK:
+                // Проверяем, запущено ли приложение на телефоне через Capacitor
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+                    // На телефоне открываем через системный браузер, который ИГНОРИРУЕТ блокировки X-Frame-Options
+                    window.Capacitor.Plugins.Browser.open({ url: finalUrl });
+                } else {
+                    // Если открыто просто на ПК в браузере — грузим в наш iframe
+                    webview.src = finalUrl;
+                }
+
+                updateNavButtons();
+                addressInput.blur(); 
+            }
+
+            btnGo.addEventListener("click", () => navigateTo(addressInput.value));
+            addressInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") navigateTo(addressInput.value);
+            });
+
+            btnBack.addEventListener("click", () => {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    navigateTo(historyStack[currentIndex], true);
+                }
+            });
+
+            btnForward.addEventListener("click", () => {
+                if (currentIndex < historyStack.length - 1) {
+                    currentIndex++;
+                    navigateTo(historyStack[currentIndex], true);
+                }
+            });
+
+            btnRefresh.addEventListener("click", () => {
+                if (currentIndex >= 0) navigateTo(addressInput.value, true);
+            });
+
+            updateNavButtons();
+            
+            // Запускаем поиск при старте
+            navigateTo("Технологии");
+        });
+    </script>
+</body>
+<!-- ========================================== -->
+<!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
+<!-- ========================================== -->
+<style>
+    .fab-wrapper {
+        position: fixed;
+        bottom: 25px;
+        right: 25px; 
+        z-index: 999999;
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: center;
+        gap: 15px;
+        /* ФИКС: Оболочка больше не перехватывает клики! */
+        pointer-events: none; 
+    }
+  
+    /* Сама кнопка-триггер */
+    .fab-button {
+        /* ФИКС: Делаем саму кнопку кликабельной */
+        pointer-events: auto; 
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: rgba(20, 20, 25, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        outline: none;
+        padding: 0;
+    }
+  
+    .fab-button:hover {
+        transform: scale(1.1);
+        background: rgba(40, 40, 50, 0.9);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 1px 5px rgba(255, 255, 255, 0.3);
+    }
+  
+    .fab-button svg {
+        transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    .fab-wrapper.open .fab-button svg {
+        transform: rotate(90deg) scale(0.9);
+        color: #a78bfa; 
+    }
+  
+    /* Выезжающая панель навигации */
+    .global-dock {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: rgba(12, 12, 14, 0.85);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 100px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        
+        /* ФИКС: Игнорирует клики и полностью скрыта в закрытом виде */
+        opacity: 0;
+        visibility: hidden; 
+        pointer-events: none; 
+        
+        transform: translateX(40px) scale(0.9);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        transform-origin: right center;
+    }
+  
+    /* Состояние открытого меню */
+    .fab-wrapper.open .global-dock {
+        opacity: 1;
+        visibility: visible; 
+        pointer-events: auto; /* ФИКС: Кнопки меню работают, только когда открыты */
+        transform: translateX(0) scale(1);
+    }
+  
+    .dock-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 100px;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        position: relative;
+        white-space: nowrap;
+    }
+  
+    .dock-item:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+    }
+  
+    .dock-item.active {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
+    }
+  
+    .dock-item.active::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 18px;
+        height: 3px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+  
+    .dock-icon {
+        font-size: 18px;
+        filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+    }
+  
+    @media (max-width: 768px) {
+        .fab-wrapper {
+            bottom: 20px;
+            right: 20px;
+            gap: 10px;
+        }
+        .fab-button {
+            width: 48px;
+            height: 48px;
+        }
+        .global-dock {
+            padding: 6px 8px;
+            gap: 4px;
+        }
+        .dock-item {
+            padding: 12px;
+        }
+        .dock-text {
+            display: none; 
+        }
+        .dock-icon {
+            font-size: 22px;
+        }
+        .dock-item.active::after {
+            bottom: -2px;
+        }
+    }
+  </style>
+  
+  <div class="fab-wrapper" id="fabWrapper">
+    <!-- Кнопка открытия/закрытия меню -->
+    <button class="fab-button" id="fabToggleBtn" title="Навигация">
+        <!-- Красивая иконка Grid (Сетка приложений) -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+    </button>
+  
+    <!-- Сама панель (Dock) -->
+    <div class="global-dock">
+        <a href="index.html" class="dock-item"><span class="dock-icon">🏠</span><span class="dock-text">Menu</span></a>
+        <a href="ai.html" class="dock-item"><span class="dock-icon">🧠</span><span class="dock-text">AI</span></a>
+        <a href="agent.html" class="dock-item"><span class="dock-icon">🕵️‍♂️</span><span class="dock-text">Agent</span></a>
+        <a href="music.html" class="dock-item"><span class="dock-icon">🎧</span><span class="dock-text">Music</span></a>
+        <a href="note.html" class="dock-item"><span class="dock-icon">📒</span><span class="dock-text">Note</span></a>
+        <a href="browser.html" class="dock-item"><span class="dock-icon">🌐</span><span class="dock-text">Browser</span></a>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const fabWrapper = document.getElementById('fabWrapper');
+        const fabToggleBtn = document.getElementById('fabToggleBtn');
+  
+        // 1. Открытие/закрытие по клику на кнопку
+        fabToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Предотвращаем закрытие при клике на саму кнопку
+            fabWrapper.classList.toggle('open');
+        });
+  
+        // 2. Закрытие меню при клике в любое другое место на сайте
+        document.addEventListener('click', (e) => {
+            if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains('open')) {
+                fabWrapper.classList.remove('open');
+            }
+        });
+  
+        // 3. Автоматическая подсветка активного сайта
+        let currentPath = window.location.pathname.split('/').pop();
+        if (currentPath === '') currentPath = 'index.html'; // На случай, если открыт корень сайта
+  
+        document.querySelectorAll('.dock-item').forEach(item => {
+            const href = item.getAttribute('href');
+            if (currentPath === href) {
+                item.classList.add('active');
+            }
+        });
+    });
+  </script>
+  <!-- ========================================== -->
+</html>
