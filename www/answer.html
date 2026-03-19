@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Answer | Встроенный ИИ</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#050505">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --grid-color: rgba(255, 255, 255, 0.06);
+            --primary: #ffffff;
+            --secondary: #a1a1aa;
+            --accent: #3b82f6;
+            --glass-bg: rgba(20, 20, 20, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--primary);
+            min-height: 100vh;
+            min-height: 100dvh; /* dvh решает проблему с отрезанием низа на мобильных браузерах */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Профессиональная сетка на фоне с градиентным затуханием */
+        .grid-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+            mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
+            -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
+            z-index: -1;
+        }
+
+        /* Главный контейнер */
+        .main-container {
+            width: 100%;
+            max-width: 800px;
+            margin-top: 15vh;
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: margin-top 0.5s ease;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            margin-bottom: 20px;
+            background: linear-gradient(180deg, #fff, #777);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        p.subtitle {
+            color: var(--secondary);
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        /* Бар с вопросами (Suggestions) */
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 40px;
+            width: 100%;
+        }
+
+        .suggestion-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--secondary);
+            padding: 12px 20px;
+            border-radius: 100px;
+            font-size: 14px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .suggestion-btn:hover {
+            border-color: rgba(255, 255, 255, 0.4);
+            color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Поле ввода */
+        .input-wrapper {
+            width: 100%;
+            position: relative;
+            background: #000;
+            border-radius: 16px;
+            padding: 4px;
+            box-shadow: 0 0 0 1px var(--glass-border), 0 20px 40px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper:focus-within {
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.3), 0 0 30px rgba(255,255,255,0.05);
+        }
+
+        textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--primary);
+            font-size: 16px;
+            padding: 16px 60px 16px 20px;
+            resize: none;
+            outline: none;
+            min-height: 60px;
+            line-height: 1.5;
+            overflow: hidden;
+        }
+
+        textarea::placeholder {
+            color: #555;
+        }
+
+        .send-btn {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            background: white;
+            color: black;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .send-btn:hover {
+            background: #e0e0e0;
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Контейнер ответа */
+        .response-container {
+            width: 100%;
+            margin-top: 40px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 30px;
+            backdrop-filter: blur(20px);
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            line-height: 1.7;
+            font-size: 16px;
+            color: #e4e4e7;
+        }
+
+        .response-container.visible {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .response-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: white;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 15px;
+        }
+
+        .cost-info {
+            font-size: 12px;
+            color: #71717a;
+            margin-top: 20px;
+            text-align: right;
+            border-top: 1px dashed var(--glass-border);
+            padding-top: 10px;
+        }
+
+        /* Анимация загрузки */
+        .loader {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Стили для Markdown элементов */
+    .response-container p {
+        margin-bottom: 15px;
+    }
+    .response-container p:last-child {
+        margin-bottom: 0;
+    }
+    .response-container ul, .response-container ol {
+        margin-left: 20px;
+        margin-bottom: 15px;
+    }
+    .response-container li {
+        margin-bottom: 5px;
+    }
+    
+    /* Стили для инлайн-кода (одинарные кавычки ` `) */
+    .response-container code {
+        font-family: monospace;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: #93c5fd;
+        font-size: 0.9em;
+    }
+
+    /* Блоки кода от Highlight.js */
+    .response-container pre {
+        background: #0d0d0d !important; /* Очень темный фон для блоков кода */
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        padding: 0;
+        margin: 15px 0;
+        overflow: hidden;
+    }
+    
+    .response-container pre code {
+        display: block;
+        padding: 15px;
+        background: transparent !important;
+        color: #e4e4e7;
+        overflow-x: auto;
+    }
+
+    /* === Адаптация под телефоны и узкие экраны === */
+    @media (max-width: 768px) {
+            .main-container {
+                margin-top: 8vh;
+                padding: 0 15px;
+            }
+            h1 {
+                font-size: 2.3rem; /* Уменьшаем огромный заголовок */
+                margin-bottom: 10px;
+            }
+            p.subtitle {
+                font-size: 0.95rem;
+                margin-bottom: 25px;
+            }
+            .suggestions {
+                gap: 8px;
+            }
+            .suggestion-btn {
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+            .response-container {
+                padding: 20px 15px; /* Уменьшаем рамки ответа на телефоне */
+                font-size: 15px; /* Чуть уменьшаем шрифт для читаемости */
+            }
+            /* На телефонах сдвигаем ответ выше, чтобы влезало больше текста */
+            .response-container.visible ~ .main-container {
+                margin-top: 3vh;
+            }
+        }
+
+    </style>
+    <!-- Подключение Marked.js для парсинга Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Подключение Highlight.js для подсветки кода -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+
+    <div class="grid-background"></div>
+
+    <main class="main-container" id="main">
+        <h1>Ответы.</h1>
+        <p class="subtitle">Ваш личный встроенный ИИ-помощник (Модель: Trinity Large)</p>
+
+        <!-- Встроенные приветственные вопросы -->
+        <div class="suggestions">
+            <button class="suggestion-btn" onclick="fillAndSend('Расскажи о себе. Для чего ты здесь?')">Кто ты?</button>
+            <button class="suggestion-btn" onclick="fillAndSend('Напиши 3 факта о космосе, которые мало кто знает')">Факты о космосе</button>
+            <button class="suggestion-btn" onclick="fillAndSend('Помоги написать вежливое письмо с отказом кандидату')">Письмо кандидату</button>
+            <button class="suggestion-btn" onclick="fillAndSend('Напиши простой калькулятор на Python')">Код: Python калькулятор</button>
+        </div>
+
+        <div class="input-wrapper">
+            <textarea id="prompt" rows="1" placeholder="Задайте свой вопрос..." oninput="autoResize(this)" onkeydown="checkEnter(event)"></textarea>
+            <button class="send-btn" id="send-btn" onclick="askAI()">
+                <svg id="send-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+                <div class="loader" id="loader"></div>
+            </button>
+        </div>
+
+        <div class="response-container" id="response-container">
+            <div class="response-header">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2Z"></path><path d="M12 12 2.32 15.21"></path><path d="M12 12 21.68 15.21"></path></svg>
+                Ответ ИИ
+            </div>
+            <div id="response-content"></div>
+            <!-- Стоимость убрана, так как модель бесплатная -->
+        </div>
+    </main>
+
+    <script>
+        // === ВАШИ НАСТРОЙКИ ===
+        const API_KEY = "sk-NfiugN1qDk7GBUhFNACHnFDM4rFrFyyV"; 
+        
+        const SYSTEM_PROMPT = `Ты — профессиональный, дружелюбный и лаконичный ИИ-помощник в приложении UniChat. 
+        Твоя задача — давать точные и полезные ответы. 
+        Отвечай красиво, используй списки, если это уместно. Не придумывай факты. Если не знаешь — так и скажи.`;
+    
+        const API_URL = "https://api.proxyapi.ru/openrouter/v1/chat/completions";
+        
+        // 1. СОЗДАЕМ МАССИВ ПАМЯТИ (ИСТОРИЮ ДИАЛОГА)
+        let chatHistory =[
+            { role: "system", content: SYSTEM_PROMPT }
+        ];
+
+        // === НАСТРОЙКА MARKDOWN И ПОДСВЕТКИ КОДА ===
+    marked.setOptions({
+        breaks: true, // Переносы строк как в оригинальном тексте
+        highlight: function (code, lang) {
+            if (lang && hljs.getLanguage(lang)) {
+                // Если нейросеть указала язык и он поддерживается
+                return hljs.highlight(code, { language: lang }).value;
+            } else {
+                // Если язык не указан - АВТООПРЕДЕЛЕНИЕ
+                return hljs.highlightAuto(code).value;
+            }
+        }
+    });
+        
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+    
+        function checkEnter(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                askAI();
+            }
+        }
+    
+        function fillAndSend(text) {
+            const promptInput = document.getElementById('prompt');
+            promptInput.value = text;
+            autoResize(promptInput);
+            askAI();
+        }
+    
+        async function askAI() {
+            const promptInput = document.getElementById('prompt');
+            const prompt = promptInput.value.trim();
+            const sendBtn = document.getElementById('send-btn');
+            const sendIcon = document.getElementById('send-icon');
+            const loader = document.getElementById('loader');
+            const responseContainer = document.getElementById('response-container');
+            const responseContent = document.getElementById('response-content');
+    
+            if (!prompt) return;
+            
+            if (API_KEY === "ВСТАВЬТЕ_ВАШ_КЛЮЧ_СЮДА") {
+                alert("Внимание! Вы забыли указать свой API ключ в коде.");
+                return;
+            }
+    
+            // 2. ДОБАВЛЯЕМ ВОПРОС ПОЛЬЗОВАТЕЛЯ В ИСТОРИЮ
+            chatHistory.push({ role: "user", content: prompt });
+    
+            // Очищаем поле ввода для следующего вопроса
+            promptInput.value = '';
+            promptInput.style.height = 'auto'; // Сброс высоты
+    
+            // UI обновления
+            sendBtn.disabled = true;
+            sendIcon.style.display = 'none';
+            loader.style.display = 'block';
+            
+            // Показываем контейнер, если он еще скрыт
+            responseContainer.classList.add('visible');
+            document.getElementById('main').style.marginTop = '5vh';
+    
+            // Отображаем вопрос пользователя в интерфейсе
+            const userMsgHtml = `
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--glass-border);">
+                    <span style="color: var(--secondary); font-size: 13px;">Вы:</span>
+                    <div style="margin-top: 5px;">${prompt}</div>
+                </div>
+                <div id="loading-indicator" style="margin-top: 15px; color: var(--accent); font-size: 14px;">
+                    ИИ думает...
+                </div>
+            `;
+            // Добавляем вопрос вниз, а не перезаписываем весь блок
+            responseContent.innerHTML += userMsgHtml;
+    
+            try {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: "arcee-ai/trinity-large-preview:free",
+                    messages: chatHistory,
+                    stream: true // <-- 1. ВКЛЮЧАЕМ ПОТОКОВУЮ ПЕРЕДАЧУ
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || "Ошибка соединения с сервером");
+            }
+
+            // Удаляем надпись "ИИ думает..." сразу, как только пошел ответ
+            document.getElementById('loading-indicator')?.remove();
+
+            // 2. Создаем уникальный ID для контейнера текущего ответа
+            const messageId = "ai-msg-" + Date.now();
+            
+            // Добавляем "каркас" сообщения ИИ в чат
+            responseContent.innerHTML += `
+                <div style="margin-top: 15px;">
+                    <span style="color: var(--accent); font-size: 13px; font-weight: bold;">ИИ:</span>
+                    <div id="${messageId}" style="margin-top: 5px; min-height: 24px;"></div>
+                </div>
+            `;
+            
+            // Находим этот пустой контейнер
+            const messageContainer = document.getElementById(messageId);
+
+            // 3. Начинаем читать поток
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let aiFullText = ""; // Сюда будем собирать текст по буквам
+            let buffer = ""; // Буфер для склейки разорванных строк данных
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                // Декодируем кусок байтов в текст
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                
+                // Последняя строка может быть неполной, оставляем её в буфере
+                buffer = lines.pop(); 
+
+                for (const line of lines) {
+                    if (line.trim() === '' || line.trim() === 'data: [DONE]') continue;
+                    
+                    if (line.startsWith('data: ')) {
+                        try {
+                            // Отрезаем приставку "data: " и парсим JSON
+                            const data = JSON.parse(line.substring(6));
+                            const content = data.choices[0]?.delta?.content || "";
+                            
+                            if (content) {
+                                aiFullText += content; 
+                                
+                                // 1. Проверяем, находится ли пользователь у нижнего края экрана ДО добавления текста (с запасом 150px)
+                                const isNearBottom = (document.documentElement.scrollHeight - window.scrollY - window.innerHeight) < 150;
+
+                                // 2. На лету парсим Маркдаун и обновляем экран
+                                messageContainer.innerHTML = marked.parse(aiFullText);
+                                
+                                // 3. Если скролл был внизу, ИИ продолжает тянуть его за собой. 
+                                // Если пользователь крутанул вверх — ИИ перестает мешать.
+                                if (isNearBottom) {
+                                    window.scrollTo({
+                                        top: document.documentElement.scrollHeight,
+                                        behavior: "auto" // "auto" не дергает экран при быстрой потоковой печати, в отличие от "smooth"
+                                    });
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Ошибка парсинга куска данных: ", e, line);
+                        }
+                    }
+                }
+            }
+
+            // 5. Когда поток закончился, сохраняем ГОТОВЫЙ ответ в историю
+            chatHistory.push({ role: "assistant", content: aiFullText });
+
+        } catch (error) {
+            document.getElementById('loading-indicator')?.remove();
+            responseContent.innerHTML += `<div style="margin-top: 15px; color: #ef4444;">Ошибка: ${error.message}</div>`;
+            // Удаляем последний вопрос из памяти при ошибке
+            chatHistory.pop();
+        } finally {
+            sendBtn.disabled = false;
+            sendIcon.style.display = 'block';
+            loader.style.display = 'none';
+        }
+        }
+    </script>
+</body>
+<!-- ========================================== -->
+<!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
+<!-- ========================================== -->
+<style>
+    .fab-wrapper {
+        position: fixed;
+        bottom: 25px;
+        right: 25px; 
+        z-index: 999999;
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: center;
+        gap: 15px;
+        /* ФИКС: Оболочка больше не перехватывает клики! */
+        pointer-events: none; 
+    }
+
+    /* Сама кнопка-триггер */
+    .fab-button {
+        /* ФИКС: Делаем саму кнопку кликабельной */
+        pointer-events: auto; 
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: rgba(20, 20, 25, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        outline: none;
+        padding: 0;
+    }
+
+    .fab-button:hover {
+        transform: scale(1.1);
+        background: rgba(40, 40, 50, 0.9);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 1px 5px rgba(255, 255, 255, 0.3);
+    }
+
+    .fab-button svg {
+        transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    .fab-wrapper.open .fab-button svg {
+        transform: rotate(90deg) scale(0.9);
+        color: #a78bfa; 
+    }
+
+    /* Выезжающая панель навигации */
+    .global-dock {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: rgba(12, 12, 14, 0.85);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 100px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        
+        /* ФИКС: Игнорирует клики и полностью скрыта в закрытом виде */
+        opacity: 0;
+        visibility: hidden; 
+        pointer-events: none; 
+        
+        transform: translateX(40px) scale(0.9);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        transform-origin: right center;
+    }
+
+    /* Состояние открытого меню */
+    .fab-wrapper.open .global-dock {
+        opacity: 1;
+        visibility: visible; 
+        pointer-events: auto; /* ФИКС: Кнопки меню работают, только когда открыты */
+        transform: translateX(0) scale(1);
+    }
+
+    .dock-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 100px;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        position: relative;
+        white-space: nowrap;
+    }
+
+    .dock-item:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .dock-item.active {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
+    }
+
+    .dock-item.active::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 18px;
+        height: 3px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+
+    .dock-icon {
+        font-size: 18px;
+        filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+    }
+
+    @media (max-width: 768px) {
+        .fab-wrapper {
+            bottom: 20px;
+            right: 20px;
+            gap: 10px;
+        }
+        .fab-button {
+            width: 48px;
+            height: 48px;
+        }
+        .global-dock {
+            padding: 6px 8px;
+            gap: 4px;
+        }
+        .dock-item {
+            padding: 12px;
+        }
+        .dock-text {
+            display: none; 
+        }
+        .dock-icon {
+            font-size: 22px;
+        }
+        .dock-item.active::after {
+            bottom: -2px;
+        }
+    }
+    /* --- НОВЫЕ СТИЛИ ДЛЯ ИКОНОК-КАРТИНОК И ПЕРЕТАСКИВАНИЯ --- */
+
+.dock-icon {
+    width: 20px; /* Размер ваших иконок */
+    height: 20px;
+    object-fit: contain; /* Чтобы картинка не искажалась */
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+    /* Важно! Запрещаем перетаскивать саму картинку браузером */
+    pointer-events: none; 
+    user-select: none;
+}
+
+@media (max-width: 768px) {
+    .dock-icon {
+        width: 24px; /* На телефоне иконки чуть больше */
+        height: 24px;
+    }
+}
+
+/* Курсоры для кнопки перетаскивания */
+.fab-button {
+    cursor: grab;
+    touch-action: none; /* Запрещаем скролл страницы при касании кнопки на телефоне */
+}
+
+.fab-button:active {
+    cursor: grabbing;
+}
+
+/* Класс для плавного возврата в границы экрана (если меню открыли у самого края) */
+.fab-wrapper.snap-transition {
+    transition: left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+</style>
+
+<div class="fab-wrapper" id="fabWrapper">
+    <!-- Кнопка открытия/закрытия меню (она же ручка для перетаскивания) -->
+    <button class="fab-button" id="fabToggleBtn" title="Навигация">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+    </button>
+
+    <!-- Сама панель (Dock) -->
+    <div class="global-dock" id="globalDock">
+        <a href="index.html" class="dock-item">
+            <img src="https://i.imgur.com/tpFK0jG.png" alt="Menu" class="dock-icon">
+            <span class="dock-text">Menu</span>
+        </a>
+        <a href="ai.html" class="dock-item">
+            <img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon">
+            <span class="dock-text">AI</span>
+        </a>
+        <a href="agent.html" class="dock-item">
+            <img src="https://i.imgur.com/jNkaBVw.png" alt="Agent" class="dock-icon">
+            <span class="dock-text">Agent</span>
+        </a>
+        <a href="music.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/2995/2995101.png" alt="Music" class="dock-icon">
+            <span class="dock-text">Music</span>
+        </a>
+        <a href="note.html" class="dock-item">
+            <img src="https://i.imgur.com/GcjfCTh.png" alt="Note" class="dock-icon">
+            <span class="dock-text">Note</span>
+        </a>
+        <a href="googleweb.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="dock-icon">
+            <span class="dock-text">Google</span>
+        </a>
+        <a href="browser.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX" class="dock-icon">
+            <span class="dock-text">SearX</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const fabWrapper = document.getElementById('fabWrapper');
+    const fabToggleBtn = document.getElementById('fabToggleBtn');
+    
+    // Подсветка активной ссылки (ваш код)
+    let currentPath = window.location.pathname.split('/').pop();
+    if (currentPath === '') currentPath = 'index.html';
+    document.querySelectorAll('.dock-item').forEach(item => {
+        const href = item.getAttribute('href');
+        if (currentPath === href) {
+            item.classList.add('active');
+        }
+    });
+
+    // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
+    let isDragging = false;
+    let hasMoved = false; // Отличаем клик от перетаскивания
+    let startX, startY;
+    let initialLeft, initialTop;
+
+    function dragStart(e) {
+        if (e.type === 'touchstart') {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        } else {
+            startX = e.clientX;
+            startY = e.clientY;
+            e.preventDefault(); // Предотвращаем стандартное выделение на ПК
+        }
+
+        // Получаем текущие координаты элемента на экране
+        const rect = fabWrapper.getBoundingClientRect();
+        
+        // Отключаем bottom/right, переходим на жесткое позиционирование left/top
+        fabWrapper.style.bottom = 'auto';
+        fabWrapper.style.right = 'auto';
+        fabWrapper.style.left = rect.left + 'px';
+        fabWrapper.style.top = rect.top + 'px';
+
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        isDragging = true;
+        hasMoved = false;
+        
+        // Убираем плавность при самом перетаскивании
+        fabWrapper.classList.remove('snap-transition');
+
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchmove', dragMove, { passive: false });
+        document.addEventListener('touchend', dragEnd);
+    }
+
+    function dragMove(e) {
+        if (!isDragging) return;
+
+        let currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        let currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+        let deltaX = currentX - startX;
+        let deltaY = currentY - startY;
+
+        // Если сдвинули больше чем на 5 пикселей, считаем это перетаскиванием, а не кликом
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+            hasMoved = true;
+            if (e.type === 'touchmove') e.preventDefault(); // Блокируем скролл страницы
+        }
+
+        if (hasMoved) {
+            let newLeft = initialLeft + deltaX;
+            let newTop = initialTop + deltaY;
+
+            // --- ОГРАНИЧЕНИЕ ВЫХОДА ЗА ПРЕДЕЛЫ ЭКРАНА ---
+            const rect = fabWrapper.getBoundingClientRect();
+            const maxLeft = window.innerWidth - rect.width;
+            const maxTop = window.innerHeight - rect.height;
+
+            // Запрещаем уходить за левый/правый и верхний/нижний края
+            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+
+            fabWrapper.style.left = newLeft + 'px';
+            fabWrapper.style.top = newTop + 'px';
+        }
+    }
+
+    function dragEnd() {
+        isDragging = false;
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('mouseup', dragEnd);
+        document.removeEventListener('touchmove', dragMove);
+        document.removeEventListener('touchend', dragEnd);
+    }
+
+    // Слушатели для начала перетаскивания (с кнопки)
+    fabToggleBtn.addEventListener('mousedown', dragStart);
+    fabToggleBtn.addEventListener('touchstart', dragStart, { passive: true });
+
+    // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ ---
+    fabToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Если было перетаскивание, отменяем клик!
+        if (hasMoved) {
+            e.preventDefault();
+            return;
+        }
+
+        fabWrapper.classList.toggle('open');
+        
+        // Если меню открылось и вылезло за края экрана (т.к. стало шире),
+        // плавно задвигаем его обратно в пределы экрана.
+        if (fabWrapper.classList.contains('open')) {
+            setTimeout(keepInBounds, 50); // Ждем долю секунды, чтобы CSS применил ширину
+        }
+    });
+
+    // Функция возврата в рамки экрана при изменении ширины меню
+    function keepInBounds() {
+        const rect = fabWrapper.getBoundingClientRect();
+        const maxLeft = window.innerWidth - rect.width;
+        const maxTop = window.innerHeight - rect.height;
+
+        let correctedLeft = Math.max(0, Math.min(rect.left, maxLeft));
+        let correctedTop = Math.max(0, Math.min(rect.top, maxTop));
+
+        // Если позиция нуждается в корректировке
+        if (correctedLeft !== rect.left || correctedTop !== rect.top) {
+            fabWrapper.classList.add('snap-transition'); // Добавляем плавность
+            fabWrapper.style.left = correctedLeft + 'px';
+            fabWrapper.style.top = correctedTop + 'px';
+        }
+    }
+
+    // Закрытие меню при клике в любое другое место
+    document.addEventListener('click', (e) => {
+        if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains('open')) {
+            fabWrapper.classList.remove('open');
+            // При закрытии (ширина уменьшилась) тоже проверяем границы на всякий случай
+            setTimeout(keepInBounds, 300); 
+        }
+    });
+
+    // Пересчет границ при повороте экрана телефона / изменении размера окна
+    window.addEventListener('resize', keepInBounds);
+});
+</script>
+<!-- ========================================== -->
+</html>
