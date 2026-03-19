@@ -3800,16 +3800,20 @@
     .fab-wrapper {
         position: fixed;
         bottom: 25px;
-        right: 25px; /* Размещаем в правом нижнем углу */
+        right: 25px; 
         z-index: 999999;
         display: flex;
-        flex-direction: row-reverse; /* Кнопка справа, меню выезжает влево */
+        flex-direction: row-reverse;
         align-items: center;
         gap: 15px;
+        /* ФИКС: Оболочка больше не перехватывает клики! */
+        pointer-events: none; 
     }
 
     /* Сама кнопка-триггер */
     .fab-button {
+        /* ФИКС: Делаем саму кнопку кликабельной */
+        pointer-events: auto; 
         width: 54px;
         height: 54px;
         border-radius: 50%;
@@ -3839,10 +3843,9 @@
         transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     }
     
-    /* Анимация иконки при открытии */
     .fab-wrapper.open .fab-button svg {
         transform: rotate(90deg) scale(0.9);
-        color: #a78bfa; /* Легкий фиолетовый акцент при открытии */
+        color: #a78bfa; 
     }
 
     /* Выезжающая панель навигации */
@@ -3858,10 +3861,12 @@
         border-radius: 100px;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         
-        /* Скрыто по умолчанию */
+        /* ФИКС: Игнорирует клики и полностью скрыта в закрытом виде */
         opacity: 0;
+        visibility: hidden; 
+        pointer-events: none; 
+        
         transform: translateX(40px) scale(0.9);
-        pointer-events: none;
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         transform-origin: right center;
     }
@@ -3869,8 +3874,9 @@
     /* Состояние открытого меню */
     .fab-wrapper.open .global-dock {
         opacity: 1;
+        visibility: visible; 
+        pointer-events: auto; /* ФИКС: Кнопки меню работают, только когда открыты */
         transform: translateX(0) scale(1);
-        pointer-events: auto;
     }
 
     .dock-item {
@@ -3919,7 +3925,6 @@
         filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
     }
 
-    /* Адаптив для мобильных устройств */
     @media (max-width: 768px) {
         .fab-wrapper {
             bottom: 20px;
@@ -3938,7 +3943,7 @@
             padding: 12px;
         }
         .dock-text {
-            display: none; /* Оставляем только иконки для экономии места */
+            display: none; 
         }
         .dock-icon {
             font-size: 22px;
