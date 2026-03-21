@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Video Player PRO</title>
+    <style>
+        /* Базовые настройки и фон-сетка */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #050505;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            overflow: hidden;
+        }
+
+        /* Контейнер плеера */
+        .video-wrapper {
+            position: relative;
+            width: 90%;
+            max-width: 1200px;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255,255,255,0.1);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        /* Экран загрузки файла (Drag & Drop) */
+        .upload-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            margin: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-overlay:hover, .upload-overlay.drag-over {
+            background: rgba(0, 0, 0, 0.95);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .upload-overlay img {
+            width: 60px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .upload-overlay:hover img {
+            opacity: 1;
+            transform: translateY(-5px);
+        }
+
+        .upload-overlay h2 {
+            color: #fff;
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .upload-overlay p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+        }
+
+        /* Видео */
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            cursor: pointer;
+            display: none; /* Скрыто до загрузки файла */
+        }
+
+        /* Панель управления */
+        .controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 30px 20px 20px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0) 100%);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            z-index: 10;
+            display: none; /* Скрыто до загрузки файла */
+        }
+
+        .video-wrapper.hide-controls .controls {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+        }
+        .video-wrapper.hide-controls { cursor: none; }
+
+        /* Прогресс-бар */
+        .progress-area {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            transition: height 0.2s ease;
+        }
+
+        .progress-area:hover { height: 8px; }
+
+        .progress-filled {
+            height: 100%;
+            width: 0%;
+            background: #ffffff;
+            border-radius: 3px;
+            position: relative;
+            pointer-events: none;
+        }
+
+        .progress-filled::after {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%) scale(0);
+            width: 14px;
+            height: 14px;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            transition: transform 0.2s ease;
+        }
+
+        .progress-area:hover .progress-filled::after {
+            transform: translateY(-50%) scale(1);
+        }
+
+        /* Блок кнопок */
+        .controls-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .controls-left, .controls-right {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.8;
+            transition: opacity 0.2s, transform 0.2s;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .control-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .control-btn img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+
+        /* Меню скорости */
+        .speed-container {
+            position: relative;
+        }
+        
+        .speed-menu {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .speed-menu.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .speed-menu span {
+            color: #fff;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: center;
+        }
+
+        .speed-menu span:hover { background: rgba(255, 255, 255, 0.1); }
+        .speed-menu span.selected { font-weight: bold; color: #4dabf7; }
+
+        /* Время и громкость */
+        .time-display {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            font-weight: 500;
+            user-select: none;
+        }
+
+        .volume-slider {
+            -webkit-appearance: none;
+            width: 80px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* Анимация по центру (перемотка) */
+        .action-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 15;
+        }
+        
+        .action-indicator img { width: 35px; height: 35px; }
+        
+        .action-indicator.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        @media (max-width: 768px) {
+            .video-wrapper { width: 100%; border-radius: 0; border: none; }
+            .volume-slider { width: 50px; }
+            .upload-overlay h2 { font-size: 18px; }
+            .upload-overlay p { font-size: 12px; text-align: center; padding: 0 10px; }
+            .control-btn img { width: 24px; height: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="video-wrapper" id="video-wrapper">
+        
+        <!-- Стартовый экран загрузки -->
+        <div class="upload-overlay" id="upload-overlay">
+            <img src="https://img.icons8.com/ios-filled/100/ffffff/upload-to-cloud--v1.png" alt="Upload">
+            <h2>Загрузить видео</h2>
+            <p>Перетащите файл сюда или кликните для выбора (MP4, WebM, MKV)</p>
+            <input type="file" id="file-input" accept="video/*" hidden>
+        </div>
+
+        <video id="video-player" playsinline preload="metadata"></video>
+        
+        <!-- Индикатор действий (например перемотка) -->
+        <div class="action-indicator" id="action-indicator">
+            <img id="action-icon" src="" alt="Action">
+        </div>
+
+        <div class="controls" id="controls">
+            <div class="progress-area" id="progress-area">
+                <div class="progress-filled" id="progress-filled"></div>
+            </div>
+
+            <div class="controls-main">
+                <div class="controls-left">
+                    <button class="control-btn" id="play-pause-btn" title="Play/Pause">
+                        <img id="play-icon" src="https://img.icons8.com/ios-filled/50/ffffff/play--v1.png" alt="Play">
+                    </button>
+                    
+                    <button class="control-btn" id="mute-btn" title="Mute">
+                        <img id="volume-icon" src="https://img.icons8.com/ios-filled/50/ffffff/high-volume--v1.png" alt="Volume">
+                    </button>
+                    <input type="range" id="volume-slider" class="volume-slider" min="0" max="1" step="0.05" value="1" title="Volume">
+
+                    <div class="time-display">
+                        <span id="current-time">0:00</span> / <span id="total-time">0:00</span>
+                    </div>
+                </div>
+
+                <div class="controls-right">
+                    <!-- Загрузить новое видео -->
+                    <button class="control-btn" id="reupload-btn" title="Upload another video">
+                        <img src="https://img.icons8.com/ios-filled/50/ffffff/upload--v1.png" alt="Re-upload">
+                    </button>
+
+                    <!-- Скорость воспроизведения -->
+                    <div class="speed-container">
+                        <button class="control-btn" id="speed-btn" title="Playback Speed">1x</button>
+                        <div class="speed-menu" id="speed-menu">
+                            <span data-speed="0.5">0.5x</span>
+                            <span data-speed="1" class="selected">1.0x</span>
+                            <span data-speed="1.5">1.5x</span>
+                            <span data-speed="2">2.0x</span>
+                        </div>
+                    </div>
+
+                    <!-- Картинка в картинке -->
+                    <button class="control-btn" id="pip-btn" title="Picture-in-Picture">
+                        <img src="https://img.icons8.com/ios-filled/50/ffffff/picture-in-picture-alternative.png" alt="PiP">
+                    </button>
+
+                    <!-- Полноэкранный режим -->
+                    <button class="control-btn" id="fullscreen-btn" title="Fullscreen">
+                        <img id="fullscreen-icon" src="https://img.icons8.com/ios-filled/50/ffffff/full-screen--v1.png" alt="Fullscreen">
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Ссылки на профессиональные иконки ---
+        const icons = {
+            play: 'https://img.icons8.com/ios-filled/50/ffffff/play--v1.png',
+            pause: 'https://img.icons8.com/ios-filled/50/ffffff/pause--v1.png',
+            volumeHigh: 'https://img.icons8.com/ios-filled/50/ffffff/high-volume--v1.png',
+            volumeLow: 'https://img.icons8.com/ios-filled/50/ffffff/low-volume.png',
+            muted: 'https://img.icons8.com/ios-filled/50/ffffff/no-audio--v1.png',
+            fullscreenExpand: 'https://img.icons8.com/ios-filled/50/ffffff/full-screen--v1.png',
+            fullscreenCompress: 'https://img.icons8.com/ios-filled/50/ffffff/normal-screen.png',
+            forward10: 'https://img.icons8.com/ios-filled/50/ffffff/forward-10.png',
+            replay10: 'https://img.icons8.com/ios-filled/50/ffffff/replay-10.png'
+        };
+
+        // --- DOM Элементы ---
+        const wrapper = document.getElementById('video-wrapper');
+        const video = document.getElementById('video-player');
+        const controls = document.getElementById('controls');
+        const uploadOverlay = document.getElementById('upload-overlay');
+        const fileInput = document.getElementById('file-input');
+        
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const playIcon = document.getElementById('play-icon');
+        const progressArea = document.getElementById('progress-area');
+        const progressFilled = document.getElementById('progress-filled');
+        const currentTimeEl = document.getElementById('current-time');
+        const totalTimeEl = document.getElementById('total-time');
+        
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeIcon = document.getElementById('volume-icon');
+        const muteBtn = document.getElementById('mute-btn');
+        
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const fullscreenIcon = document.getElementById('fullscreen-icon');
+        const pipBtn = document.getElementById('pip-btn');
+        const reuploadBtn = document.getElementById('reupload-btn');
+        
+        const speedBtn = document.getElementById('speed-btn');
+        const speedMenu = document.getElementById('speed-menu');
+        const speedOptions = speedMenu.querySelectorAll('span');
+
+        const actionIndicator = document.getElementById('action-indicator');
+        const actionIcon = document.getElementById('action-icon');
+
+        let currentVideoUrl = null;
+        let actionTimeout;
+
+        // --- 1. ЗАГРУЗКА ЛОКАЛЬНОГО ВИДЕО (Drag & Drop + Клик) ---
+        function loadVideoFile(file) {
+            if (!file.type.startsWith('video/')) {
+                alert('Пожалуйста, выберите видео файл!');
+                return;
+            }
+            if (currentVideoUrl) URL.revokeObjectURL(currentVideoUrl); // Очистка памяти
+            
+            currentVideoUrl = URL.createObjectURL(file);
+            video.src = currentVideoUrl;
+            
+            // Скрываем окно загрузки, показываем видео и панель
+            uploadOverlay.style.display = 'none';
+            video.style.display = 'block';
+            controls.style.display = 'flex';
+            
+            video.play();
+            playIcon.src = icons.pause;
+        }
+
+        // Клик по окну загрузки
+        uploadOverlay.addEventListener('click', () => fileInput.click());
+        // Кнопка загрузить еще раз в панели
+        reuploadBtn.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) loadVideoFile(e.target.files[0]);
+        });
+
+        // Drag & Drop
+        uploadOverlay.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadOverlay.classList.add('drag-over');
+        });
+        uploadOverlay.addEventListener('dragleave', () => uploadOverlay.classList.remove('drag-over'));
+        uploadOverlay.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadOverlay.classList.remove('drag-over');
+            if (e.dataTransfer.files[0]) loadVideoFile(e.dataTransfer.files[0]);
+        });
+
+
+        // --- 2. БАЗОВЫЕ ФУНКЦИИ (Плей, Время, Прогресс-бар) ---
+        function togglePlay() {
+            if (video.paused) {
+                video.play();
+                playIcon.src = icons.pause;
+            } else {
+                video.pause();
+                playIcon.src = icons.play;
+            }
+        }
+
+        playPauseBtn.addEventListener('click', togglePlay);
+        video.addEventListener('click', togglePlay);
+
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        video.addEventListener('loadedmetadata', () => {
+            totalTimeEl.textContent = formatTime(video.duration);
+        });
+
+        video.addEventListener('timeupdate', () => {
+            currentTimeEl.textContent = formatTime(video.currentTime);
+            progressFilled.style.width = `${(video.currentTime / video.duration) * 100}%`;
+        });
+
+        // Перемотка мышью
+        let isDragging = false;
+        function scrub(e) {
+            const rect = progressArea.getBoundingClientRect();
+            let pos = (e.clientX - rect.left) / rect.width;
+            pos = Math.max(0, Math.min(pos, 1)); // Ограничиваем от 0 до 1
+            video.currentTime = pos * video.duration;
+        }
+        progressArea.addEventListener('mousedown', (e) => { isDragging = true; scrub(e); });
+        document.addEventListener('mousemove', (e) => { if (isDragging) scrub(e); });
+        document.addEventListener('mouseup', () => isDragging = false);
+
+
+        // --- 3. ЗВУК И ПОЛНОЭКРАННЫЙ РЕЖИМ ---
+        volumeSlider.addEventListener('input', (e) => {
+            video.volume = e.target.value;
+            video.muted = video.volume === 0;
+            updateVolumeIcon();
+        });
+
+        muteBtn.addEventListener('click', () => {
+            video.muted = !video.muted;
+            if (video.muted) volumeSlider.value = 0;
+            else volumeSlider.value = video.volume || 1;
+            updateVolumeIcon();
+        });
+
+        function updateVolumeIcon() {
+            if (video.muted || video.volume === 0) volumeIcon.src = icons.muted;
+            else if (video.volume < 0.5) volumeIcon.src = icons.volumeLow;
+            else volumeIcon.src = icons.volumeHigh;
+        }
+
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+        video.addEventListener('dblclick', toggleFullscreen);
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                wrapper.requestFullscreen().catch(err => console.log(err));
+                fullscreenIcon.src = icons.fullscreenCompress;
+            } else {
+                document.exitFullscreen();
+                fullscreenIcon.src = icons.fullscreenExpand;
+            }
+        }
+
+
+        // --- 4. КРУТЫЕ ФУНКЦИИ (PiP, Скорость, Хоткеи) ---
+        
+        // Картинка в картинке (Picture-in-Picture)
+        pipBtn.addEventListener('click', async () => {
+            try {
+                if (document.pictureInPictureElement) {
+                    await document.exitPictureInPicture();
+                } else {
+                    await video.requestPictureInPicture();
+                }
+            } catch (err) {
+                console.error('PiP не поддерживается', err);
+            }
+        });
+
+        // Меню скорости
+        speedBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Чтобы клик не закрыл меню сразу
+            speedMenu.classList.toggle('active');
+        });
+
+        // Закрываем меню при клике вне его
+        document.addEventListener('click', () => speedMenu.classList.remove('active'));
+
+        speedOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const speed = option.getAttribute('data-speed');
+                video.playbackRate = speed;
+                speedBtn.textContent = speed + 'x';
+                
+                speedOptions.forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+            });
+        });
+
+        // Анимация перемотки по центру
+        function showActionIndicator(iconSrc) {
+            actionIcon.src = iconSrc;
+            actionIndicator.classList.add('show');
+            clearTimeout(actionTimeout);
+            actionTimeout = setTimeout(() => {
+                actionIndicator.classList.remove('show');
+            }, 500);
+        }
+
+        // Горячие клавиши
+        document.addEventListener('keydown', (e) => {
+            // Игнорируем, если видео еще не загружено
+            if (!currentVideoUrl) return;
+
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowRight': // Вперед на 10 сек
+                    e.preventDefault();
+                    video.currentTime += 10;
+                    showActionIndicator(icons.forward10);
+                    break;
+                case 'ArrowLeft': // Назад на 10 сек
+                    e.preventDefault();
+                    video.currentTime -= 10;
+                    showActionIndicator(icons.replay10);
+                    break;
+                case 'ArrowUp': // Громче
+                    e.preventDefault();
+                    video.volume = Math.min(video.volume + 0.1, 1);
+                    volumeSlider.value = video.volume;
+                    updateVolumeIcon();
+                    break;
+                case 'ArrowDown': // Тише
+                    e.preventDefault();
+                    video.volume = Math.max(video.volume - 0.1, 0);
+                    volumeSlider.value = video.volume;
+                    updateVolumeIcon();
+                    break;
+                case 'KeyF':
+                    e.preventDefault();
+                    toggleFullscreen();
+                    break;
+            }
+        });
+
+        // Скрытие панели при бездействии
+        let hideTimeout;
+        wrapper.addEventListener('mousemove', () => {
+            wrapper.classList.remove('hide-controls');
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                if (!video.paused && currentVideoUrl) wrapper.classList.add('hide-controls');
+            }, 2500);
+        });
+        wrapper.addEventListener('mouseleave', () => {
+            if (!video.paused && currentVideoUrl) wrapper.classList.add('hide-controls');
+        });
+
+    </script>
+</body>
+<!-- ========================================== -->
+<!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
+<!-- ========================================== -->
+<style>
+    .fab-wrapper {
+        position: fixed;
+        bottom: 25px;
+        right: 25px; 
+        z-index: 999999;
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: center;
+        gap: 15px;
+        /* ФИКС: Оболочка больше не перехватывает клики! */
+        pointer-events: none; 
+    }
+
+    /* Сама кнопка-триггер */
+    .fab-button {
+        /* ФИКС: Делаем саму кнопку кликабельной */
+        pointer-events: auto; 
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: rgba(20, 20, 25, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        outline: none;
+        padding: 0;
+    }
+
+    .fab-button:hover {
+        transform: scale(1.1);
+        background: rgba(40, 40, 50, 0.9);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 1px 5px rgba(255, 255, 255, 0.3);
+    }
+
+    .fab-button svg {
+        transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    .fab-wrapper.open .fab-button svg {
+        transform: rotate(90deg) scale(0.9);
+        color: #a78bfa; 
+    }
+
+    /* Выезжающая панель навигации */
+    .global-dock {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: rgba(12, 12, 14, 0.85);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 100px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        
+        /* ФИКС: Игнорирует клики и полностью скрыта в закрытом виде */
+        opacity: 0;
+        visibility: hidden; 
+        pointer-events: none; 
+        
+        transform: translateX(40px) scale(0.9);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        transform-origin: right center;
+    }
+
+    /* Состояние открытого меню */
+    .fab-wrapper.open .global-dock {
+        opacity: 1;
+        visibility: visible; 
+        pointer-events: auto; /* ФИКС: Кнопки меню работают, только когда открыты */
+        transform: translateX(0) scale(1);
+    }
+
+    .dock-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 100px;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        position: relative;
+        white-space: nowrap;
+    }
+
+    .dock-item:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .dock-item.active {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
+    }
+
+    .dock-item.active::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 18px;
+        height: 3px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+
+    .dock-icon {
+        font-size: 18px;
+        filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+    }
+
+    @media (max-width: 768px) {
+        .fab-wrapper {
+            bottom: 20px;
+            right: 20px;
+            gap: 10px;
+        }
+        .fab-button {
+            width: 48px;
+            height: 48px;
+        }
+        .global-dock {
+            padding: 6px 8px;
+            gap: 4px;
+        }
+        .dock-item {
+            padding: 12px;
+        }
+        .dock-text {
+            display: none; 
+        }
+        .dock-icon {
+            font-size: 22px;
+        }
+        .dock-item.active::after {
+            bottom: -2px;
+        }
+    }
+    /* --- НОВЫЕ СТИЛИ ДЛЯ ИКОНОК-КАРТИНОК И ПЕРЕТАСКИВАНИЯ --- */
+
+.dock-icon {
+    width: 20px; /* Размер ваших иконок */
+    height: 20px;
+    object-fit: contain; /* Чтобы картинка не искажалась */
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+    /* Важно! Запрещаем перетаскивать саму картинку браузером */
+    pointer-events: none; 
+    user-select: none;
+}
+
+@media (max-width: 768px) {
+    .dock-icon {
+        width: 24px; /* На телефоне иконки чуть больше */
+        height: 24px;
+    }
+}
+
+/* Курсоры для кнопки перетаскивания */
+.fab-button {
+    cursor: grab;
+    touch-action: none; /* Запрещаем скролл страницы при касании кнопки на телефоне */
+}
+
+.fab-button:active {
+    cursor: grabbing;
+}
+
+/* Класс для плавного возврата в границы экрана (если меню открыли у самого края) */
+.fab-wrapper.snap-transition {
+    transition: left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+</style>
+
+<div class="fab-wrapper" id="fabWrapper">
+    <!-- Кнопка открытия/закрытия меню (она же ручка для перетаскивания) -->
+    <button class="fab-button" id="fabToggleBtn" title="Навигация">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+    </button>
+
+    <!-- Сама панель (Dock) -->
+    <div class="global-dock" id="globalDock">
+        <a href="index.html" class="dock-item">
+            <img src="https://i.imgur.com/tpFK0jG.png" alt="Menu" class="dock-icon">
+            <span class="dock-text">Menu</span>
+        </a>
+        <a href="ai.html" class="dock-item">
+            <img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon">
+            <span class="dock-text">AI</span>
+        </a>
+        <a href="agent.html" class="dock-item">
+            <img src="https://i.imgur.com/jNkaBVw.png" alt="Agent" class="dock-icon">
+            <span class="dock-text">Agent</span>
+        </a>
+        <a href="music.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/2995/2995101.png" alt="Music" class="dock-icon">
+            <span class="dock-text">Music</span>
+        </a>
+        <a href="note.html" class="dock-item">
+            <img src="https://i.imgur.com/GcjfCTh.png" alt="Note" class="dock-icon">
+            <span class="dock-text">Note</span>
+        </a>
+        <a href="googleweb.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="dock-icon">
+            <span class="dock-text">Google</span>
+        </a>
+        <a href="browser.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX" class="dock-icon">
+            <span class="dock-text">SearX</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const fabWrapper = document.getElementById('fabWrapper');
+    const fabToggleBtn = document.getElementById('fabToggleBtn');
+    
+    // Подсветка активной ссылки (ваш код)
+    let currentPath = window.location.pathname.split('/').pop();
+    if (currentPath === '') currentPath = 'index.html';
+    document.querySelectorAll('.dock-item').forEach(item => {
+        const href = item.getAttribute('href');
+        if (currentPath === href) {
+            item.classList.add('active');
+        }
+    });
+
+    // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
+    let isDragging = false;
+    let hasMoved = false; // Отличаем клик от перетаскивания
+    let startX, startY;
+    let initialLeft, initialTop;
+
+    function dragStart(e) {
+        if (e.type === 'touchstart') {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        } else {
+            startX = e.clientX;
+            startY = e.clientY;
+            e.preventDefault(); // Предотвращаем стандартное выделение на ПК
+        }
+
+        // Получаем текущие координаты элемента на экране
+        const rect = fabWrapper.getBoundingClientRect();
+        
+        // Отключаем bottom/right, переходим на жесткое позиционирование left/top
+        fabWrapper.style.bottom = 'auto';
+        fabWrapper.style.right = 'auto';
+        fabWrapper.style.left = rect.left + 'px';
+        fabWrapper.style.top = rect.top + 'px';
+
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        isDragging = true;
+        hasMoved = false;
+        
+        // Убираем плавность при самом перетаскивании
+        fabWrapper.classList.remove('snap-transition');
+
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchmove', dragMove, { passive: false });
+        document.addEventListener('touchend', dragEnd);
+    }
+
+    function dragMove(e) {
+        if (!isDragging) return;
+
+        let currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        let currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+        let deltaX = currentX - startX;
+        let deltaY = currentY - startY;
+
+        // Если сдвинули больше чем на 5 пикселей, считаем это перетаскиванием, а не кликом
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+            hasMoved = true;
+            if (e.type === 'touchmove') e.preventDefault(); // Блокируем скролл страницы
+        }
+
+        if (hasMoved) {
+            let newLeft = initialLeft + deltaX;
+            let newTop = initialTop + deltaY;
+
+            // --- ОГРАНИЧЕНИЕ ВЫХОДА ЗА ПРЕДЕЛЫ ЭКРАНА ---
+            const rect = fabWrapper.getBoundingClientRect();
+            const maxLeft = window.innerWidth - rect.width;
+            const maxTop = window.innerHeight - rect.height;
+
+            // Запрещаем уходить за левый/правый и верхний/нижний края
+            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+
+            fabWrapper.style.left = newLeft + 'px';
+            fabWrapper.style.top = newTop + 'px';
+        }
+    }
+
+    function dragEnd() {
+        isDragging = false;
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('mouseup', dragEnd);
+        document.removeEventListener('touchmove', dragMove);
+        document.removeEventListener('touchend', dragEnd);
+    }
+
+    // Слушатели для начала перетаскивания (с кнопки)
+    fabToggleBtn.addEventListener('mousedown', dragStart);
+    fabToggleBtn.addEventListener('touchstart', dragStart, { passive: true });
+
+    // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ ---
+    fabToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Если было перетаскивание, отменяем клик!
+        if (hasMoved) {
+            e.preventDefault();
+            return;
+        }
+
+        fabWrapper.classList.toggle('open');
+        
+        // Если меню открылось и вылезло за края экрана (т.к. стало шире),
+        // плавно задвигаем его обратно в пределы экрана.
+        if (fabWrapper.classList.contains('open')) {
+            setTimeout(keepInBounds, 50); // Ждем долю секунды, чтобы CSS применил ширину
+        }
+    });
+
+    // Функция возврата в рамки экрана при изменении ширины меню
+    function keepInBounds() {
+        const rect = fabWrapper.getBoundingClientRect();
+        const maxLeft = window.innerWidth - rect.width;
+        const maxTop = window.innerHeight - rect.height;
+
+        let correctedLeft = Math.max(0, Math.min(rect.left, maxLeft));
+        let correctedTop = Math.max(0, Math.min(rect.top, maxTop));
+
+        // Если позиция нуждается в корректировке
+        if (correctedLeft !== rect.left || correctedTop !== rect.top) {
+            fabWrapper.classList.add('snap-transition'); // Добавляем плавность
+            fabWrapper.style.left = correctedLeft + 'px';
+            fabWrapper.style.top = correctedTop + 'px';
+        }
+    }
+
+    // Закрытие меню при клике в любое другое место
+    document.addEventListener('click', (e) => {
+        if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains('open')) {
+            fabWrapper.classList.remove('open');
+            // При закрытии (ширина уменьшилась) тоже проверяем границы на всякий случай
+            setTimeout(keepInBounds, 300); 
+        }
+    });
+
+    // Пересчет границ при повороте экрана телефона / изменении размера окна
+    window.addEventListener('resize', keepInBounds);
+});
+</script>
+<!-- ========================================== -->
+</html>
