@@ -2039,7 +2039,13 @@ window.editCharacter = function(id) {
     ];
 
 
-    function getPrettyModelName(id) { const found = MODELS_CONFIG.find(m => m.id === id); return found ? found.name : id; }
+    function getPrettyModelName(id) { 
+    const found = MODELS_CONFIG.find(m => m.id === id); 
+    if (found) return found.name;
+    if (customAgents && customAgents[id]) return "🤖 " + customAgents[id].name;
+    if (customCharacters && customCharacters[id]) return "🎭 " + customCharacters[id].name;
+    return id; 
+}
 
     const THEMES = {
         'dark-matter': { c1: '#0f172a', c2: '#1e1b4b', a: '135' },
@@ -2380,20 +2386,21 @@ window.editCharacter = function(id) {
     };
 
     function saveChatsToStorage() {
-        if (currentChatId) localStorage.setItem('pa_current_chat_id', currentChatId);
-        else localStorage.removeItem('pa_current_chat_id');
-        
-        // ЖЕЛЕЗНОЕ ПРАВИЛО: Всегда делаем резервную копию в localStorage
-        try { localStorage.setItem('pa_chats_fallback', JSON.stringify(chats)); } catch(e) {}
+    if (currentChatId) localStorage.setItem('pa_current_chat_id', currentChatId);
+    else localStorage.removeItem('pa_current_chat_id');
+    
+    // ЖЕЛЕЗНОЕ ПРАВИЛО: Всегда делаем резервную копию в localStorage
+    try { localStorage.setItem('pa_chats_fallback', JSON.stringify(chats)); } catch(e) {}
 
-        // Если системная БД работает, пишем и туда
-        if (currentChatId && chats[currentChatId] && db && !useFallbackStorage) {
-            try {
-                const tx = db.transaction([storeName], "readwrite");
-                tx.objectStore(storeName).put(chats[currentChatId]);
-            } catch(e) { useFallbackStorage = true; }
-        }
+    // Если системная БД работает, пишем и туда
+    if (currentChatId && chats[currentChatId] && db && !useFallbackStorage) {
+        try {
+            // ИСПРАВЛЕНО: storeName заменено на chatStoreName
+            const tx = db.transaction([chatStoreName], "readwrite");
+            tx.objectStore(chatStoreName).put(chats[currentChatId]);
+        } catch(e) { useFallbackStorage = true; }
     }
+}
 
     function renderChatList() {
         if(!chatListDOM) return;
@@ -4112,6 +4119,14 @@ window.editCharacter = function(id) {
         } else {
             console.log("✅ База данных успешно подключена");
         }
+
+        // --- НОВЫЙ КОД: ОБНОВЛЕНИЕ ИНТЕРФЕЙСА МОДЕЛЕЙ ---
+        const modelNameEl = document.getElementById('current-model-name');
+        if (modelNameEl) modelNameEl.textContent = getPrettyModelName(selectedModel);
+
+        const modelName2El = document.getElementById('current-model-name-2');
+        if (modelName2El) modelName2El.textContent = getPrettyModelName(selectedModel2);
+        // ------------------------------------------------
 
         renderMainModelDropdown();
 
