@@ -412,13 +412,13 @@
 
                 <!-- Иконки -->
                 <div class="app-link" onmousedown="startTouch('music.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('music.html', event)" ontouchend="endTouch()">
-                    <div class="app-icon" style="background: linear-gradient(135deg, #ff0f7b, #f89b29);"><img src="https://cdn-icons-png.flaticon.com/512/2995/2995101.png" alt="Music"></div>
+                    <div class="app-icon" style="background: linear-gradient(135deg, #2a1f3b, #2c1a3b);"><img src="https://cdn-icons-png.flaticon.com/512/2995/2995101.png" alt="Music"></div>
                     <span class="app-name">Music</span>
                 </div>
 
                 <!-- ДОБАВЛЕНО: VIDEO -->
                 <div class="app-link" onmousedown="startTouch('video.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('video.html', event)" ontouchend="endTouch()">
-                    <div class="app-icon" style="background: linear-gradient(135deg, #00c6ff, #0072ff);"><img src="https://i.imgur.com/49xujFD.png" alt="Video"></div>
+                    <div class="app-icon" style="background: linear-gradient(135deg, #313435, #212831);"><img src="https://i.imgur.com/49xujFD.png" alt="Video"></div>
                     <span class="app-name">Video</span>
                 </div>
 
@@ -443,6 +443,11 @@
                     <div class="app-icon system" style="background: #444;"><img src="https://i.imgur.com/YuKDHK7.png" alt="Q&A"></div>
                     <span class="app-name">Q&A</span>
                     <div class="badge" style="background: #34c759;">1</div>
+                </div>
+
+                <div class="app-link" onmousedown="startTouch('paint.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('paint.html', event)" ontouchend="endTouch()">
+                    <div class="app-icon system" style="background: #444;"><img src="https://i.imgur.com/YEP4VPq.png" alt="Paint"></div>
+                    <span class="app-name">Paint</span>
                 </div>
 
                 <!-- ПРИЛОЖЕНИЕ НАСТРОЙКИ -->
@@ -548,6 +553,7 @@
                 if(event.currentTarget.getAttribute('onmousedown').includes('browser')) openApp('browser.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('information')) openApp('information.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('answer')) openApp('answer.html');
+                if(event.currentTarget.getAttribute('onmousedown').includes('paint')) openApp('paint.html');
             }
         }
 
