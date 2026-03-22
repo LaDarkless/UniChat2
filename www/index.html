@@ -2,277 +2,279 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Главное меню</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Phone OS Interface</title>
     <style>
+        :root {
+            --bg-color: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-color: #ffffff;
+            --icon-size: 64px;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent; /* Убирает синее выделение при нажатии на телефоне */
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #050505;
-            color: #ffffff;
-            /* Изменил height на min-height, чтобы на маленьких экранах можно было скроллить, если кнопки не влезают */
-            min-height: 100vh; 
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            /* Убрал overflow: hidden; чтобы меню можно было листать, если оно не помещается на телефоне */
-            position: relative;
-            padding: 40px 20px; 
-        }
-
-        /* Создаем белую сетку */
-        body::before {
-            content: "";
-            position: fixed; /* Позиционируем фиксированно, чтобы сетка не ехала при скролле */
-            top: 0; left: 0; right: 0; bottom: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
             background-image: 
-                linear-gradient(to right, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
-            background-size: 50px 50px;
-            z-index: -2;
+                radial-gradient(circle at 15% 50%, rgba(70, 20, 100, 0.4), transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(20, 60, 100, 0.4), transparent 50%);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
         }
 
-        /* Добавляем виньетку (затемнение по краям) для эффекта глубины */
-        body::after {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(circle at center, transparent 10%, #050505 90%);
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        .header {
-            margin-bottom: 50px;
-            text-align: center;
-            z-index: 1;
-            animation: fadeInDown 1s ease-out;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            font-weight: 300;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-        }
-
-        .menu-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 30px;
-            z-index: 1;
-            animation: fadeInUp 1s ease-out;
-            max-width: 900px;
-            width: 100%;
-        }
-
-        .menu-btn {
+        /* Контейнер-телефон */
+        .device-screen {
             position: relative;
+            width: 100%;
+            max-width: 430px; /* Размер большого смартфона (iPhone Pro Max) */
+            height: 100vh;
+            max-height: 932px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 1s ease-out;
+        }
+
+        /* Имитация рамки телефона на ПК */
+        @media (min-width: 600px) {
+            .device-screen {
+                height: 85vh;
+                border-radius: 40px;
+                border: 8px solid #1a1a1a;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 0 0 2px #333;
+            }
+        }
+
+        /* Статус-бар (время, батарея, сеть) */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        .status-right {
+            display: flex;
+            gap: 7px;
+            align-items: center;
+        }
+
+        /* Сетка приложений */
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px 15px;
+            padding: 30px 20px;
+            flex-grow: 1;
+            align-content: start;
+        }
+
+        /* Приложение (иконка + текст) */
+        .app-link {
+            text-decoration: none;
+            color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .app-link:hover, .app-link:active {
+            transform: scale(0.92);
+        }
+
+        /* Сама иконка (Squircle - закругленный квадрат) */
+        .app-icon {
+            width: var(--icon-size);
+            height: var(--icon-size);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 22.5%; /* Идеальное скругление в стиле Apple */
+            display: flex;
             justify-content: center;
-            /* Ширина 100% чтобы кнопка заполняла свою ячейку грида */
-            width: 100%;
-            height: 160px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            text-decoration: none;
-            color: #fff;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            align-items: center;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255,255,255,0.1);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
         }
 
-        /* Эффект свечения при наведении */
-        .menu-btn:hover {
-            transform: translateY(-8px);
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 15px 35px rgba(255, 255, 255, 0.1), 
-                        inset 0 0 20px rgba(255, 255, 255, 0.05);
-        }
+        /* Градиенты для конкретных иконок (опционально, для красоты) */
+        .app-icon.pro { background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,140,0,0.1)); }
+        .app-icon.system { background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(100,100,100,0.05)); }
 
-        /* НОВЫЙ СТИЛЬ ДЛЯ ИКОНОК-КАРТИНОК */
-        .icon {
-            width: 50px;
-            height: 50px;
+        .app-icon img {
+            width: 60%;
+            height: 60%;
             object-fit: contain;
-            margin-bottom: 15px;
-            transition: transform 0.4s ease;
-            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
-            pointer-events: none;
-            user-select: none;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
         }
 
-        .menu-btn:hover .icon {
-            transform: scale(1.15) rotate(5deg);
-        }
-
-        .text-container {
-            text-align: center;
-        }
-
-        .text {
-            font-size: 1.1rem;
+        /* Текст под иконкой */
+        .app-name {
+            font-size: 11px;
             font-weight: 500;
-            letter-spacing: 1.5px;
+            text-align: center;
+            letter-spacing: 0.3px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
 
-        .subtitle {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: 5px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        /* Нижний Док (Dock) */
+        .dock {
+            margin: 0 15px 20px 15px;
+            padding: 15px 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .btn-note {
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+        .dock .app-link .app-name {
+            display: none; /* В доке текст обычно скрыт */
+        }
+        
+        .dock .app-link {
+            gap: 0;
         }
 
-        /* Анимации появления */
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* SVG Иконки для статус-бара */
+        .status-icon {
+            width: 16px;
+            height: 16px;
+            fill: white;
         }
 
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* Адаптивность для телефонов */
-        @media (max-width: 600px) {
-            .menu-container {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-            .menu-btn {
-                height: 100px;
-                flex-direction: row;
-                justify-content: flex-start;
-                padding-left: 25px;
-            }
-            .icon {
-                margin-bottom: 0;
-                margin-right: 20px;
-                width: 36px;
-                height: 36px;
-            }
-            .text-container {
-                display: flex;
-                flex-direction: column;
-                align-items: flex-start;
-                text-align: left;
-            }
+        /* Адаптация для совсем маленьких экранов */
+        @media (max-width: 380px) {
+            :root { --icon-size: 56px; }
+            .apps-grid { gap: 15px 10px; padding: 20px 10px; }
         }
-        .menu-btn:last-child {
-    grid-column: 1 / -1; 
-}
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Интерфейс</h1>
+    <div class="device-screen">
+        
+        <!-- Статус бар -->
+        <div class="status-bar">
+            <div id="clock">12:00</div>
+            <div class="status-right">
+                <!-- Иконка связи -->
+                <svg class="status-icon" viewBox="0 0 24 24"><path d="M2,22h20V2L2,22z"></path></svg>
+                <!-- Иконка WiFi -->
+                <svg class="status-icon" viewBox="0 0 24 24"><path d="M12,3C6.95,3,2.27,5.06,0,8.51l12,14.65l12-14.65C21.73,5.06,17.05,3,12,3z"></path></svg>
+                <!-- Иконка Батареи -->
+                <svg class="status-icon" viewBox="0 0 24 24" style="width: 22px;"><path d="M17,4h-3V2h-4v2H7C6.45,4,6,4.45,6,5v16c0,0.55,0.45,1,1,1h10c0.55,1,1-0.45,1-1V5C18,4.45,17.55,4,17,4z"></path></svg>
+            </div>
+        </div>
+
+        <!-- Рабочий стол -->
+        <div class="apps-grid">
+            
+            <a href="music.html" class="app-link">
+                <div class="app-icon"><img src="https://cdn-icons-png.flaticon.com/512/2995/2995101.png" alt="Music"></div>
+                <span class="app-name">Music</span>
+            </a>
+
+            <a href="video.html" class="app-link">
+                <div class="app-icon"><img src="https://i.imgur.com/49xujFD.png" alt="Video"></div>
+                <span class="app-name">Video</span>
+            </a>
+
+            <a href="game.html" class="app-link">
+                <div class="app-icon"><img src="https://i.imgur.com/4Uk0ui7.png" alt="2048"></div>
+                <span class="app-name">2048 Game</span>
+            </a>
+
+            <a href="browser.html" class="app-link">
+                <div class="app-icon"><img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX"></div>
+                <span class="app-name">SearX</span>
+            </a>
+
+            <a href="information.html" class="app-link">
+                <div class="app-icon system"><img src="https://i.imgur.com/tpFK0jG.png" alt="Info"></div>
+                <span class="app-name">About App</span>
+            </a>
+
+            <a href="answer.html" class="app-link">
+                <div class="app-icon system"><img src="https://i.imgur.com/YuKDHK7.png" alt="Q&A"></div>
+                <span class="app-name">Q&A</span>
+            </a>
+
+        </div>
+
+        <!-- Нижняя панель (Док) с самыми важными приложениями -->
+        <div class="dock">
+            
+            <a href="ai.html" class="app-link">
+                <div class="app-icon"><img src="https://i.imgur.com/Nqii4LI.png" alt="AI"></div>
+                <span class="app-name">AI Core</span>
+            </a>
+
+            <a href="agent.html" class="app-link">
+                <div class="app-icon"><img src="https://i.imgur.com/jNkaBVw.png" alt="Agent"></div>
+                <span class="app-name">Agent</span>
+            </a>
+
+            <a href="googleweb.html" class="app-link">
+                <div class="app-icon"><img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google"></div>
+                <span class="app-name">Google</span>
+            </a>
+
+            <a href="note.html" class="app-link">
+                <div class="app-icon pro"><img src="https://i.imgur.com/GcjfCTh.png" alt="Note"></div>
+                <span class="app-name">Note Pro</span>
+            </a>
+
+        </div>
+
     </div>
 
-    <div class="menu-container">
-        <!-- Кнопка AI -->
-        <a href="ai.html" class="menu-btn">
-            <img src="https://i.imgur.com/Nqii4LI.png" alt="AI Core" class="icon">
-            <div class="text-container">
-                <div class="text">AI Core</div>
-                <div class="subtitle">Нейросеть</div>
-            </div>
-        </a>
-
-        <!-- Кнопка Agent -->
-        <a href="agent.html" class="menu-btn">
-            <img src="https://i.imgur.com/jNkaBVw.png" alt="Agent" class="icon">
-            <div class="text-container">
-                <div class="text">Agent</div>
-                <div class="subtitle">Управление</div>
-            </div>
-        </a>
-
-        <!-- Кнопка Music -->
-        <a href="music.html" class="menu-btn">
-            <img src="https://cdn-icons-png.flaticon.com/512/2995/2995101.png" alt="Music" class="icon">
-            <div class="text-container">
-                <div class="text">Music</div>
-                <div class="subtitle">Плеер</div>
-            </div>
-        </a>
-
-        <!-- Кнопка Video -->
-        <a href="video.html" class="menu-btn">
-            <img src="https://i.imgur.com/49xujFD.png" alt="Music" class="icon">
-            <div class="text-container">
-                <div class="text">Vodeo</div>
-                <div class="subtitle">Плеер</div>
-            </div>
-        </a>
-
-        <!-- Кнопка Note -->
-        <a href="note.html" class="menu-btn btn-note">
-            <img src="https://i.imgur.com/GcjfCTh.png" alt="Note" class="icon">
-            <div class="text-container">
-                <div class="text">Note</div>
-                <div class="subtitle">Pro-версия</div>
-            </div>
-        </a>
-
-        <!-- Кнопка Browser Google -->
-        <a href="googleweb.html" class="menu-btn">
-            <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Browser Google" class="icon">
-            <!-- Исправлена опечатка 'calss' на 'class' -->
-            <div class="text-container">
-                <div class="text">Browser</div>
-                <div class="subtitle">Google</div>
-            </div>
-         </a>
-         
-         <!-- Кнопка Browser SearX -->
-         <a href="browser.html" class="menu-btn">
-            <img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="Browser SearX" class="icon">
-            <!-- Исправлена опечатка 'calss' на 'class' -->
-            <div class="text-container">
-                <div class="text">Browser</div>
-                <div class="subtitle">SearX</div>
-            </div>
-         </a>
-
-         <!-- Кнопка О Приложении -->
-         <a href="information.html" class="menu-btn">
-            <img src="https://i.imgur.com/tpFK0jG.png" alt="Information" class="icon">
-            <!-- Исправлена опечатка 'calss' на 'class' -->
-            <div class="text-container">
-                <div class="text">About App</div>
-                <div class="subtitle">Information</div>
-            </div>
-         </a>
-
-         <!-- Вопросы-Ответы -->
-         <a href="answer.html" class="menu-btn">
-            <img src="https://i.imgur.com/YuKDHK7.png" alt="Question?" class="icon">
-            <!-- Исправлена опечатка 'calss' на 'class' -->
-            <div class="text-container">
-                <div class="text">About App</div>
-                <div class="subtitle">Если есть вопросы по приложению, то вам сюда</div>
-            </div>
-         </a>
-    </div>
-
+    <!-- Скрипт для работы часов в статус-баре -->
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
 </body>
 </html>
