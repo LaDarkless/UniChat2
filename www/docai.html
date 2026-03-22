@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Doc Reader & Summarizer</title>
+    
+    <!-- Библиотека для чтения .docx файлов -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    
+    <!-- Библиотека для рендера Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0d0f12;
+            --grid-color: rgba(255, 255, 255, 0.04);
+            --panel-bg: rgba(20, 23, 28, 0.85);
+            --user-msg: linear-gradient(135deg, #4f46e5, #7c3aed);
+            --ai-msg: #232730;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            padding: 15px 20px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .settings-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .settings-btn:hover { background: rgba(255, 255, 255, 0.1); }
+
+        /* Chat Container */
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: var(--user-msg);
+            border-bottom-right-radius: 2px;
+            white-space: pre-wrap; /* Оставляем переносы строк для юзера */
+        }
+
+        .ai-message {
+            align-self: flex-start;
+            background: var(--ai-msg);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 2px;
+            /* Убрали white-space: pre-wrap, так как теперь тут HTML */
+        }
+
+        .system-message {
+            align-self: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            background: transparent;
+            text-align: center;
+        }
+
+        /* =========================================
+           Красивые стили для отрендеренного Markdown
+           ========================================= */
+        .markdown-body p { margin-bottom: 12px; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        
+        .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+            color: #ffffff;
+            margin: 1.5em 0 0.5em 0;
+            font-weight: 600;
+        }
+        .markdown-body h1:first-child, .markdown-body h2:first-child, .markdown-body h3:first-child { margin-top: 0; }
+        .markdown-body h1 { font-size: 1.4rem; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+        .markdown-body h2 { font-size: 1.2rem; }
+        .markdown-body h3 { font-size: 1.1rem; }
+        
+        .markdown-body ul, .markdown-body ol { margin-bottom: 12px; padding-left: 24px; }
+        .markdown-body li { margin-bottom: 4px; }
+        
+        .markdown-body strong { color: #ffffff; font-weight: bold; }
+        .markdown-body em { color: #d1d5db; }
+        
+        .markdown-body blockquote {
+            border-left: 4px solid #7c3aed;
+            padding-left: 15px;
+            color: #9ca3af;
+            margin: 12px 0;
+            background: rgba(124, 58, 237, 0.05);
+            padding: 10px 15px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .markdown-body code {
+            background-color: #1a1d24;
+            color: #f472b6; /* Розовый для инлайн кода */
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+        }
+
+        .markdown-body pre {
+            background-color: #111318;
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+
+        .markdown-body pre code {
+            background-color: transparent;
+            color: #e5e7eb;
+            padding: 0;
+            border-radius: 0;
+        }
+
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+        .markdown-body th, .markdown-body td {
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .markdown-body th { background-color: rgba(255,255,255,0.05); color: #fff; }
+
+        /* File Badge (Индикатор загруженного файла) */
+        .file-badge-container {
+            padding: 0 20px 10px 20px;
+            display: none; /* скрыт по умолчанию */
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .file-badge {
+            background: #232730;
+            border: 1px solid #7c3aed;
+            padding: 6px 12px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: #e5e7eb;
+        }
+        .remove-file-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: 0.2s;
+        }
+        .remove-file-btn:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 15px 20px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .file-upload-label {
+            background: #232730;
+            border: 1px solid var(--border);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            height: 45px;
+        }
+        .file-upload-label:hover { background: #323844; }
+        #file-input { display: none; }
+
+        textarea {
+            flex: 1;
+            background: #1a1d24;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 8px;
+            resize: none;
+            height: 45px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: inherit;
+        }
+        textarea:focus { outline: none; border-color: #7c3aed; }
+
+        .send-btn {
+            background: var(--user-msg);
+            border: none;
+            color: white;
+            padding: 0 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+            height: 45px;
+        }
+        .send-btn:hover { opacity: 0.9; transform: scale(0.98); }
+        .send-btn:disabled { background: #4b5563; cursor: not-allowed; }
+
+        /* Settings Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal {
+            background: var(--panel-bg);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 90%;
+            max-width: 400px;
+        }
+        .modal h2 { margin-bottom: 15px; font-size: 1.2rem; }
+        .modal input, .modal select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            background: #1a1d24;
+            border: 1px solid var(--border);
+            color: white;
+            border-radius: 6px;
+        }
+        .modal button {
+            width: 100%;
+            padding: 10px;
+            background: #4f46e5;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .message { max-width: 95%; }
+            header h1 { font-size: 1rem; }
+            .input-area { padding: 10px; gap: 8px; }
+            .send-btn { padding: 0 15px; }
+        }
+
+        .typing-indicator {
+            display: inline-block;
+            width: 6px; height: 6px;
+            background-color: var(--text-muted);
+            border-radius: 50%;
+            animation: blink 1.4s infinite both;
+            margin: 0 2px;
+        }
+        .typing-indicator:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink {
+            0% { opacity: 0.2; transform: scale(0.8); }
+            20% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0.2; transform: scale(0.8); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>AI Doc Reader 📝</h1>
+        <button class="settings-btn" onclick="toggleModal()">⚙️ Настройки API</button>
+    </header>
+
+    <div id="chat-container">
+        <!-- Первый вызов функции addMessage произойдет в JS -->
+    </div>
+
+    <!-- ВСТАВИТЬ ЭТОТ БЛОК: -->
+    <div id="file-badge-container" class="file-badge-container">
+        <div class="file-badge">
+            📎 <span id="file-name-text">документ.docx</span>
+            <button id="remove-file-btn" class="remove-file-btn" title="Удалить документ">✖</button>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <label class="file-upload-label" title="Прикрепить .docx">
+            📎
+            <input type="file" id="file-input" accept=".docx">
+        </label>
+        <textarea id="message-input" placeholder="Введите сообщение (Shift+Enter для переноса)..." rows="1"></textarea>
+        <button class="send-btn" id="send-btn">Отправить</button>
+    </div>
+
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal">
+            <h2>Настройки ProxyAPI</h2>
+            <label>API Ключ:</label>
+            <input type="password" id="api-key" placeholder="sk-...">
+            <label>Модель (OpenRouter):</label>
+            <select id="ai-model">
+                <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B (Рекомендуется)</option>
+                <option value="meta-llama/llama-3-70b-instruct">LLaMA 3 70B</option>
+                <option value="qwen/qwen-2.5-72b-instruct">Qwen 2.5 72B (Хорош для РУ)</option>
+                <option value="qwen/qwen3-235b-a22b-2507">Qwen 3 235b</option>
+            </select>
+            <button onclick="saveSettings()">Сохранить</button>
+        </div>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const fileInput = document.getElementById('file-input');
+        const settingsModal = document.getElementById('settings-modal');
+
+        // Новые переменные для плашки файла
+        const fileBadgeContainer = document.getElementById('file-badge-container');
+        const fileNameText = document.getElementById('file-name-text');
+        const removeFileBtn = document.getElementById('remove-file-btn');
+
+        // Логика кнопки "Удалить файл"
+        removeFileBtn.addEventListener('click', function() {
+            documentContext = ""; // Очищаем память ИИ от текста
+            fileInput.value = ''; // Сбрасываем input
+            fileBadgeContainer.style.display = 'none'; // Прячем плашку
+            addMessage("Прикрепленный документ удален.", "system-message");
+        });
+
+        let chatHistory =[
+            { role: "system", content: "Ты профессиональный ИИ-ассистент. Твоя задача — читать документы пользователя и делать структурированные, понятные конспекты, выделяя главную мысль, ключевые термины и выводы. Отвечай на русском языке, ИСПОЛЬЗУЙ MARKDOWN для форматирования." }
+        ];
+
+        let documentContext = ""; 
+
+        // Настройка marked.js (чтобы ссылки открывались в новой вкладке, если ИИ их сгенерирует)
+        marked.use({
+            renderer: {
+                link(href, title, text) {
+                    return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color: #60a5fa;">${text}</a>`;
+                }
+            }
+        });
+
+        // Функция добавления сообщений (теперь умеет рендерить Markdown!)
+        function addMessage(text, className, isMarkdown = false) {
+            const msgDiv = document.createElement('div');
+            
+            // Если это ответ ИИ, добавляем класс markdown-body для стилей
+            msgDiv.className = `message ${className} ${isMarkdown ? 'markdown-body' : ''}`;
+            
+            if (isMarkdown) {
+                // Преобразуем Markdown в HTML
+                msgDiv.innerHTML = marked.parse(text);
+            } else {
+                // Сообщения пользователя и системы добавляем как безопасный текст
+                msgDiv.innerText = text;
+            }
+            
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return msgDiv;
+        }
+
+        // Приветственное сообщение
+        addMessage("Привет! Я твой ИИ-ассистент. Загрузи файл Word (.docx) или напиши мне, и я помогу сделать отличный конспект.", "system-message");
+
+        // Авто-расширение textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = '45px';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // Отправка по Enter
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        // Обработка загрузки файла
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            addMessage(`Считываю файл: ${file.name}...`, 'system-message');
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const arrayBuffer = event.target.result;
+                mammoth.extractRawText({arrayBuffer: arrayBuffer})
+                    .then(function(result){
+                        const text = result.value;
+                        if(text.trim() === "") {
+                            addMessage("Не удалось извлечь текст или документ пуст.", 'system-message');
+                            return;
+                        }
+                        documentContext = text;
+                        addMessage(`Документ "${file.name}" успешно загружен! В нём ~${text.length} символов. Теперь напишите, что с ним сделать (например, "Сделай конспект").`, 'system-message');
+                        // Показываем плашку
+                        fileNameText.innerText = file.name;
+                        fileBadgeContainer.style.display = 'block';
+                    })
+                    .catch(function(err){
+                        console.error(err);
+                        addMessage("Ошибка при чтении файла.", 'system-message');
+                    });
+            };
+            reader.readAsArrayBuffer(file);
+            fileInput.value = ''; 
+        });
+
+        function toggleModal() {
+            settingsModal.style.display = settingsModal.style.display === 'flex' ? 'none' : 'flex';
+            document.getElementById('api-key').value = localStorage.getItem('proxyApiKey') || '';
+            document.getElementById('ai-model').value = localStorage.getItem('proxyApiModel') || 'mistralai/mixtral-8x7b-instruct';
+        }
+
+        function saveSettings() {
+            localStorage.setItem('proxyApiKey', document.getElementById('api-key').value);
+            localStorage.setItem('proxyApiModel', document.getElementById('ai-model').value);
+            toggleModal();
+            addMessage("Настройки сохранены.", "system-message");
+        }
+
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text && !documentContext) return;
+
+            const apiKey = localStorage.getItem('proxyApiKey');
+            const model = localStorage.getItem('proxyApiModel') || 'mistralai/mixtral-8x7b-instruct';
+
+            if (!apiKey) {
+                toggleModal();
+                alert("Пожалуйста, введите API ключ от ProxyAPI.");
+                return;
+            }
+
+            let userContent = text || "Сделай подробный конспект загруженного документа, используй заголовки и списки Markdown.";
+            
+            if (documentContext) {
+                userContent = `[ТЕКСТ ДОКУМЕНТА НАЧАЛО]\n${documentContext}\n[ТЕКСТ ДОКУМЕНТА КОНЕЦ]\n\nЗадание пользователя: ${userContent}`;
+                documentContext = ""; 
+                fileBadgeContainer.style.display = 'none'; // ПРЯЧЕМ ПЛАШКУ ТУТ
+            }
+
+            // Добавляем сообщение пользователя без Markdown парсера
+            addMessage(text || "Отправлен документ на анализ 📎", 'user-message', false);
+            
+            messageInput.value = '';
+            messageInput.style.height = '45px';
+            sendBtn.disabled = true;
+
+            chatHistory.push({ role: "user", content: userContent });
+
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'message ai-message';
+            loadingMsg.innerHTML = '<div class="typing-indicator"></div><div class="typing-indicator"></div><div class="typing-indicator"></div>';
+            chatContainer.appendChild(loadingMsg);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            try {
+                const response = await fetch("https://api.proxyapi.ru/openrouter/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: chatHistory,
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Ошибка HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const aiReply = data.choices[0].message.content;
+
+                chatContainer.removeChild(loadingMsg);
+                
+                // ВАЖНО: Третий параметр `true` указывает, что нужно пропустить текст через marked.parse()
+                addMessage(aiReply, 'ai-message', true);
+
+                chatHistory.push({ role: "assistant", content: aiReply });
+                if (chatHistory.length > 10) {
+                    chatHistory = [chatHistory[0], ...chatHistory.slice(-9)];
+                }
+
+            } catch (error) {
+                console.error(error);
+                chatContainer.removeChild(loadingMsg);
+                addMessage("Произошла ошибка API. Проверьте ключ и консоль.", 'system-message');
+                chatHistory.pop(); 
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+<!-- ========================================== -->
+<!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
+<!-- ========================================== -->
+<style>
+    .fab-wrapper {
+        position: fixed;
+        bottom: 25px;
+        right: 25px; 
+        z-index: 999999;
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: center;
+        gap: 15px;
+        /* ФИКС: Оболочка больше не перехватывает клики! */
+        pointer-events: none; 
+    }
+
+    /* Сама кнопка-триггер */
+    .fab-button {
+        /* ФИКС: Делаем саму кнопку кликабельной */
+        pointer-events: auto; 
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: rgba(20, 20, 25, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        outline: none;
+        padding: 0;
+    }
+
+    .fab-button:hover {
+        transform: scale(1.1);
+        background: rgba(40, 40, 50, 0.9);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 1px 5px rgba(255, 255, 255, 0.3);
+    }
+
+    .fab-button svg {
+        transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    .fab-wrapper.open .fab-button svg {
+        transform: rotate(90deg) scale(0.9);
+        color: #a78bfa; 
+    }
+
+    /* Выезжающая панель навигации */
+    .global-dock {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: rgba(12, 12, 14, 0.85);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 100px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        
+        /* ФИКС: Игнорирует клики и полностью скрыта в закрытом виде */
+        opacity: 0;
+        visibility: hidden; 
+        pointer-events: none; 
+        
+        transform: translateX(40px) scale(0.9);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        transform-origin: right center;
+    }
+
+    /* Состояние открытого меню */
+    .fab-wrapper.open .global-dock {
+        opacity: 1;
+        visibility: visible; 
+        pointer-events: auto; /* ФИКС: Кнопки меню работают, только когда открыты */
+        transform: translateX(0) scale(1);
+    }
+
+    .dock-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 100px;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        position: relative;
+        white-space: nowrap;
+    }
+
+    .dock-item:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .dock-item.active {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
+    }
+
+    .dock-item.active::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 18px;
+        height: 3px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+
+    .dock-icon {
+        font-size: 18px;
+        filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+    }
+
+    @media (max-width: 768px) {
+        .fab-wrapper {
+            bottom: 20px;
+            right: 20px;
+            gap: 10px;
+        }
+        .fab-button {
+            width: 48px;
+            height: 48px;
+        }
+        .global-dock {
+            padding: 6px 8px;
+            gap: 4px;
+        }
+        .dock-item {
+            padding: 12px;
+        }
+        .dock-text {
+            display: none; 
+        }
+        .dock-icon {
+            font-size: 22px;
+        }
+        .dock-item.active::after {
+            bottom: -2px;
+        }
+    }
+
+    /* --- НОВЫЕ СТИЛИ ДЛЯ ИКОНОК-КАРТИНОК И ПЕРЕТАСКИВАНИЯ --- */
+
+.dock-icon {
+    width: 20px; /* Размер ваших иконок */
+    height: 20px;
+    object-fit: contain; /* Чтобы картинка не искажалась */
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+    /* Важно! Запрещаем перетаскивать саму картинку браузером */
+    pointer-events: none; 
+    user-select: none;
+}
+
+@media (max-width: 768px) {
+    .dock-icon {
+        width: 24px; /* На телефоне иконки чуть больше */
+        height: 24px;
+    }
+}
+
+/* Курсоры для кнопки перетаскивания */
+.fab-button {
+    cursor: grab;
+    touch-action: none; /* Запрещаем скролл страницы при касании кнопки на телефоне */
+}
+
+.fab-button:active {
+    cursor: grabbing;
+}
+
+/* Класс для плавного возврата в границы экрана (если меню открыли у самого края) */
+.fab-wrapper.snap-transition {
+    transition: left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+</style>
+
+<div class="fab-wrapper" id="fabWrapper">
+    <!-- Кнопка открытия/закрытия меню (она же ручка для перетаскивания) -->
+    <button class="fab-button" id="fabToggleBtn" title="Навигация">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+    </button>
+
+    <!-- Сама панель (Dock) -->
+    <div class="global-dock" id="globalDock">
+        <a href="index.html" class="dock-item">
+            <img src="https://i.imgur.com/tpFK0jG.png" alt="Menu" class="dock-icon">
+            <span class="dock-text">Menu</span>
+        </a>
+        <a href="ai.html" class="dock-item">
+            <img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon">
+            <span class="dock-text">AI</span>
+        </a>
+        <a href="agent.html" class="dock-item">
+            <img src="https://i.imgur.com/jNkaBVw.png" alt="Agent" class="dock-icon">
+            <span class="dock-text">Agent</span>
+        </a>
+        <a href="music.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/2995/2995101.png" alt="Music" class="dock-icon">
+            <span class="dock-text">Music</span>
+        </a>
+        <a href="note.html" class="dock-item">
+            <img src="https://i.imgur.com/GcjfCTh.png" alt="Note" class="dock-icon">
+            <span class="dock-text">Note</span>
+        </a>
+        <a href="googleweb.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="dock-icon">
+            <span class="dock-text">Google</span>
+        </a>
+        <a href="browser.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX" class="dock-icon">
+            <span class="dock-text">SearX</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const fabWrapper = document.getElementById('fabWrapper');
+    const fabToggleBtn = document.getElementById('fabToggleBtn');
+    
+    // Подсветка активной ссылки (ваш код)
+    let currentPath = window.location.pathname.split('/').pop();
+    if (currentPath === '') currentPath = 'index.html';
+    document.querySelectorAll('.dock-item').forEach(item => {
+        const href = item.getAttribute('href');
+        if (currentPath === href) {
+            item.classList.add('active');
+        }
+    });
+
+    // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
+    let isDragging = false;
+    let hasMoved = false; // Отличаем клик от перетаскивания
+    let startX, startY;
+    let initialLeft, initialTop;
+
+    function dragStart(e) {
+        if (e.type === 'touchstart') {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        } else {
+            startX = e.clientX;
+            startY = e.clientY;
+            e.preventDefault(); // Предотвращаем стандартное выделение на ПК
+        }
+
+        // Получаем текущие координаты элемента на экране
+        const rect = fabWrapper.getBoundingClientRect();
+        
+        // Отключаем bottom/right, переходим на жесткое позиционирование left/top
+        fabWrapper.style.bottom = 'auto';
+        fabWrapper.style.right = 'auto';
+        fabWrapper.style.left = rect.left + 'px';
+        fabWrapper.style.top = rect.top + 'px';
+
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        isDragging = true;
+        hasMoved = false;
+        
+        // Убираем плавность при самом перетаскивании
+        fabWrapper.classList.remove('snap-transition');
+
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchmove', dragMove, { passive: false });
+        document.addEventListener('touchend', dragEnd);
+    }
+
+    function dragMove(e) {
+        if (!isDragging) return;
+
+        let currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        let currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+        let deltaX = currentX - startX;
+        let deltaY = currentY - startY;
+
+        // Если сдвинули больше чем на 5 пикселей, считаем это перетаскиванием, а не кликом
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+            hasMoved = true;
+            if (e.type === 'touchmove') e.preventDefault(); // Блокируем скролл страницы
+        }
+
+        if (hasMoved) {
+            let newLeft = initialLeft + deltaX;
+            let newTop = initialTop + deltaY;
+
+            // --- ОГРАНИЧЕНИЕ ВЫХОДА ЗА ПРЕДЕЛЫ ЭКРАНА ---
+            const rect = fabWrapper.getBoundingClientRect();
+            const maxLeft = window.innerWidth - rect.width;
+            const maxTop = window.innerHeight - rect.height;
+
+            // Запрещаем уходить за левый/правый и верхний/нижний края
+            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+
+            fabWrapper.style.left = newLeft + 'px';
+            fabWrapper.style.top = newTop + 'px';
+        }
+    }
+
+    function dragEnd() {
+        isDragging = false;
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('mouseup', dragEnd);
+        document.removeEventListener('touchmove', dragMove);
+        document.removeEventListener('touchend', dragEnd);
+    }
+
+    // Слушатели для начала перетаскивания (с кнопки)
+    fabToggleBtn.addEventListener('mousedown', dragStart);
+    fabToggleBtn.addEventListener('touchstart', dragStart, { passive: true });
+
+    // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ ---
+    fabToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Если было перетаскивание, отменяем клик!
+        if (hasMoved) {
+            e.preventDefault();
+            return;
+        }
+
+        fabWrapper.classList.toggle('open');
+        
+        // Если меню открылось и вылезло за края экрана (т.к. стало шире),
+        // плавно задвигаем его обратно в пределы экрана.
+        if (fabWrapper.classList.contains('open')) {
+            setTimeout(keepInBounds, 50); // Ждем долю секунды, чтобы CSS применил ширину
+        }
+    });
+
+    // Функция возврата в рамки экрана при изменении ширины меню
+    function keepInBounds() {
+        const rect = fabWrapper.getBoundingClientRect();
+        const maxLeft = window.innerWidth - rect.width;
+        const maxTop = window.innerHeight - rect.height;
+
+        let correctedLeft = Math.max(0, Math.min(rect.left, maxLeft));
+        let correctedTop = Math.max(0, Math.min(rect.top, maxTop));
+
+        // Если позиция нуждается в корректировке
+        if (correctedLeft !== rect.left || correctedTop !== rect.top) {
+            fabWrapper.classList.add('snap-transition'); // Добавляем плавность
+            fabWrapper.style.left = correctedLeft + 'px';
+            fabWrapper.style.top = correctedTop + 'px';
+        }
+    }
+
+    // Закрытие меню при клике в любое другое место
+    document.addEventListener('click', (e) => {
+        if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains('open')) {
+            fabWrapper.classList.remove('open');
+            // При закрытии (ширина уменьшилась) тоже проверяем границы на всякий случай
+            setTimeout(keepInBounds, 300); 
+        }
+    });
+
+    // Пересчет границ при повороте экрана телефона / изменении размера окна
+    window.addEventListener('resize', keepInBounds);
+});
+</script>
+<!-- ========================================== -->
+</html>

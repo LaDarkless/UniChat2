@@ -422,6 +422,18 @@
                     <span class="app-name">Video</span>
                 </div>
 
+                <div class="app-link" onmousedown="startTouch('docai.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('docai.html', event)" ontouchend="endTouch()">
+                    <div class="app-icon" style="background: linear-gradient(135deg, #214874, #1d3353);"><img src="https://i.imgur.com/aL3ohto.png" alt="docai.html"></div>
+                    <span class="app-name">WordAI</span>
+                    <div class="badge">3</div>
+                </div>
+
+                <div class="app-link" onmousedown="startTouch('docsint.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('docsint.html', event)" ontouchend="endTouch()">
+                    <div class="app-icon" style="background: linear-gradient(135deg, #214874, #1d3353);"><img src="https://i.imgur.com/0foXhiu.png" alt="docai.html"></div>
+                    <span class="app-name">WordAI-beta</span>
+                    <div class="badge">3</div>
+                </div>
+
                 <div class="app-link" onmousedown="startTouch('game.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('game.html', event)" ontouchend="endTouch()">
                     <div class="app-icon" style="background: linear-gradient(135deg, #fceabb, #f8b500);"><img src="https://i.imgur.com/4Uk0ui7.png" alt="2048"></div>
                     <span class="app-name">Tetris</span>
@@ -554,6 +566,8 @@
                 if(event.currentTarget.getAttribute('onmousedown').includes('information')) openApp('information.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('answer')) openApp('answer.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('paint')) openApp('paint.html');
+                if(event.currentTarget.getAttribute('onmousedown').includes('docai')) openApp('docai.html');
+                if(event.currentTarget.getAttribute('onmousedown').includes('docsint')) openApp('docsint.html');
             }
         }
 

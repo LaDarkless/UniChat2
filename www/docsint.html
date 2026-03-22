@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Document Summarizer | ProxyAPI</title>
+    <!-- Подключаем Mammoth.js для чтения Word файлов -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+
+    <!-- Библиотека для чтения .docx файлов -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    
+    <!-- Библиотека для рендера Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --grid-color: rgba(255, 255, 255, 0.04);
+            --panel-bg: rgba(25, 26, 31, 0.85);
+            --accent: #66fcf1;
+            --accent-hover: #45a29e;
+            --text-main: #c5c6c7;
+            --text-light: #ffffff;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            /* Профессиональный фон в сетку */
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            width: 100%;
+        }
+
+        h1 {
+            color: var(--text-light);
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 1400px;
+            flex-grow: 1;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .panel-title {
+            color: var(--text-light);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            color: var(--text-light);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-btn {
+            display: block;
+            width: 100%;
+            background: transparent;
+            border: 2px dashed var(--border);
+            color: var(--text-main);
+            padding: 2rem 1rem;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(102, 252, 241, 0.05);
+        }
+
+        button.action-btn {
+            background: var(--accent);
+            color: var(--bg-color);
+            border: none;
+            padding: 1rem;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: auto;
+        }
+
+        button.action-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        button.action-btn:disabled {
+            background: #555;
+            color: #888;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .output-area {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            color: var(--text-light);
+            flex-grow: 1;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            font-size: 1rem;
+            min-height: 200px;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            display: none;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem auto;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Адаптивность для телефонов */
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>AI Doc Summarizer</h1>
+        <p>Создание умных конспектов из Word (.docx) и .txt файлов через ProxyAPI</p>
+    </header>
+
+    <div class="container">
+        <!-- Левая панель: Настройки и загрузка -->
+        <div class="panel">
+            <h2 class="panel-title">⚙️ Настройки API</h2>
+            
+            <div class="form-group">
+                <label for="apiKey">ProxyAPI Ключ:</label>
+                <input type="password" id="apiKey" placeholder="sk-..." required>
+            </div>
+
+            <div class="form-group">
+                <label for="aiModel">Модель OpenRouter:</label>
+                <input type="text" id="aiModel" value="meta-llama/llama-3.1-70b-instruct">
+                <small style="opacity: 0.6; display: block; margin-top: 5px;">Например: mistralai/mixtral-8x7b-instruct</small>
+            </div>
+
+            <h2 class="panel-title" style="margin-top: 1rem;">📄 Загрузка документа</h2>
+            
+            <div class="form-group">
+                <label class="file-upload-btn" id="fileLabel">
+                    <span id="fileText">📁 Нажмите, чтобы выбрать .docx или .txt файл</span>
+                    <input type="file" id="fileInput" accept=".docx, .txt">
+                </label>
+            </div>
+
+            <button class="action-btn" id="generateBtn" disabled>Сделать конспект</button>
+        </div>
+
+        <!-- Правая панель: Результат -->
+        <div class="panel">
+            <h2 class="panel-title">✨ Результат от ИИ</h2>
+            <div class="loader" id="loader"></div>
+            <div class="output-area" id="outputArea">
+                Загрузите документ и нажмите "Сделать конспект", чтобы увидеть результат.
+            </div>
+            
+            <!-- Скрытое текстовое поле для хранения извлеченного текста -->
+            <div style="display: none;" id="extractedText"></div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileText = document.getElementById('fileText');
+        const generateBtn = document.getElementById('generateBtn');
+        const extractedTextDiv = document.getElementById('extractedText');
+        const outputArea = document.getElementById('outputArea');
+        const apiKeyInput = document.getElementById('apiKey');
+        const aiModelInput = document.getElementById('aiModel');
+        const loader = document.getElementById('loader');
+
+        // Обработка загрузки файла
+        fileInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            fileText.textContent = `Выбран файл: ${file.name}`;
+            outputArea.textContent = "Извлекаем текст из документа...";
+            generateBtn.disabled = true;
+
+            try {
+                let text = '';
+                if (file.name.endsWith('.docx')) {
+                    // Используем mammoth.js для Word
+                    const arrayBuffer = await file.arrayBuffer();
+                    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                    text = result.value;
+                } else if (file.name.endsWith('.txt')) {
+                    // Читаем обычный текст
+                    text = await file.text();
+                } else {
+                    throw new Error("Формат не поддерживается. Пожалуйста, используйте .docx или .txt");
+                }
+
+                if (!text.trim()) {
+                    throw new Error("Документ пуст.");
+                }
+
+                extractedTextDiv.textContent = text;
+                outputArea.textContent = `Текст успешно извлечен (${text.length} символов). Готов к созданию конспекта!`;
+                generateBtn.disabled = false;
+
+            } catch (err) {
+                outputArea.textContent = `❌ Ошибка чтения файла: ${err.message}`;
+            }
+        });
+
+        // Обработка кнопки генерации
+        generateBtn.addEventListener('click', async () => {
+            const apiKey = apiKeyInput.value.trim();
+            const model = aiModelInput.value.trim();
+            const textToSummarize = extractedTextDiv.textContent;
+
+            if (!apiKey) {
+                alert("Пожалуйста, введите ваш ключ ProxyAPI.");
+                return;
+            }
+
+            // UI обновления
+            generateBtn.disabled = true;
+            loader.style.display = 'block';
+            outputArea.textContent = "ИИ читает и анализирует документ... Это может занять несколько секунд.";
+
+            try {
+                // Прямой fetch запрос к ProxyAPI
+                const response = await fetch("https://api.proxyapi.ru/openrouter/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages:[
+                            { 
+                                role: "system", 
+                                content: "Ты профессиональный аналитик и редактор. Твоя задача — прочитать предоставленный текст и составить структурированный, подробный, но лаконичный конспект. Выдели главные мысли, ключевые тезисы и выводы. Используй форматирование (списки, заголовки)." 
+                            },
+                            { 
+                                role: "user", 
+                                content: textToSummarize 
+                            }
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `HTTP Ошибка: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Выводим результат
+                const summary = data.choices[0].message.content;
+                outputArea.textContent = summary;
+
+                // Можно также вывести стоимость запроса в консоль
+                if(data.usage && data.usage.cost) {
+                    console.log(`Стоимость запроса (USD): ${data.usage.cost}`);
+                }
+
+            } catch (err) {
+                outputArea.textContent = `❌ Ошибка при запросе к ИИ: ${err.message}\nУбедитесь, что ключ верный и у вас есть баланс.`;
+            } finally {
+                loader.style.display = 'none';
+                generateBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+<!-- ========================================== -->
+<!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
+<!-- ========================================== -->
+<style>
+    .fab-wrapper {
+        position: fixed;
+        bottom: 25px;
+        right: 25px; 
+        z-index: 999999;
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: center;
+        gap: 15px;
+        /* ФИКС: Оболочка больше не перехватывает клики! */
+        pointer-events: none; 
+    }
+
+    /* Сама кнопка-триггер */
+    .fab-button {
+        /* ФИКС: Делаем саму кнопку кликабельной */
+        pointer-events: auto; 
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: rgba(20, 20, 25, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        outline: none;
+        padding: 0;
+    }
+
+    .fab-button:hover {
+        transform: scale(1.1);
+        background: rgba(40, 40, 50, 0.9);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 1px 5px rgba(255, 255, 255, 0.3);
+    }
+
+    .fab-button svg {
+        transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    .fab-wrapper.open .fab-button svg {
+        transform: rotate(90deg) scale(0.9);
+        color: #a78bfa; 
+    }
+
+    /* Выезжающая панель навигации */
+    .global-dock {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: rgba(12, 12, 14, 0.85);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 100px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        
+        /* ФИКС: Игнорирует клики и полностью скрыта в закрытом виде */
+        opacity: 0;
+        visibility: hidden; 
+        pointer-events: none; 
+        
+        transform: translateX(40px) scale(0.9);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        transform-origin: right center;
+    }
+
+    /* Состояние открытого меню */
+    .fab-wrapper.open .global-dock {
+        opacity: 1;
+        visibility: visible; 
+        pointer-events: auto; /* ФИКС: Кнопки меню работают, только когда открыты */
+        transform: translateX(0) scale(1);
+    }
+
+    .dock-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 100px;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        position: relative;
+        white-space: nowrap;
+    }
+
+    .dock-item:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .dock-item.active {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
+    }
+
+    .dock-item.active::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 18px;
+        height: 3px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+
+    .dock-icon {
+        font-size: 18px;
+        filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+    }
+
+    @media (max-width: 768px) {
+        .fab-wrapper {
+            bottom: 20px;
+            right: 20px;
+            gap: 10px;
+        }
+        .fab-button {
+            width: 48px;
+            height: 48px;
+        }
+        .global-dock {
+            padding: 6px 8px;
+            gap: 4px;
+        }
+        .dock-item {
+            padding: 12px;
+        }
+        .dock-text {
+            display: none; 
+        }
+        .dock-icon {
+            font-size: 22px;
+        }
+        .dock-item.active::after {
+            bottom: -2px;
+        }
+    }
+
+    /* --- НОВЫЕ СТИЛИ ДЛЯ ИКОНОК-КАРТИНОК И ПЕРЕТАСКИВАНИЯ --- */
+
+.dock-icon {
+    width: 20px; /* Размер ваших иконок */
+    height: 20px;
+    object-fit: contain; /* Чтобы картинка не искажалась */
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+    /* Важно! Запрещаем перетаскивать саму картинку браузером */
+    pointer-events: none; 
+    user-select: none;
+}
+
+@media (max-width: 768px) {
+    .dock-icon {
+        width: 24px; /* На телефоне иконки чуть больше */
+        height: 24px;
+    }
+}
+
+/* Курсоры для кнопки перетаскивания */
+.fab-button {
+    cursor: grab;
+    touch-action: none; /* Запрещаем скролл страницы при касании кнопки на телефоне */
+}
+
+.fab-button:active {
+    cursor: grabbing;
+}
+
+/* Класс для плавного возврата в границы экрана (если меню открыли у самого края) */
+.fab-wrapper.snap-transition {
+    transition: left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+</style>
+
+<div class="fab-wrapper" id="fabWrapper">
+    <!-- Кнопка открытия/закрытия меню (она же ручка для перетаскивания) -->
+    <button class="fab-button" id="fabToggleBtn" title="Навигация">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+    </button>
+
+    <!-- Сама панель (Dock) -->
+    <div class="global-dock" id="globalDock">
+        <a href="index.html" class="dock-item">
+            <img src="https://i.imgur.com/tpFK0jG.png" alt="Menu" class="dock-icon">
+            <span class="dock-text">Menu</span>
+        </a>
+        <a href="ai.html" class="dock-item">
+            <img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon">
+            <span class="dock-text">AI</span>
+        </a>
+        <a href="agent.html" class="dock-item">
+            <img src="https://i.imgur.com/jNkaBVw.png" alt="Agent" class="dock-icon">
+            <span class="dock-text">Agent</span>
+        </a>
+        <a href="game.html" class="dock-item">
+            <img src="https://i.imgur.com/4Uk0ui7.png" alt="Music" class="dock-icon">
+            <span class="dock-text">Tetris</span>
+        </a>
+        <a href="note.html" class="dock-item">
+            <img src="https://i.imgur.com/GcjfCTh.png" alt="Note" class="dock-icon">
+            <span class="dock-text">Note</span>
+        </a>
+        <a href="googleweb.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="dock-icon">
+            <span class="dock-text">Google</span>
+        </a>
+        <a href="browser.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX" class="dock-icon">
+            <span class="dock-text">SearX</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const fabWrapper = document.getElementById('fabWrapper');
+    const fabToggleBtn = document.getElementById('fabToggleBtn');
+    
+    // Подсветка активной ссылки (ваш код)
+    let currentPath = window.location.pathname.split('/').pop();
+    if (currentPath === '') currentPath = 'index.html';
+    document.querySelectorAll('.dock-item').forEach(item => {
+        const href = item.getAttribute('href');
+        if (currentPath === href) {
+            item.classList.add('active');
+        }
+    });
+
+    // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
+    let isDragging = false;
+    let hasMoved = false; // Отличаем клик от перетаскивания
+    let startX, startY;
+    let initialLeft, initialTop;
+
+    function dragStart(e) {
+        if (e.type === 'touchstart') {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        } else {
+            startX = e.clientX;
+            startY = e.clientY;
+            e.preventDefault(); // Предотвращаем стандартное выделение на ПК
+        }
+
+        // Получаем текущие координаты элемента на экране
+        const rect = fabWrapper.getBoundingClientRect();
+        
+        // Отключаем bottom/right, переходим на жесткое позиционирование left/top
+        fabWrapper.style.bottom = 'auto';
+        fabWrapper.style.right = 'auto';
+        fabWrapper.style.left = rect.left + 'px';
+        fabWrapper.style.top = rect.top + 'px';
+
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        isDragging = true;
+        hasMoved = false;
+        
+        // Убираем плавность при самом перетаскивании
+        fabWrapper.classList.remove('snap-transition');
+
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchmove', dragMove, { passive: false });
+        document.addEventListener('touchend', dragEnd);
+    }
+
+    function dragMove(e) {
+        if (!isDragging) return;
+
+        let currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        let currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+        let deltaX = currentX - startX;
+        let deltaY = currentY - startY;
+
+        // Если сдвинули больше чем на 5 пикселей, считаем это перетаскиванием, а не кликом
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+            hasMoved = true;
+            if (e.type === 'touchmove') e.preventDefault(); // Блокируем скролл страницы
+        }
+
+        if (hasMoved) {
+            let newLeft = initialLeft + deltaX;
+            let newTop = initialTop + deltaY;
+
+            // --- ОГРАНИЧЕНИЕ ВЫХОДА ЗА ПРЕДЕЛЫ ЭКРАНА ---
+            const rect = fabWrapper.getBoundingClientRect();
+            const maxLeft = window.innerWidth - rect.width;
+            const maxTop = window.innerHeight - rect.height;
+
+            // Запрещаем уходить за левый/правый и верхний/нижний края
+            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+
+            fabWrapper.style.left = newLeft + 'px';
+            fabWrapper.style.top = newTop + 'px';
+        }
+    }
+
+    function dragEnd() {
+        isDragging = false;
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('mouseup', dragEnd);
+        document.removeEventListener('touchmove', dragMove);
+        document.removeEventListener('touchend', dragEnd);
+    }
+
+    // Слушатели для начала перетаскивания (с кнопки)
+    fabToggleBtn.addEventListener('mousedown', dragStart);
+    fabToggleBtn.addEventListener('touchstart', dragStart, { passive: true });
+
+    // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ ---
+    fabToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Если было перетаскивание, отменяем клик!
+        if (hasMoved) {
+            e.preventDefault();
+            return;
+        }
+
+        fabWrapper.classList.toggle('open');
+        
+        // Если меню открылось и вылезло за края экрана (т.к. стало шире),
+        // плавно задвигаем его обратно в пределы экрана.
+        if (fabWrapper.classList.contains('open')) {
+            setTimeout(keepInBounds, 50); // Ждем долю секунды, чтобы CSS применил ширину
+        }
+    });
+
+    // Функция возврата в рамки экрана при изменении ширины меню
+    function keepInBounds() {
+        const rect = fabWrapper.getBoundingClientRect();
+        const maxLeft = window.innerWidth - rect.width;
+        const maxTop = window.innerHeight - rect.height;
+
+        let correctedLeft = Math.max(0, Math.min(rect.left, maxLeft));
+        let correctedTop = Math.max(0, Math.min(rect.top, maxTop));
+
+        // Если позиция нуждается в корректировке
+        if (correctedLeft !== rect.left || correctedTop !== rect.top) {
+            fabWrapper.classList.add('snap-transition'); // Добавляем плавность
+            fabWrapper.style.left = correctedLeft + 'px';
+            fabWrapper.style.top = correctedTop + 'px';
+        }
+    }
+
+    // Закрытие меню при клике в любое другое место
+    document.addEventListener('click', (e) => {
+        if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains('open')) {
+            fabWrapper.classList.remove('open');
+            // При закрытии (ширина уменьшилась) тоже проверяем границы на всякий случай
+            setTimeout(keepInBounds, 300); 
+        }
+    });
+
+    // Пересчет границ при повороте экрана телефона / изменении размера окна
+    window.addEventListener('resize', keepInBounds);
+});
+</script>
+<!-- ========================================== -->
+</html>
