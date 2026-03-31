@@ -434,6 +434,12 @@
                     <div class="badge">3</div>
                 </div>
 
+                <div class="app-link" onmousedown="startTouch('imgenerate.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('imgenerate.html', event)" ontouchend="endTouch()">
+                    <div class="app-icon" style="background: linear-gradient(135deg, #214874, #1d3353);"><img src="https://i.imgur.com/LqBHnxz.png" alt="imgenerate.html"></div>
+                    <span class="app-name">IMG</span>
+                    <div class="badge">3</div>
+                </div>
+
                 <div class="app-link" onmousedown="startTouch('game.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('game.html', event)" ontouchend="endTouch()">
                     <div class="app-icon" style="background: linear-gradient(135deg, #fceabb, #f8b500);"><img src="https://i.imgur.com/4Uk0ui7.png" alt="2048"></div>
                     <span class="app-name">Tetris</span>
@@ -444,7 +450,7 @@
                     <div class="app-icon" style="background: #ffffff;"><img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX"></div>
                     <span class="app-name">Browser</span>
                 </div>
-
+                
                 <div class="app-link" onmousedown="startTouch('information.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('information.html', event)" ontouchend="endTouch()">
                     <div class="app-icon system" style="background: #444;"><img src="https://i.imgur.com/tpFK0jG.png" alt="Info"></div>
                     <span class="app-name">About</span>
@@ -563,6 +569,7 @@
                 if(event.currentTarget.getAttribute('onmousedown').includes('video')) openApp('video.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('game')) openApp('game.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('browser')) openApp('browser.html');
+                if(event.currentTarget.getAttribute('onmousedown').includes('img')) openApp('imgenerate.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('information')) openApp('information.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('answer')) openApp('answer.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('paint')) openApp('paint.html');

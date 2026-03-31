@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kling Image V3 Generator</title>
+    <style>
+        /* Базовые стили и переменные */
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --border-color: #334155;
+            --error-color: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+
+        body { background-color: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Шапка с API ключом */
+        header { background-color: var(--panel-bg); padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; z-index: 10;}
+        header h1 { font-size: 1.2rem; font-weight: 600; }
+        .api-key-container { display: flex; align-items: center; gap: 10px; }
+        .api-key-container input { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); width: 300px; outline: none; }
+
+        /* Основная разметка (Сетка) */
+        .main-container { display: flex; flex: 1; height: calc(100vh - 60px); }
+
+        /* Боковая панель (Настройки) */
+        .sidebar { width: 350px; background-color: var(--panel-bg); padding: 20px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-size: 0.9rem; font-weight: 500; color: #cbd5e1; }
+        .form-group textarea, .form-group select, .form-group input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); outline: none; transition: border 0.3s; }
+        .form-group textarea:focus, .form-group select:focus { border-color: var(--accent-color); }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+
+        /* Кнопка генерации */
+        .generate-btn { background-color: var(--accent-color); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.3s, transform 0.1s; margin-top: 10px; }
+        .generate-btn:hover { background-color: var(--accent-hover); }
+        .generate-btn:active { transform: scale(0.98); }
+        .generate-btn:disabled { background-color: var(--border-color); cursor: not-allowed; color: #94a3b8; }
+
+        /* Область просмотра результата */
+        .preview-area { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; position: relative; background-image: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); }
+        .result-image { max-width: 100%; max-height: 100%; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); display: none; object-fit: contain; }
+        
+        .placeholder { color: #64748b; font-size: 1.2rem; text-align: center; }
+        .status-text { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; display: none; }
+
+        /* Лоадер */
+        .loader { display: none; border: 4px solid var(--border-color); border-top: 4px solid var(--accent-color); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; position: absolute; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Адаптивность для телефонов */
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column; overflow-y: auto; height: auto; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); height: auto; }
+            .preview-area { min-height: 50vh; }
+            .api-key-container input { width: 150px; }
+            body { overflow: auto; height: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Kling Image V3</h1>
+        <div class="api-key-container">
+            <label for="apiKey">API Key:</label>
+            <input type="password" id="apiKey" value="sk-WxAmJuVHKlB2KN71Xk59jTKZQKh2HxzhifDQX2p1HwrQLYzA2yz2J85KAsjS">
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Панель управления -->
+        <aside class="sidebar">
+            <div class="form-group">
+                <label for="prompt">Промпт (Описание изображения)*</label>
+                <textarea id="prompt" placeholder="Например: Переход к глубокой зиме, сильный снегопад..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="negativePrompt">Негативный промпт (Что исключить)</label>
+                <textarea id="negativePrompt" placeholder="плохое качество, размытость..." style="min-height: 60px;"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="aspectRatio">Соотношение сторон</label>
+                <select id="aspectRatio">
+                    <option value="16:9" selected>16:9 (Широкий)</option>
+                    <option value="9:16">9:16 (Вертикальный)</option>
+                    <option value="1:1">1:1 (Квадрат)</option>
+                    <option value="3:2">3:2</option>
+                    <option value="2:3">2:3</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="resolution">Разрешение</label>
+                <select id="resolution">
+                    <option value="1K" selected>1K</option>
+                    <option value="2K">2K</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="format">Формат изображения</label>
+                <select id="format">
+                    <option value="webp" selected>WebP</option>
+                    <option value="png">PNG</option>
+                    <option value="jpg">JPG</option>
+                </select>
+            </div>
+
+            <button class="generate-btn" id="generateBtn" onclick="generateImage()">Сгенерировать</button>
+        </aside>
+
+        <!-- Область предпросмотра -->
+        <main class="preview-area">
+            <div class="placeholder" id="placeholder">Здесь появится ваше изображение</div>
+            <div class="loader" id="loader"></div>
+            <img id="resultImage" class="result-image" alt="Generated Output">
+            <div class="status-text" id="statusText">Идет генерация...</div>
+        </main>
+    </div>
+
+    <script>
+        // Элементы DOM
+        const promptInput = document.getElementById('prompt');
+        const negativePromptInput = document.getElementById('negativePrompt');
+        const aspectRatioSelect = document.getElementById('aspectRatio');
+        const resolutionSelect = document.getElementById('resolution');
+        const formatSelect = document.getElementById('format');
+        const apiKeyInput = document.getElementById('apiKey');
+        const generateBtn = document.getElementById('generateBtn');
+        const resultImage = document.getElementById('resultImage');
+        const placeholder = document.getElementById('placeholder');
+        const loader = document.getElementById('loader');
+        const statusText = document.getElementById('statusText');
+
+        // URL для API
+        const API_URL = 'https://api.gen-api.ru/api/v1/networks/kling-image-v3';
+
+        // Главная функция генерации
+        async function generateImage() {
+            const prompt = promptInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!prompt) {
+                alert('Пожалуйста, введите промпт!');
+                return;
+            }
+            if (!apiKey) {
+                alert('Пожалуйста, укажите API ключ!');
+                return;
+            }
+
+            // Настройка UI перед запросом
+            setLoadingState(true);
+
+            // Собираем тело запроса
+            const payload = {
+                prompt: prompt,
+                negative_prompt: negativePromptInput.value.trim() || undefined,
+                aspect_ratio: aspectRatioSelect.value,
+                resolution: resolutionSelect.value,
+                output_format: formatSelect.value,
+                num_images: 1,
+                is_sync: true, // Просим API вернуть результат синхронно
+                translate_input: true
+            };
+
+            try {
+                // ВНИМАНИЕ: Используем POST, так как GET не поддерживает Body в fetch()
+                const response = await fetch(API_URL, {
+                    method: 'POST', 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.message || `Ошибка сервера: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Обработка ответа
+                if (data.status === 'success' && data.output) {
+                    // Если API вернуло картинку сразу
+                    displayResult(data.output);
+                } else if (data.request_id && (data.status === 'starting' || data.status === 'processing')) {
+                    // Если API игнорирует is_sync: true и возвращает ID задачи, начинаем Long Polling
+                    statusText.innerText = "Задача принята в очередь. Ожидание...";
+                    await pollResult(data.request_id, apiKey);
+                } else {
+                    throw new Error('Неизвестный формат ответа от сервера');
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert(`Произошла ошибка: ${error.message}`);
+                setLoadingState(false);
+            }
+        }
+
+        // Функция опроса сервера (Long Polling), если is_sync не сработает
+        async function pollResult(requestId, apiKey) {
+            // URL для проверки статуса (стандартный паттерн для таких API)
+            const pollUrl = `https://api.gen-api.ru/api/v1/requests/${requestId}`;
+            
+            const pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(pollUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        }
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.status === 'success' && data.output) {
+                        clearInterval(pollInterval);
+                        displayResult(data.output);
+                    } else if (data.status === 'failed' || data.status === 'error') {
+                        clearInterval(pollInterval);
+                        throw new Error('Ошибка при генерации на стороне сервера');
+                    } else {
+                        statusText.innerText = `Генерация в процессе (${data.status})...`;
+                    }
+                } catch (error) {
+                    clearInterval(pollInterval);
+                    alert(`Ошибка при проверке статуса: ${error.message}`);
+                    setLoadingState(false);
+                }
+            }, 3000); // Проверяем каждые 3 секунды
+        }
+
+        // Вывод изображения на экран
+        function displayResult(output) {
+            // Output может быть строкой(URL) или массивом
+            const imageUrl = Array.isArray(output) ? output[0] : output;
+            
+            resultImage.src = imageUrl;
+            resultImage.style.display = 'block';
+            
+            setLoadingState(false);
+            placeholder.style.display = 'none';
+        }
+
+        // Управление состояниями UI (Загрузка / Обычное)
+        function setLoadingState(isLoading) {
+            if (isLoading) {
+                generateBtn.disabled = true;
+                generateBtn.innerText = 'Генерация...';
+                loader.style.display = 'block';
+                statusText.style.display = 'block';
+                statusText.innerText = 'Отправка запроса...';
+                resultImage.style.display = 'none';
+                placeholder.style.display = 'none';
+            } else {
+                generateBtn.disabled = false;
+                generateBtn.innerText = 'Сгенерировать';
+                loader.style.display = 'none';
+                statusText.style.display = 'none';
+                if (!resultImage.src) {
+                    placeholder.style.display = 'block';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

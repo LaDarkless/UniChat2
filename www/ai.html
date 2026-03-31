@@ -917,6 +917,143 @@
             color: #ffffff !important;
             border-color: #4b5563 !important;
         }
+
+        /* ==========================================
+           АНИМАЦИЯ ИКОНКИ ИИ (ДЫХАНИЕ И СВЕЧЕНИЕ)
+           ========================================== */
+        
+           @keyframes ai-breathe {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(255,255,255,0)); }
+            50% { transform: scale(1.1); filter: drop-shadow(0 0 8px rgba(255,255,255,0.6)); }
+        }
+
+        /* Интенсивная анимация во время раздумий (печати) */
+        .typing-indicator .ai-avatar svg {
+            animation: ai-breathe 1.2s ease-in-out infinite;
+            color: var(--primary-color, #a78bfa); /* Добавляем легкий акцентный цвет */
+        }
+
+        /* Спокойная плавная анимация в уже готовых ответах ИИ */
+        .message-row.assistant .ai-avatar svg {
+            animation: ai-breathe 4s ease-in-out infinite;
+        }
+
+
+        /* ==========================================
+           ФИКСЫ ДЛЯ МОБИЛЬНЫХ: ВЫДЕЛЕНИЕ И КОПИРОВАНИЕ
+           ========================================== */
+        
+        /* 1. Жестко разрешаем выделение текста и появление системного меню (Копировать/Поделиться) */
+        .message-content, 
+        .message-content p, 
+        .message-content pre, 
+        .message-content code,
+        .compare-body {
+            -webkit-user-select: text !important;
+            user-select: text !important;
+            -webkit-touch-callout: default !important; 
+        }
+
+        /* Запрещаем выделять служебные кнопки, чтобы они не попадали в скопированный текст */
+        .msg-action-btn, .copy-code-btn, .avatar, .thinking-header {
+            -webkit-user-select: none !important;
+            user-select: none !important;
+            -webkit-touch-callout: none !important;
+        }
+
+        /* Делаем скролл на телефонах плавным (инерционным) */
+        .chat-history, .modal-body, .settings-content-fs, .sidebar {
+            -webkit-overflow-scrolling: touch !important;
+        }
+
+
+        /* ==========================================
+           ФИКСЫ МЕЛКИХ БАГОВ ИНТЕРФЕЙСА НА ТЕЛЕФОНАХ
+           ========================================== */
+        
+        @media (max-width: 768px) {
+            /* 1. Кнопки (Изменить/Скопировать/Регенерировать) на ПК появляются по наведению (hover).
+                  На телефоне наведения нет. Делаем их всегда видимыми и ставим ПОД сообщение. */
+            .message-actions {
+                opacity: 1 !important;
+                position: relative !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                margin-top: 10px;
+                justify-content: flex-start;
+                background: transparent !important;
+            }
+            .message-row.user .message-actions {
+                justify-content: flex-end;
+            }
+
+            /* 2. Защита от авто-зума на iOS. Safari приближает экран, если шрифт в инпуте меньше 16px */
+            textarea#user-input, 
+            input.form-control,
+            textarea.form-control {
+                font-size: 16px !important;
+            }
+
+            /* 3. Плавающая кнопка (Меню) перекрывала кнопку "Отправить". 
+                  Поднимаем её чуть выше поля ввода на мобилках. */
+            .fab-wrapper {
+                bottom: 85px !important; 
+                right: 15px !important;
+            }
+            
+            /* 4. Расширяем область тапа для микрофона и скрепки, чтобы было легче попасть пальцем */
+            .file-btn, .mic-btn {
+                padding: 8px 10px !important;
+            }
+        }
+
+        /* ==========================================
+           АВАТАРКА ИИ: ЧИСТАЯ ПРОЗРАЧНОСТЬ И АНИМАЦИИ
+           ========================================== */
+
+        /* 1. ЖЕСТКО УБИРАЕМ ФОН КОНТЕЙНЕРА (В ТОМ ЧИСЛЕ В СВЕТЛОЙ ТЕМЕ) */
+        .avatar.ai-avatar,
+        [data-theme="light"] .avatar.ai-avatar {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* Сама картинка */
+        .ai-avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: transparent !important;
+            border-radius: 0 !important;
+        }
+
+        /* 2. АНИМАЦИЯ ПОКОЯ: Дыхание (масштабирование) */
+        @keyframes ai-avatar-breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.25); } /* Сделал 1.25, чтобы увеличение было хорошо видно */
+        }
+
+        /* 3. АНИМАЦИЯ ОТВЕТА: Вращение */
+        @keyframes ai-avatar-spin {
+            from { transform: rotate(0deg) scale(1.1); }
+            to { transform: rotate(360deg) scale(1.1); }
+        }
+
+        /* Применяем "дыхание" ко всем готовым сообщениям ИИ */
+        .message-row.assistant .ai-avatar-img {
+            animation: ai-avatar-breathe 3.5s ease-in-out infinite !important;
+        }
+
+        /* Применяем "вращение" к нижнему индикатору (когда ИИ думает) */
+        #typing-indicator .ai-avatar-img {
+            animation: ai-avatar-spin 2s linear infinite !important;
+        }
+
+        /* Магия: заставляем крутиться иконку в САМОМ сообщении, пока идет печать */
+        body:has(#typing-indicator[style*="display: flex"]) .message-row:last-child .ai-avatar-img {
+            animation: ai-avatar-spin 2s linear infinite !important;
+        }
     </style>
 </head>
 <body data-theme="dark">
@@ -1069,8 +1206,8 @@
         <div class="chat-history" id="chat-history"></div>
         <div class="typing-indicator" id="typing-indicator">
             <div class="message-content-wrapper">
-                <div class="avatar ai-avatar">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z"/></svg>
+                <div class="avatar ai-avatar" style="background: transparent; border: none; box-shadow: none;">
+                    <img src="https://i.imgur.com/lqy109s.png" alt="AI" class="ai-avatar-img">
                 </div>
                 <div class="message-content" style="display: flex; align-items: center; gap: 8px; height: 34px;">
                     <span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">Думаю...</span>
@@ -1257,7 +1394,7 @@
 
                         <p style="color: var(--text-secondary); font-size: 13px; border-top: 1px solid var(--app-border); padding-top: 15px; margin-top: 15px;">
                             <strong>Репозиторий:</strong> <a href="https://github.com/LaDarkless/UniChat2" target="_blank" style="color: #3b82f6;">GitHub Link</a><br>
-                            <strong>Версия ПО:</strong> 11.1.1 (Build 2026.03.18)<br>
+                            <strong>Версия ПО:</strong> 11.1.2 (Build 2026.03.18)<br>
                             <strong>Связь:</strong> ksyr2204@gmail.com
                         </p>
                     </div>
@@ -2000,6 +2137,7 @@ window.editCharacter = function(id) {
         { id: "upstage/solar-pro-3", name: "solar-pro-3", group: "OpenRouter", provider: "openrouter" },
         { id: "ibm-granite/granite-4.0-h-micro", name: "Granite-4.0-h-micro", group: "OpenRouter", provider: "openrouter" },
         { id: "deepcogito/cogito-v2.1-671b", name: "Cogito-v2.1-671b", group: "OpenRouter", provider: "openrouter" },
+        { id: "kwaipilot/kat-coder-pro-v2", name: "Kat-Coder-Pro-v2", group: "OpenRouter", provider: "openrouter"},
         //Эти две модели использовать в одном AI-агенте:
         { id: "relace/relace-apply-3", name: "Relace-apply-3", group: "OpenRouter", provider: "openrouter" },
         { id: "relace/relace-search", name: "Relace-search", group: "OpenRouter", provider: "openrouter" },
@@ -2601,7 +2739,7 @@ window.editCharacter = function(id) {
         let isAgent = msg.content && msg.content.includes('<think>🕵️‍♂️');
         let avatarIcon = isAgent 
             ? `<div class="avatar agent-avatar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"></path><path d="M4.93 10.93l1.41 1.41"></path><path d="M2 18h20"></path><path d="M10 22v-4"></path><path d="M14 22v-4"></path><path d="M17.66 12.34l1.41-1.41"></path><path d="M12 10a6 6 0 0 0-6 6h12a6 6 0 0 0-6-6z"></path></svg></div>`
-            : `<div class="avatar ai-avatar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z"/></svg></div>`;
+            : `<div class="avatar ai-avatar" style="background: transparent; border: none; box-shadow: none;"><img src="https://i.imgur.com/bh2e0tZ.png" alt="AI" class="ai-avatar-img"></div>`;
             
         const avatar = msg.role === 'assistant' ? avatarIcon : `<div class="avatar user-avatar"></div>`;
         
