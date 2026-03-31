@@ -972,28 +972,9 @@
            ========================================== */
         
         @media (max-width: 768px) {
-            /* 1. Кнопки (Изменить/Скопировать/Регенерировать) на ПК появляются по наведению (hover).
-                  На телефоне наведения нет. Делаем их всегда видимыми и ставим ПОД сообщение. */
-            .message-actions {
-                opacity: 1 !important;
-                position: relative !important;
-                left: 0 !important;
-                bottom: 0 !important;
-                margin-top: 10px;
-                justify-content: flex-start;
-                background: transparent !important;
-            }
             .message-row.user .message-actions {
                 justify-content: flex-end;
             }
-
-            /* 2. Защита от авто-зума на iOS. Safari приближает экран, если шрифт в инпуте меньше 16px */
-            textarea#user-input, 
-            input.form-control,
-            textarea.form-control {
-                font-size: 16px !important;
-            }
-
             /* 3. Плавающая кнопка (Меню) перекрывала кнопку "Отправить". 
                   Поднимаем её чуть выше поля ввода на мобилках. */
             .fab-wrapper {
