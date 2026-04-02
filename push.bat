@@ -4,7 +4,7 @@ cd /d C:\Users\sahba\OneDrive\Desktop\TESTAI\web2apk
 echo === Добавляем все изменения ===
 git add .
 
-echo === v9.7.0.1: ===
+echo === v11.1.4: ===
 set /p msg=Commit message: 
 
 git commit -m "%msg%"

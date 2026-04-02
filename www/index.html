@@ -421,6 +421,11 @@
                     <div class="app-icon" style="background: linear-gradient(135deg, #313435, #212831);"><img src="https://i.imgur.com/49xujFD.png" alt="Video"></div>
                     <span class="app-name">Video</span>
                 </div>
+                <!-- ДОБАВЛЕНО: ROLEPLAY -->
+                <div class="app-link" onmousedown="startTouch('roleplay.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('roleplay.html', event)" ontouchend="endTouch()">
+                    <div class="app-icon" style="background: #ffffff;"><img src="https://i.imgur.com/fV31ULs.png" alt="Roleplay"></div>
+                    <span class="app-name">Roleplay</span>
+                </div>
 
                 <div class="app-link" onmousedown="startTouch('docai.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('docai.html', event)" ontouchend="endTouch()">
                     <div class="app-icon" style="background: linear-gradient(135deg, #214874, #1d3353);"><img src="https://i.imgur.com/aL3ohto.png" alt="docai.html"></div>
@@ -569,6 +574,7 @@
                 if(event.currentTarget.getAttribute('onmousedown').includes('video')) openApp('video.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('game')) openApp('game.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('browser')) openApp('browser.html');
+                if(event.currentTarget.getAttribute('onmousedown').includes('roleplay')) openApp('roleplay.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('img')) openApp('imgenerate.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('information')) openApp('information.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('answer')) openApp('answer.html');
