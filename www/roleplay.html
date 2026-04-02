@@ -36,18 +36,36 @@
 
         .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: rgba(28, 30, 38, 0.8); backdrop-filter: blur(10px); z-index: 20; border-bottom: 1px solid var(--border-color); }
         .header-title { font-size: 20px; font-weight: 600; }
-        .icon-btn { background: none; border: none; color: var(--text-main); font-size: 20px; cursor: pointer; padding: 8px; border-radius: 50%; transition: background 0.2s; }
-        .icon-btn:hover { background: rgba(255,255,255,0.1); }
-
-        input, textarea, select { width: 100%; background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: 12px; font-family: inherit; font-size: 14px; outline: none; transition: border 0.2s; }
-        input:focus, textarea:focus, select:focus { border-color: var(--accent-color); }
+        button { font-family: inherit; outline: none; -webkit-tap-highlight-color: transparent; }
         
-        /* Стилизация выпадающего списка */
+        .icon-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); color: var(--text-main); font-size: 18px; cursor: pointer; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border-radius: 50%; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .icon-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .icon-btn:active { transform: scale(0.9); }
+
+        input, textarea, select { width: 100%; background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: 14px; font-family: inherit; font-size: 14px; outline: none; transition: all 0.3s ease; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        input:focus, textarea:focus, select:focus { border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(123, 90, 255, 0.2), inset 0 2px 4px rgba(0,0,0,0.1); }
         select option { background: var(--bg-panel); color: var(--text-main); }
 
-        .btn-primary { background: var(--accent-gradient); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; text-align: center; width: 100%; box-shadow: 0 4px 15px rgba(123, 90, 255, 0.3); transition: transform 0.2s ease, filter 0.2s ease; }
-        .btn-primary:active { transform: scale(0.96); filter: brightness(0.9); }
-        .icon-btn:active, .nav-fab:active { transform: scale(0.92); }
+        .btn-primary { background: linear-gradient(135deg, #5b73ff, #b54aff); color: white; border: none; padding: 16px; border-radius: 16px; font-weight: 600; font-size: 16px; cursor: pointer; text-align: center; width: 100%; box-shadow: 0 6px 20px rgba(123, 90, 255, 0.4), inset 0 2px 4px rgba(255,255,255,0.2); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(123, 90, 255, 0.5), inset 0 2px 4px rgba(255,255,255,0.2); filter: brightness(1.1); }
+        .btn-primary:active { transform: translateY(1px) scale(0.97); box-shadow: 0 2px 10px rgba(123, 90, 255, 0.3); }
+
+        .nav-fab { width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #5b73ff, #b54aff); display: flex; justify-content: center; align-items: center; color: white; font-size: 24px; box-shadow: 0 4px 20px rgba(123, 90, 255, 0.5), inset 0 2px 4px rgba(255,255,255,0.3); border: 4px solid #1a1c23; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .nav-fab:hover { transform: translateY(-4px) scale(1.05); box-shadow: 0 8px 25px rgba(123, 90, 255, 0.6); }
+        .nav-fab:active { transform: translateY(0) scale(0.92); }
+
+        .add-btn { background: rgba(123, 90, 255, 0.05); border: 1px dashed var(--accent-color); color: var(--accent-color); padding: 12px; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; font-weight: 500; }
+        .add-btn:hover { background: rgba(123, 90, 255, 0.15); transform: translateY(-2px); }
+        .add-btn:active { transform: scale(0.96); }
+
+        .trigger-btn { display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, rgba(91, 115, 255, 0.1), rgba(181, 74, 255, 0.1)); border: 1px solid rgba(123, 90, 255, 0.2); padding: 8px 14px; border-radius: 20px; cursor: pointer; color: var(--text-main); font-size: 13px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .trigger-btn img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+        .trigger-btn:hover { border-color: var(--accent-color); transform: translateY(-2px); background: linear-gradient(135deg, rgba(91, 115, 255, 0.2), rgba(181, 74, 255, 0.2)); }
+        .trigger-btn:active { transform: scale(0.95); }
+
+        .send-btn { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #5b73ff, #b54aff); border: none; color: white; font-size: 18px; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; box-shadow: 0 4px 15px rgba(123, 90, 255, 0.4); transition: all 0.2s ease; }
+        .send-btn:hover { transform: scale(1.08) rotate(-5deg); box-shadow: 0 6px 20px rgba(123, 90, 255, 0.6); }
+        .send-btn:active { transform: scale(0.92); }
 
         /* Главная: табы и списки */
         .header-tabs { display: flex; gap: 20px; }
@@ -101,8 +119,9 @@
         .char-checkbox-item { display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .char-checkbox-item img { width: 30px; height: 30px; border-radius: 8px; object-fit: cover;}
 
-        /* Чат */
+        /* Чат и История */
         #chat-screen { z-index: 50; }
+        #history-view-screen { z-index: 60; } /* Выдвигаем экран истории поверх нижнего меню навигации */
         #chat-screen .header { padding: 10px 15px; }
         .chat-header-info { display: flex; align-items: center; gap: 10px; flex: 1; margin-left: 10px;}
         .chat-header-info img { width: 40px; height: 40px; border-radius: 12px; object-fit: cover;}
@@ -144,6 +163,30 @@
         .loader { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .empty-state { text-align: center; color: var(--text-muted); margin-top: 50px; padding: 20px;}
+
+        /* Всплывающее меню чата */
+        .chat-menu-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; opacity: 0; transition: opacity 0.3s; }
+        .chat-menu-overlay.active { display: block; opacity: 1; }
+        .chat-dropdown { position: absolute; top: 60px; right: 15px; width: 260px; background: rgba(28, 30, 38, 0.95); backdrop-filter: blur(15px); border: 1px solid var(--border-color); border-radius: 16px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 12px; transform: translateY(-10px); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .chat-menu-overlay.active .chat-dropdown { transform: translateY(0); }
+        
+        .chat-menu-item { display: flex; flex-direction: column; gap: 5px; }
+        .chat-menu-item label { font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between;}
+        .chat-menu-item input[type=range] { width: 100%; accent-color: var(--accent-color); }
+        .chat-menu-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: 10px; cursor: pointer; text-align: left; font-size: 14px; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+        .chat-menu-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--accent-color); }
+        .chat-menu-btn.danger { color: #ff6b6b; }
+        .chat-menu-btn.danger:hover { background: rgba(255, 107, 107, 0.1); border-color: #ff6b6b; }
+
+        /* Модалка истории */
+        .history-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; max-height: 80%; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.7); z-index: 110; flex-direction: column; }
+        .history-modal.active { display: flex; }
+        .history-header { padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .history-list { padding: 15px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .history-item { background: var(--bg-panel); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; }
+        .history-item:hover { border-color: var(--accent-color); transform: scale(0.98); }
+        .history-item-date { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+        .history-item-msgs { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body>
@@ -224,6 +267,7 @@
                 <select id="char-gender"><option value="female">Женский</option><option value="male">Мужской</option><option value="other">Другой</option></select>
             </div>
             <div class="form-group"><label class="form-label">Публичное описание</label><textarea id="char-desc" rows="2"></textarea></div>
+            <div class="form-group"><label class="form-label">Первое сообщение (Приветствие)</label><textarea id="char-greeting" rows="3" placeholder="Что ИИ скажет, когда вы откроете пустой чат?"></textarea></div>
             <div class="form-group"><label class="form-label">Протокол ИИ</label><textarea id="char-protocol" rows="4"></textarea></div>
             <div class="form-group">
                 <label class="form-label">Боксы памяти</label>
@@ -253,6 +297,7 @@
             </div>
             <div class="form-group"><label class="form-label">Название группы</label><input type="text" id="group-name" required></div>
             <div class="form-group"><label class="form-label">Сценарий группы (опционально)</label><textarea id="group-scenario" rows="3" placeholder="Где находятся персонажи, что происходит..."></textarea></div>
+            <div class="form-group"><label class="form-label">Первое сообщение (Вводная)</label><textarea id="group-greeting" rows="3" placeholder="Начальное событие или реплика в группе..."></textarea></div>
             <div class="form-group">
                 <label class="form-label">Участники (ИИ)</label>
                 <div class="char-checkbox-list" id="group-char-list">
@@ -271,7 +316,33 @@
                 <img id="active-chat-avatar" src="" alt="">
                 <div class="header-title" id="active-chat-name" style="font-size: 16px;">Name</div>
             </div>
-            <button class="icon-btn" onclick="clearChat()"><i class="fa-solid fa-broom"></i></button>
+            <button class="icon-btn" onclick="toggleChatMenu()"><i class="fa-solid fa-bars"></i></button>
+        </div>
+
+        <!-- Оверлей и выпадающее меню настроек ИИ -->
+        <div class="chat-menu-overlay" id="chat-menu-overlay" onclick="toggleChatMenu(event)">
+            <div class="chat-dropdown" onclick="event.stopPropagation()">
+                <div class="chat-menu-item">
+                    <label>Температура <span id="temp-val">0.8</span></label>
+                    <input type="range" id="chat-temp" min="0.1" max="2.0" step="0.1" value="0.8" oninput="updateChatSettings()">
+                </div>
+                <div class="chat-menu-item">
+                    <label>Макс. символов <span id="length-val">1000</span></label>
+                    <input type="range" id="chat-length" min="100" max="4000" step="100" value="1000" oninput="updateChatSettings()">
+                </div>
+                <hr style="border:0; border-top: 1px solid var(--border-color); margin: 5px 0;">
+                <button class="chat-menu-btn" onclick="openHistoryModal()"><i class="fa-solid fa-clock-rotate-left"></i> История сессий</button>
+                <button class="chat-menu-btn danger" onclick="restartChat()"><i class="fa-solid fa-rotate-right"></i> Начать сначала</button>
+            </div>
+        </div>
+
+        <!-- Модалка истории -->
+        <div class="history-modal" id="history-modal">
+            <div class="history-header">
+                <h3>История чатов</h3>
+                <button class="icon-btn" onclick="closeHistoryModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="history-list" id="history-list-container"></div>
         </div>
 
         <div class="chat-messages" id="chat-messages-container"></div>
@@ -284,6 +355,21 @@
         <div class="chat-input-area">
             <textarea id="chat-input" placeholder="Введите сообщение..." oninput="autoResizeTextarea(this)"></textarea>
             <button class="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН 4.5: ПРОСМОТР ИСТОРИИ ЧАТА -->
+    <div id="history-view-screen" class="screen">
+        <div class="header">
+            <button class="icon-btn" onclick="exitHistoryView()"><i class="fa-solid fa-arrow-left"></i></button>
+            <div class="header-title" style="font-size: 16px;">Архив сессии</div>
+            <button class="icon-btn" onclick="deleteCurrentViewedHistory()" style="color: #ff6b6b;"><i class="fa-solid fa-trash"></i></button>
+        </div>
+
+        <div class="chat-messages" id="history-view-messages" style="flex: 1; overflow-y: auto;"></div>
+
+        <div class="chat-input-area" style="justify-content: center; padding: 15px 20px 25px 20px; background: rgba(18, 19, 24, 0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border-color);">
+            <button class="btn-primary" onclick="restoreCurrentViewedHistory()"><i class="fa-solid fa-clock-rotate-left"></i> Сделать текущим чатом</button>
         </div>
     </div>
 
@@ -349,6 +435,7 @@
         groups: [], // { id, name, avatar, scenario, participants: [charId1, charId2] }
         chats: {}, // solo chats
         groupChats: {}, // group chats
+        chatHistories: {}, // { [entityId]: [ { date: timestamp, messages: [] } ] }
         settings: { apiKey: '', model: 'mistralai/mistral-medium-3.1' },
         userProfile: { name: 'User', description: '', avatar: '' }
     };
@@ -357,6 +444,7 @@
     let currentId = null;
     let currentTab = 'solo';
     let isWaitingForAI = false;
+    let currentViewedHistoryDate = null; // Новая переменная для истории
 
     const initDB = () => {
         return new Promise((resolve, reject) => {
@@ -383,6 +471,7 @@
                     appState = { ...appState, ...req.result };
                     if(!appState.groups) appState.groups = [];
                     if(!appState.groupChats) appState.groupChats = {};
+                    if(!appState.chatHistories) appState.chatHistories = {};
                 }
                 resolve();
             };
@@ -554,6 +643,7 @@
             document.getElementById('char-name').value = char.name;
             document.getElementById('char-gender').value = char.gender;
             document.getElementById('char-desc').value = char.description;
+            document.getElementById('char-greeting').value = char.greeting || '';
             document.getElementById('char-protocol').value = char.protocol;
             if (char.avatar) { document.getElementById('avatar-img').src = char.avatar; document.getElementById('avatar-img').style.display = 'block'; document.getElementById('avatar-icon').style.display = 'none'; }
             if (char.memoryBoxes) char.memoryBoxes.forEach(t => addMemoryBox(t));
@@ -566,16 +656,6 @@
         document.getElementById('memory-count').innerText = currentMemoryBoxes.length;
     }
 
-    function addMemoryBox(text = "") {
-        const id = 'mem_' + Date.now() + Math.random();
-        currentMemoryBoxes.push(id);
-        const div = document.createElement('div'); div.className = 'memory-box'; div.id = id;
-        div.innerHTML = `<textarea maxlength="2500">${text}</textarea><button class="remove-memory" onclick="removeMemoryBox('${id}')"><i class="fa-solid fa-xmark"></i></button>`;
-        document.getElementById('memory-container').appendChild(div);
-        document.getElementById('memory-count').innerText = currentMemoryBoxes.length;
-    }
-    function removeMemoryBox(id) { document.getElementById(id).remove(); currentMemoryBoxes = currentMemoryBoxes.filter(i => i !== id); document.getElementById('memory-count').innerText = currentMemoryBoxes.length; }
-
     function saveCharacter() {
         const id = document.getElementById('char-id').value;
         const name = document.getElementById('char-name').value.trim();
@@ -584,8 +664,10 @@
         const newChar = {
             id, name, gender: document.getElementById('char-gender').value,
             description: document.getElementById('char-desc').value,
+            greeting: document.getElementById('char-greeting').value,
             protocol: document.getElementById('char-protocol').value,
             avatar: document.getElementById('avatar-img').src || null,
+            pinned: appState.characters.find(c => c.id === id)?.pinned || false,
             memoryBoxes
         };
         const idx = appState.characters.findIndex(c => c.id === id);
@@ -593,32 +675,30 @@
         saveData(); goHome();
     }
 
-    // --- СОЗДАНИЕ ГРУППЫ ---
     function openGroupCreator(id = null) {
         switchScreen('group-creator-screen');
         const list = document.getElementById('group-char-list');
         list.innerHTML = '';
-        
         let selectedIds = [];
         if (id) {
             const g = appState.groups.find(g => g.id === id);
             document.getElementById('group-id').value = g.id;
             document.getElementById('group-name').value = g.name;
             document.getElementById('group-scenario').value = g.scenario || '';
+            document.getElementById('group-greeting').value = g.greeting || '';
             selectedIds = g.participants;
             if (g.avatar) { document.getElementById('group-avatar-img').src = g.avatar; document.getElementById('group-avatar-img').style.display = 'block'; document.getElementById('group-avatar-icon').style.display = 'none'; }
         } else {
             document.getElementById('group-id').value = 'grp_' + Date.now();
             document.getElementById('group-name').value = '';
             document.getElementById('group-scenario').value = '';
+            document.getElementById('group-greeting').value = '';
             document.getElementById('group-avatar-img').style.display = 'none'; document.getElementById('group-avatar-icon').style.display = 'block';
         }
 
         appState.characters.forEach(char => {
-            const label = document.createElement('label');
-            label.className = 'char-checkbox-item';
-            label.innerHTML = `<input type="checkbox" value="${char.id}" ${selectedIds.includes(char.id)?'checked':''}>
-                               <img src="${char.avatar||'https://via.placeholder.com/30'}"> ${char.name}`;
+            const label = document.createElement('label'); label.className = 'char-checkbox-item';
+            label.innerHTML = `<input type="checkbox" value="${char.id}" ${selectedIds.includes(char.id)?'checked':''}><img src="${char.avatar||'https://via.placeholder.com/30'}"> ${char.name}`;
             list.appendChild(label);
         });
     }
@@ -627,13 +707,14 @@
         const id = document.getElementById('group-id').value;
         const name = document.getElementById('group-name').value.trim();
         if (!name) return alert("Введите название группы!");
-        
         const participants = Array.from(document.querySelectorAll('#group-char-list input:checked')).map(cb => cb.value);
         if (participants.length < 1) return alert("Выберите хотя бы 1 ИИ!");
 
         const newGroup = {
             id, name, scenario: document.getElementById('group-scenario').value,
+            greeting: document.getElementById('group-greeting').value,
             avatar: document.getElementById('group-avatar-img').src || null,
+            pinned: appState.groups.find(g => g.id === id)?.pinned || false,
             participants
         };
         const idx = appState.groups.findIndex(g => g.id === id);
@@ -653,6 +734,18 @@
         
         const dbTarget = isGroup ? appState.groupChats : appState.chats;
         if (!dbTarget[id]) dbTarget[id] = [];
+
+        // --- ЛОГИКА ПРИВЕТСТВИЯ ---
+        if (dbTarget[id].length === 0 && entity.greeting && entity.greeting.trim() !== '') {
+            dbTarget[id].push({
+                role: 'ai',
+                name: isGroup ? 'System/Сценарий' : entity.name,
+                charId: isGroup ? null : entity.id,
+                content: entity.greeting.trim(),
+                timestamp: Date.now()
+            });
+            saveData();
+        }
         
         // Панель триггеров ботов (только для групп)
         const triggerPanel = document.getElementById('group-triggers-panel');
@@ -722,11 +815,167 @@
     }
     function autoResizeTextarea(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 
-    function clearChat() {
-        if(!confirm("Очистить историю?")) return;
-        if(currentMode === 'solo') appState.chats[currentId] = [];
-        else appState.groupChats[currentId] = [];
-        saveData(); renderMessages();
+    // --- ГАМБУРГЕР-МЕНЮ И НАСТРОЙКИ ЧАТА ---
+    function toggleChatMenu(e) {
+        if (e && e.target !== e.currentTarget && e.type === 'click') return;
+        const overlay = document.getElementById('chat-menu-overlay');
+        const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+        
+        if (!overlay.classList.contains('active')) {
+            // Подгружаем настройки перед открытием
+            document.getElementById('chat-temp').value = entity.temp || 0.8;
+            document.getElementById('temp-val').innerText = entity.temp || 0.8;
+            document.getElementById('chat-length').value = entity.maxTokens || 1000;
+            document.getElementById('length-val').innerText = entity.maxTokens || 1000;
+            overlay.classList.add('active');
+        } else {
+            overlay.classList.remove('active');
+        }
+    }
+
+    function updateChatSettings() {
+        const temp = document.getElementById('chat-temp').value;
+        const len = document.getElementById('chat-length').value;
+        document.getElementById('temp-val').innerText = temp;
+        document.getElementById('length-val').innerText = len;
+        
+        const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+        entity.temp = parseFloat(temp);
+        entity.maxTokens = parseInt(len);
+        saveData();
+    }
+
+    // --- ИСТОРИЯ И РЕСТАРТ ---
+    function restartChat() {
+        toggleChatMenu();
+        if(!confirm("Начать заново? Текущий чат будет сохранен в Историю сессий.")) return;
+        
+        const dbTarget = currentMode === 'groups' ? appState.groupChats : appState.chats;
+        const currentMessages = dbTarget[currentId] || [];
+        
+        // Сохраняем текущую ветку, если в ней есть хотя бы 1 сообщение от юзера
+        if (currentMessages.length > 1 || (currentMessages.length === 1 && currentMessages[0].role === 'user')) {
+            if (!appState.chatHistories[currentId]) appState.chatHistories[currentId] = [];
+            appState.chatHistories[currentId].push({
+                date: Date.now(),
+                messages: JSON.parse(JSON.stringify(currentMessages)) // Глубокая копия
+            });
+        }
+
+        // Сбрасываем чат
+        dbTarget[currentId] = [];
+        const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+        
+        // Выдаем приветствие
+        if (entity.greeting && entity.greeting.trim() !== '') {
+            dbTarget[currentId].push({
+                role: 'ai',
+                name: currentMode === 'groups' ? 'System/Сценарий' : entity.name,
+                charId: currentMode === 'groups' ? null : entity.id,
+                content: entity.greeting.trim(),
+                timestamp: Date.now()
+            });
+        }
+        
+        saveData(); renderMessages(); scrollToBottom();
+    }
+
+    function openHistoryModal() {
+        toggleChatMenu();
+        const container = document.getElementById('history-list-container');
+        container.innerHTML = '';
+        const histories = appState.chatHistories[currentId] || [];
+        
+        if (histories.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px;">История пуста</div>';
+        } else {
+            [...histories].reverse().forEach((session) => {
+                const dateStr = new Date(session.date).toLocaleString([], {day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit'});
+                const msgCount = session.messages.length;
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.style.display = 'flex';
+                div.style.justifyContent = 'space-between';
+                div.style.alignItems = 'center';
+                div.onclick = () => viewHistorySession(session.date);
+                div.innerHTML = `
+                    <div>
+                        <div class="history-item-date">${dateStr}</div>
+                        <div class="history-item-msgs" style="color:var(--text-main); font-size:13px;">Сообщений: ${msgCount}</div>
+                    </div>
+                    <i class="fa-solid fa-eye" style="color:var(--accent-color); font-size:18px; opacity:0.8;"></i>
+                `;
+                container.appendChild(div);
+            });
+        }
+        document.getElementById('history-modal').classList.add('active');
+    }
+
+    function closeHistoryModal() { document.getElementById('history-modal').classList.remove('active'); }
+
+    // Просмотр истории (Read-Only)
+    function viewHistorySession(date) {
+        currentViewedHistoryDate = date;
+        closeHistoryModal();
+        
+        const histories = appState.chatHistories[currentId];
+        const session = histories.find(h => h.date === date);
+        const container = document.getElementById('history-view-messages');
+        container.innerHTML = '';
+
+        session.messages.forEach((msg, index) => {
+            const div = document.createElement('div');
+            div.className = `msg-wrapper ${msg.role === 'user' ? 'user' : 'ai'}`;
+            
+            let senderNameHTML = '';
+            if (currentMode === 'groups') senderNameHTML = `<div class="msg-sender-name">${msg.name}</div>`;
+            
+            let processedContent = msg.content.replace(/\*(.*?)\*/g, '\n\n*$1*\n\n');
+            const mdHtml = marked.parse(processedContent);
+
+            // Режим только для чтения (без кнопок редактирования/удаления сообщений)
+            div.innerHTML = `
+                ${senderNameHTML}
+                <div class="bubble">${mdHtml}</div>
+                <div class="msg-actions">
+                    <i class="fa-regular fa-copy" onclick="navigator.clipboard.writeText(\`${msg.content.replace(/`/g, '\\`')}\`); alert('Скопировано!')" title="Копировать"></i>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+
+        switchScreen('history-view-screen');
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function exitHistoryView() {
+        currentViewedHistoryDate = null;
+        switchScreen('chat-screen');
+    }
+
+    function deleteCurrentViewedHistory() {
+        if(!confirm("Удалить эту сессию из архива навсегда?")) return;
+        appState.chatHistories[currentId] = appState.chatHistories[currentId].filter(h => h.date !== currentViewedHistoryDate);
+        saveData();
+        currentViewedHistoryDate = null;
+        switchScreen('chat-screen');
+        // Сразу открываем модалку истории снова, чтобы обновить список
+        setTimeout(() => document.getElementById('history-modal').classList.add('active'), 100);
+    }
+
+    function restoreCurrentViewedHistory() {
+        if(!confirm("Сделать эту сессию текущей? Ваша нынешняя активная переписка будет заменена (вы можете сохранить её, нажав 'Начать сначала').")) return;
+        const histories = appState.chatHistories[currentId];
+        const session = histories.find(h => h.date === currentViewedHistoryDate);
+        const dbTarget = currentMode === 'groups' ? appState.groupChats : appState.chats;
+        
+        dbTarget[currentId] = JSON.parse(JSON.stringify(session.messages)); // Копируем из истории в активный чат
+        saveData();
+        
+        currentViewedHistoryDate = null;
+        switchScreen('chat-screen');
+        renderMessages();
+        scrollToBottom();
     }
 
     async function sendMessage() {
@@ -821,10 +1070,19 @@
     // --- ОБЩИЙ ВЫЗОВ API ---
     async function callOpenRouter(apiMessages, aiName, targetHistoryArray, botCharId = null) {
         try {
+            const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+            const reqTemp = entity.temp || 0.8;
+            const reqTokens = entity.maxTokens || 1000;
+
             const res = await fetch('https://api.proxyapi.ru/openrouter/v1/chat/completions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appState.settings.apiKey}` },
-                body: JSON.stringify({ model: appState.settings.model, messages: apiMessages })
+                body: JSON.stringify({ 
+                    model: appState.settings.model, 
+                    messages: apiMessages,
+                    temperature: reqTemp,
+                    max_tokens: reqTokens
+                })
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error?.message || "API Error");
