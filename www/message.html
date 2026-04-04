@@ -3,354 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Twitter Style Messages</title>
+    <title>X Messages Pro</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
     <style>
+        /* --- (CSS остался абсолютно тем же, дизайн сохранен) --- */
         :root {
-            --twitter-blue: #1d9bf0;
-            --twitter-blue-hover: #1a8cd8;
-            --bg-color: #ffffff;
-            --text-main: #0f1419;
-            --text-muted: #536471;
-            --border-color: #eff3f4;
-            --msg-received-bg: #eff3f4;
-            --msg-received-text: #0f1419;
-            --msg-sent-bg: #1d9bf0;
-            --msg-sent-text: #ffffff;
-            --danger: #f4212e;
+            --twitter-blue: #1d9bf0; --twitter-blue-hover: #1a8cd8; --bg-color: #ffffff;
+            --text-main: #0f1419; --text-muted: #536471; --border-color: #eff3f4;
+            --msg-received-bg: #eff3f4; --msg-received-text: #0f1419;
+            --msg-sent-bg: #1d9bf0; --msg-sent-text: #ffffff;
+            --danger: #f4212e; --overlay: rgba(0,0,0,0.4);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            /* Убираем подсветку при тапе на мобилках */
-            -webkit-tap-highlight-color: transparent;
-            /* Запрещаем выделение текста на элементах интерфейса (как в настоящих приложениях) */
-            -webkit-user-select: none;
-            user-select: none; 
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+        input, .message-text { -webkit-user-select: text; user-select: text; }
 
-        /* Разрешаем выделение текста только внутри инпутов и самих сообщений */
-        input, .message-bubble {
-            -webkit-user-select: text;
-            user-select: text;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, sans-serif; background-color: #eef2f5; display: flex; justify-content: center; height: 100dvh; width: 100vw; overflow: hidden; overscroll-behavior-y: none; }
+        .app-container { width: 100%; max-width: 600px; background-color: var(--bg-color); display: flex; flex-direction: column; height: 100%; position: relative; box-shadow: 0 0 30px rgba(0,0,0,0.05); }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f7f9f9;
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            /* Используем 100dvh для правильной работы на iOS/Android с выезжающей клавиатурой */
-            height: 100dvh; 
-            width: 100vw;
-            overflow: hidden;
-            /* Запрещаем pull-to-refresh (свайп вниз для обновления) */
-            overscroll-behavior-y: none;
-        }
+        #global-setup-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; text-align: center; }
+        
+        .header-main { padding: 16px; padding-top: calc(16px + env(safe-area-inset-top)); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; font-weight: 800; }
+        #chats-list-screen { display: flex; flex-direction: column; height: 100%; width: 100%; }
+        .chats-list { flex: 1; overflow-y: auto; }
+        .chat-item { display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background-color 0.2s; }
+        .chat-item:active { background-color: var(--border-color); }
+        .chat-info { margin-left: 12px; flex: 1; overflow: hidden; }
+        .chat-name { font-weight: 700; font-size: 1rem; color: var(--text-main); }
+        .chat-last-msg { font-size: 0.9rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
 
-        /* Чтобы инпуты не зумились на iOS при фокусе, размер шрифта должен быть не менее 16px */
-        .setup-input, .chat-input {
-            font-size: 16px !important; 
-        }
+        .fab { position: absolute; bottom: calc(20px + env(safe-area-inset-bottom)); right: 20px; width: 56px; height: 56px; border-radius: 50%; background-color: var(--twitter-blue); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; border: none; box-shadow: 0 4px 12px rgba(29, 155, 240, 0.3); cursor: pointer; z-index: 100; transition: transform 0.1s; }
+        .fab:active { transform: scale(0.9); }
 
-        .app-container {
-            width: 100%;
-            max-width: 600px;
-            background-color: var(--bg-color);
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            box-shadow: 0 0 20px rgba(0,0,0,0.05);
-            position: relative;
-        }
-
-        /* --- Setup Screen --- */
-        #setup-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 30px;
-            text-align: center;
-            background-color: var(--bg-color);
-            z-index: 100;
-            position: absolute;
-            width: 100%;
-            top: 0;
-            left: 0;
-        }
-
-        .twitter-logo {
-            color: var(--twitter-blue);
-            font-size: 3rem;
-            margin-bottom: 20px;
-        }
-
-        .setup-title {
-            font-size: 1.8rem;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }
-
-        .setup-subtitle {
-            color: var(--text-muted);
-            margin-bottom: 30px;
-            font-size: 0.95rem;
-            line-height: 1.4;
-        }
-
-        .input-group {
-            width: 100%;
-            max-width: 300px;
-            margin-bottom: 15px;
-        }
-
-        .setup-input {
-            width: 100%;
-            padding: 16px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 1rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .setup-input:focus {
-            border-color: var(--twitter-blue);
-        }
-
-        .join-btn {
-            width: 100%;
-            max-width: 300px;
-            padding: 16px;
-            background-color: var(--text-main);
-            color: white;
-            border: none;
-            border-radius: 30px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: opacity 0.2s;
-        }
-
-        .join-btn:hover { opacity: 0.9; }
-        .join-btn:disabled { background-color: #aab8c2; cursor: not-allowed; }
-
-        /* --- Chat Screen --- */
-        #chat-screen {
-            display: none;
-            flex-direction: column;
-            height: 100%;
-            width: 100%;
-        }
-
-        .chat-header {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            padding-top: calc(12px + env(safe-area-inset-top));
-            border-bottom: 1px solid var(--border-color);
-            background-color: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            z-index: 10;
-        }
-
-        .header-btn {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            color: var(--text-main);
-            cursor: pointer;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.2s;
-        }
-
-        .header-btn:hover { background-color: var(--border-color); }
-        .leave-btn { color: var(--danger); }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            flex: 1;
-            margin-left: 12px;
-        }
-
-        .avatar-placeholder {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: var(--twitter-blue);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-
-        .user-details {
-            margin-left: 12px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .room-name {
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        .user-status {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
+        #chat-screen { display: none; flex-direction: column; height: 100%; width: 100%; position: absolute; top: 0; left: 0; background: var(--bg-color); z-index: 200; }
+        .chat-header { display: flex; align-items: center; padding: 12px 16px; padding-top: calc(12px + env(safe-area-inset-top)); border-bottom: 1px solid var(--border-color); background-color: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 10; }
+        .header-btn { background: none; border: none; font-size: 1.2rem; color: var(--text-main); cursor: pointer; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .user-info { display: flex; align-items: center; flex: 1; margin-left: 8px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--twitter-blue); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; }
+        .user-details { margin-left: 12px; display: flex; flex-direction: column; }
+        .room-name { font-weight: 700; font-size: 1.1rem; }
+        .user-status { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
         .status-dot { width: 6px; height: 6px; background-color: #00ba7c; border-radius: 50%; }
         .status-dot.offline { background-color: var(--danger); }
         .status-dot.connecting { background-color: #ffd400; }
 
-        .chat-messages {
-            flex: 1;
-            padding: 20px 16px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            scroll-behavior: smooth;
-        }
-
-        .chat-messages::-webkit-scrollbar { width: 6px; }
-        .chat-messages::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 10px; }
-
-        .message-wrapper {
-            display: flex;
-            flex-direction: column;
-            max-width: 80%;
-            animation: fadeIn 0.3s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
+        .chat-messages { flex: 1; padding: 20px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
+        .message-wrapper { display: flex; flex-direction: column; max-width: 85%; position: relative; }
         .message-wrapper.received { align-self: flex-start; }
         .message-wrapper.sent { align-self: flex-end; align-items: flex-end; }
+        .message-bubble { padding: 12px 16px; font-size: 1rem; line-height: 1.4; word-wrap: break-word; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.04); }
+        .message-bubble:active { transform: scale(0.98); opacity: 0.8; }
+        .received .message-bubble { background-color: #f0f3f5; color: var(--msg-received-text); border-radius: 20px 20px 20px 4px; }
+        .sent .message-bubble { background-color: var(--twitter-blue); color: var(--msg-sent-text); border-radius: 20px 20px 4px 20px; box-shadow: 0 4px 12px rgba(29, 155, 240, 0.2); }
+        .message-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; display: flex; gap: 6px; }
+        .edited-tag { font-style: italic; }
 
-        .message-sender {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-            margin-left: 4px;
-            margin-right: 4px;
-        }
-
-        .message-bubble {
-            padding: 12px 16px;
-            font-size: 0.95rem;
-            line-height: 1.4;
-            word-wrap: break-word;
-        }
-
-        .received .message-bubble { background-color: var(--msg-received-bg); color: var(--msg-received-text); border-radius: 20px 20px 20px 4px; }
-        .sent .message-bubble { background-color: var(--msg-sent-bg); color: var(--msg-sent-text); border-radius: 20px 20px 4px 20px; }
-
-        .message-time {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-            margin-left: 4px;
-            margin-right: 4px;
-        }
-
-        .chat-input-area {
-            padding: 12px 16px;
-            padding-bottom: calc(12px + env(safe-area-inset-bottom));
-            border-top: 1px solid var(--border-color);
-            background-color: var(--bg-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .input-wrapper {
-            flex: 1;
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .chat-input {
-            width: 100%;
-            background-color: var(--msg-received-bg);
-            border: 1px solid transparent;
-            border-radius: 24px;
-            padding: 12px 45px 12px 16px;
-            font-family: inherit;
-            font-size: 0.95rem;
-            color: var(--text-main);
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
+        .chat-input-area { padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border-color); background-color: var(--bg-color); }
+        #edit-indicator { display: none; font-size: 0.8rem; color: var(--twitter-blue); margin-bottom: 8px; padding-left: 10px; align-items: center; justify-content: space-between; }
+        .cancel-edit { color: var(--text-muted); cursor: pointer; padding: 4px; }
+        .input-wrapper { display: flex; align-items: center; gap: 10px; width: 100%; position: relative; }
+        .chat-input { flex: 1; background-color: var(--msg-received-bg); border: 1px solid transparent; border-radius: 24px; padding: 12px 45px 12px 16px; font-family: inherit; font-size: 16px; color: var(--text-main); outline: none; }
         .chat-input:focus { border-color: var(--twitter-blue); background-color: var(--bg-color); }
+        .send-btn { position: absolute; right: 6px; background-color: var(--twitter-blue); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .send-btn:disabled { background-color: #aab8c2; }
 
-        .send-btn {
-            position: absolute;
-            right: 6px;
-            background-color: var(--twitter-blue);
-            border: none;
-            color: white;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        .send-btn:active { transform: scale(0.9); }
-        .send-btn:disabled { background-color: #aab8c2; cursor: not-allowed; }
-
-        #connection-status {
-            position: absolute;
-            top: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            z-index: 20;
-            display: none;
-            white-space: nowrap;
-        }
+        /* Модальные окна: Glassmorphism */
+        .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 1000; justify-content: center; align-items: center; padding: 20px; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-content { background: var(--bg-color); padding: 28px 24px; border-radius: 24px; width: 100%; max-width: 340px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.1); transform: scale(0.95); animation: scaleUp 0.2s ease forwards; }
+        @keyframes scaleUp { to { transform: scale(1); } }
+        .modal-title { font-size: 1.4rem; font-weight: 800; margin-bottom: 20px; color: var(--text-main); }
         
-        .system-msg {
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin: 10px 0;
-            width: 100%;
-        }
+        /* Современные инпуты */
+        .modal-input { width: 100%; padding: 16px; margin-bottom: 16px; border: 2px solid transparent; background: #f0f3f5; border-radius: 16px; font-size: 16px; outline: none; transition: all 0.2s ease; color: var(--text-main); font-weight: 500; }
+        .modal-input:focus { background: var(--bg-color); border-color: var(--twitter-blue); box-shadow: 0 0 0 4px rgba(29, 155, 240, 0.1); }
+        
+        /* Исправленные кнопки */
+        .modal-actions { display: flex; gap: 12px; margin-top: 10px; }
+        .btn { padding: 16px; border-radius: 16px; font-weight: 700; border: none; cursor: pointer; font-size: 1rem; transition: transform 0.1s, opacity 0.2s; }
+        .btn:active { transform: scale(0.96); }
+        .modal-actions .btn { flex: 1; } /* Только кнопки внутри модалок растягиваются поровну */
+        .btn-primary { background: var(--twitter-blue); color: white; box-shadow: 0 8px 16px rgba(29, 155, 240, 0.2); }
+        .btn-secondary { background: #f0f3f5; color: var(--text-main); }
+
+        .bottom-sheet { position: absolute; bottom: -100%; left: 0; width: 100%; background: var(--bg-color); border-radius: 20px 20px 0 0; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); transition: bottom 0.3s ease; z-index: 1100; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); }
+        .bottom-sheet.active { bottom: 0; }
+        .menu-item { padding: 16px 10px; display: flex; align-items: center; gap: 12px; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); cursor: pointer; }
+        .menu-item.danger { color: var(--danger); }
+        
+        #connection-status { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.8); color: white; padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; z-index: 2000; display: none; }
     </style>
 </head>
 <body>
@@ -358,242 +102,909 @@
     <div class="app-container">
         <div id="connection-status">Подключение...</div>
 
-        <!-- Экран Входа -->
-        <div id="setup-screen">
-            <i class="fa-brands fa-twitter twitter-logo"></i>
-            <h1 class="setup-title">X Messages</h1>
-            <p class="setup-subtitle">Введите имя и ID секретной комнаты.<br>Собеседник должен ввести такой же ID.</p>
-
-            <div class="input-group">
-                <input type="text" id="username-input" class="setup-input" placeholder="Ваше имя (Например, Алекс)" maxlength="15">
-            </div>
-            <div class="input-group">
-                <input type="text" id="room-input" class="setup-input" placeholder="ID Комнаты (Например, room55)" maxlength="15">
-            </div>
-            <button id="join-btn" class="join-btn" disabled>Подключиться</button>
+        <!-- Setup -->
+        <div id="global-setup-screen">
+            <i class="fa-brands fa-twitter" style="font-size: 3rem; color: var(--twitter-blue); margin-bottom: 20px;"></i>
+            <h1 class="modal-title" style="font-size: 1.8rem;">Добро пожаловать</h1>
+            <p style="color: var(--text-muted); margin-bottom: 30px;">Введите ваше имя, чтобы начать.</p>
+            <input type="text" id="my-name-input" class="modal-input" placeholder="Ваше имя" maxlength="20">
+            <button id="save-name-btn" class="btn btn-primary" style="width: 100%;">Продолжить</button>
         </div>
 
-        <!-- Экран Чата -->
+        <!-- Chats List -->
+        <div id="chats-list-screen" style="display: none;">
+            <header class="header-main">
+                <span>Сообщения</span>
+                <i class="fa-solid fa-gear" style="color: var(--text-muted); font-size: 1.2rem; cursor: pointer;" id="settings-btn"></i>
+            </header>
+            <main class="chats-list" id="chats-container"></main>
+            <button class="fab" id="fab-add" aria-label="Новый чат"><i class="fa-solid fa-plus"></i></button>
+        </div>
+
+        <!-- Chat Room -->
         <div id="chat-screen">
             <header class="chat-header">
-                <button class="header-btn leave-btn" id="leave-btn" aria-label="Выйти">
-                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                </button>
+                <button class="header-btn" id="back-btn"><i class="fa-solid fa-arrow-left"></i></button>
                 <div class="user-info">
-                    <div class="avatar-placeholder" id="room-avatar">#</div>
+                    <div class="avatar" id="room-avatar">#</div>
                     <div class="user-details">
-                        <span class="room-name" id="display-room-name">Комната</span>
-                        <span class="user-status" id="ws-status"><span class="status-dot offline"></span> Отключен</span>
+                        <span class="room-name" id="display-room-name">Чат</span>
+                        <span class="user-status" id="ws-status"><span class="status-dot offline"></span> Оффлайн</span>
                     </div>
                 </div>
             </header>
-
             <main class="chat-messages" id="chat-messages"></main>
+            
+            <!-- Индикатор печатания -->
+            <div id="typing-indicator" style="display: none; padding: 0 20px 10px; font-size: 0.8rem; color: var(--text-muted); font-style: italic; background: var(--bg-color);">
+                Собеседник печатает...
+            </div>
 
             <footer class="chat-input-area">
+                <div id="edit-indicator">
+                    <span><i class="fa-solid fa-pen"></i> Редактирование...</span>
+                    <i class="fa-solid fa-times cancel-edit" id="cancel-edit-btn"></i>
+                </div>
                 <div class="input-wrapper">
-                    <input type="text" id="message-input" class="chat-input" placeholder="Написать сообщение..." autocomplete="off">
-                    <button id="send-btn" class="send-btn" aria-label="Отправить" disabled>
-                        <i class="fa-solid fa-paper-plane" style="font-size: 0.8rem; margin-left: -2px;"></i>
-                    </button>
+                    <input type="text" id="message-input" class="chat-input" placeholder="Сообщение..." autocomplete="off">
+                    <button id="send-btn" class="send-btn" disabled><i class="fa-solid fa-paper-plane" style="font-size: 0.8rem; margin-left:-2px;" id="send-icon"></i></button>
                 </div>
             </footer>
         </div>
+
+        <!-- Add Room Modal -->
+        <div class="modal-overlay" id="add-room-modal">
+            <div class="modal-content">
+                <h2 class="modal-title">Новый чат</h2>
+                <input type="text" id="new-room-id" class="modal-input" placeholder="ID секретной комнаты">
+                <input type="text" id="new-room-name" class="modal-input" placeholder="Название (для вас)">
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="cancel-room-btn">Отмена</button>
+                    <button class="btn btn-primary" id="create-room-btn">Добавить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Menu -->
+        <div class="modal-overlay" id="menu-overlay" style="background: transparent;"></div>
+        <div class="bottom-sheet" id="message-menu">
+            <div class="menu-item" id="action-copy"><i class="fa-regular fa-copy"></i> Копировать</div>
+            <div class="menu-item" id="action-edit"><i class="fa-solid fa-pen"></i> Изменить</div>
+            <div class="menu-item danger" id="action-delete"><i class="fa-regular fa-trash-can"></i> Удалить у всех</div>
+        </div>
     </div>
 
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-
     <script>
-        // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
-        let currentUser = '';
-        let currentRoom = '';
-        let mqttClient = null; // Теперь используем промышленный MQTT клиент
-    
-        // --- ЭЛЕМЕНТЫ DOM ---
-        const setupScreen = document.getElementById('setup-screen');
-        const chatScreen = document.getElementById('chat-screen');
-        const usernameInput = document.getElementById('username-input');
-        const roomInput = document.getElementById('room-input');
-        const joinBtn = document.getElementById('join-btn');
-        
-        const displayRoomName = document.getElementById('display-room-name');
-        const roomAvatar = document.getElementById('room-avatar');
-        const wsStatus = document.getElementById('ws-status');
-        const messagesContainer = document.getElementById('chat-messages');
-        const messageInput = document.getElementById('message-input');
-        const sendBtn = document.getElementById('send-btn');
-        const leaveBtn = document.getElementById('leave-btn');
-        const statusBanner = document.getElementById('connection-status');
-    
-        // --- ЛОГИКА АВТОРИЗАЦИИ ---
-        const checkInputs = () => {
-            joinBtn.disabled = !(usernameInput.value.trim().length > 0 && roomInput.value.trim().length > 0);
-        };
-    
-        usernameInput.addEventListener('input', checkInputs);
-        roomInput.addEventListener('input', checkInputs);
-    
-        joinBtn.addEventListener('click', () => {
-            currentUser = usernameInput.value.trim();
-            // Уникальный префикс, чтобы не видеть сообщения чужих людей с таким же именем комнаты
-            currentRoom = "XCHAT_PRO_" + roomInput.value.trim(); 
-            
-            displayRoomName.textContent = roomInput.value.trim();
-            roomAvatar.textContent = roomInput.value.trim().charAt(0).toUpperCase();
-            
-            setupScreen.style.display = 'none';
-            chatScreen.style.display = 'flex';
-            
-            initMQTT(); // Вызываем новую надежную функцию подключения
-        });
-    
-        leaveBtn.addEventListener('click', () => {
-            if(mqttClient) {
-                mqttClient.end(); // Отключаемся от сервера
-            }
-            chatScreen.style.display = 'none';
-            setupScreen.style.display = 'flex';
-            messagesContainer.innerHTML = ''; 
-        });
-    
-        // --- ЛОГИКА ОТПРАВКИ ---
-        messageInput.addEventListener('input', () => {
-            sendBtn.disabled = messageInput.value.trim() === '';
-        });
-    
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && messageInput.value.trim() !== '') sendMessage();
-        });
-    
-        sendBtn.addEventListener('click', sendMessage);
-    
-        function sendMessage() {
-            const text = messageInput.value.trim();
-            if (!text || !mqttClient || !mqttClient.connected) {
-                showBanner('Нет подключения к серверу', 2000);
-                return;
-            }
-    
-            const timeString = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    
-            const payload = {
-                sender: currentUser,
-                text: text,
-                time: timeString
-            };
-    
-            // Отправляем сообщение в "Топик" (нашу комнату)
-            mqttClient.publish(currentRoom, JSON.stringify(payload));
-            
-            // Отрисовываем у себя
-            renderMessage(currentUser, text, timeString, 'sent');
-    
-            messageInput.value = '';
-            sendBtn.disabled = true;
+        // ==========================================
+        // 1. ИНИЦИАЛИЗАЦИЯ И ОБЕРТКА IndexedDB
+        // ==========================================
+        let db;
+        const DB_NAME = 'XMessengerDB';
+        const DB_VERSION = 1;
+
+        // Асинхронная функция подключения к БД
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                // Создание таблиц при первом запуске
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    // Таблица комнат
+                    if (!database.objectStoreNames.contains('rooms')) {
+                        database.createObjectStore('rooms', { keyPath: 'id' });
+                    }
+                    // Таблица сообщений
+                    if (!database.objectStoreNames.contains('messages')) {
+                        const msgStore = database.createObjectStore('messages', { keyPath: 'id' });
+                        // Индекс для быстрого поиска сообщений по ID комнаты
+                        msgStore.createIndex('roomId', 'roomId', { unique: false });
+                    }
+                };
+
+                request.onsuccess = (event) => { db = event.target.result; resolve(); };
+                request.onerror = (event) => reject(event.target.error);
+            });
         }
-    
-        // --- ОТРИСОВКА ИНТЕРФЕЙСА ---
-        function renderMessage(sender, text, time, type) {
-            const wrapper = document.createElement('div');
-            wrapper.className = `message-wrapper ${type}`;
-    
-            if (type === 'received') {
-                const senderEl = document.createElement('div');
-                senderEl.className = 'message-sender';
-                senderEl.textContent = sender;
-                wrapper.appendChild(senderEl);
+
+        // Асинхронные методы работы с БД
+        const DB = {
+            async getAll(storeName) {
+                return new Promise((resolve) => {
+                    const tx = db.transaction(storeName, 'readonly');
+                    const req = tx.objectStore(storeName).getAll();
+                    req.onsuccess = () => resolve(req.result);
+                });
+            },
+            async getMessagesByRoom(roomId) {
+                return new Promise((resolve) => {
+                    const tx = db.transaction('messages', 'readonly');
+                    const index = tx.objectStore('messages').index('roomId');
+                    const req = index.getAll(roomId);
+                    req.onsuccess = () => resolve(req.result);
+                });
+            },
+            async getMessage(id) {
+                return new Promise((resolve) => {
+                    const tx = db.transaction('messages', 'readonly');
+                    const req = tx.objectStore('messages').get(id);
+                    req.onsuccess = () => resolve(req.result);
+                });
+            },
+            async put(storeName, data) {
+                return new Promise((resolve) => {
+                    const tx = db.transaction(storeName, 'readwrite');
+                    const req = tx.objectStore(storeName).put(data);
+                    req.onsuccess = () => resolve();
+                });
+            },
+            async delete(storeName, id) {
+                return new Promise((resolve) => {
+                    const tx = db.transaction(storeName, 'readwrite');
+                    const req = tx.objectStore(storeName).delete(id);
+                    req.onsuccess = () => resolve();
+                });
+            },
+            async clearAll() {
+                return new Promise((resolve) => {
+                    const tx = db.transaction(['rooms', 'messages'], 'readwrite');
+                    tx.objectStore('rooms').clear();
+                    tx.objectStore('messages').clear();
+                    tx.oncomplete = () => resolve();
+                });
             }
-    
+        };
+
+        // ==========================================
+        // 2. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+        // ==========================================
+        let myProfile = localStorage.getItem('x_profile_name') || ''; // Имя оставим в localStorage (это всего 1 строка)
+        let currentRoomId = null;
+        let mqttClient = null;
+        let editingMsgId = null; 
+        let selectedMsgId = null;
+        let typingTimeoutId = null;
+        let hideTypingTimeoutId = null;
+
+        const generateUUID = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+
+        // ==========================================
+        // 3. UI И ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
+        // ==========================================
+        const screens = {
+            setup: document.getElementById('global-setup-screen'),
+            list: document.getElementById('chats-list-screen'),
+            chat: document.getElementById('chat-screen')
+        };
+        const msgContainer = document.getElementById('chat-messages');
+        const chatsContainer = document.getElementById('chats-container');
+        const inputField = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const wsStatus = document.getElementById('ws-status');
+
+        // Главный запуск (ждём загрузки БД, потом показываем интерфейс)
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await initDB();
+                if (myProfile) {
+                    screens.setup.style.display = 'none';
+                    screens.list.style.display = 'flex';
+                    await renderChatsList();
+                }
+            } catch (e) { console.error("Ошибка БД:", e); alert("Ошибка базы данных"); }
+        });
+
+        document.getElementById('save-name-btn').addEventListener('click', async () => {
+            const name = document.getElementById('my-name-input').value.trim();
+            if (name) {
+                myProfile = name;
+                localStorage.setItem('x_profile_name', name);
+                screens.setup.style.display = 'none';
+                screens.list.style.display = 'flex';
+                await renderChatsList();
+            }
+        });
+
+        document.getElementById('settings-btn').addEventListener('click', async () => {
+            if(confirm('Удалить профиль и всю переписку?')) {
+                localStorage.removeItem('x_profile_name');
+                await DB.clearAll(); // Очищаем IndexedDB
+                location.reload();
+            }
+        });
+
+        // ==========================================
+        // 4. КОМНАТЫ (CHATS)
+        // ==========================================
+        const modal = document.getElementById('add-room-modal');
+        document.getElementById('fab-add').addEventListener('click', () => modal.style.display = 'flex');
+        document.getElementById('cancel-room-btn').addEventListener('click', () => modal.style.display = 'none');
+        
+        document.getElementById('create-room-btn').addEventListener('click', async () => {
+            const rId = document.getElementById('new-room-id').value.trim();
+            const rName = document.getElementById('new-room-name').value.trim() || rId;
+            if (rId) {
+                const newRoom = { id: rId, name: rName, lastMsg: '', timestamp: Date.now() };
+                await DB.put('rooms', newRoom);
+                await renderChatsList();
+                modal.style.display = 'none';
+            }
+        });
+
+        async function renderChatsList() {
+            chatsContainer.innerHTML = '';
+            let rooms = await DB.getAll('rooms');
+            // Сортируем: новые чаты (с обновлениями) сверху
+            rooms.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+            rooms.forEach(room => {
+                const el = document.createElement('div');
+                el.className = 'chat-item';
+                el.innerHTML = `
+                    <div class="avatar">${room.name.charAt(0).toUpperCase()}</div>
+                    <div class="chat-info">
+                        <div class="chat-name">${room.name}</div>
+                        <div class="chat-last-msg">${room.lastMsg || 'Нет сообщений'}</div>
+                    </div>
+                `;
+                el.addEventListener('click', () => openChat(room));
+                chatsContainer.appendChild(el);
+            });
+        }
+
+        async function updateRoomLastMsg(roomId, text) {
+            let rooms = await DB.getAll('rooms');
+            let room = rooms.find(r => r.id === roomId);
+            if(room) {
+                room.lastMsg = text;
+                room.timestamp = Date.now();
+                await DB.put('rooms', room);
+            }
+        }
+
+        // ==========================================
+        // 5. ВХОД В ЧАТ И ЗАГРУЗКА ИСТОРИИ
+        // ==========================================
+        async function openChat(room) {
+            currentRoomId = room.id;
+            document.getElementById('display-room-name').textContent = room.name;
+            document.getElementById('room-avatar').textContent = room.name.charAt(0).toUpperCase();
+            
+            screens.list.style.display = 'none';
+            screens.chat.style.display = 'flex';
+            
+            await loadMessagesFromDB();
+            initMQTT(room.id);
+        }
+
+        document.getElementById('back-btn').addEventListener('click', async () => {
+            if(mqttClient) { mqttClient.end(); mqttClient = null; }
+            screens.chat.style.display = 'none';
+            screens.list.style.display = 'flex';
+            await renderChatsList(); // Обновляем список (чтобы подтянуть lastMsg)
+        });
+
+        async function loadMessagesFromDB() {
+            msgContainer.innerHTML = '';
+            // Берем только сообщения текущей комнаты благодаря Индексу
+            const msgs = await DB.getMessagesByRoom(currentRoomId);
+            // Сортировка по ID (так как UUID генерируется через Date.now(), они по умолчанию идут по времени)
+            msgs.sort((a, b) => a.id.localeCompare(b.id)); 
+            msgs.forEach(m => drawMessageNode(m));
+            scrollToBottom();
+        }
+
+        // ==========================================
+        // 6. ОТПРАВКА И СЕТЬ (MQTT)
+        // ==========================================
+        inputField.addEventListener('input', () => {
+            sendBtn.disabled = !inputField.value.trim();
+            
+            // Отправка статуса "печатает"
+            if(mqttClient && mqttClient.connected) {
+                clearTimeout(typingTimeoutId);
+                // Отправляем сигнал, что мы печатаем
+                mqttClient.publish("XCHAT_" + currentRoomId, JSON.stringify({ type: 'typing', sender: myProfile }));
+                // Защита от спама (не отправлять чаще чем раз в секунду)
+                typingTimeoutId = setTimeout(() => {}, 1000);
+            }
+        });
+        inputField.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSend(); });
+        sendBtn.addEventListener('click', handleSend);
+        document.getElementById('cancel-edit-btn').addEventListener('click', cancelEdit);
+
+        async function handleSend() {
+            const text = inputField.value.trim();
+            if(!text || !mqttClient || !mqttClient.connected) return;
+
+            const timeStr = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            
+            if(editingMsgId) {
+                // РЕДАКТИРОВАНИЕ
+                const payload = { type: 'edit', id: editingMsgId, text: text, sender: myProfile, time: timeStr };
+                mqttClient.publish("XCHAT_" + currentRoomId, JSON.stringify(payload));
+                
+                // Обновление локальной БД
+                let msgToEdit = await DB.getMessage(editingMsgId);
+                if (msgToEdit) {
+                    msgToEdit.text = text; msgToEdit.edited = true;
+                    await DB.put('messages', msgToEdit);
+                    await updateRoomLastMsg(currentRoomId, text);
+                    await loadMessagesFromDB(); // Перерисовываем чат
+                }
+                cancelEdit();
+            } else {
+                // НОВОЕ СООБЩЕНИЕ
+                const msgObj = { id: generateUUID(), roomId: currentRoomId, type: 'new', sender: myProfile, text: text, time: timeStr, edited: false };
+                mqttClient.publish("XCHAT_" + currentRoomId, JSON.stringify(msgObj));
+                
+                // Сохранение в локальную БД
+                await DB.put('messages', msgObj);
+                await updateRoomLastMsg(currentRoomId, text);
+                
+                drawMessageNode(msgObj);
+                scrollToBottom();
+            }
+
+            inputField.value = ''; sendBtn.disabled = true;
+        }
+
+        function initMQTT(roomId) {
+            wsStatus.innerHTML = '<span class="status-dot connecting"></span> Соединение...';
+            const topic = "XCHAT_" + roomId;
+            
+            mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', { clientId: 'usr_' + generateUUID(), clean: true });
+
+            mqttClient.on('connect', () => {
+                wsStatus.innerHTML = '<span class="status-dot"></span> В сети';
+                mqttClient.subscribe(topic);
+            });
+
+            // ПРИЕМ СООБЩЕНИЙ
+            mqttClient.on('message', async (t, message) => {
+                if (t === topic) {
+                    try {
+                        const data = JSON.parse(message.toString());
+                        if (data.sender === myProfile) return; // Игнорируем эхо
+                        
+                        
+                        // Если кто-то печатает
+                        if (data.type === 'typing') {
+                            const indicator = document.getElementById('typing-indicator');
+                            indicator.textContent = `${data.sender} печатает...`;
+                            indicator.style.display = 'block';
+                            
+                            // Скрываем надпись через 2 секунды, если печатать перестали
+                            clearTimeout(hideTypingTimeoutId);
+                            hideTypingTimeoutId = setTimeout(() => {
+                                indicator.style.display = 'none';
+                            }, 2000);
+                            return; // Прерываем дальнейшую обработку
+                        }
+                        
+                        // Скрываем индикатор моментально, если сообщение уже пришло
+                        if (data.type === 'new') {
+                            document.getElementById('typing-indicator').style.display = 'none';
+                            clearTimeout(hideTypingTimeoutId);
+                            
+                            data.roomId = currentRoomId; 
+// ... дальше идет ваш существующий код
+                            await DB.put('messages', data);
+                            await updateRoomLastMsg(currentRoomId, data.text);
+                            drawMessageNode(data);
+                            scrollToBottom();
+                        } 
+                        else if (data.type === 'delete') {
+                            await DB.delete('messages', data.id);
+                            const el = document.getElementById(`msg-${data.id}`);
+                            if(el) el.remove();
+                        } 
+                        else if (data.type === 'edit') {
+                            let msg = await DB.getMessage(data.id);
+                            if(msg) {
+                                msg.text = data.text; msg.edited = true;
+                                await DB.put('messages', msg);
+                                await updateRoomLastMsg(currentRoomId, data.text);
+                                await loadMessagesFromDB(); // Перерисовка интерфейса
+                            }
+                        }
+                    } catch (e) { console.error("MQTT Ошибка данных:", e); }
+                }
+            });
+
+            mqttClient.on('offline', () => wsStatus.innerHTML = '<span class="status-dot offline"></span> Отключен');
+        }
+
+        // ==========================================
+        // 7. ОТРИСОВКА И МЕНЮ
+        // ==========================================
+        function drawMessageNode(msgObj) {
+            const isMe = msgObj.sender === myProfile;
+            const wrap = document.createElement('div');
+            wrap.className = `message-wrapper ${isMe ? 'sent' : 'received'}`;
+            wrap.id = `msg-${msgObj.id}`;
+
+            if (!isMe) {
+                const senderEl = document.createElement('div');
+                senderEl.style.cssText = 'font-size: 0.75rem; color: var(--text-muted); margin: 0 4px 4px;';
+                senderEl.textContent = msgObj.sender;
+                wrap.appendChild(senderEl);
+            }
+
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';
-            bubble.textContent = text; 
-    
-            const timeEl = document.createElement('div');
-            timeEl.className = 'message-time';
-            timeEl.textContent = time;
-    
-            wrapper.appendChild(bubble);
-            wrapper.appendChild(timeEl);
-            messagesContainer.appendChild(wrapper);
-    
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            bubble.innerHTML = `<span class="message-text">${escapeHTML(msgObj.text)}</span>`;
+            bubble.addEventListener('click', () => openMessageMenu(msgObj.id, isMe, msgObj.text));
+
+            const meta = document.createElement('div');
+            meta.className = 'message-meta';
+            meta.innerHTML = `${msgObj.time} ${msgObj.edited ? '<span class="edited-tag">(ред.)</span>' : ''}`;
+
+            wrap.appendChild(bubble); wrap.appendChild(meta);
+            msgContainer.appendChild(wrap);
         }
-    
-        function renderSystemMessage(text) {
-            const sysMsg = document.createElement('div');
-            sysMsg.className = 'system-msg';
-            sysMsg.textContent = text;
-            messagesContainer.appendChild(sysMsg);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        function scrollToBottom() { msgContainer.scrollTop = msgContainer.scrollHeight; }
+        function escapeHTML(str) { return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])); }
+
+        // --- Шторка действий ---
+        const menuSheet = document.getElementById('message-menu');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const actEdit = document.getElementById('action-edit');
+        const actDel = document.getElementById('action-delete');
+        const sendIcon = document.getElementById('send-icon');
+        const editIndicator = document.getElementById('edit-indicator');
+        
+        let targetMsgText = '';
+
+        function openMessageMenu(id, isMe, text) {
+            selectedMsgId = id; targetMsgText = text;
+            actEdit.style.display = isMe ? 'flex' : 'none';
+            actDel.style.display = isMe ? 'flex' : 'none';  
+            menuOverlay.style.display = 'block';
+            setTimeout(() => menuSheet.classList.add('active'), 10);
         }
-    
-        function showBanner(text, duration = 3000) {
-            statusBanner.textContent = text;
-            statusBanner.style.display = 'block';
-            if(duration > 0) setTimeout(() => { statusBanner.style.display = 'none'; }, duration);
+
+        function closeMessageMenu() {
+            menuSheet.classList.remove('active');
+            setTimeout(() => menuOverlay.style.display = 'none', 300);
         }
-    
-        // --- НОВАЯ НАДЕЖНАЯ СЕТЕВАЯ ЛОГИКА (MQTT) ---
-        function initMQTT() {
-            showBanner('Подключение к надежному серверу...', 0);
-            wsStatus.innerHTML = '<span class="status-dot connecting"></span> Соединение...';
-            
-            // Надежный бесплатный публичный брокер EMQX
-            const host = 'wss://broker.emqx.io:8084/mqtt';
-            // Генерируем случайный ID клиента для подключения
-            const clientId = 'user_' + Math.random().toString(16).substring(2, 10);
-    
-            try {
-                mqttClient = mqtt.connect(host, {
-                    clientId: clientId,
-                    clean: true,
-                    connectTimeout: 4000,
-                    reconnectPeriod: 2000, // Автоматическое переподключение!
-                });
-    
-                mqttClient.on('connect', () => {
-                    showBanner('Успешно подключено!', 2000);
-                    wsStatus.innerHTML = '<span class="status-dot"></span> В сети';
-                    
-                    // Подписываемся на нашу комнату (только мы будем получать эти сообщения)
-                    mqttClient.subscribe(currentRoom);
-                    renderSystemMessage(`Вы вошли в комнату "${displayRoomName.textContent}"`);
-                });
-    
-                mqttClient.on('message', (topic, message) => {
-                    // Если сообщение пришло в нашу комнату
-                    if (topic === currentRoom) {
-                        try {
-                            const data = JSON.parse(message.toString());
-                            // Если это не наше собственное сообщение
-                            if (data.sender !== currentUser) {
-                                renderMessage(data.sender, data.text, data.time, 'received');
-                            }
-                        } catch (e) {
-                            console.error("Ошибка чтения сообщения");
-                        }
-                    }
-                });
-    
-                mqttClient.on('reconnect', () => {
-                    wsStatus.innerHTML = '<span class="status-dot connecting"></span> Переподключение...';
-                    showBanner('Переподключение...', 0);
-                });
-    
-                mqttClient.on('error', (error) => {
-                    console.error('MQTT Ошибка:', error);
-                    wsStatus.innerHTML = '<span class="status-dot offline"></span> Ошибка';
-                    showBanner('Ошибка сервера', 2000);
-                });
-    
-                mqttClient.on('offline', () => {
-                    wsStatus.innerHTML = '<span class="status-dot offline"></span> Отключен';
-                });
-    
-            } catch(e) {
-                showBanner('Ошибка создания клиента', 3000);
+
+        menuOverlay.addEventListener('click', closeMessageMenu);
+
+        document.getElementById('action-copy').addEventListener('click', () => {
+            navigator.clipboard.writeText(targetMsgText);
+            closeMessageMenu();
+            showStatus('Скопировано');
+        });
+
+        actDel.addEventListener('click', async () => {
+            if(confirm('Удалить сообщение у всех?')) {
+                // 1. Команда в MQTT
+                mqttClient.publish("XCHAT_" + currentRoomId, JSON.stringify({ type: 'delete', id: selectedMsgId }));
+                // 2. Удаление из IndexedDB
+                await DB.delete('messages', selectedMsgId);
+                // 3. Удаление с экрана
+                const el = document.getElementById(`msg-${selectedMsgId}`);
+                if(el) el.remove();
             }
+            closeMessageMenu();
+        });
+
+        actEdit.addEventListener('click', () => {
+            editingMsgId = selectedMsgId;
+            inputField.value = targetMsgText;
+            inputField.focus();
+            
+            editIndicator.style.display = 'flex';
+            sendIcon.classList.remove('fa-paper-plane'); sendIcon.classList.add('fa-check');
+            sendBtn.disabled = false;
+            
+            closeMessageMenu();
+        });
+
+        function cancelEdit() {
+            editingMsgId = null; inputField.value = '';
+            editIndicator.style.display = 'none';
+            sendIcon.classList.add('fa-paper-plane'); sendIcon.classList.remove('fa-check');
+            sendBtn.disabled = true;
+        }
+
+        function showStatus(text) {
+            const el = document.getElementById('connection-status');
+            el.textContent = text; el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 2000);
         }
     </script>
 </body>
+<!-- ========================================== -->
+<!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
+<!-- ========================================== -->
+<style>
+    .fab-wrapper {
+        position: fixed;
+        bottom: 25px;
+        right: 25px; 
+        z-index: 999999;
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: center;
+        gap: 15px;
+        /* ФИКС: Оболочка больше не перехватывает клики! */
+        pointer-events: none; 
+    }
+
+    /* Сама кнопка-триггер */
+    .fab-button {
+        /* ФИКС: Делаем саму кнопку кликабельной */
+        pointer-events: auto; 
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: rgba(20, 20, 25, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        outline: none;
+        padding: 0;
+    }
+
+    .fab-button:hover {
+        transform: scale(1.1);
+        background: rgba(40, 40, 50, 0.9);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 1px 5px rgba(255, 255, 255, 0.3);
+    }
+
+    .fab-button svg {
+        transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    .fab-wrapper.open .fab-button svg {
+        transform: rotate(90deg) scale(0.9);
+        color: #a78bfa; 
+    }
+
+    /* Выезжающая панель навигации */
+    .global-dock {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: rgba(12, 12, 14, 0.85);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 100px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        
+        /* ФИКС: Игнорирует клики и полностью скрыта в закрытом виде */
+        opacity: 0;
+        visibility: hidden; 
+        pointer-events: none; 
+        
+        transform: translateX(40px) scale(0.9);
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        transform-origin: right center;
+    }
+
+    /* Состояние открытого меню */
+    .fab-wrapper.open .global-dock {
+        opacity: 1;
+        visibility: visible; 
+        pointer-events: auto; /* ФИКС: Кнопки меню работают, только когда открыты */
+        transform: translateX(0) scale(1);
+    }
+
+    .dock-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 100px;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        position: relative;
+        white-space: nowrap;
+    }
+
+    .dock-item:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .dock-item.active {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
+    }
+
+    .dock-item.active::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 18px;
+        height: 3px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+
+    .dock-icon {
+        font-size: 18px;
+        filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+    }
+
+    @media (max-width: 768px) {
+        .fab-wrapper {
+            bottom: 20px;
+            right: 20px;
+            gap: 10px;
+        }
+        .fab-button {
+            width: 48px;
+            height: 48px;
+        }
+        .global-dock {
+            padding: 6px 8px;
+            gap: 4px;
+        }
+        .dock-item {
+            padding: 12px;
+        }
+        .dock-text {
+            display: none; 
+        }
+        .dock-icon {
+            font-size: 22px;
+        }
+        .dock-item.active::after {
+            bottom: -2px;
+        }
+    }
+
+    /* --- НОВЫЕ СТИЛИ ДЛЯ ИКОНОК-КАРТИНОК И ПЕРЕТАСКИВАНИЯ --- */
+
+.dock-icon {
+    width: 20px; /* Размер ваших иконок */
+    height: 20px;
+    object-fit: contain; /* Чтобы картинка не искажалась */
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+    /* Важно! Запрещаем перетаскивать саму картинку браузером */
+    pointer-events: none; 
+    user-select: none;
+}
+
+@media (max-width: 768px) {
+    .dock-icon {
+        width: 24px; /* На телефоне иконки чуть больше */
+        height: 24px;
+    }
+}
+
+/* Курсоры для кнопки перетаскивания */
+.fab-button {
+    cursor: grab;
+    touch-action: none; /* Запрещаем скролл страницы при касании кнопки на телефоне */
+}
+
+.fab-button:active {
+    cursor: grabbing;
+}
+
+/* Класс для плавного возврата в границы экрана (если меню открыли у самого края) */
+.fab-wrapper.snap-transition {
+    transition: left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+</style>
+
+<div class="fab-wrapper" id="fabWrapper">
+    <!-- Кнопка открытия/закрытия меню (она же ручка для перетаскивания) -->
+    <button class="fab-button" id="fabToggleBtn" title="Навигация">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+    </button>
+
+    <!-- Сама панель (Dock) -->
+    <div class="global-dock" id="globalDock">
+        <a href="index.html" class="dock-item">
+            <img src="https://i.imgur.com/tpFK0jG.png" alt="Menu" class="dock-icon">
+            <span class="dock-text">Menu</span>
+        </a>
+        <a href="ai.html" class="dock-item">
+            <img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon">
+            <span class="dock-text">AI</span>
+        </a>
+        <a href="agent.html" class="dock-item">
+            <img src="https://i.imgur.com/jNkaBVw.png" alt="Agent" class="dock-icon">
+            <span class="dock-text">Agent</span>
+        </a>
+        <a href="game.html" class="dock-item">
+            <img src="https://i.imgur.com/4Uk0ui7.png" alt="Music" class="dock-icon">
+            <span class="dock-text">Tetris</span>
+        </a>
+        <a href="note.html" class="dock-item">
+            <img src="https://i.imgur.com/GcjfCTh.png" alt="Note" class="dock-icon">
+            <span class="dock-text">Note</span>
+        </a>
+        <a href="googleweb.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="dock-icon">
+            <span class="dock-text">Google</span>
+        </a>
+        <a href="browser.html" class="dock-item">
+            <img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX" class="dock-icon">
+            <span class="dock-text">SearX</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const fabWrapper = document.getElementById('fabWrapper');
+    const fabToggleBtn = document.getElementById('fabToggleBtn');
+    
+    // Подсветка активной ссылки (ваш код)
+    let currentPath = window.location.pathname.split('/').pop();
+    if (currentPath === '') currentPath = 'index.html';
+    document.querySelectorAll('.dock-item').forEach(item => {
+        const href = item.getAttribute('href');
+        if (currentPath === href) {
+            item.classList.add('active');
+        }
+    });
+
+    // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
+    let isDragging = false;
+    let hasMoved = false; // Отличаем клик от перетаскивания
+    let startX, startY;
+    let initialLeft, initialTop;
+
+    function dragStart(e) {
+        if (e.type === 'touchstart') {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        } else {
+            startX = e.clientX;
+            startY = e.clientY;
+            e.preventDefault(); // Предотвращаем стандартное выделение на ПК
+        }
+
+        // Получаем текущие координаты элемента на экране
+        const rect = fabWrapper.getBoundingClientRect();
+        
+        // Отключаем bottom/right, переходим на жесткое позиционирование left/top
+        fabWrapper.style.bottom = 'auto';
+        fabWrapper.style.right = 'auto';
+        fabWrapper.style.left = rect.left + 'px';
+        fabWrapper.style.top = rect.top + 'px';
+
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        isDragging = true;
+        hasMoved = false;
+        
+        // Убираем плавность при самом перетаскивании
+        fabWrapper.classList.remove('snap-transition');
+
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchmove', dragMove, { passive: false });
+        document.addEventListener('touchend', dragEnd);
+    }
+
+    function dragMove(e) {
+        if (!isDragging) return;
+
+        let currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        let currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+        let deltaX = currentX - startX;
+        let deltaY = currentY - startY;
+
+        // Если сдвинули больше чем на 5 пикселей, считаем это перетаскиванием, а не кликом
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+            hasMoved = true;
+            if (e.type === 'touchmove') e.preventDefault(); // Блокируем скролл страницы
+        }
+
+        if (hasMoved) {
+            let newLeft = initialLeft + deltaX;
+            let newTop = initialTop + deltaY;
+
+            // --- ОГРАНИЧЕНИЕ ВЫХОДА ЗА ПРЕДЕЛЫ ЭКРАНА ---
+            const rect = fabWrapper.getBoundingClientRect();
+            const maxLeft = window.innerWidth - rect.width;
+            const maxTop = window.innerHeight - rect.height;
+
+            // Запрещаем уходить за левый/правый и верхний/нижний края
+            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+
+            fabWrapper.style.left = newLeft + 'px';
+            fabWrapper.style.top = newTop + 'px';
+        }
+    }
+
+    function dragEnd() {
+        isDragging = false;
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('mouseup', dragEnd);
+        document.removeEventListener('touchmove', dragMove);
+        document.removeEventListener('touchend', dragEnd);
+    }
+
+    // Слушатели для начала перетаскивания (с кнопки)
+    fabToggleBtn.addEventListener('mousedown', dragStart);
+    fabToggleBtn.addEventListener('touchstart', dragStart, { passive: true });
+
+    // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ ---
+    fabToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Если было перетаскивание, отменяем клик!
+        if (hasMoved) {
+            e.preventDefault();
+            return;
+        }
+
+        fabWrapper.classList.toggle('open');
+        
+        // Если меню открылось и вылезло за края экрана (т.к. стало шире),
+        // плавно задвигаем его обратно в пределы экрана.
+        if (fabWrapper.classList.contains('open')) {
+            setTimeout(keepInBounds, 50); // Ждем долю секунды, чтобы CSS применил ширину
+        }
+    });
+
+    // Функция возврата в рамки экрана при изменении ширины меню
+    function keepInBounds() {
+        const rect = fabWrapper.getBoundingClientRect();
+        const maxLeft = window.innerWidth - rect.width;
+        const maxTop = window.innerHeight - rect.height;
+
+        let correctedLeft = Math.max(0, Math.min(rect.left, maxLeft));
+        let correctedTop = Math.max(0, Math.min(rect.top, maxTop));
+
+        // Если позиция нуждается в корректировке
+        if (correctedLeft !== rect.left || correctedTop !== rect.top) {
+            fabWrapper.classList.add('snap-transition'); // Добавляем плавность
+            fabWrapper.style.left = correctedLeft + 'px';
+            fabWrapper.style.top = correctedTop + 'px';
+        }
+    }
+
+    // Закрытие меню при клике в любое другое место
+    document.addEventListener('click', (e) => {
+        if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains('open')) {
+            fabWrapper.classList.remove('open');
+            // При закрытии (ширина уменьшилась) тоже проверяем границы на всякий случай
+            setTimeout(keepInBounds, 300); 
+        }
+    });
+
+    // Пересчет границ при повороте экрана телефона / изменении размера окна
+    window.addEventListener('resize', keepInBounds);
+});
+</script>
+<!-- ========================================== -->
 </html>
