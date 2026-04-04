@@ -433,6 +433,12 @@
                     <div class="badge">3</div>
                 </div>
 
+                <div class="app-link" onmousedown="startTouch('message.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('message.html', event)" ontouchend="endTouch()">
+                    <div class="app-icon" style="background: linear-gradient(135deg, #217462, #1d685e);"><img src="https://i.imgur.com/s3F0zVz.png" alt="message.html"></div>
+                    <span class="app-name">Messanger</span>
+                    <div class="badge">3</div>
+                </div>
+
                 <div class="app-link" onmousedown="startTouch('docsint.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('docsint.html', event)" ontouchend="endTouch()">
                     <div class="app-icon" style="background: linear-gradient(135deg, #214874, #1d3353);"><img src="https://i.imgur.com/0foXhiu.png" alt="docai.html"></div>
                     <span class="app-name">WordAI-beta</span>
@@ -576,6 +582,7 @@
                 if(event.currentTarget.getAttribute('onmousedown').includes('browser')) openApp('browser.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('roleplay')) openApp('roleplay.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('img')) openApp('imgenerate.html');
+                if(event.currentTarget.getAttribute('onmousedown').includes('message')) openApp('message.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('information')) openApp('information.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('answer')) openApp('answer.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('paint')) openApp('paint.html');
