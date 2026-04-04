@@ -122,32 +122,81 @@
         /* Полноэкранные окна (перекрывают нижнюю навигацию) */
         #chat-screen, #creator-screen, #group-creator-screen, #profile-screen { z-index: 50; }
         #history-view-screen { z-index: 60; } 
-        #chat-screen .header { padding: 10px 15px; }
-        .chat-header-info { display: flex; align-items: center; gap: 10px; flex: 1; margin-left: 10px;}
-        .chat-header-info img { width: 40px; height: 40px; border-radius: 12px; object-fit: cover;}
+        /* Фон чата для обоев */
+        #chat-screen {
+            background-image: url('https://i.imgur.com/8Q8XG0S.jpeg'); /* Сюда потом можно подставлять URL обоев из настроек */
+            background-size: cover; background-position: center;
+        }
+        #chat-screen::before {
+            content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+            background: rgba(0,0,0,0.4); z-index: 1; pointer-events: none;
+        }
+        #chat-screen .header, #chat-screen .chat-messages, #chat-screen .chat-input-wrapper { z-index: 2; position: relative; }
         
-        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        #chat-screen .header { padding: 10px 15px; background: rgba(20, 20, 25, 0.6); backdrop-filter: blur(10px); border: none; }
+        .chat-header-info { display: flex; align-items: center; gap: 12px; flex: 1; margin-left: 10px; cursor: pointer; }
+        .chat-header-info img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); }
+        .chat-header-text { display: flex; flex-direction: column; }
+        .chat-header-title { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .chat-header-subtitle { font-size: 12px; color: var(--text-muted); }
+
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px 20px 90px 20px; display: flex; flex-direction: column; gap: 20px; }
         .msg-wrapper { display: flex; width: 100%; flex-direction: column; }
         .msg-wrapper.user { align-items: flex-end; }
         .msg-wrapper.ai { align-items: flex-start; }
-        
-        .msg-sender-name { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; margin-left: 12px; margin-right: 12px;}
+        .msg-sender-name { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 6px; margin-left: 16px; font-weight: 500; }
 
-        /* Markdown стили внутри бабблов */
-        .bubble { max-width: 85%; padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.5; word-wrap: break-word; }
-        .bubble p { margin-bottom: 8px; }
+        /* ПРЕМИАЛЬНЫЕ MESSAGE BUBBLES */
+        .bubble { 
+            max-width: 90%; 
+            padding: 16px 20px; 
+            border-radius: 24px; 
+            font-size: 15px; 
+            line-height: 1.6; 
+            word-wrap: break-word; 
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px);
+            position: relative;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .bubble p { margin-bottom: 10px; }
         .bubble p:last-child { margin-bottom: 0; }
-        .bubble em { color: var(--text-muted); font-style: italic; } /* Звездочки RP серые */
-        .bubble strong { color: #fff; }
+        .bubble em { opacity: 0.85; font-style: italic; font-weight: 300; } 
         
-        /* Кнопки под сообщениями (Редактировать, Удалить и т.д.) */
-        .msg-actions { display: flex; gap: 15px; margin-top: 6px; font-size: 12px; color: var(--text-muted); opacity: 0.6; padding: 0 10px; }
-        .msg-actions i { cursor: pointer; transition: color 0.2s; }
-        .msg-actions i:hover { color: var(--text-main); }
+        /* ИИ: Темное стекло с легким градиентом и свечением внутри */
+        .msg-wrapper.ai .bubble { 
+            background: linear-gradient(145deg, rgba(42, 44, 54, 0.95), rgba(28, 30, 38, 0.85)); 
+            border: 1px solid rgba(255,255,255,0.08); 
+            border-top-left-radius: 4px; 
+            color: #e4e4e4;
+            box-shadow: inset 1px 1px 0 rgba(255,255,255,0.05), 0 8px 20px rgba(0,0,0,0.3);
+        }
+        /* Пользователь: Яркий градиент */
+        .msg-wrapper.user .bubble { 
+            background: linear-gradient(135deg, #5b73ff, #8d4aff); 
+            border: 1px solid rgba(255,255,255,0.15); 
+            border-top-right-radius: 4px; 
+            color: #ffffff;
+            box-shadow: inset 1px 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(91, 115, 255, 0.35);
+        }
+
+        .msg-actions { display: flex; gap: 18px; margin-top: 8px; font-size: 15px; color: rgba(255,255,255,0.5); padding: 0 16px; opacity: 0; transition: opacity 0.3s; }
+        .msg-wrapper:hover .msg-actions { opacity: 1; }
+        .msg-actions i { cursor: pointer; transition: 0.2s; padding: 4px; } /* padding увеличивает область тапа */
+        .msg-actions i:hover { color: #fff; transform: scale(1.1); }
         .msg-wrapper.user .msg-actions { justify-content: flex-end; }
-        
-        .msg-wrapper.ai .bubble { background-color: var(--chat-ai); border: 1px solid var(--border-color); border-bottom-left-radius: 4px; }
-        .msg-wrapper.user .bubble { background: var(--chat-user); border-bottom-right-radius: 4px; }
+
+        /* ЭКРАН ПРИКРЕПЛЕННЫХ СООБЩЕНИЙ (Полноэкранный) */
+        #pinned-screen { z-index: 250; background: var(--bg-dark); }
+        .ps-list { padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; }
+        .ps-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .ps-card-content { font-size: 15px; color: var(--text-main); line-height: 1.6; max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.02); }
+        .ps-actions { display: flex; gap: 12px; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px;}
+        .ps-btn { flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 14px; border-radius: 14px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s; color: white;}
+        .ps-btn:active { transform: scale(0.95); }
+        .ps-btn.edit { background: rgba(91, 115, 255, 0.15); color: #8a9fff; border: 1px solid rgba(91, 115, 255, 0.3); }
+        .ps-btn.unpin { background: rgba(255, 165, 0, 0.15); color: #ffb732; border: 1px solid rgba(255, 165, 0, 0.3); }
+        .ps-btn.delete { background: rgba(255, 74, 74, 0.15); color: #ff6b6b; border: 1px solid rgba(255, 74, 74, 0.3); }
 
         /* Панель триггеров ботов (для групп) */
         .group-triggers { display: none; padding: 10px 15px; background: rgba(28, 30, 38, 0.95); border-top: 1px solid var(--border-color); gap: 10px; overflow-x: auto; white-space: nowrap; }
@@ -156,27 +205,53 @@
         .trigger-btn img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
         .trigger-btn:hover { border-color: var(--accent-color); }
 
-        .chat-input-area { padding: 10px 15px; background: var(--bg-dark); border-top: 1px solid var(--border-color); display: flex; align-items: flex-end; gap: 10px; }
-        .chat-input-area textarea { flex: 1; background: var(--bg-panel); border: none; border-radius: 20px; padding: 12px 16px; resize: none; min-height: 44px; max-height: 120px; }
-        .send-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--accent-gradient); border: none; color: white; font-size: 18px; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+        .chat-input-wrapper { position: absolute; bottom: 0; width: 100%; padding: 15px 20px; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); }
+        .chat-input-pill { display: flex; align-items: flex-end; gap: 10px; background: rgba(40, 42, 50, 0.9); backdrop-filter: blur(15px); border-radius: 30px; padding: 6px 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .input-icon-btn { background: none; border: none; color: var(--text-muted); font-size: 20px; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .input-icon-btn:hover { color: #fff; }
+        .chat-input-pill textarea { flex: 1; background: transparent; border: none; color: #fff; font-size: 15px; padding: 10px 0; resize: none; min-height: 40px; max-height: 120px; line-height: 1.4; box-shadow: none; outline: none; }
+        .chat-input-pill textarea::placeholder { color: rgba(255,255,255,0.4); }
+        .scroll-bottom-fab { position: absolute; right: 20px; bottom: 85px; width: 40px; height: 40px; border-radius: 50%; background: rgba(40, 42, 50, 0.8); backdrop-filter: blur(5px); color: #fff; display: flex; justify-content: center; align-items: center; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; z-index: 10; opacity: 0.8; }
 
         .loader { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .empty-state { text-align: center; color: var(--text-muted); margin-top: 50px; padding: 20px;}
 
         /* Всплывающее меню чата */
-        .chat-menu-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; opacity: 0; transition: opacity 0.3s; }
-        .chat-menu-overlay.active { display: block; opacity: 1; }
-        .chat-dropdown { position: absolute; top: 60px; right: 15px; width: 260px; background: rgba(28, 30, 38, 0.95); backdrop-filter: blur(15px); border: 1px solid var(--border-color); border-radius: 16px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 12px; transform: translateY(-10px); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
-        .chat-menu-overlay.active .chat-dropdown { transform: translateY(0); }
+        /* Боковое меню (Скриншот 2) */
+        .side-menu-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .side-menu-overlay.active { opacity: 1; visibility: visible; }
         
-        .chat-menu-item { display: flex; flex-direction: column; gap: 5px; }
-        .chat-menu-item label { font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between;}
-        .chat-menu-item input[type=range] { width: 100%; accent-color: var(--accent-color); }
-        .chat-menu-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: 10px; cursor: pointer; text-align: left; font-size: 14px; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
-        .chat-menu-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--accent-color); }
-        .chat-menu-btn.danger { color: #ff6b6b; }
-        .chat-menu-btn.danger:hover { background: rgba(255, 107, 107, 0.1); border-color: #ff6b6b; }
+        .side-panel { position: absolute; top: 0; right: -100%; width: 85%; max-width: 380px; height: 100%; background: #16181f; box-shadow: -10px 0 30px rgba(0,0,0,0.5); transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; z-index: 101; overflow-y: auto; }
+        .side-menu-overlay.active .side-panel { right: 0; }
+        
+        .sp-list { display: flex; flex-direction: column; padding: 20px 0; }
+        .sp-item { display: flex; justify-content: space-between; align-items: center; padding: 18px 25px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03); transition: 0.2s; }
+        .sp-item:hover { background: rgba(255,255,255,0.05); }
+        .sp-item-title { font-size: 15px; color: #f0f0f0; }
+        .sp-item-value { font-size: 14px; color: var(--text-muted); display: flex; align-items: center; gap: 10px; }
+        
+        .sp-badge { background: rgba(255, 165, 0, 0.15); color: #ffa500; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;}
+        
+        .sp-block { background: rgba(255,255,255,0.03); border-radius: 16px; padding: 20px; margin: 10px 20px; display: flex; flex-direction: column; gap: 20px; }
+        .sp-block-title { font-size: 15px; font-weight: 600; }
+        
+        /* Слайдер Shy/Flirty */
+        .slider-labels { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+        .custom-slider { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: #333; outline: none; }
+        .custom-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; cursor: pointer; box-shadow: 0 0 10px rgba(123, 90, 255, 0.5); border: 2px solid var(--accent-color); }
+        
+        /* Переключатель (Toggle) */
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-round { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
+        .slider-round:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider-round { background-color: var(--accent-color); }
+        input:checked + .slider-round:before { transform: translateX(20px); }
+
+        .sp-bottom-btn { margin: 20px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 20px; display: flex; justify-content: center; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .sp-bottom-btn:hover { background: rgba(255,255,255,0.1); }
 
         /* Модалка истории */
         .history-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; max-height: 80%; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.7); z-index: 110; flex-direction: column; }
@@ -187,9 +262,109 @@
         .history-item:hover { border-color: var(--accent-color); transform: scale(0.98); }
         .history-item-date { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
         .history-item-msgs { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Модалка выбора моделей (Скриншот 3) */
+        #model-screen { z-index: 200; background: #121318; overflow-y: auto; display: none; padding-bottom: 100px; }
+        #model-screen.active { display: block; }
+        
+        .ms-header { display: flex; align-items: center; justify-content: space-between; padding: 20px; position: sticky; top: 0; background: #121318; z-index: 10; }
+        .ms-title { font-size: 20px; font-weight: 700; text-align: center; flex: 1; }
+        .ms-energy { font-weight: 700; color: #ffd700; font-size: 18px; display: flex; align-items: center; gap: 5px; }
+        
+        .ms-category { padding: 0 20px; margin-bottom: 25px; }
+        .ms-badge { display: inline-block; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 14px; margin-bottom: 15px; }
+        .ms-badge.free { background: #6eff8f; color: #000; }
+        .ms-badge.premium { background: linear-gradient(90deg, #4a8dff, #b54aff); color: #fff; }
+        .ms-badge.energy { background: #ffaa00; color: #000; }
+        
+        .ms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .ms-card { background: #1e2028; border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 18px; position: relative; cursor: pointer; transition: 0.2s; min-height: 180px; display: flex; flex-direction: column; }
+        .ms-card.active { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(123, 90, 255, 0.2); }
+        .ms-card-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; }
+        .ms-card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; flex: 1; }
+        .ms-card-icon { position: absolute; bottom: 15px; right: 15px; color: var(--text-muted); font-size: 16px; }
+        .ms-check { position: absolute; top: 15px; right: 15px; background: var(--accent-color); color: #fff; width: 22px; height: 22px; border-radius: 6px; display: none; justify-content: center; align-items: center; font-size: 12px; }
+        .ms-card.active .ms-check { display: flex; }
+        
+        .ms-fixed-bottom { position: fixed; bottom: 0; left: 0; width: 100%; padding: 20px; background: linear-gradient(to top, #121318 80%, transparent); }
+        .ms-update-btn { width: 100%; max-width: 600px; margin: 0 auto; background: var(--accent-gradient); color: #fff; font-size: 18px; font-weight: 700; padding: 18px; border-radius: 30px; border: none; cursor: pointer; display: block; box-shadow: 0 10px 20px rgba(123, 90, 255, 0.3); }
     </style>
 </head>
 <body>
+
+    <!-- ЭКРАН ВЫБОРА МОДЕЛИ -->
+    <div id="model-screen">
+        <div class="ms-header">
+            <i class="fa-solid fa-chevron-left" style="font-size: 20px; cursor:pointer;" onclick="closeModelSelection()"></i>
+            <div class="ms-title">Выбор модели</div>
+            <div style="width: 20px;"></div> <!-- Spacer -->
+        </div>
+
+        <div class="ms-category">
+            <div class="ms-badge free">Free Models</div>
+            <div class="ms-grid">
+                <div class="ms-card" data-model="stepfun/step-3.5-flash:free" onclick="selectModelCard(this, 'stepfun/step-3.5-flash:free')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">Step-3.5-Flash</div>
+                    <div class="ms-card-desc">Быстрая и бесплатная модель. Базовый уровень отыгрыша.</div>
+                </div>
+                <div class="ms-card" data-model="z-ai/glm-4.5-air:free" onclick="selectModelCard(this, 'z-ai/glm-4.5-air:free')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">GLM 4.5 Air</div>
+                    <div class="ms-card-desc">Сбалансированная бесплатная модель.</div>
+                </div>
+                    <div class="ms-card" data-model="arcee-ai/trinity-large-preview:free" onclick="selectModelCard(this, 'arcee-ai/trinity-large-preview:free')">
+                        <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                        <div class="ms-card-title">Trinity Large</div>
+                        <div class="ms-card-desc">Продвинутая логика, доступная бесплатно (Preview).</div>
+                    </div>
+                <div class="ms-card" data-model="qwen/qwen3.6-plus:free" onclick="selectModelCard(this, 'qwen/qwen3.6-plus:free')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">Qwen 3.6 PLUS</div>
+                    <div class="ms-card-desc">Бесплатная модель с улучшенной логикой.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ms-category">
+            <div class="ms-badge energy">Roleplay Standard</div>
+            <div class="ms-grid">
+                <div class="ms-card" data-model="gryphe/mythomax-l2-13b" onclick="selectModelCard(this, 'gryphe/mythomax-l2-13b')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">MythoMax L2 13B</div>
+                    <div class="ms-card-desc">Золотой стандарт для RP без цензуры. Отличная креативность.</div>
+                    <i class="fa-solid fa-fire ms-card-icon" style="color: #ff4a4a;"></i>
+                </div>
+                <div class="ms-card" data-model="mistralai/mistral-small-creative" onclick="selectModelCard(this, 'mistralai/mistral-small-creative')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">Mistral Small Creative</div>
+                    <div class="ms-card-desc">Улучшенная креативность от Mistral. Подходит для диалогов.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ms-category">
+            <div class="ms-badge premium">Advanced Models</div>
+            <div class="ms-grid">
+                <div class="ms-card" data-model="mistralai/mistral-medium-3.1" onclick="selectModelCard(this, 'mistralai/mistral-medium-3.1')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">Mistral Medium 3.1</div>
+                    <div class="ms-card-desc">Продвинутая модель. Великолепное понимание сложного контекста.</div>
+                    <i class="fa-solid fa-star ms-card-icon" style="color: #ffd700;"></i>
+                </div>
+                <div class="ms-card" data-model="qwen/qwen3-235b-a22b-2507" onclick="selectModelCard(this, 'qwen/qwen3-235b-a22b-2507')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">Qwen 3 235B</div>
+                    <div class="ms-card-desc">Массивная модель с огромными знаниями и логикой.</div>
+                    <i class="fa-solid fa-brain ms-card-icon" style="color: #b54aff;"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="ms-fixed-bottom">
+            <button class="ms-update-btn" onclick="closeModelSelection()">Применить модель</button>
+        </div>
+    </div>
 
     <div id="app-container">
 
@@ -311,28 +486,83 @@
     <!-- ЭКРАН 4: ЧАТ (Одиночный и Групповой) -->
     <div id="chat-screen" class="screen">
         <div class="header">
-            <button class="icon-btn" onclick="goHome()"><i class="fa-solid fa-arrow-left"></i></button>
+            <button class="icon-btn" onclick="goHome()" style="background:transparent; border:none;"><i class="fa-solid fa-chevron-left"></i></button>
             <div class="chat-header-info" onclick="editCurrentChatEntity()">
                 <img id="active-chat-avatar" src="" alt="">
-                <div class="header-title" id="active-chat-name" style="font-size: 16px;">Name</div>
+                <div class="chat-header-text">
+                    <div class="chat-header-title" id="active-chat-name">Name</div>
+                    <!-- Субтитры можно оставить пустыми или выводить статус -->
+                    <div class="chat-header-subtitle" id="active-chat-status">ИИ Персонаж</div>
+                </div>
             </div>
-            <button class="icon-btn" onclick="toggleChatMenu()"><i class="fa-solid fa-bars"></i></button>
+            <button class="icon-btn" onclick="toggleChatMenu()" style="background:transparent; border:none;"><i class="fa-solid fa-ellipsis"></i></button>
         </div>
 
-        <!-- Оверлей и выпадающее меню настроек ИИ -->
-        <div class="chat-menu-overlay" id="chat-menu-overlay" onclick="toggleChatMenu(event)">
-            <div class="chat-dropdown" onclick="event.stopPropagation()">
-                <div class="chat-menu-item">
-                    <label>Температура <span id="temp-val">0.8</span></label>
-                    <input type="range" id="chat-temp" min="0.1" max="2.0" step="0.1" value="0.8" oninput="updateChatSettings()">
+        <!-- Скрытый инпут для загрузки обоев -->
+        <input type="file" id="chat-wallpaper-input" accept="image/*" style="display:none;" onchange="handleWallpaperUpload(event)">
+
+        <!-- Боковое меню (как на скрине 2) -->
+        <div class="side-menu-overlay" id="chat-menu-overlay" onclick="toggleChatMenu(event)">
+            <div class="side-panel" onclick="event.stopPropagation()">
+                
+                <div class="sp-list" style="margin-top: 10px;">
+                    <div class="sp-item" onclick="openModelSelection()">
+                        <span class="sp-item-title"><i class="fa-solid fa-microchip" style="margin-right:8px; color:var(--text-muted);"></i> Models</span>
+                        <span class="sp-item-value" id="sp-model-name">Выберите <i class="fa-solid fa-chevron-right"></i></span>
+                    </div>
+                    <div class="sp-item" onclick="editCurrentChatEntity()">
+                        <span class="sp-item-title">Persona</span>
+                        <span class="sp-item-value" id="sp-persona-name">User <i class="fa-solid fa-chevron-right"></i></span>
+                    </div>
+                    <div class="sp-item">
+                        <span class="sp-item-title">Chat Name</span>
+                        <span class="sp-item-value" id="sp-chat-name">Name <i class="fa-solid fa-chevron-right"></i></span>
+                    </div>
+                    <div class="sp-item" onclick="document.getElementById('chat-wallpaper-input').click()">
+                        <span class="sp-item-title"><i class="fa-regular fa-image" style="margin-right:8px; color:var(--text-muted);"></i> Wallpaper</span>
+                        <span class="sp-item-value">Изменить <i class="fa-solid fa-chevron-right"></i></span>
+                    </div>
+                    <div class="sp-item" onclick="openHistoryModal()">
+                        <span class="sp-item-title"><i class="fa-solid fa-clock-rotate-left" style="margin-right:8px; color:var(--text-muted);"></i> History</span>
+                        <span class="sp-item-value"><i class="fa-solid fa-chevron-right"></i></span>
+                    </div>
+                    <div class="sp-item" onclick="openPinnedModal()">
+                        <span class="sp-item-title"><i class="fa-solid fa-thumbtack" style="margin-right:8px; color:var(--accent-color);"></i> Pinned Messages</span>
+                        <span class="sp-item-value" id="sp-pinned-count">0 <i class="fa-solid fa-chevron-right"></i></span>
+                    </div>
                 </div>
-                <div class="chat-menu-item">
-                    <label>Макс. символов <span id="length-val">1000</span></label>
-                    <input type="range" id="chat-length" min="100" max="4000" step="100" value="1000" oninput="updateChatSettings()">
+
+                <div class="sp-block">
+                    <div class="toggle-row" style="margin-bottom: 10px;">
+                        <span class="sp-block-title" style="margin:0;">Modify Character</span>
+                        <label class="switch">
+                            <input type="checkbox" id="sp-trait-toggle" onchange="updateTraits()">
+                            <span class="slider-round"></span>
+                        </label>
+                    </div>
+                    <div>
+                        <div class="slider-labels"><span>Shy</span><span>Flirty</span></div>
+                        <input type="range" class="custom-slider" id="sp-trait-slider" min="1" max="100" value="50" oninput="updateTraits()">
+                    </div>
+                    
+                    <div class="toggle-row">
+                        <span class="sp-item-title" style="display:flex;align-items:center;gap:5px;">Image Style <i class="fa-solid fa-circle-info" style="color:var(--text-muted);font-size:12px;"></i></span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider-round"></span>
+                        </label>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button style="flex:1; padding:10px; border-radius:20px; background:var(--accent-color); border:none; color:white; font-weight:600;">ACG</button>
+                        <button style="flex:1; padding:10px; border-radius:20px; background:rgba(255,255,255,0.05); border:none; color:var(--text-muted); font-weight:600;">Realistic</button>
+                    </div>
                 </div>
-                <hr style="border:0; border-top: 1px solid var(--border-color); margin: 5px 0;">
-                <button class="chat-menu-btn" onclick="openHistoryModal()"><i class="fa-solid fa-clock-rotate-left"></i> История сессий</button>
-                <button class="chat-menu-btn danger" onclick="restartChat()"><i class="fa-solid fa-rotate-right"></i> Начать сначала</button>
+
+                <div style="flex:1;"></div> <!-- Spacer -->
+                
+                <button class="sp-bottom-btn" onclick="restartChat()">
+                    <i class="fa-regular fa-comment-dots"></i> New Chat
+                </button>
             </div>
         </div>
 
@@ -352,9 +582,32 @@
             <!-- Кнопки вызова ИИ генерируются JS -->
         </div>
 
-        <div class="chat-input-area">
-            <textarea id="chat-input" placeholder="Введите сообщение..." oninput="autoResizeTextarea(this)"></textarea>
-            <button class="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+        <!-- Кнопка прокрутки вниз -->
+        <div class="scroll-bottom-fab" onclick="scrollToBottom()">
+            <i class="fa-solid fa-angles-down"></i>
+        </div>
+
+        <div class="chat-input-wrapper">
+            <div class="chat-input-pill">
+                <button class="input-icon-btn"><i class="fa-solid fa-microphone"></i></button>
+                <textarea id="chat-input" placeholder="Type a message" oninput="autoResizeTextarea(this)"></textarea>
+                <button class="input-icon-btn" style="font-size: 16px;"><i class="fa-solid fa-plus"></i></button>
+                <button class="input-icon-btn" onclick="sendMessage()" id="send-btn-icon"><i class="fa-solid fa-paper-plane" style="color: var(--accent-color);"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ... конец кода chat-screen (закрывающий тег </div>) ... -->
+
+    <!-- ЭКРАН 4.1: ПОЛНОЭКРАННЫЕ ЗАКРЕПЛЕННЫЕ СООБЩЕНИЯ -->
+    <div id="pinned-screen" class="screen">
+        <div class="header">
+            <button class="icon-btn" onclick="closePinnedScreen()"><i class="fa-solid fa-arrow-left"></i></button>
+            <div class="header-title">Закреплено (Память ИИ)</div>
+            <div style="width: 40px;"></div> <!-- Spacer -->
+        </div>
+        <div class="ps-list" id="pinned-list-container">
+            <!-- Карточки генерируются JS -->
         </div>
     </div>
 
@@ -400,6 +653,7 @@
                 <label class="form-label">Модель ИИ</label>
                 <select id="model-input">
                     <option value="mistralai/mistral-small-creative">Mistral Small Creative</option>
+                    <option value="qwen/qwen3.6-plus:free">Qwen 3.6 PLUS (Бесплатно)</option>
                     <option value="qwen/qwen3-235b-a22b-2507">Qwen 3 235B</option>
                     <option value="mistralai/mistral-medium-3.1">Mistral Medium 3.1 (Отлично для RP)</option>
                     <option value="gryphe/mythomax-l2-13b">MythoMax L2 13B (RP стандарт)</option>
@@ -781,6 +1035,7 @@
             triggerPanel.classList.remove('active');
         }
 
+        document.getElementById('chat-screen').style.backgroundImage = entity.wallpaper ? `url('${entity.wallpaper}')` : "url('https://i.imgur.com/8Q8XG0S.jpeg')";
         renderMessages();
         switchScreen('chat-screen');
         scrollToBottom();
@@ -810,14 +1065,29 @@
             let processedContent = msg.content.replace(/\*(.*?)\*/g, '\n\n*$1*\n\n');
             const mdHtml = marked.parse(processedContent);
 
+            // Индикатор, если сообщение закреплено
+            const pinIndicator = msg.isPinned 
+                ? `<div style="position:absolute; top:-8px; right:-5px; background:var(--accent-color); color:#fff; width:20px; height:20px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:10px; box-shadow:0 2px 5px rgba(0,0,0,0.5);"><i class="fa-solid fa-thumbtack"></i></div>` 
+                : '';
+
+            // Кнопка регенерации только для сообщений ИИ
+            const regenBtnHTML = msg.role === 'ai' 
+                ? `<i class="fa-solid fa-arrows-rotate" onclick="regenerateMessage(${index})" title="Сгенерировать заново" style="color: var(--accent-color);"></i>` 
+                : '';
+
             // Добавляем баббл и панель управления сообщением
             div.innerHTML = `
                 ${senderNameHTML}
-                <div class="bubble">${mdHtml}</div>
+                <div style="position:relative; width: fit-content; max-width: 100%;">
+                    ${pinIndicator}
+                    <div class="bubble">${mdHtml}</div>
+                </div>
                 <div class="msg-actions">
+                    ${regenBtnHTML}
+                    <i class="fa-solid fa-thumbtack" onclick="toggleMessagePin(${index})" title="Закрепить/Открепить" style="color: ${msg.isPinned ? 'var(--accent-color)' : 'inherit'};"></i>
                     <i class="fa-regular fa-copy" onclick="copyMessage(${index})" title="Копировать"></i>
                     <i class="fa-solid fa-pen" onclick="editMessage(${index})" title="Редактировать"></i>
-                    <i class="fa-solid fa-rotate-left" onclick="rewindChat(${index})" title="Откатить до этого сообщения"></i>
+                    <i class="fa-solid fa-rotate-left" onclick="rewindChat(${index})" title="Откатить"></i>
                     <i class="fa-solid fa-trash" onclick="deleteMessage(${index})" title="Удалить"></i>
                 </div>
             `;
@@ -1029,9 +1299,27 @@
         } else {
             sys += `[CONTENT RULE: Keep the roleplay strictly SFW (Safe for Work). No explicit sexual content or excessive gore.]\n\n`;
         }
+
+        // Инъекция характера (Shy/Flirty)
+        if (char.traits && char.traits.enabled) {
+            const val = char.traits.value;
+            if (val <= 30) sys += `[DYNAMIC TRAIT: You are currently feeling EXTREMELY SHY, hesitant, easily embarrassed, and blushing. Stutter occasionally.]\n\n`;
+            else if (val <= 45) sys += `[DYNAMIC TRAIT: You are currently feeling somewhat shy and reserved, speaking softly.]\n\n`;
+            else if (val >= 70) sys += `[DYNAMIC TRAIT: You are currently feeling HIGHLY FLIRTATIOUS, bold, teasing, romantically forward, and extremely confident.]\n\n`;
+            else if (val >= 55) sys += `[DYNAMIC TRAIT: You are currently feeling playful, slightly flirtatious and confident.]\n\n`;
+        }
+
         if (char.memoryBoxes) sys += `Character Memory:\n${char.memoryBoxes.join('\n')}\n\n`;
         sys += `Character Name: ${char.name}\nGender: ${char.gender}\n\n`;
-        sys += `--- USER INFO ---\nName: ${appState.userProfile.name}\nDesc: ${appState.userProfile.description}\n`;
+        sys += `--- USER INFO ---\nName: ${appState.userProfile.name}\nDesc: ${appState.userProfile.description}\n\n`;
+
+        // Внедряем закрепленные сообщения в память
+        const pinnedMessages = history.filter(m => m.isPinned);
+        if (pinnedMessages.length > 0) {
+            sys += `[CRITICAL PINNED MEMORIES (You MUST remember this context)]:\n`;
+            pinnedMessages.forEach(m => sys += `${m.name}: ${m.content}\n`);
+            sys += `[END PINNED MEMORIES]\n\n`;
+        }
 
         const apiMsgs = [{ role: 'system', content: sys }];
         history.slice(-20).forEach(msg => apiMsgs.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content }));
@@ -1057,6 +1345,16 @@
         } else {
             sys += `[CONTENT RULE: Keep the roleplay strictly SFW (Safe for Work). No explicit sexual content or excessive gore.]\n\n`;
         }
+
+        // Инъекция характера (Shy/Flirty) для конкретного бота в группе
+        if (group.traits && group.traits.enabled) {
+            const val = group.traits.value;
+            if (val <= 30) sys += `[DYNAMIC TRAIT: You are currently feeling EXTREMELY SHY, hesitant, easily embarrassed, and blushing. Stutter occasionally.]\n\n`;
+            else if (val <= 45) sys += `[DYNAMIC TRAIT: You are currently feeling somewhat shy and reserved, speaking softly.]\n\n`;
+            else if (val >= 70) sys += `[DYNAMIC TRAIT: You are currently feeling HIGHLY FLIRTATIOUS, bold, teasing, romantically forward, and extremely confident.]\n\n`;
+            else if (val >= 55) sys += `[DYNAMIC TRAIT: You are currently feeling playful, slightly flirtatious and confident.]\n\n`;
+        }
+
         if (group.scenario) sys += `Current Situation/Scenario: ${group.scenario}\n\n`;
         if (activeChar.protocol) sys += `Your Personality Protocol:\n${activeChar.protocol}\n\n`;
         if (activeChar.memoryBoxes) sys += `Your Memories:\n${activeChar.memoryBoxes.join('\n')}\n\n`;
@@ -1189,6 +1487,161 @@
         messages.splice(index); // Удаляет всё, начиная с выбранного индекса до конца
         saveData();
         renderMessages();
+    }
+
+    // Логика нового выезжающего меню и экрана выбора моделей
+    function openModelSelection() {
+        document.getElementById('chat-menu-overlay').classList.remove('active');
+        // Подсвечиваем текущую активную модель
+        document.querySelectorAll('.ms-card').forEach(card => {
+            if(card.dataset.model === appState.settings.model) card.classList.add('active');
+            else card.classList.remove('active');
+        });
+        document.getElementById('model-screen').classList.add('active');
+    }
+
+    function closeModelSelection() {
+        document.getElementById('model-screen').classList.remove('active');
+        // Синхронизируем select в профиле, если модель изменилась
+        document.getElementById('model-input').value = appState.settings.model;
+        saveData();
+        // Обновляем название в открытом чате, если меню открыто
+        const spanModel = document.getElementById('sp-model-name');
+        if (spanModel) spanModel.innerHTML = `${appState.settings.model.split('/').pop()} <i class="fa-solid fa-chevron-right"></i>`;
+    }
+
+    function selectModelCard(element, modelValue) {
+        document.querySelectorAll('.ms-card').forEach(card => card.classList.remove('active'));
+        element.classList.add('active');
+        appState.settings.model = modelValue;
+    }
+
+    function toggleChatMenu(e) {
+        if (e && e.target !== e.currentTarget && e.type === 'click') return;
+        const overlay = document.getElementById('chat-menu-overlay');
+        
+        if (!overlay.classList.contains('active')) {
+            const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+            const messages = currentMode === 'groups' ? (appState.groupChats[currentId] || []) : (appState.chats[currentId] || []);
+            
+            // Подсчет закрепленных сообщений
+            const pinnedCount = messages.filter(m => m.isPinned).length;
+            
+            document.getElementById('sp-persona-name').innerHTML = `${appState.userProfile.name || 'User'} <i class="fa-solid fa-chevron-right"></i>`;
+            document.getElementById('sp-chat-name').innerHTML = `${entity.name.substring(0, 15)}${entity.name.length > 15 ? '...' : ''} <i class="fa-solid fa-chevron-right"></i>`;
+            document.getElementById('sp-pinned-count').innerHTML = `${pinnedCount} <i class="fa-solid fa-chevron-right"></i>`;
+            document.getElementById('sp-model-name').innerHTML = `${appState.settings.model.split('/').pop()} <i class="fa-solid fa-chevron-right"></i>`;
+            
+            // Загружаем настройки Personality (Shy/Flirty)
+            if (!entity.traits) entity.traits = { enabled: false, value: 50 };
+            document.getElementById('sp-trait-toggle').checked = entity.traits.enabled;
+            document.getElementById('sp-trait-slider').value = entity.traits.value;
+            document.getElementById('sp-trait-slider').style.opacity = entity.traits.enabled ? '1' : '0.5';
+            
+            overlay.classList.add('active');
+        } else {
+            overlay.classList.remove('active');
+        }
+    }
+
+    // --- НОВОЕ: Обновление Shy/Flirty ---
+    function updateTraits() {
+        const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+        if (!entity.traits) entity.traits = {};
+        entity.traits.enabled = document.getElementById('sp-trait-toggle').checked;
+        entity.traits.value = parseInt(document.getElementById('sp-trait-slider').value);
+        document.getElementById('sp-trait-slider').style.opacity = entity.traits.enabled ? '1' : '0.5';
+        saveData();
+    }
+
+    // --- ПОЛНОЭКРАННОЕ ОКНО ПРИКРЕПЛЕННЫХ СООБЩЕНИЙ ---
+    function openPinnedModal() {
+        document.getElementById('chat-menu-overlay').classList.remove('active'); // Закрываем боковое меню
+        switchScreen('pinned-screen'); // Открываем новый полноэкранный интерфейс
+        
+        const container = document.getElementById('pinned-list-container');
+        container.innerHTML = '';
+        const messages = currentMode === 'solo' ? appState.chats[currentId] : appState.groupChats[currentId];
+        let hasPins = false;
+
+        messages.forEach((msg, originalIndex) => {
+            if (msg.isPinned) {
+                hasPins = true;
+                const div = document.createElement('div');
+                div.className = 'ps-card';
+                // В карточке отображается полный текст, можно скроллить, если он гигантский
+                div.innerHTML = `
+                    <div style="font-weight:600; color:#fff; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid ${msg.role === 'user' ? 'fa-user' : 'fa-robot'}" style="color:var(--accent-color);"></i> ${msg.name}
+                    </div>
+                    <div class="ps-card-content">${msg.content}</div>
+                    <div class="ps-actions">
+                        <button class="ps-btn edit" onclick="editMessage(${originalIndex}); closePinnedScreen();"><i class="fa-solid fa-pen"></i> Ред.</button>
+                        <button class="ps-btn unpin" onclick="toggleMessagePin(${originalIndex}); openPinnedModal();"><i class="fa-solid fa-thumbtack-slash"></i> Открепить</button>
+                        <button class="ps-btn delete" onclick="deleteMessage(${originalIndex}); openPinnedModal();"><i class="fa-solid fa-trash"></i> Удалить</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+        });
+
+        if (!hasPins) {
+            container.innerHTML = `
+                <div class="empty-state" style="margin-top: 100px;">
+                    <i class="fa-solid fa-thumbtack" style="font-size: 50px; margin-bottom: 20px; opacity: 0.2;"></i>
+                    <br>У ИИ нет закрепленных воспоминаний
+                </div>`;
+        }
+    }
+
+    function closePinnedScreen() {
+        switchScreen('chat-screen');
+    }
+
+    // --- ЛОГИКА РЕГЕНЕРАЦИИ ОТВЕТА ---
+    async function regenerateMessage(index) {
+        if (!confirm("Сгенерировать ответ заново? Это удалит данное сообщение и все последующие, чтобы перестроить контекст.")) return;
+        
+        const messages = currentMode === 'solo' ? appState.chats[currentId] : appState.groupChats[currentId];
+        const msgToRegen = messages[index];
+        const charIdForGroup = msgToRegen.charId; // Запоминаем, какой бот это писал (для групп)
+
+        // Откатываем чат ДО этого сообщения (удаляем его и всё, что ниже)
+        messages.splice(index);
+        saveData();
+        renderMessages();
+
+        // Запрашиваем новый ответ
+        if (currentMode === 'solo') {
+            await fetchAIResponseSolo();
+        } else {
+            await triggerAIGroupReply(charIdForGroup);
+        }
+    }
+
+    // --- НОВОЕ: Обработка Обоев ---
+    function handleWallpaperUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+            entity.wallpaper = e.target.result; // Сохраняем Base64 обоев в сущность
+            saveData();
+            document.getElementById('chat-screen').style.backgroundImage = `url('${entity.wallpaper}')`;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Добавляем подгрузку обоев при открытии чата. Найдите функцию openChat() и в самый ее конец (ПЕРЕД switchScreen('chat-screen');) добавьте:
+    // document.getElementById('chat-screen').style.backgroundImage = entity.wallpaper ? `url('${entity.wallpaper}')` : "url('https://i.imgur.com/8Q8XG0S.jpeg')";
+
+    // --- НОВОЕ: Закрепление сообщений ---
+    function toggleMessagePin(index) {
+        const messages = currentMode === 'solo' ? appState.chats[currentId] : appState.groupChats[currentId];
+        messages[index].isPinned = !messages[index].isPinned; // Меняем статус
+        saveData();
+        renderMessages(); // Перерисовываем чат, чтобы появилась скрепка
     }
 </script>
 </body>
