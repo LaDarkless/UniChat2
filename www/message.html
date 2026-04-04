@@ -26,7 +26,17 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            /* Убираем подсветку при тапе на мобилках */
             -webkit-tap-highlight-color: transparent;
+            /* Запрещаем выделение текста на элементах интерфейса (как в настоящих приложениях) */
+            -webkit-user-select: none;
+            user-select: none; 
+        }
+
+        /* Разрешаем выделение текста только внутри инпутов и самих сообщений */
+        input, .message-bubble {
+            -webkit-user-select: text;
+            user-select: text;
         }
 
         body {
@@ -35,9 +45,17 @@
             color: var(--text-main);
             display: flex;
             justify-content: center;
-            height: 100vh;
-            height: 100dvh;
+            /* Используем 100dvh для правильной работы на iOS/Android с выезжающей клавиатурой */
+            height: 100dvh; 
+            width: 100vw;
             overflow: hidden;
+            /* Запрещаем pull-to-refresh (свайп вниз для обновления) */
+            overscroll-behavior-y: none;
+        }
+
+        /* Чтобы инпуты не зумились на iOS при фокусе, размер шрифта должен быть не менее 16px */
+        .setup-input, .chat-input {
+            font-size: 16px !important; 
         }
 
         .app-container {
@@ -383,12 +401,15 @@
         </div>
     </div>
 
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
     <script>
+        // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
         let currentUser = '';
         let currentRoom = '';
-        let ws = null;
-        let reconnectInterval = null;
-
+        let mqttClient = null; // Теперь используем промышленный MQTT клиент
+    
+        // --- ЭЛЕМЕНТЫ DOM ---
         const setupScreen = document.getElementById('setup-screen');
         const chatScreen = document.getElementById('chat-screen');
         const usernameInput = document.getElementById('username-input');
@@ -403,18 +424,19 @@
         const sendBtn = document.getElementById('send-btn');
         const leaveBtn = document.getElementById('leave-btn');
         const statusBanner = document.getElementById('connection-status');
-
+    
+        // --- ЛОГИКА АВТОРИЗАЦИИ ---
         const checkInputs = () => {
             joinBtn.disabled = !(usernameInput.value.trim().length > 0 && roomInput.value.trim().length > 0);
         };
-
+    
         usernameInput.addEventListener('input', checkInputs);
         roomInput.addEventListener('input', checkInputs);
-
+    
         joinBtn.addEventListener('click', () => {
             currentUser = usernameInput.value.trim();
-            // Делаем комнату уникальнее, чтобы не пересекаться с чужими случайными людьми на публичном сервере
-            currentRoom = "XCHAT_" + roomInput.value.trim(); 
+            // Уникальный префикс, чтобы не видеть сообщения чужих людей с таким же именем комнаты
+            currentRoom = "XCHAT_PRO_" + roomInput.value.trim(); 
             
             displayRoomName.textContent = roomInput.value.trim();
             roomAvatar.textContent = roomInput.value.trim().charAt(0).toUpperCase();
@@ -422,76 +444,81 @@
             setupScreen.style.display = 'none';
             chatScreen.style.display = 'flex';
             
-            initWebSocket();
+            initMQTT(); // Вызываем новую надежную функцию подключения
         });
-
+    
         leaveBtn.addEventListener('click', () => {
-            if(ws) ws.close();
-            clearTimeout(reconnectInterval);
+            if(mqttClient) {
+                mqttClient.end(); // Отключаемся от сервера
+            }
             chatScreen.style.display = 'none';
             setupScreen.style.display = 'flex';
             messagesContainer.innerHTML = ''; 
         });
-
+    
+        // --- ЛОГИКА ОТПРАВКИ ---
         messageInput.addEventListener('input', () => {
             sendBtn.disabled = messageInput.value.trim() === '';
         });
-
+    
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && messageInput.value.trim() !== '') sendMessage();
         });
-
+    
         sendBtn.addEventListener('click', sendMessage);
-
+    
         function sendMessage() {
             const text = messageInput.value.trim();
-            if (!text || !ws || ws.readyState !== WebSocket.OPEN) {
+            if (!text || !mqttClient || !mqttClient.connected) {
                 showBanner('Нет подключения к серверу', 2000);
                 return;
             }
-
+    
             const timeString = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
+    
             const payload = {
-                room: currentRoom,
                 sender: currentUser,
                 text: text,
                 time: timeString
             };
-
-            ws.send(JSON.stringify(payload));
+    
+            // Отправляем сообщение в "Топик" (нашу комнату)
+            mqttClient.publish(currentRoom, JSON.stringify(payload));
+            
+            // Отрисовываем у себя
             renderMessage(currentUser, text, timeString, 'sent');
-
+    
             messageInput.value = '';
             sendBtn.disabled = true;
         }
-
+    
+        // --- ОТРИСОВКА ИНТЕРФЕЙСА ---
         function renderMessage(sender, text, time, type) {
             const wrapper = document.createElement('div');
             wrapper.className = `message-wrapper ${type}`;
-
+    
             if (type === 'received') {
                 const senderEl = document.createElement('div');
                 senderEl.className = 'message-sender';
                 senderEl.textContent = sender;
                 wrapper.appendChild(senderEl);
             }
-
+    
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';
             bubble.textContent = text; 
-
+    
             const timeEl = document.createElement('div');
             timeEl.className = 'message-time';
             timeEl.textContent = time;
-
+    
             wrapper.appendChild(bubble);
             wrapper.appendChild(timeEl);
             messagesContainer.appendChild(wrapper);
-
+    
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
-
+    
         function renderSystemMessage(text) {
             const sysMsg = document.createElement('div');
             sysMsg.className = 'system-msg';
@@ -499,55 +526,72 @@
             messagesContainer.appendChild(sysMsg);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
-
+    
         function showBanner(text, duration = 3000) {
             statusBanner.textContent = text;
             statusBanner.style.display = 'block';
             if(duration > 0) setTimeout(() => { statusBanner.style.display = 'none'; }, duration);
         }
-
-        function initWebSocket() {
-            showBanner('Подключение...', 0);
+    
+        // --- НОВАЯ НАДЕЖНАЯ СЕТЕВАЯ ЛОГИКА (MQTT) ---
+        function initMQTT() {
+            showBanner('Подключение к надежному серверу...', 0);
             wsStatus.innerHTML = '<span class="status-dot connecting"></span> Соединение...';
             
-            // Используем публичный открытый бродкаст-сервер (без ключей)
-            const wsUrl = 'wss://socketsbay.com/wss/v2/1/demo/';
-
+            // Надежный бесплатный публичный брокер EMQX
+            const host = 'wss://broker.emqx.io:8084/mqtt';
+            // Генерируем случайный ID клиента для подключения
+            const clientId = 'user_' + Math.random().toString(16).substring(2, 10);
+    
             try {
-                ws = new WebSocket(wsUrl);
-
-                ws.onopen = () => {
+                mqttClient = mqtt.connect(host, {
+                    clientId: clientId,
+                    clean: true,
+                    connectTimeout: 4000,
+                    reconnectPeriod: 2000, // Автоматическое переподключение!
+                });
+    
+                mqttClient.on('connect', () => {
                     showBanner('Успешно подключено!', 2000);
                     wsStatus.innerHTML = '<span class="status-dot"></span> В сети';
-                    renderSystemMessage(`Подключено к комнате безопасности.`);
-                };
-
-                ws.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        // Фильтр: отображаем сообщения только из нашей секретной комнаты и не от самого себя
-                        if (data.room === currentRoom && data.sender !== currentUser) {
-                            renderMessage(data.sender, data.text, data.time, 'received');
+                    
+                    // Подписываемся на нашу комнату (только мы будем получать эти сообщения)
+                    mqttClient.subscribe(currentRoom);
+                    renderSystemMessage(`Вы вошли в комнату "${displayRoomName.textContent}"`);
+                });
+    
+                mqttClient.on('message', (topic, message) => {
+                    // Если сообщение пришло в нашу комнату
+                    if (topic === currentRoom) {
+                        try {
+                            const data = JSON.parse(message.toString());
+                            // Если это не наше собственное сообщение
+                            if (data.sender !== currentUser) {
+                                renderMessage(data.sender, data.text, data.time, 'received');
+                            }
+                        } catch (e) {
+                            console.error("Ошибка чтения сообщения");
                         }
-                    } catch (e) {
-                        // Игнорируем не-JSON сообщения (системный спам публичного сервера)
                     }
-                };
-
-                ws.onclose = () => {
+                });
+    
+                mqttClient.on('reconnect', () => {
+                    wsStatus.innerHTML = '<span class="status-dot connecting"></span> Переподключение...';
+                    showBanner('Переподключение...', 0);
+                });
+    
+                mqttClient.on('error', (error) => {
+                    console.error('MQTT Ошибка:', error);
+                    wsStatus.innerHTML = '<span class="status-dot offline"></span> Ошибка';
+                    showBanner('Ошибка сервера', 2000);
+                });
+    
+                mqttClient.on('offline', () => {
                     wsStatus.innerHTML = '<span class="status-dot offline"></span> Отключен';
-                    if (chatScreen.style.display === 'flex') {
-                        showBanner('Связь потеряна. Переподключение...', 0);
-                        reconnectInterval = setTimeout(initWebSocket, 4000);
-                    }
-                };
-
-                ws.onerror = (error) => {
-                    console.error("WS Error:", error);
-                };
-
+                });
+    
             } catch(e) {
-                showBanner('Ошибка создания сокета', 3000);
+                showBanner('Ошибка создания клиента', 3000);
             }
         }
     </script>
