@@ -156,7 +156,7 @@
         <div class="modal-overlay" id="add-room-modal">
             <div class="modal-content">
                 <h2 class="modal-title">Новый чат</h2>
-                <input type="text" id="new-room-id" class="modal-input" placeholder="ID секретной комнаты">
+                <input type="text" id="new-room-id" class="modal-input" placeholder="Введите ID (например: 777)">
                 <input type="text" id="new-room-name" class="modal-input" placeholder="Название (для вас)">
                 <div class="modal-actions">
                     <button class="btn btn-secondary" id="cancel-room-btn">Отмена</button>
@@ -321,12 +321,35 @@
         document.getElementById('cancel-room-btn').addEventListener('click', () => modal.style.display = 'none');
         
         document.getElementById('create-room-btn').addEventListener('click', async () => {
-            const rId = document.getElementById('new-room-id').value.trim();
-            const rName = document.getElementById('new-room-name').value.trim() || rId;
-            if (rId) {
-                const newRoom = { id: rId, name: rName, lastMsg: '', timestamp: Date.now() };
+            let rawId = document.getElementById('new-room-id').value.trim();
+            
+            if (rawId) {
+                // Если пользователь случайно сам написал слово room, отрезаем его, чтобы не было room_room_777
+                if (rawId.toLowerCase().startsWith('room')) {
+                    rawId = rawId.substring(4).replace(/^_+/, ''); // убираем room и возможные подчеркивания после него
+                }
+                
+                // 1. Формируем скрытый ID с обязательным префиксом room_
+                const finalRoomId = "room_" + rawId;
+                
+                // Если имя не ввели, называем просто "Комната [ID]"
+                const rName = document.getElementById('new-room-name').value.trim() || ("Комната " + rawId);
+                
+                // 2. Проверка на дубликаты
+                let existingRooms = await DB.getAll('rooms');
+                if (existingRooms.find(r => r.id === finalRoomId)) {
+                    alert("Чат с таким ID уже добавлен в ваш список!");
+                    return; // Прерываем выполнение, дубликат не создастся
+                }
+
+                // 3. Сохранение в базу
+                const newRoom = { id: finalRoomId, name: rName, lastMsg: '', timestamp: Date.now() };
                 await DB.put('rooms', newRoom);
                 await renderChatsList();
+                
+                // 4. Очищаем поля ввода для следующего раза и закрываем окно
+                document.getElementById('new-room-id').value = '';
+                document.getElementById('new-room-name').value = '';
                 modal.style.display = 'none';
             }
         });
