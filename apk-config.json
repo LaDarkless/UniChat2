@@ -1,7 +1,7 @@
 {
   "appName": "UniOS",
   "appId": "com.ksyr.app",
-  "version": "0.6.6.04042026",
+  "version": "0.6.7.06042026",
   "description": "My converted web app",
   "icon": {
     "enabled": true,
