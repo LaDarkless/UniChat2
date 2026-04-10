@@ -448,13 +448,18 @@
                 <div class="app-link" onmousedown="startTouch('imgenerate.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('imgenerate.html', event)" ontouchend="endTouch()">
                     <div class="app-icon" style="background: linear-gradient(135deg, #214874, #1d3353);"><img src="https://i.imgur.com/LqBHnxz.png" alt="imgenerate.html"></div>
                     <span class="app-name">IMG</span>
-                    <div class="badge">3</div>
+                    <div class="badge">2</div>
                 </div>
 
                 <div class="app-link" onmousedown="startTouch('game.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('game.html', event)" ontouchend="endTouch()">
                     <div class="app-icon" style="background: linear-gradient(135deg, #fceabb, #f8b500);"><img src="https://i.imgur.com/4Uk0ui7.png" alt="2048"></div>
                     <span class="app-name">Tetris</span>
                     <div class="badge">3</div>
+                </div>
+
+                <div class="app-link" onmousedown="startTouch('amefly.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('amefly.html', event)" ontouchend="endTouch()">
+                    <div class="app-icon" style="background: linear-gradient(135deg, #0f0e0c, #0e0d0b);"><img src="https://i.imgur.com/gm4JVRe.png" alt="amefly"></div>
+                    <span class="app-name">Block Blast</span>
                 </div>
 
                 <div class="app-link" onmousedown="startTouch('browser.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('browser.html', event)" ontouchend="endTouch()">
@@ -580,6 +585,7 @@
                 if(event.currentTarget.getAttribute('onmousedown').includes('video')) openApp('video.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('game')) openApp('game.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('browser')) openApp('browser.html');
+                if(event.currentTarget.getAttribute('onmousedown').includes('amefly')) openApp('amefly.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('roleplay')) openApp('roleplay.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('img')) openApp('imgenerate.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('message')) openApp('message.html');

@@ -2,25 +2,28 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ProDraw - Студия рисования</title>
-    <!-- Подключаем иконки Phosphor Icons для стильного UI -->
+    <!-- Подключаем профессиональные иконки -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         :root {
             --bg-color: #121214;
-            --panel-bg: rgba(32, 32, 36, 0.7);
+            --panel-bg: rgba(32, 32, 36, 0.85);
             --panel-border: rgba(255, 255, 255, 0.1);
             --accent: #8257e5;
             --accent-hover: #996dff;
             --text: #e1e1e6;
+            --layer-bg: #ffffff;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            user-select: none; /* Запрещаем выделение текста */
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
 
         body {
@@ -28,536 +31,818 @@
             color: var(--text);
             font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
             height: 100vh;
+            height: 100dvh;
             width: 100vw;
-            overflow: hidden; /* Запрещаем скролл страницы */
+            overflow: hidden;
             display: flex;
-            flex-direction: column;
         }
 
-        /* Контейнер холста */
+        /* --- РАБОЧАЯ ОБЛАСТЬ (НАВИГАЦИЯ) --- */
         .canvas-container {
             flex-grow: 1;
             position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            height: 100%;
+            overflow: hidden; /* Скрываем все, что выходит за пределы экрана */
+            background: #0a0a0b;
         }
 
-        canvas {
-            background-color: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            /* Важно для тач-устройств: запрещаем браузерные жесты на холсте */
-            touch-action: none; 
+        /* Контейнер, который мы будем крутить, приближать и отдалять */
+        #workspace {
+    position: absolute;
+    top: 0;   /* Исправлено: убираем 50% */
+    left: 0;  /* Исправлено: убираем 50% */
+    transform-origin: 0 0;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8);
+}
+
+        /* Контейнер для слоев */
+        #layers-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        .layer-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            background: transparent;
+            pointer-events: none; /* События ловит только драфт */
+        }
+        
+        /* Слой фона - всегда белый по умолчанию */
+        #layer-0 { background: var(--layer-bg); }
+
+        #draftCanvas {
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 9999;
+            touch-action: none;
             cursor: crosshair;
         }
 
-        /* Стеклянная панель инструментов */
+        /* Курсоры инструментов */
+        .tool-hand #draftCanvas { cursor: grab; }
+        .tool-hand.dragging #draftCanvas { cursor: grabbing; }
+
+        /* --- ГЛАВНАЯ ПАНЕЛЬ ИНСТРУМЕНТОВ (ВНИЗУ) --- */
         .toolbar {
             position: absolute;
-            bottom: 30px;
+            bottom: max(20px, env(safe-area-inset-bottom));
             left: 50%;
             transform: translateX(-50%);
             background: var(--panel-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--panel-border);
-            padding: 12px 24px;
+            padding: 12px 20px;
+            border-radius: 24px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            max-width: 95%;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .toolbar::-webkit-scrollbar { display: none; }
+
+        /* --- БОКОВАЯ ПАНЕЛЬ СЛОЕВ (СПРАВА) --- */
+        .layers-panel {
+            position: absolute;
+            top: max(20px, env(safe-area-inset-top));
+            right: 20px;
+            width: 220px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
             border-radius: 20px;
             display: flex;
-            gap: 20px;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            max-height: 70vh;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .layers-panel.hidden { transform: translateX(120%); }
+
+        .layers-header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            z-index: 10;
-            transition: all 0.3s ease;
+            border-bottom: 1px solid var(--panel-border);
+            font-weight: 600;
+            font-size: 14px;
         }
 
-        .tool-group {
+        .layers-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column-reverse; /* Новые слои сверху */
+            gap: 8px;
+        }
+
+        .layer-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: 0.2s;
         }
 
-        /* Разделитель */
-        .divider {
-            width: 1px;
-            height: 30px;
-            background: var(--panel-border);
+        .layer-item.active {
+            border-color: var(--accent);
+            background: rgba(130, 87, 229, 0.15);
         }
 
-        /* Кнопки */
-        button {
+        .layer-item span { font-size: 13px; flex-grow: 1; margin-left: 10px; }
+        
+        .layer-btn {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+            padding: 4px;
+            font-size: 18px;
+            opacity: 0.7;
+        }
+        .layer-btn:hover { opacity: 1; color: var(--accent); }
+
+        /* Вспомогательные элементы UI */
+        .tool-group { display: flex; align-items: center; gap: 6px; }
+        .divider { width: 1px; height: 32px; background: var(--panel-border); border-radius: 1px; }
+
+        button.tool-btn {
             background: transparent;
             border: none;
             color: var(--text);
             font-size: 24px;
             cursor: pointer;
-            padding: 8px;
-            border-radius: 10px;
+            padding: 10px;
+            border-radius: 12px;
             transition: all 0.2s;
             display: flex;
             justify-content: center;
             align-items: center;
         }
+        button.tool-btn:active { transform: scale(0.9); }
+        button.tool-btn:hover { background: rgba(255, 255, 255, 0.08); }
+        button.tool-btn.active { color: #fff; background: var(--accent); box-shadow: 0 4px 12px rgba(130,87,229,0.4); }
 
-        button:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        button.active {
-            color: var(--accent);
-            background: rgba(130, 87, 229, 0.2);
-        }
-
-        /* Инпуты */
         input[type="color"] {
             -webkit-appearance: none;
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            cursor: pointer;
-            overflow: hidden;
-            padding: 0;
+            border: none; width: 36px; height: 36px;
+            border-radius: 50%; cursor: pointer; padding: 0; background: transparent;
         }
-        input[type="color"]::-webkit-color-swatch-wrapper {
-            padding: 0;
-        }
-        input[type="color"]::-webkit-color-swatch {
-            border: 2px solid var(--panel-border);
-            border-radius: 50%;
-        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; }
 
-        /* Ползунок толщины */
         input[type="range"] {
-            -webkit-appearance: none;
-            width: 100px;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 5px;
-            outline: none;
+            -webkit-appearance: none; width: 80px; height: 6px;
+            background: rgba(255, 255, 255, 0.15); border-radius: 4px; outline: none; margin: 0 8px;
         }
         input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: var(--accent);
-            cursor: pointer;
-            transition: 0.2s;
+            -webkit-appearance: none; width: 16px; height: 16px;
+            border-radius: 50%; background: var(--text); cursor: pointer; transition: 0.15s;
         }
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-        }
+        input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.3); background: var(--accent); }
 
-        /* Адаптив для телефонов */
-        @media (max-width: 768px) {
-            .canvas-container {
-                padding: 10px;
-            }
-            .toolbar {
-                bottom: 15px;
-                padding: 10px 15px;
-                gap: 10px;
-                width: 95%;
-                justify-content: space-between;
-                overflow-x: auto; /* Скролл панели на совсем маленьких экранах */
-            }
-            input[type="range"] {
-                width: 60px;
-            }
-        }
-
-        /* --- НОВЫЕ СТИЛИ ДЛЯ КИСТЕЙ И ПРОЗРАЧНОСТИ --- */
-        #opacityPicker {
-            width: 70px;
-            background: linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0.8));
-        }
-        select {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text);
+        /* Плавающая мини-панель навигации (Слева) */
+        .nav-panel {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
             border: 1px solid var(--panel-border);
-            padding: 6px 10px;
-            border-radius: 8px;
-            outline: none;
-            cursor: pointer;
-            font-family: inherit;
-        }
-        select option {
-            background: var(--bg-color);
-        }
-        .stabilizer-label {
+            border-radius: 20px;
             display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 5px;
-            font-size: 13px;
-            cursor: pointer;
-            color: var(--text);
+            padding: 8px;
+            z-index: 100;
         }
-        .stabilizer-label input {
-            cursor: pointer;
-            width: 16px;
-            height: 16px;
-            accent-color: var(--accent);
+
+        /* Адаптив под мобилки */
+        @media (max-width: 850px) {
+            .layers-panel { width: 200px; right: 10px; max-height: 60vh; }
+            .nav-panel { left: 10px; }
+            .toolbar { padding: 8px 12px; width: calc(100% - 20px); justify-content: flex-start; }
+            button.tool-btn { font-size: 22px; padding: 8px; }
         }
     </style>
 </head>
 <body>
 
     <div class="canvas-container" id="container">
-        <canvas id="drawingCanvas"></canvas>
+        <!-- Рабочая область (перемещается и масштабируется) -->
+        <div id="workspace">
+            <div id="layers-container"></div>
+            <!-- Драфт всегда поверх всех слоев, на нем рисуем текущий штрих -->
+            <canvas id="draftCanvas"></canvas>
+        </div>
     </div>
 
-    <div class="toolbar">
-        <div class="tool-group">
-            <input type="color" id="colorPicker" value="#121214" title="Выбрать цвет">
-            <input type="range" id="sizePicker" min="1" max="50" value="5" title="Толщина кисти">
-            
-            <!-- ДОБАВЛЕННЫЕ КНОПКИ -->
-            <button id="btnBrush" class="active" title="Кисть">
-                <i class="ph ph-paintbrush"></i>
-            </button>
-            <button id="btnEraser" title="Ластик">
-                <i class="ph ph-eraser"></i>
-            </button>
-        </div>
+    <!-- Панель навигации -->
+    <div class="nav-panel">
+        <button class="tool-btn" id="btnZoomIn" title="Приблизить"><i class="ph ph-magnifying-glass-plus"></i></button>
+        <button class="tool-btn" id="btnZoomOut" title="Отдалить"><i class="ph ph-magnifying-glass-minus"></i></button>
+        <button class="tool-btn" id="btnZoomReset" title="Центрировать"><i class="ph ph-corners-out"></i></button>
+    </div>
 
-        <!-- ВСТАВИТЬ ВМЕСТО ПЕРВОГО <div class="divider"></div> в .toolbar -->
-        <div class="divider"></div>
-
+    <!-- Панель инструментов -->
+    <div class="toolbar" id="toolbar">
         <div class="tool-group">
+            <input type="color" id="colorPicker" value="#000000" title="Цвет">
+            <input type="range" id="sizePicker" min="1" max="100" value="8" title="Размер">
             <input type="range" id="opacityPicker" min="0.05" max="1" step="0.05" value="1" title="Прозрачность">
-            <select id="brushType" title="Тип кисти">
-                <option value="normal">Обычная</option>
-                <option value="anime">Аниме (Перо)</option>
-                <option value="calligraphy">Каллиграфия</option>
-            </select>
-            <label class="stabilizer-label" title="Поглощает тремор рук">
-                <input type="checkbox" id="stabilizerCb">
-                Стабилизатор
-            </label>
         </div>
 
         <div class="divider"></div>
 
         <div class="tool-group">
-            <button id="btnClear" title="Очистить холст">
-                <i class="ph ph-trash"></i>
-            </button>
-            <button id="btnSave" title="Сохранить">
-                <i class="ph ph-download-simple"></i>
-            </button>
+            <button class="tool-btn active" data-tool="brush" title="Кисть"><i class="ph ph-paintbrush"></i></button>
+            <button class="tool-btn" data-tool="eraser" title="Ластик"><i class="ph ph-eraser"></i></button>
+            <button class="tool-btn" data-tool="blur" title="Размытие"><i class="ph ph-drop"></i></button>
+            <button class="tool-btn" data-tool="hand" title="Перемещение (Рука)"><i class="ph ph-hand-palm"></i></button>
+            <button class="tool-btn" id="btnPicker" title="Пипетка"><i class="ph ph-eyedropper"></i></button>
         </div>
+
+        <div class="divider"></div>
+
+        <div class="tool-group">
+            <button class="tool-btn" id="btnUndo" title="Назад"><i class="ph ph-arrow-u-up-left"></i></button>
+            <button class="tool-btn" id="btnToggleLayers" title="Слои"><i class="ph ph-stack"></i></button>
+            <button class="tool-btn" id="btnSave" title="Сохранить"><i class="ph ph-download-simple"></i></button>
+        </div>
+    </div>
+
+    <!-- Панель слоев -->
+    <div class="layers-panel hidden" id="layersPanel">
+        <div class="layers-header">
+            <span>Слои</span>
+            <button class="layer-btn" id="btnAddLayer"><i class="ph ph-plus"></i></button>
+        </div>
+        <div class="layers-list" id="layersList"></div>
     </div>
 
     <script>
         class DrawingApp {
             constructor() {
-                this.canvas = document.getElementById('drawingCanvas');
-                this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
                 this.container = document.getElementById('container');
+                this.workspace = document.getElementById('workspace');
+                this.layersContainer = document.getElementById('layers-container');
+                this.draftCanvas = document.getElementById('draftCanvas');
+                this.draftCtx = this.draftCanvas.getContext('2d');
                 
-                // Элементы UI
-                this.colorPicker = document.getElementById('colorPicker');
-                this.sizePicker = document.getElementById('sizePicker');
-                this.btnBrush = document.getElementById('btnBrush');
-                this.btnEraser = document.getElementById('btnEraser');
-                this.btnClear = document.getElementById('btnClear');
-                this.btnSave = document.getElementById('btnSave');
+                // Настройки холста
+                this.dpr = window.devicePixelRatio || 1;
+                this.baseWidth = 1080; // Базовое разрешение (для качества)
+                this.baseHeight = 1920; 
+                
+                // Навигация (Zoom/Pan)
+                this.transform = { x: 0, y: 0, scale: 1 };
+                this.activePointers = new Map();
+                this.initialPinchDist = null;
+                this.isPanning = false;
 
-                // Состояние
+                // Слои
+                this.layers =[];
+                this.layerIdCounter = 0;
+                this.activeLayer = null;
+
+                // Инструменты
+                this.currentTool = 'brush'; 
+                this.color = document.getElementById('colorPicker').value;
+                this.lineWidth = parseFloat(document.getElementById('sizePicker').value);
+                this.opacity = parseFloat(document.getElementById('opacityPicker').value);
                 this.isDrawing = false;
-                this.currentTool = 'brush'; // 'brush' или 'eraser'
-                this.color = this.colorPicker.value;
-                this.lineWidth = this.sizePicker.value;
-                
-                // Для плавных линий
-                this.lastX = 0;
-                this.lastY = 0;
+                this.points =[];
 
-                // --- НОВЫЕ ЭЛЕМЕНТЫ И ПЕРЕМЕННЫЕ ---
-                this.opacityPicker = document.getElementById('opacityPicker');
-                this.brushTypeSelect = document.getElementById('brushType');
-                this.stabilizerCb = document.getElementById('stabilizerCb');
-
-                this.opacity = 1;
-                this.brushType = 'normal';
-                this.useStabilizer = false;
-                
-                this.points =[]; // Хранилище точек для кривых Безье
-                this.currentLineWidth = Number(this.lineWidth); // Для динамической толщины кистей
-                this.lastTimestamp = 0;
+                // История (Snapshot всех слоев для простоты)
+                this.history =[];
+                this.maxHistory = 10; // Экономим память телефона
 
                 this.init();
             }
 
             init() {
-                this.resizeCanvas();
+                this.setupWorkspaceSize();
+                this.addLayer("Фон"); // Слой 0
+                this.addLayer("Слой 1"); // Слой 1 (Активный)
                 this.bindEvents();
-                this.setupContext();
-                this.fillWhiteBackground(); // Чтобы при сохранении не было черного/прозрачного фона
+                this.bindUI();
+                this.centerWorkspace();
+                this.saveHistory();
             }
 
-            hexToRgba(hex, alpha) {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        }
-
-            // Настройка качества: учитываем плотность пикселей экрана (Retina/Мобилки)
-            resizeCanvas() {
-                // Сохраняем текущий рисунок перед изменением размера
-                const imageData = this.canvas.width > 0 ? this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height) : null;
-
+            setupWorkspaceSize() {
+                // Устанавливаем физический размер холстов, опираясь на пропорции экрана
                 const rect = this.container.getBoundingClientRect();
-                const dpr = window.devicePixelRatio || 1;
-
-                this.canvas.width = rect.width * dpr;
-                this.canvas.height = rect.height * dpr;
+                const aspect = rect.height / rect.width;
                 
-                this.canvas.style.width = `${rect.width}px`;
-                this.canvas.style.height = `${rect.height}px`;
+                this.baseWidth = 1200; 
+                this.baseHeight = 1200 * aspect;
 
-                this.ctx.scale(dpr, dpr);
-                this.setupContext();
+                this.workspace.style.width = `${this.baseWidth}px`;
+                this.workspace.style.height = `${this.baseHeight}px`;
 
-                // Восстанавливаем рисунок
-                if (imageData) {
-                    // Временный канвас для корректного масштабирования при ресайзе
-                    const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = imageData.width;
-                    tempCanvas.height = imageData.height;
-                    tempCanvas.getContext('2d').putImageData(imageData, 0, 0);
-                    this.ctx.drawImage(tempCanvas, 0, 0, rect.width, rect.height);
-                } else {
-                    this.fillWhiteBackground();
+                this.draftCanvas.width = this.baseWidth * this.dpr;
+                this.draftCanvas.height = this.baseHeight * this.dpr;
+                this.draftCanvas.style.width = '100%';
+                this.draftCanvas.style.height = '100%';
+                this.draftCtx.scale(this.dpr, this.dpr);
+                this.draftCtx.lineCap = 'round';
+                this.draftCtx.lineJoin = 'round';
+            }
+
+            // --- СИСТЕМА СЛОЕВ ---
+            addLayer(name = `Слой ${this.layers.length}`) {
+                const canvas = document.createElement('canvas');
+                canvas.className = 'layer-canvas';
+                canvas.id = `layer-${this.layerIdCounter}`;
+                canvas.width = this.baseWidth * this.dpr;
+                canvas.height = this.baseHeight * this.dpr;
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                ctx.scale(this.dpr, this.dpr);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                // Если это самый первый слой (Фон) - заливаем белым
+                if (this.layers.length === 0) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, this.baseWidth, this.baseHeight);
+                }
+
+                this.layersContainer.appendChild(canvas);
+
+                const layerObj = {
+                    id: this.layerIdCounter++,
+                    name: name,
+                    canvas: canvas,
+                    ctx: ctx,
+                    visible: true
+                };
+
+                this.layers.push(layerObj);
+                this.setActiveLayer(layerObj.id);
+                this.renderLayersUI();
+                return layerObj;
+            }
+
+            setActiveLayer(id) {
+                this.activeLayer = this.layers.find(l => l.id === id);
+                this.renderLayersUI();
+            }
+
+            renderLayersUI() {
+                const list = document.getElementById('layersList');
+                list.innerHTML = '';
+                
+                this.layers.forEach((layer) => {
+                    const item = document.createElement('div');
+                    item.className = `layer-item ${this.activeLayer.id === layer.id ? 'active' : ''}`;
+                    item.onclick = () => this.setActiveLayer(layer.id);
+
+                    const visBtn = document.createElement('button');
+                    visBtn.className = 'layer-btn';
+                    visBtn.innerHTML = layer.visible ? '<i class="ph ph-eye"></i>' : '<i class="ph ph-eye-slash"></i>';
+                    visBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        layer.visible = !layer.visible;
+                        layer.canvas.style.display = layer.visible ? 'block' : 'none';
+                        this.renderLayersUI();
+                    };
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = layer.name;
+
+                    item.appendChild(visBtn);
+                    item.appendChild(nameSpan);
+
+                    // Кнопка удаления (кроме фона)
+                    if (this.layers.length > 1 && layer.id !== this.layers[0].id) {
+                        const delBtn = document.createElement('button');
+                        delBtn.className = 'layer-btn';
+                        delBtn.innerHTML = '<i class="ph ph-trash"></i>';
+                        delBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            this.deleteLayer(layer.id);
+                        };
+                        item.appendChild(delBtn);
+                    }
+
+                    list.appendChild(item);
+                });
+            }
+
+            deleteLayer(id) {
+                const index = this.layers.findIndex(l => l.id === id);
+                if (index > -1) {
+                    this.layers[index].canvas.remove();
+                    this.layers.splice(index, 1);
+                    if (this.activeLayer.id === id) {
+                        this.setActiveLayer(this.layers[this.layers.length - 1].id);
+                    } else {
+                        this.renderLayersUI();
+                    }
+                    this.saveHistory();
                 }
             }
 
-            fillWhiteBackground() {
-                this.ctx.fillStyle = '#ffffff';
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            // --- НАВИГАЦИЯ (ZOOM & PAN) ---
+            centerWorkspace() {
+                const rect = this.container.getBoundingClientRect();
+                // Рассчитываем масштаб, чтобы холст поместился в экран с отступами
+                const scaleX = (rect.width - 40) / this.baseWidth;
+                const scaleY = (rect.height - 100) / this.baseHeight; // Учитываем панели
+                this.transform.scale = Math.min(scaleX, scaleY, 1);
+                
+                this.transform.x = (rect.width - this.baseWidth * this.transform.scale) / 2;
+                this.transform.y = (rect.height - this.baseHeight * this.transform.scale) / 2;
+                
+                this.updateTransform();
             }
 
-            setupContext() {
-                this.ctx.lineCap = 'round';
-                this.ctx.lineJoin = 'round';
+            updateTransform() {
+                this.workspace.style.transform = `translate(${this.transform.x}px, ${this.transform.y}px) scale(${this.transform.scale})`;
             }
 
-            // Универсальное получение координат (для мыши и тача)
-            getCoordinates(e) {
-                const rect = this.canvas.getBoundingClientRect();
-                let clientX, clientY;
+            handleWheel(e) {
+                e.preventDefault();
+                const zoomIntensity = 0.1;
+                const wheel = e.deltaY < 0 ? 1 : -1;
+                const zoomFactor = Math.exp(wheel * zoomIntensity);
+                
+                this.applyZoom(zoomFactor, e.clientX, e.clientY);
+            }
 
-                if (e.touches && e.touches.length > 0) {
-                    clientX = e.touches[0].clientX;
-                    clientY = e.touches[0].clientY;
-                } else {
-                    clientX = e.clientX;
-                    clientY = e.clientY;
-                }
-    
+            applyZoom(factor, clientX, clientY) {
+                const rect = this.container.getBoundingClientRect();
+                // Координаты мыши относительно контейнера
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
+
+                const newScale = Math.min(Math.max(0.1, this.transform.scale * factor), 5);
+                const actualFactor = newScale / this.transform.scale;
+
+                this.transform.x = x - (x - this.transform.x) * actualFactor;
+                this.transform.y = y - (y - this.transform.y) * actualFactor;
+                this.transform.scale = newScale;
+
+                this.updateTransform();
+            }
+
+            // Преобразование координат экрана в координаты холста (магия матриц)
+            getCanvasCoords(clientX, clientY) {
+                const rect = this.workspace.getBoundingClientRect();
+                // rect.left и rect.top уже включают в себя translate и scale!
+                // Поэтому мы просто делим на масштаб, чтобы получить логические пиксели
                 return {
-                    x: clientX - rect.left,
-                    y: clientY - rect.top
+                    x: (clientX - rect.left) / this.transform.scale,
+                    y: (clientY - rect.top) / this.transform.scale
                 };
             }
 
-            startDrawing(e) {
-                this.isDrawing = true;
-                const { x, y } = this.getCoordinates(e);
-                this.points =[{ x, y }, { x, y }, { x, y }]; 
-                this.currentLineWidth = Number(this.lineWidth);
-                this.lastTimestamp = performance.now();
+            // --- ЛОГИКА РИСОВАНИЯ И ИНСТРУМЕНТОВ ---
+            handlePointerDown(e) {
+                this.activePointers.set(e.pointerId, e);
+
+                if (this.currentTool === 'hand' || this.activePointers.size === 2) {
+                    this.isPanning = true;
+                    this.isDrawing = false;
+                    document.body.classList.add('tool-hand', 'dragging');
+                    return;
+                }
+
+                if (this.activePointers.size === 1 && !this.isPanning) {
+                    this.startDrawing(e);
+                }
+            }
+
+            handlePointerMove(e) {
+                if (this.activePointers.has(e.pointerId)) {
+                    this.activePointers.set(e.pointerId, e);
+                }
+
+                // Логика Pan & Zoom (2 пальца) или Инструмент "Рука" (1 палец/мышь)
+                if (this.isPanning) {
+                    if (this.activePointers.size === 2) {
+                        // Pinch to zoom (Щипок)
+                        const pointers = Array.from(this.activePointers.values());
+                        const p1 = pointers[0];
+                        const p2 = pointers[1];
+                        
+                        const dist = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
+                        const centerX = (p1.clientX + p2.clientX) / 2;
+                        const centerY = (p1.clientY + p2.clientY) / 2;
+
+                        if (this.initialPinchDist === null) {
+                            this.initialPinchDist = dist;
+                            this.lastCenterX = centerX;
+                            this.lastCenterY = centerY;
+                        } else {
+                            const factor = dist / this.initialPinchDist;
+                            this.applyZoom(factor, centerX, centerY);
+                            
+                            // Панорамирование при зуме
+                            this.transform.x += (centerX - this.lastCenterX);
+                            this.transform.y += (centerY - this.lastCenterY);
+                            this.updateTransform();
+
+                            this.initialPinchDist = dist;
+                            this.lastCenterX = centerX;
+                            this.lastCenterY = centerY;
+                        }
+                    } else if (this.currentTool === 'hand') {
+                        // Просто перетаскивание одним пальцем/мышью
+                        this.transform.x += e.movementX;
+                        this.transform.y += e.movementY;
+                        this.updateTransform();
+                    }
+                    return;
+                }
+
+                if (this.isDrawing) {
+                    this.draw(e);
+                }
+            }
+
+            handlePointerUp(e) {
+                this.activePointers.delete(e.pointerId);
                 
-                // Рисуем первую точку (клик)
-                this.ctx.beginPath();
-                this.ctx.arc(x, y, this.currentLineWidth / 2, 0, Math.PI * 2);
-                this.ctx.fillStyle = this.currentTool === 'eraser' ? '#ffffff' : this.color;
-                this.ctx.globalAlpha = this.currentTool === 'eraser' ? 1 : this.opacity;
-                this.ctx.fill();
+                if (this.activePointers.size < 2) {
+                    this.initialPinchDist = null;
+                }
+
+                if (this.activePointers.size === 0) {
+                    if (this.isPanning) {
+                        this.isPanning = false;
+                        document.body.classList.remove('dragging');
+                        if (this.currentTool !== 'hand') {
+                            document.body.classList.remove('tool-hand');
+                        }
+                    } else if (this.isDrawing) {
+                        this.stopDrawing();
+                    }
+                }
+            }
+
+            startDrawing(e) {
+                if (!this.activeLayer || !this.activeLayer.visible) return; // Нельзя рисовать на скрытом слое
+                
+                this.isDrawing = true;
+                const { x, y } = this.getCanvasCoords(e.clientX, e.clientY);
+                this.points = [{ x, y }];
+
+                this.draftCtx.clearRect(0, 0, this.baseWidth, this.baseHeight);
+                this.draftCtx.globalAlpha = this.opacity;
+
+                if (this.currentTool === 'eraser') {
+                    // Ластик работает прямо по активному слою, драфт не используем
+                    this.activeLayer.ctx.globalCompositeOperation = 'destination-out';
+                    this.activeLayer.ctx.globalAlpha = this.opacity;
+                    this.activeLayer.ctx.lineWidth = this.lineWidth;
+                } else if (this.currentTool === 'blur') {
+                    // ПОДГОТОВКА ИНСТРУМЕНТА "РАЗМЫТИЕ" (МАГИЯ GPU)
+                    // 1. Создаем скрытый холст и копируем на него текущий слой
+                    if (!this.blurBuffer) {
+                        this.blurBuffer = document.createElement('canvas');
+                        this.blurBuffer.width = this.activeLayer.canvas.width;
+                        this.blurBuffer.height = this.activeLayer.canvas.height;
+                        this.blurCtx = this.blurBuffer.getContext('2d');
+                    }
+                    this.blurCtx.clearRect(0, 0, this.blurBuffer.width, this.blurBuffer.height);
+                    
+                    // 2. Применяем аппаратное размытие
+                    this.blurCtx.filter = `blur(${Math.max(2, this.lineWidth / 2)}px)`;
+                    this.blurCtx.drawImage(this.activeLayer.canvas, 0, 0);
+                    this.blurCtx.filter = 'none';
+
+                    // Подготавливаем драфт для отрисовки маски размытия
+                    this.draftCtx.globalCompositeOperation = 'source-over';
+                    this.draftCtx.strokeStyle = 'black'; // Цвет не важен, важна форма
+                    this.draftCtx.lineCap = 'round';
+                    this.draftCtx.lineJoin = 'round';
+                    this.draftCtx.shadowBlur = this.lineWidth / 2; // Мягкие края кисти
+                    this.draftCtx.shadowColor = 'black';
+                } else {
+                    // Обычная кисть
+                    this.draftCtx.globalCompositeOperation = 'source-over';
+                    this.draftCtx.strokeStyle = this.color;
+                    this.draftCtx.shadowBlur = 0;
+                }
+
+                this.drawPoint(x, y);
+            }
+
+            drawPoint(x, y) {
+                const ctx = this.currentTool === 'eraser' ? this.activeLayer.ctx : this.draftCtx;
+                ctx.beginPath();
+                ctx.arc(x, y, this.lineWidth / 2, 0, Math.PI * 2);
+                ctx.fillStyle = this.currentTool === 'blur' ? 'black' : this.color;
+                ctx.fill();
             }
 
             draw(e) {
-                if (!this.isDrawing) return;
-                e.preventDefault();
-
-                const { x, y } = this.getCoordinates(e);
-                const currentTimestamp = performance.now();
+                const { x, y } = this.getCanvasCoords(e.clientX, e.clientY);
                 
-                let targetX = x;
-                let targetY = y;
-
-                // СТАБИЛИЗАТОР: Инерция (Lerp). Кисть "тянется" за курсором, поглощая тремор.
-                if (this.useStabilizer && this.points.length > 0) {
-                    const lastPoint = this.points[this.points.length - 1];
-                    // Курсор проходит только 15% пути за кадр
-                    targetX = lastPoint.x + (x - lastPoint.x) * 0.15;
-                    targetY = lastPoint.y + (y - lastPoint.y) * 0.15;
-                }
-
+                // Простой сглаживатель (Lerp)
+                const last = this.points[this.points.length - 1];
+                const targetX = last.x + (x - last.x) * 0.4;
+                const targetY = last.y + (y - last.y) * 0.4;
+                
                 this.points.push({ x: targetX, y: targetY });
 
+                const ctx = this.currentTool === 'eraser' ? this.activeLayer.ctx : this.draftCtx;
                 
-                // Распределение по инструментам
-                if (this.currentTool === 'eraser') {
-                    this.ctx.strokeStyle = '#ffffff';
-                    this.ctx.lineWidth = Number(this.lineWidth) * 1.5;
-                    this.drawSmoothCurve();
-                } else {
-                    this.ctx.strokeStyle = this.color;
-                    this.ctx.strokeStyle = this.hexToRgba(this.color, this.opacity);
-                    
-                    if (this.brushType === 'anime') {
-                        this.drawAnimeBrush(currentTimestamp);
-                    } else if (this.brushType === 'calligraphy') {
-                        this.drawCalligraphyBrush();
-                    } else {
-                        this.ctx.lineWidth = Number(this.lineWidth);
-                        this.drawSmoothCurve();
-                    }
+                if (this.currentTool !== 'eraser') {
+                    this.draftCtx.clearRect(0, 0, this.baseWidth, this.baseHeight);
                 }
-                
-                this.lastTimestamp = currentTimestamp;
+
+                if (this.brushType === 'spray') {
+    // === НОВАЯ КИСТЬ: БАЛОНЧИК (СПРЕЙ) ===
+    const radius = this.lineWidth * 2;
+    // Кидаем случайные точки вокруг курсора
+    for (let i = 0; i < 20; i++) {
+        const offsetX = (Math.random() * 2 - 1) * radius;
+        const offsetY = (Math.random() * 2 - 1) * radius;
+        ctx.fillStyle = this.color;
+        ctx.fillRect(x + offsetX, y + offsetY, 2, 2); // Рисуем мелкие точки
+    }
+} 
+else if (this.brushType === 'pixel') {
+    // === НОВАЯ КИСТЬ: ПИКСЕЛЬНАЯ (8-BIT) ===
+    // Без сглаживания, рисует грубые прямоугольники
+    ctx.fillStyle = this.color;
+    ctx.fillRect(x - this.lineWidth/2, y - this.lineWidth/2, this.lineWidth, this.lineWidth);
+} 
+else {
+    // === ОБЫЧНАЯ ГЛАДКАЯ КИСТЬ (ваш старый код) ===
+    ctx.lineWidth = this.lineWidth;
+    ctx.beginPath();
+    ctx.moveTo(this.points[0].x, this.points[0].y);
+    
+    for (let i = 1; i < this.points.length - 1; i++) {
+        const midX = (this.points[i].x + this.points[i+1].x) / 2;
+        const midY = (this.points[i].y + this.points[i+1].y) / 2;
+        ctx.quadraticCurveTo(this.points[i].x, this.points[i].y, midX, midY);
+    }
+    const p = this.points[this.points.length - 1];
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+}
             }
 
             stopDrawing() {
                 this.isDrawing = false;
-                this.points =[]; // Очищаем массив точек
+                
+                if (this.currentTool === 'brush') {
+                    // Перенос кисти с драфта на активный слой
+                    this.activeLayer.ctx.globalCompositeOperation = 'source-over';
+                    this.activeLayer.ctx.globalAlpha = 1;
+                    this.activeLayer.ctx.drawImage(this.draftCanvas, 0, 0, this.baseWidth, this.baseHeight);
+                } 
+                else if (this.currentTool === 'blur' && this.blurBuffer) {
+                    // ПРИМЕНЕНИЕ МАСКИ РАЗМЫТИЯ
+                    // Создаем временный холст для композитинга
+                    const compCanvas = document.createElement('canvas');
+                    compCanvas.width = this.blurBuffer.width;
+                    compCanvas.height = this.blurBuffer.height;
+                    const compCtx = compCanvas.getContext('2d');
+
+                    // 1. Рисуем размытый фон
+                    compCtx.drawImage(this.blurBuffer, 0, 0);
+                    // 2. Оставляем пиксели ТОЛЬКО там, где нарисован драфт (маска кисти)
+                    compCtx.globalCompositeOperation = 'destination-in';
+                    compCtx.drawImage(this.draftCanvas, 0, 0);
+
+                    // 3. СНАЧАЛА удаляем оригинальные резкие пиксели по форме нашей маски-кисти
+this.activeLayer.ctx.globalCompositeOperation = 'destination-out';
+this.activeLayer.ctx.globalAlpha = 1;
+this.activeLayer.ctx.drawImage(this.draftCanvas, 0, 0, this.baseWidth, this.baseHeight);
+
+// 4. ТЕПЕРЬ накладываем размытые пиксели ровно в образовавшуюся "дыру"
+this.activeLayer.ctx.globalCompositeOperation = 'source-over';
+this.activeLayer.ctx.globalAlpha = this.opacity;
+this.activeLayer.ctx.drawImage(compCanvas, 0, 0, this.baseWidth, this.baseHeight);
+                }
+
+                // Очистка
+                this.draftCtx.clearRect(0, 0, this.baseWidth, this.baseHeight);
+                this.activeLayer.ctx.globalAlpha = 1;
+                this.activeLayer.ctx.globalCompositeOperation = 'source-over';
+                
+                this.saveHistory();
             }
 
-            // --- МАТЕМАТИКА КИСТЕЙ ---
+            // --- ИСТОРИЯ (UNDO) ---
+            saveHistory() {
+                // Сохраняем состояние только активного слоя для экономии памяти
+                if (!this.activeLayer) return;
+                
+                const imgData = this.activeLayer.ctx.getImageData(0, 0, this.activeLayer.canvas.width, this.activeLayer.canvas.height);
+                
+                this.history.push({
+                    layerId: this.activeLayer.id,
+                    data: imgData
+                });
 
-            // Базовое сглаживание: рисует кривую Безье по средним точкам (midpoints)
-            drawSmoothCurve() {
-                if (this.points.length < 3) return;
-                const p1 = this.points[this.points.length - 3];
-                const p2 = this.points[this.points.length - 2];
-                const p3 = this.points[this.points.length - 1];
-
-                const mid1 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-                const mid2 = { x: (p2.x + p3.x) / 2, y: (p2.y + p3.y) / 2 };
-
-                this.ctx.beginPath();
-                this.ctx.moveTo(mid1.x, mid1.y);
-                this.ctx.quadraticCurveTo(p2.x, p2.y, mid2.x, mid2.y);
-                this.ctx.stroke();
+                if (this.history.length > this.maxHistory) {
+                    this.history.shift();
+                }
             }
 
-            // Кисть "Аниме": реагирует на скорость (быстро = тонко, медленно = толсто)
-            drawAnimeBrush(currentTimestamp) {
-                if (this.points.length < 3) return;
-                const p2 = this.points[this.points.length - 2];
-                const p3 = this.points[this.points.length - 1];
-
-                const distance = Math.hypot(p3.x - p2.x, p3.y - p2.y);
-                const dt = currentTimestamp - this.lastTimestamp || 1;
-                const speed = distance / dt;
-
-                const baseWidth = Number(this.lineWidth);
-                let targetWidth = Math.max(1, baseWidth - speed * 3);
-                
-                // Плавное изменение толщины
-                this.currentLineWidth += (targetWidth - this.currentLineWidth) * 0.2;
-                this.ctx.lineWidth = this.currentLineWidth;
-                
-                this.drawSmoothCurve();
+            undo() {
+                if (this.history.length > 1) {
+                    this.history.pop(); // Удаляем текущее состояние
+                    const prevState = this.history[this.history.length - 1];
+                    
+                    const layer = this.layers.find(l => l.id === prevState.layerId);
+                    if (layer) {
+                        layer.ctx.putImageData(prevState.data, 0, 0);
+                    }
+                }
             }
 
-            // Кисть "Каллиграфия": имитация плоского пера (зависит от угла наклона линии)
-            drawCalligraphyBrush() {
-                if (this.points.length < 3) return;
-                const p2 = this.points[this.points.length - 2];
-                const p3 = this.points[this.points.length - 1];
+            // --- ЭКСПОРТ ---
+            saveToImage() {
+                const exportCanvas = document.createElement('canvas');
+                exportCanvas.width = this.baseWidth * this.dpr;
+                exportCanvas.height = this.baseHeight * this.dpr;
+                const eCtx = exportCanvas.getContext('2d');
 
-                const dx = p3.x - p2.x;
-                const dy = p3.y - p2.y;
-                
-                const dirAngle = Math.atan2(dy, dx);
-                const diff = dirAngle - (Math.PI / 4); // Угол наклона пера: 45 градусов
-                
-                const baseWidth = Number(this.lineWidth);
-                // Толщина зависит от того, насколько вектор перпендикулярен перу
-                let targetWidth = Math.max(1, baseWidth * Math.abs(Math.sin(diff)));
-                
-                this.currentLineWidth += (targetWidth - this.currentLineWidth) * 0.4;
-                this.ctx.lineWidth = this.currentLineWidth;
-                
-                this.drawSmoothCurve();
-            }
+                // Сливаем все видимые слои снизу вверх
+                this.layers.forEach(layer => {
+                    if (layer.visible) {
+                        eCtx.drawImage(layer.canvas, 0, 0);
+                    }
+                });
 
-            setTool(tool) {
-                this.currentTool = tool;
-                this.btnBrush.classList.remove('active');
-                this.btnEraser.classList.remove('active');
-                
-                if (tool === 'brush') this.btnBrush.classList.add('active');
-                if (tool === 'eraser') this.btnEraser.classList.add('active');
-            }
-
-            clearCanvas() {
-                this.stopDrawing(); // Прерываем текущее рисование
-                this.canvas.style.transition = 'opacity 0.3s ease';
-                this.canvas.style.pointerEvents = 'none'; // Отключаем взаимодействие
-                this.canvas.style.opacity = '0';
-    
-                setTimeout(() => {
-                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                    this.fillWhiteBackground();
-                    this.canvas.style.opacity = '1';
-                    this.canvas.style.pointerEvents = 'auto'; // Включаем обратно
-                }, 300);
-            }
-
-            saveCanvas() {
                 const link = document.createElement('a');
-                link.download = `ProDraw_${new Date().getTime()}.png`;
-                link.href = this.canvas.toDataURL('image/png');
+                link.download = `ProDraw_${Date.now()}.png`;
+                link.href = exportCanvas.toDataURL('image/png');
                 link.click();
             }
 
-            bindEvents() {
-                // Мышь
-                this.canvas.addEventListener('mousedown', this.startDrawing.bind(this));
-                this.canvas.addEventListener('mousemove', this.draw.bind(this));
-                this.canvas.addEventListener('mouseup', this.stopDrawing.bind(this));
-                this.canvas.addEventListener('mouseout', this.stopDrawing.bind(this));
-
-                // Сенсорные экраны (Touch)
-                this.canvas.addEventListener('touchstart', this.startDrawing.bind(this), { passive: false });
-                this.canvas.addEventListener('touchmove', this.draw.bind(this), { passive: false });
-                this.canvas.addEventListener('touchend', this.stopDrawing.bind(this));
-
-                // Инструменты UI
-                this.colorPicker.addEventListener('input', (e) => this.color = e.target.value);
-                this.sizePicker.addEventListener('input', (e) => this.lineWidth = e.target.value);
-                
-                this.btnBrush.addEventListener('click', () => this.setTool('brush'));
-                this.btnEraser.addEventListener('click', () => this.setTool('eraser'));
-                this.btnClear.addEventListener('click', this.clearCanvas.bind(this));
-                this.btnSave.addEventListener('click', this.saveCanvas.bind(this));
-
-                // Ресайз окна (адаптивность)
-                let resizeTimer;
-                window.addEventListener('resize', () => {
-                    clearTimeout(resizeTimer);
-                    resizeTimer = setTimeout(() => this.resizeCanvas(), 200);
-                }); // <-- ЗАКРЫТЬ СКОБКУ ЗДЕСЬ!
-
-                // --- СЛУШАТЕЛИ НОВЫХ ФУНКЦИЙ (Должны быть снаружи resize) ---
-                this.opacityPicker.addEventListener('input', (e) => this.opacity = parseFloat(e.target.value));
-                this.brushTypeSelect.addEventListener('change', (e) => {
-                    this.brushType = e.target.value;
-                    this.setTool('brush'); 
+            // --- ИНТЕРФЕЙС И СОБЫТИЯ ---
+            bindUI() {
+                const tools = document.querySelectorAll('.tool-btn[data-tool]');
+                tools.forEach(btn => {
+                    btn.onclick = () => {
+                        tools.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.currentTool = btn.dataset.tool;
+                        
+                        document.body.className = ''; // Сброс курсоров
+                        if (this.currentTool === 'hand') document.body.classList.add('tool-hand');
+                    };
                 });
-                this.stabilizerCb.addEventListener('change', (e) => this.useStabilizer = e.target.checked);
+
+                document.getElementById('colorPicker').oninput = (e) => this.color = e.target.value;
+                document.getElementById('sizePicker').oninput = (e) => this.lineWidth = parseFloat(e.target.value);
+                document.getElementById('opacityPicker').oninput = (e) => this.opacity = parseFloat(e.target.value);
+
+                document.getElementById('btnUndo').onclick = () => this.undo();
+                document.getElementById('btnSave').onclick = () => this.saveToImage();
+                document.getElementById('btnAddLayer').onclick = () => this.addLayer();
+                
+                const layersPanel = document.getElementById('layersPanel');
+                document.getElementById('btnToggleLayers').onclick = () => layersPanel.classList.toggle('hidden');
+
+                // Навигация
+                document.getElementById('btnZoomIn').onclick = () => this.applyZoom(1.5, this.container.clientWidth/2, this.container.clientHeight/2);
+                document.getElementById('btnZoomOut').onclick = () => this.applyZoom(0.75, this.container.clientWidth/2, this.container.clientHeight/2);
+                document.getElementById('btnZoomReset').onclick = () => this.centerWorkspace();
+            }
+
+            bindEvents() {
+                // Колесико мыши = Zoom
+                this.container.addEventListener('wheel', this.handleWheel.bind(this), { passive: false });
+
+                // Pointer events (Мышь + Пальцы + Стилус)
+                this.draftCanvas.addEventListener('pointerdown', this.handlePointerDown.bind(this));
+                window.addEventListener('pointermove', this.handlePointerMove.bind(this));
+                window.addEventListener('pointerup', this.handlePointerUp.bind(this));
+                window.addEventListener('pointercancel', this.handlePointerUp.bind(this));
+
+                // Предотвращение жестов браузера (назад/вперед свайпом)
+                document.addEventListener('contextmenu', e => e.preventDefault());
             }
         }
 
-        // Запуск приложения после загрузки DOM
         window.addEventListener('DOMContentLoaded', () => {
             new DrawingApp();
         });
