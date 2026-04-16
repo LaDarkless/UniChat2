@@ -1161,7 +1161,7 @@
                 <!-- Вторая модель -->
                 <div class="custom-dropdown" id="model-dropdown-2" style="display: none; margin-left: 5px;">
                     <button class="dropdown-btn" id="dropdown-toggle-2" style="border-color: var(--agent-color); background: rgba(139, 92, 246, 0.05);">
-                        <span id="current-model-name-2">claude-3.5-haiku</span>
+                        <span id="current-model-name-2">claude-4.5-haiku</span>
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                     <div class="dropdown-menu" id="model-dropdown-menu-2"></div>
@@ -1883,6 +1883,8 @@ window.editCharacter = function(id) {
         { id: "claude-haiku-4-5-20251001", name: "Claude 4.5 Haiku", group: "Anthropic", provider: "proxy-api" },
         { id: "claude-sonnet-4-6", name: "Claude 4.6 Sonnet", group: "Anthropic", provider: "proxy-api" },
         { id: "claude-opus-4-6", name: "Claude 4.6 Opus", group: "Anthropic", provider: "proxy-api" },
+        { id: "claude-opus-4.7", name: "Claude 4.6 Opus (Proxy)", group: "Anthropic", provider: "proxy-api" },
+        { id: "anthropic/claude-opus-4.7", name: "Claude 4.6 Opus (OpenRouter)", group: "Anthropic", provider: "openrouter" },
 
         //Liquid:
         { id: "liquid/lfm-2-24b-a2b", name: "lfm-2-24b-a2b", group: "Liquid", provider: "openrouter"},
@@ -2272,7 +2274,7 @@ window.editCharacter = function(id) {
     
     let customStepCounter = 0;
     let isCompareMode = false;
-    let selectedModel2 = localStorage.getItem('pa_model_2') || 'claude-3-5-haiku-20241022';
+    let selectedModel2 = localStorage.getItem('pa_model_2') || 'claude-haiku-4-5-20251001';
 
     // ==========================================
     // UI LISTENERS
@@ -3587,9 +3589,9 @@ window.editCharacter = function(id) {
     if(btnOpenAgent) {
         btnOpenAgent.addEventListener('click', () => {
             buildPremiumSelect('list-res', 'text-res', 'agent-researcher', 'gpt-4o-search-preview-2025-03-11');
-            buildPremiumSelect('list-ana', 'text-ana', 'agent-analyst', 'o4-mini-2025-04-16');
-            buildPremiumSelect('list-cri', 'text-cri', 'agent-critic', 'claude-3-5-haiku-20241022');
-            buildPremiumSelect('list-fin', 'text-fin', 'agent-finalizer', 'gpt-5.2-chat-latest');
+            buildPremiumSelect('list-ana', 'text-ana', 'agent-analyst', 'o4-mini');
+            buildPremiumSelect('list-cri', 'text-cri', 'agent-critic', 'claude-haiku-4-5-20251001');
+            buildPremiumSelect('list-fin', 'text-fin', 'agent-finalizer', 'gpt-5.4');
             document.getElementById('agent-name').value = '';
             document.getElementById('custom-steps-container').innerHTML = ''; 
             customStepCounter = 0;
