@@ -324,22 +324,36 @@
                     <div class="ms-card-title">Qwen 3.6 PLUS</div>
                     <div class="ms-card-desc">Бесплатная модель с улучшенной логикой.</div>
                 </div>
+                <div class="ms-card" data-model="inclusionai/ling-2.6-flash:free" onclick="selectModelCard(this, 'inclusionai/ling-2.6-flash:free')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">Ling 2.6 flash</div>
+                    <div class="ms-card-desc">Это тестовая и бесплатная модель.</div>
+                </div>
             </div>
         </div>
 
         <div class="ms-category">
             <div class="ms-badge energy">Roleplay Standard</div>
             <div class="ms-grid">
-                <div class="ms-card" data-model="gryphe/mythomax-l2-13b" onclick="selectModelCard(this, 'gryphe/mythomax-l2-13b')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">MythoMax L2 13B</div>
-                    <div class="ms-card-desc">Золотой стандарт для RP без цензуры. Отличная креативность.</div>
-                    <i class="fa-solid fa-fire ms-card-icon" style="color: #ff4a4a;"></i>
-                </div>
                 <div class="ms-card" data-model="mistralai/mistral-small-creative" onclick="selectModelCard(this, 'mistralai/mistral-small-creative')">
                     <div class="ms-check"><i class="fa-solid fa-check"></i></div>
                     <div class="ms-card-title">Mistral Small Creative</div>
                     <div class="ms-card-desc">Улучшенная креативность от Mistral. Подходит для диалогов.</div>
+                </div>
+                <div class="ms-card" data-model="xiaomi/mimo-v2-flash" onclick="selectModelCard(this, 'xiaomi/mimo-v2-flash')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">Mimo 2 flash</div>
+                    <div class="ms-card-desc">Проверенная мною модель от Xiaomi. Нормально для RP</div>
+                </div>
+                <div class="ms-card" data-model="xiaomi/mimo-v2.5" onclick="selectModelCard(this, 'xiaomi/mimo-v2.5')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">Mimo 2.5</div>
+                    <div class="ms-card-desc">Тестовая модель от Xiaomi.</div>
+                </div>
+                <div class="ms-card" data-model="xiaomi/mimo-v2.5-pro" onclick="selectModelCard(this, 'xiaomi/mimo-v2.5-pro')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">Mimo 2.5 PRO</div>
+                    <div class="ms-card-desc">Тестовая модель от Xiaomi. PRO-версия.</div>
                 </div>
             </div>
         </div>
@@ -363,7 +377,13 @@
                     <div class="ms-check"><i class="fa-solid fa-check"></i></div>
                     <div class="ms-card-title">Grok 4.1 fast</div>
                     <div class="ms-card-desc">Массивная модель с огромными знаниями и логикой. Без цензуры (18+).</div>
-                    <i class="fa-solid fa-fire ms-card-icon" style="color: #ff4a4a;"></i>
+                    <i class="fa-solid fa-fire ms-card-icon" style="color: firebrick;"></i>
+                </div>
+                <div class="ms-card" data-model="deepseek/deepseek-v3.2" onclick="selectModelCard(this, 'deepseek/deepseek-v3.2')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">DeepSeek 3.2</div>
+                    <div class="ms-card-desc">Последняя и очень мощная модель от DeepSeek</div>
+                    <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
                 </div>
             </div>
         </div>
@@ -668,6 +688,12 @@
                     <option value="arcee-ai/trinity-large-preview:free">Trinity Large (Бесплатно)</option>
                     <option value="stepfun/step-3.5-flash:free">step-3.5-flash (Бесплатно)</option>
                     <option value="z-ai/glm-4.5-air:free">GLM 4.5-air (Бесплатно)</option>
+                    <!-- НОВЫЕ МОДЕЛИ -->
+                    <option value="deepseek/deepseek-v3.2">DeepSeek 3.2</option>
+                    <option value="xiaomi/mimo-v2-flash">Mimo 2 flash (Очень дешевая)</option>
+                    <option value="xiaomi/mimo-v2.5-pro">Mimo 2.5 PRO (test)</option>
+                    <option value="xiaomi/mimo-v2.5">Mimo 2.5 (test)</option>
+                    <option value="inclusionai/ling-2.6-flash:free">Ling-2.6-flash (Бесплатно)</option>
                 </select>
                 <small style="color:var(--text-muted); font-size:11px;">Выберите модель для генерации ответов.</small>
             </div>
