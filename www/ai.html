@@ -1419,9 +1419,13 @@
                         <label><span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span> GenAPI Ключ (Suno V5 / Perplexity)</label>
                         <input type="password" class="form-control" id="gen-api-key" placeholder="sk-...">
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label><span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></span> ProxyAPI / OpenRouter Ключ</label>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label><span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></span> ProxyAPI Ключ (Основной)</label>
                         <input type="password" class="form-control" id="api-key" placeholder="sk-...">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label><span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></span> OpenRouter Ключ (Для бесплатных моделей)</label>
+                        <input type="password" class="form-control" id="openrouter-key" placeholder="sk-or-v1-...">
                     </div>
                 </div>
 
@@ -1493,7 +1497,7 @@
 
                         <p style="color: var(--text-secondary); font-size: 13px; border-top: 1px solid var(--app-border); padding-top: 15px; margin-top: 15px;">
                             <strong>Репозиторий:</strong> <a href="https://github.com/LaDarkless/UniChat2" target="_blank" style="color: #3b82f6;">GitHub Link</a><br>
-                            <strong>Версия ПО:</strong> 0.7.7 (Build 2026.03.18)<br>
+                            <strong>Версия ПО:</strong> 0.7.8 (Build 2026.03.18)<br>
                             <strong>Связь:</strong> ksyr2204@gmail.com
                         </p>
                     </div>
@@ -1982,6 +1986,8 @@ window.editCharacter = function(id) {
         { id: "openai/gpt-4o-mini-search-preview", name: "GPT-4o-mini-search-preview", group: "OpenAI", provider: "openrouter", inputPrice: "0.15/M input tokens", outputPrice: "0.60/M output tokens" },
         { id: "openai/gpt-oss-120b", name: "GPT-oss-120b", group: "OpenAI", provider: "openrouter", inputPrice: "0.039/M input tokens", outputPrice: "0.19/M output tokens" },
         { id: "openai/gpt-oss-20b", name: "GPT-oss-20b", group: "OpenAI", provider: "openrouter", inputPrice: "0.03/M input tokens", outputPrice: "0.14/M output tokens" },
+        { id: "openai/gpt-oss-120b:free", name: "GPT-oss-20b (free)", group: "OpenAI", provider: "openrouter"},
+        { id: "openai/gpt-oss-20b:free", name: "GPT-oss-20b (free)", group: "OpenAI", provider: "openrouter"},
         
         //OpenAI-Reasoner:
         { id: "openai/o4-mini-deep-research", name: "o4-mini-deep-research", group: "OpenAI-Reasoning", provider: "openrouter", inputPrice: "2/M input tokens", outputPrice: "8/M output tokens"},
@@ -1995,6 +2001,7 @@ window.editCharacter = function(id) {
         { id: "gemini-3.1-pro-preview", name: `<span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L14.39 9.61L22 12L14.39 14.39L12 22L9.61 14.39L2 12L9.61 9.61L12 2Z"/></svg></span> Gemini-3.1-pro`, group: "Gemini", provider: "proxy-api", inputPrice: "2/M input tokens", outputPrice: "12/M output tokens" },
 
         //Gemma:
+        { id: "google/gemma-4-31b-it:free", name: "Gemma-4-31b-it (free)", group: "Gemma", provider: "openrouter"},
         { id: "google/gemma-4-31b-it", name: "Gemma-4-31b-it", group: "Gemma", provider: "openrouter"},
 
         //Claude:
@@ -2003,6 +2010,10 @@ window.editCharacter = function(id) {
         { id: "claude-opus-4-6", name: "Claude 4.6 Opus", group: "Anthropic", provider: "proxy-api" },
         //{ id: "claude-opus-4-7", name: "Claude 4.7 Opus (Proxy)", group: "Anthropic", provider: "proxy-api" },
         //{ id: "anthropic/claude-opus-4.7", name: "Claude 4.7 Opus (OpenRouter)", group: "Anthropic", provider: "openrouter" },
+
+        //Ling:
+        {id: "inclusionai/ling-2.6-1t:free", name: "Ling 2.6 1T (free)", group: "Ling", provider: "openrouter"},
+        {id: "inclusionai/ling-2.6-flash:free", name: "Ling 2.6 flash (free)", group: "Ling", provider: "openrouter"},
 
         //Liquid:
         { id: "liquid/lfm-2-24b-a2b", name: "lfm-2-24b-a2b", group: "Liquid", provider: "openrouter"},
@@ -2068,6 +2079,7 @@ window.editCharacter = function(id) {
         { id: "meta-llama/llama-3-8b-instruct", name: "Llama-3-8b-instruct", group: "Meta | Llama", provider: "openrouter"},
 
         //MiniMax:
+        { id: "minimax/minimax-m2.5:free", name: "Minimax-m2.5 (free)", group: "Minimax", provider: "openrouter"},
         { id: "minimax/minimax-m2.7", name: "Minimax-m2.7", group: "Minimax", provider: "openrouter"},
         { id: "minimax/minimax-m2.5", name: "Minimax-m2.5", group: "Minimax", provider: "openrouter"},
         { id: "minimax/minimax-m2-her", name: "Minimax-m2-her", group: "Minimax", provider: "openrouter"},
@@ -2077,7 +2089,6 @@ window.editCharacter = function(id) {
         { id: "minimax/minimax-01", name: "Minimax-01", group: "Minimax", provider: "openrouter"},
 
         //Qwen:
-        { id: "qwen/qwen3.6-plus:free", name: "Qwen 3.6 PLUS (free)", group: "Qwen | Alibaba", provider: "openrouter"},
         { id: "qwen/qwen3.5-9b", name: "Qwen 3.5-9b", group: "Qwen | Alibaba", provider: "openrouter"},
         { id: "qwen/qwen3.5-35b-a3b", name: "Qwen 3.5-35b", group: "Qwen | Alibaba", provider: "openrouter"},
         { id: "qwen/qwen3.5-27b", name: "Qwen 3.5-27b", group: "Qwen | Alibaba", provider: "openrouter"},
@@ -2087,9 +2098,6 @@ window.editCharacter = function(id) {
         { id: "qwen/qwen3.5-397b-a17b", name: "Qwen3.5-397b", group: "Qwen | Alibaba", provider: "openrouter"},
         { id: "qwen/qwen3-max-thinking", name: "Qwen3-max-thinking", group: "Qwen | Alibaba", provider: "openrouter"},
         { id: "qwen/qwen3-coder-next", name: "Qwen3-coder-next", group: "Qwen | Alibaba", provider: "openrouter"},
-
-        //arcee-ai:
-        { id: "arcee-ai/trinity-large-preview:free", name: "Trinity Large Preview (free)", group: "arcee-ai", provider: "openrouter" },
 
         //Moonshotai:
         { id: "moonshotai/kimi-k2.6", name: "Kimi-k2.6", group: "Kimi", provider: "openrouter"},
@@ -2124,13 +2132,15 @@ window.editCharacter = function(id) {
         { id: "cohere/command-r-plus-08-2024", name: "Command-r-plus-08-2024", group: "Cohere", provider: "openrouter"},
 
         // NVIDIA
-        { id: "nvidia/llama-3.1-nemotron-70b-instruct", name: "Nemotron Llama 3.1 70B", group: "Nvidia", provider: "openrouter" },
+        //Странные Nvidia
+        { id: "nvidia/nemotron-3-super-120b-a12b:free", name: "Nemotron-3-super-120b-a12b (free)", group: "Nvidia", provider: "openrouter"},
         { id: "nvidia/nemotron-3-nano-30b-a3b", name: "Nemotron-3-nano-30b-a3b", group: "Nvidia", provider: "openrouter"},
         { id: "nvidia/nemotron-nano-12b-v2-vl", name: "Nemotron-nano-12b-v2-vl", group: "Nvidia", provider: "openrouter"},
         { id: "nvidia/llama-3.3-nemotron-super-49b-v1.5", name: "Nemotron Llama Super 49b v1.5", group: "Nvidia", provider: "openrouter"},
         { id: "nvidia/nemotron-nano-9b-v2", name: "Nemotron-nano-9b-v2", group: "Nvidia", provider: "openrouter"},
         { id: "nvidia/nemotron-nano-9b-v2:free", name: "nvidia/nemotron-nano-9b-v2:free", group: "Nvidia", provider: "openrouter"},
         { id: "nvidia/llama-3.1-nemotron-70b-instruct", name: "llama-3.1-nemotron-70b-instruct", group: "Nvidia", provider: "openrouter"},
+        { id: "nvidia/llama-3.1-nemotron-70b-instruct", name: "Nemotron Llama 3.1 70B", group: "Nvidia", provider: "openrouter" },
 
         //Aion
         { id: "aion-labs/aion-2.0", name: "Aion-2.0", group: "Aion", provider: "openrouter"},
@@ -2368,6 +2378,7 @@ window.editCharacter = function(id) {
     
     let apiKey = localStorage.getItem('pa_api_key') || '';
     let genApiKey = localStorage.getItem('pa_gen_api_key') || '';
+    let openRouterKey = localStorage.getItem('pa_openrouter_key') || ''; // Новый ключ для бесплатных моделей
     let selectedModel = localStorage.getItem('pa_model') || 'gpt-5.2-chat-latest';
     let sysPrompt = localStorage.getItem('pa_sysprompt') || '';
     let temperature = parseFloat(localStorage.getItem('pa_temp') || '1.0');
@@ -2957,11 +2968,15 @@ window.editCharacter = function(id) {
             bodyPayload.temperature = temp;
         }
 
-        const res = await fetch('https://api.proxyapi.ru/openrouter/v1/chat/completions', {
+        if (!openRouterKey) {
+            throw new Error("Укажите OpenRouter ключ в настройках (для :free моделей)");
+        }
+
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST', 
             headers: { 
                 'Content-Type': 'application/json', 
-                'Authorization': `Bearer ${apiKey}`,
+                'Authorization': `Bearer ${openRouterKey}`,
                 'HTTP-Referer': 'https://ai-studio-ultimate.com',
                 'X-Title': 'AI Studio Ultimate'
             },
@@ -3477,11 +3492,15 @@ window.editCharacter = function(id) {
             bodyPayload.temperature = temperature;
         }
 
-        const res = await fetch('https://api.proxyapi.ru/openrouter/v1/chat/completions', {
+        if (!openRouterKey) {
+            throw new Error("Укажите OpenRouter ключ в настройках (для :free моделей)");
+        }
+
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST', 
             headers: { 
                 'Content-Type': 'application/json', 
-                'Authorization': `Bearer ${apiKey}`,
+                'Authorization': `Bearer ${openRouterKey}`,
                 'HTTP-Referer': 'https://ai-studio-ultimate.com',
                 'X-Title': 'AI Studio Ultimate'
             },
@@ -3936,6 +3955,7 @@ window.editCharacter = function(id) {
             // Подтягиваем значения в поля
             document.getElementById('gen-api-key').value = genApiKey;
             document.getElementById('api-key').value = apiKey;
+            document.getElementById('openrouter-key').value = openRouterKey; // Загружаем ключ
             document.getElementById('system-prompt').value = sysPrompt;
             document.getElementById('temperature').value = temperature;
             document.getElementById('max-tokens').value = maxTokens || '';
@@ -3991,6 +4011,7 @@ window.editCharacter = function(id) {
         btnSaveSettings.addEventListener('click', () => {
             genApiKey = document.getElementById('gen-api-key').value.trim();
             apiKey = document.getElementById('api-key').value.trim();
+            openRouterKey = document.getElementById('openrouter-key').value.trim(); // Читаем ключ
             sysPrompt = document.getElementById('system-prompt').value.trim();
             temperature = parseFloat(document.getElementById('temperature').value);
             const mt = parseInt(document.getElementById('max-tokens').value);
@@ -4004,6 +4025,7 @@ window.editCharacter = function(id) {
 
             localStorage.setItem('pa_gen_api_key', genApiKey);
             localStorage.setItem('pa_api_key', apiKey);
+            localStorage.setItem('pa_openrouter_key', openRouterKey); // Сохраняем ключ
             localStorage.setItem('pa_sysprompt', sysPrompt);
             localStorage.setItem('pa_temp', temperature);
             if(maxTokens) localStorage.setItem('pa_maxtokens', maxTokens); else localStorage.removeItem('pa_maxtokens');

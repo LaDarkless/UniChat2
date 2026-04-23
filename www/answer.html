@@ -355,7 +355,7 @@
 
     <script>
         // === ВАШИ НАСТРОЙКИ ===
-        const API_KEY = "sk-NfiugN1qDk7GBUhFNACHnFDM4rFrFyyV"; 
+        const API_KEY = "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"; 
         
         const SYSTEM_PROMPT = `Ты — профессиональный, дружелюбный и лаконичный ИИ-помощник в приложении UniChat. 
         Твоя задача — давать точные и полезные ответы. 
@@ -531,7 +531,8 @@ server:
 <h2>АВТОР НЕ НЕСЁТ ОТВЕТСВЕННОСТЬ ЗА ПОТЕРЮ ВАШИХ ДАННЫХ! БУДЬТЕ БДИТЕЛЬНЫ И СОХРАНЯЙТЕ ВАЖНУЮ ИНФОРМАЦИИ НА ВАШЕМ УСТРОЙСТВЕ! СПАСИБО.</h2>
 `;
     
-        const API_URL = "https://api.proxyapi.ru/openrouter/v1/chat/completions";
+        //const API_URL = "https://api.proxyapi.ru/openrouter/v1/chat/completions";
+        const API_URL = "https://openrouter.ai/api/v1/chat/completions";
         
         // 1. СОЗДАЕМ МАССИВ ПАМЯТИ (ИСТОРИЮ ДИАЛОГА)
         let chatHistory =[
@@ -617,14 +618,17 @@ server:
             responseContent.innerHTML += userMsgHtml;
     
             try {
-            const response = await fetch(API_URL, {
+                const response = await fetch(API_URL, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${API_KEY}`
+                    "Authorization": `Bearer ${API_KEY}`,
+                    // Обязательные заголовки для прямой работы с OpenRouter
+                    "HTTP-Referer": window.location.href || "https://unichat-ai.com",
+                    "X-Title": "UniChat AI Answer"
                 },
                 body: JSON.stringify({
-                    model: "arcee-ai/trinity-large-preview:free",
+                    model: "openai/gpt-oss-120b:free",
                     messages: chatHistory,
                     stream: true // <-- 1. ВКЛЮЧАЕМ ПОТОКОВУЮ ПЕРЕДАЧУ
                 })
