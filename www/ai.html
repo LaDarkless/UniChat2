@@ -2013,7 +2013,9 @@ window.editCharacter = function(id) {
     // ОСНОВНАЯ ЛОГИКА ПРИЛОЖЕНИЯ
     // ==========================================
     const MODELS_CONFIG = [
-        { id: "gpt-5.4", name: "GPT-5.4", group: "OpenAI", provider: "proxy-api", inputPrice: "2.50/M input token", outputPrice: "15/M output tokens" },
+        //{ id: "gpt-5.5-pro", name: "GPT-5.5-pro", group: "OpenAI", provider: "proxy-api", inputPrice: "2.50/M input token", outputPrice: "15/M output tokens" },
+        { id: "gpt-5.5", name: "GPT-5.5", group: "OpenAI", provider: "proxy-api", inputPrice: "2.50/M input token", outputPrice: "15/M output tokens" },
+        //{ id: "gpt-5.4", name: "GPT-5.4", group: "OpenAI", provider: "proxy-api", inputPrice: "2.50/M input token", outputPrice: "15/M output tokens" },
         { id: "gpt-5.4-mini", name: "GPT-5.4-mini", group: "OpenAI", provider: "proxy-api", inputPrice: "2.50/M input token", outputPrice: "15/M output tokens" },
         { id: "gpt-5.4-nano", name: "GPT-5.4-nano", group: "OpenAI", provider: "proxy-api", inputPrice: "2.50/M input token", outputPrice: "15/M output tokens" },
         { id: "gpt-4o-search-preview-2025-03-11", name: "GPT-4o-search", group: "OpenAI", provider: "proxy-api", inputPrice: "2.50/M input tokens", outputPrice: "10/M output tokens" },
@@ -2030,9 +2032,10 @@ window.editCharacter = function(id) {
         { id: "o3-pro", name: "o3-pro", group: "OpenAI-Reasoning", provider: "proxy-api", inputPrice: "20/M input tokens", outputPrice: "80/M output tokens" },
 
         //Gemini:
-        { id: "gemini-3-flash-preview", name: `<span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L14.39 9.61L22 12L14.39 14.39L12 22L9.61 14.39L2 12L9.61 9.61L12 2Z"/></svg></span> Gemini-3-flash-preview`, group: "Gemini", provider: "proxy-api", inputPrice: "0.50/M input tokens", outputPrice: "3/M output tokens" },
-        { id: "gemini-3-pro-preview", name: `<span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L14.39 9.61L22 12L14.39 14.39L12 22L9.61 14.39L2 12L9.61 9.61L12 2Z"/></svg></span> Gemini-3-pro-preview`, group: "Gemini", provider: "proxy-api", inputPrice: "2/M input tokens", outputPrice: "12/M output tokens" },
-        { id: "gemini-3.1-pro-preview", name: `<span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L14.39 9.61L22 12L14.39 14.39L12 22L9.61 14.39L2 12L9.61 9.61L12 2Z"/></svg></span> Gemini-3.1-pro`, group: "Gemini", provider: "proxy-api", inputPrice: "2/M input tokens", outputPrice: "12/M output tokens" },
+        {id: "google/gemini-3.1-flash-lite-preview", name: "Gemini-3.1-flash-lite-preview", group: "Gemini", provider: "proxy-api", inputPrice: "0.50/M input tokens", outputPrice: "3/M output tokens"},
+        {id: "google/gemini-2.5-flash-lite", name: "Gemini-2.5-flash-lite", group: "Gemini", provider: "proxy-api", inputPrice: "0.50/M input tokens", outputPrice: "3/M output tokens"},
+        {id: "gemini-3-pro-preview", name: "Gemini-3-pro-preview", group: "Gemini", provider: "proxy-api", inputPrice: "2/M input tokens", outputPrice: "12/M output tokens"},
+        {id: "gemini-3.1-pro-preview", name: "Gemini-3.1-pro", group: "Gemini", provider: "proxy-api", inputPrice: "2/M input tokens", outputPrice: "12/M output tokens"},
 
         //Gemma:
         { id: "google/gemma-4-31b-it:free", name: "Gemma-4-31b-it (free)", group: "Gemma", provider: "openrouter"},
