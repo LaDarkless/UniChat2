@@ -2022,7 +2022,7 @@ window.editCharacter = function(id) {
         { id: "openai/gpt-4o-mini-search-preview", name: "GPT-4o-mini-search-preview", group: "OpenAI", provider: "openrouter", inputPrice: "0.15/M input tokens", outputPrice: "0.60/M output tokens" },
         { id: "openai/gpt-oss-120b", name: "GPT-oss-120b", group: "OpenAI", provider: "openrouter", inputPrice: "0.039/M input tokens", outputPrice: "0.19/M output tokens" },
         { id: "openai/gpt-oss-20b", name: "GPT-oss-20b", group: "OpenAI", provider: "openrouter", inputPrice: "0.03/M input tokens", outputPrice: "0.14/M output tokens" },
-        { id: "openai/gpt-oss-120b:free", name: "GPT-oss-20b (free)", group: "OpenAI", provider: "openrouter"},
+        { id: "openai/gpt-oss-120b:free", name: "GPT-oss-120b (free)", group: "OpenAI", provider: "openrouter"},
         { id: "openai/gpt-oss-20b:free", name: "GPT-oss-20b (free)", group: "OpenAI", provider: "openrouter"},
         
         //OpenAI-Reasoner:
@@ -2125,6 +2125,13 @@ window.editCharacter = function(id) {
         { id: "minimax/minimax-m1", name: "Minimax-m1", group: "Minimax", provider: "openrouter"},
         { id: "minimax/minimax-01", name: "Minimax-01", group: "Minimax", provider: "openrouter"},
 
+        //Qwen new
+        {id: "qwen/qwen3.6-27b", name: "Qwen 3.6-27b", group: "Qwen | Alibaba", provider: "openrouter", inputPrice: "0,50/M input tokens", outputPrice: "2/M output tokens"},
+        {id: "qwen/qwen3.6-max-preview", name: "Qwen 3.6 max-preview", group: "Qwen | Alibaba", provider: "openrouter", inputPrice: "1,30/M input tokens", outputPrice: "7,80/M output tokens"},
+        {id: "qwen/qwen3.6-35b-a3b", name: "Qwen 3.6-35b", group: "Qwen | Alibaba", provider: "openrouter", inputPrice: "0,1612/M input tokens", outputPrice: "0,9653/M output tokens"},
+        {id: "qwen/qwen3.6-flash", name: "Qwen 3.6 flash", group: "Qwen | Alibaba", provider: "openrouter", inputPrice: "0,25/M input tokens", outputPrice: "1,50/M output tokens"},
+        {id: "qwen/qwen3.5-plus-20260420", name: "Qwen 3.5 plus", group: "Qwen | Alibaba", provider: "openrouter", inputPrice: "0,40/M input tokens", outputPrice: "2,40/M output tokens"},
+
         //Qwen:
         { id: "qwen/qwen3.5-9b", name: "Qwen 3.5-9b", group: "Qwen | Alibaba", provider: "openrouter"},
         { id: "qwen/qwen3.5-35b-a3b", name: "Qwen 3.5-35b", group: "Qwen | Alibaba", provider: "openrouter"},
@@ -2137,8 +2144,8 @@ window.editCharacter = function(id) {
         { id: "qwen/qwen3-coder-next", name: "Qwen3-coder-next", group: "Qwen | Alibaba", provider: "openrouter"},
 
         //Moonshotai:
-        { id: "moonshotai/kimi-k2.6", name: "Kimi-k2.6", group: "Kimi", provider: "openrouter"},
-        //{ id: "moonshotai/kimi-k2.5", name: "Kimi-k2.5", group: "Kimi", provider: "openrouter"},
+        { id: "moonshotai/kimi-k2.6", name: "Kimi-k2.6", group: "Kimi", provider: "openrouter", inputPrice: "0,7448/M input tokens", outputPrice: "4,655/M output tokens"},
+        { id: "moonshotai/kimi-k2.5", name: "Kimi-k2.5", group: "Kimi", provider: "openrouter", inputPrice: "0,44/M input tokens", outputPrice: "2/M output tokens"},
         //{ id: "moonshotai/kimi-k2-thinking", name: "Kimi-k2-thinking", group: "Kimi", provider: "openrouter"},
         //{ id: "moonshotai/kimi-k2-0905", name: "Kimi-k2-0905", group: "Kimi", provider: "openrouter"},
         //{ id: "moonshotai/kimi-k2", name: "Kimi-k2", group: "Kimi", provider: "openrouter"},
@@ -2200,7 +2207,6 @@ window.editCharacter = function(id) {
         { id: "allenai/olmo-2-0325-32b-instruct", name: "Olmo-2-0325-32b-instruct", group: "Olmo | AI2", provider: "openrouter"},
 
         //1
-        { id: "inclusionai/ling-2.6-flash:free", name: "ling-2.6-flash (free)", group: "OpenRouter", provider: "openrouter" },
         { id: "alibaba/tongyi-deepresearch-30b-a3b", name: "Tongyi-deepresearch-30b-a3b", group: "OpenRouter", provider: "openrouter" },
         { id: "writer/palmyra-x5", name: "Palmyra-x5", group: "OpenRouter", provider: "openrouter" },
         { id: "upstage/solar-pro-3", name: "solar-pro-3", group: "OpenRouter", provider: "openrouter" },
