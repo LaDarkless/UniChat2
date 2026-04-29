@@ -506,10 +506,16 @@
                     <div class="ms-card-desc">GPT-модель с открытым исходным кодом. Тяжелая модель с сотней миллиардов параметрами. Дороже 20-миллиардного GPT, но качественнее.</div>
                     <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
                 </div>
-                <div class="ms-card" data-model="openai/gpt-5-nano" onclick="selectModelCard(this, 'openai/gpt-5-nano')">
+                <div class="ms-card" data-model="openai/gpt-5.3-chat" onclick="selectModelCard(this, 'openai/gpt-5.3-chat')">
                     <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">GPT-5 nano</div>
-                    <div class="ms-card-desc">Пятое поколение GPT.</div>
+                    <div class="ms-card-title">GPT-5.3</div>
+                    <div class="ms-card-desc">Пятое поколение GPT. Сильный, качественный и полезный AI, который ведёт довольно душевные диалоги.</div>
+                    <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
+                </div>
+                <div class="ms-card" data-model="google/gemini-3-flash-preview" onclick="selectModelCard(this, 'google/gemini-3-flash-preview')">
+                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
+                    <div class="ms-card-title">Gemini-3-flash</div>
+                    <div class="ms-card-desc">Самая мощная модель в семействе Gemini flash и отлично подходит для RP.</div>
                     <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
                 </div>
             </div>
@@ -823,8 +829,9 @@
                     <option value="anthropic/claude-haiku-4.5">Claude 4.5 Haiku</option>
                     <option value="openai/gpt-oss-20b">gpt-oss-20b</option>
                     <option value="openai/gpt-oss-120b">gpt-oss-120b</option>
-                    <option value="openai/gpt-5-nano">gpt 5 nano</option>
+                    <option value="openai/gpt-5.3-chat">gpt 5.3</option>
                     <option value="deepseek/deepseek-v4-flash">DeepSeek 4 flash</option>
+                    <option value="google/gemini-3-flash-preview">Gemini-3-flash/option>
                     <!-- FREE MODELS -->
                     <option value="minimax/minimax-m2.5:free">Minimax m2.5 (free)</option>
                     <option value="google/gemma-4-31b-it:free">Gemma-4-31b (free)</option>
