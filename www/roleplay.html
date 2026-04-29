@@ -488,12 +488,6 @@
                     <div class="ms-card-desc">Очень мощная модель от DeepSeek</div>
                     <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
                 </div>
-                <div class="ms-card" data-model="anthropic/claude-haiku-4.5" onclick="selectModelCard(this, 'anthropic/claude-haiku-4.5')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Claude 4.5 Haiku</div>
-                    <div class="ms-card-desc">Семейство Claude. Отлично справляется с ролёвками и ценится в деталях. Довольно дорого в больших контекстах. На NSFW работает нестабильно</div>
-                    <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
-                </div>
                 <div class="ms-card" data-model="openai/gpt-oss-20b" onclick="selectModelCard(this, 'openai/gpt-oss-20b')">
                     <div class="ms-check"><i class="fa-solid fa-check"></i></div>
                     <div class="ms-card-title">GPT-OSS-20B</div>
@@ -506,17 +500,17 @@
                     <div class="ms-card-desc">GPT-модель с открытым исходным кодом. Тяжелая модель с сотней миллиардов параметрами. Дороже 20-миллиардного GPT, но качественнее.</div>
                     <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
                 </div>
-                <div class="ms-card" data-model="openai/gpt-5.3-chat" onclick="selectModelCard(this, 'openai/gpt-5.3-chat')">
+                <div class="ms-card" data-model="gpt-5.3-chat" onclick="selectModelCard(this, 'gpt-5.3-chat')">
                     <div class="ms-check"><i class="fa-solid fa-check"></i></div>
                     <div class="ms-card-title">GPT-5.3</div>
                     <div class="ms-card-desc">Пятое поколение GPT. Сильный, качественный и полезный AI, который ведёт довольно душевные диалоги.</div>
                     <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
                 </div>
-                <div class="ms-card" data-model="google/gemini-3-flash-preview" onclick="selectModelCard(this, 'google/gemini-3-flash-preview')">
+                <div class="ms-card" data-model="gemini-3-flash-preview" onclick="selectModelCard(this, 'gemini-3-flash-preview')">
                     <div class="ms-check"><i class="fa-solid fa-check"></i></div>
                     <div class="ms-card-title">Gemini-3-flash</div>
                     <div class="ms-card-desc">Самая мощная модель в семействе Gemini flash и отлично подходит для RP.</div>
-                    <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
+                    <i class="fa-solid fa-eye ms-card-icon" style="color: aquamarine;"></i>
                 </div>
             </div>
         </div>
@@ -826,12 +820,11 @@
                     <option value="xiaomi/mimo-v2-flash">Mimo 2 flash (Очень дешевая)</option>
                     <option value="xiaomi/mimo-v2.5-pro">Mimo 2.5 PRO (test)</option>
                     <option value="xiaomi/mimo-v2.5">Mimo 2.5 (test)</option>
-                    <option value="anthropic/claude-haiku-4.5">Claude 4.5 Haiku</option>
-                    <option value="openai/gpt-oss-20b">gpt-oss-20b</option>
-                    <option value="openai/gpt-oss-120b">gpt-oss-120b</option>
-                    <option value="openai/gpt-5.3-chat">gpt 5.3</option>
+                    <option value="openai/gpt-oss-20b">gpt-oss-20b (через OpenRouter)</option>
+                    <option value="openai/gpt-oss-120b">gpt-oss-120b (через OpenRouter)</option>
+                    <option value="gpt-5.3-chat">gpt 5.3 (Нативная)</option>
                     <option value="deepseek/deepseek-v4-flash">DeepSeek 4 flash</option>
-                    <option value="google/gemini-3-flash-preview">Gemini-3-flash/option>
+                    <option value="gemini-3-flash-preview">Gemini-3-flash (Нативная)</option>
                     <!-- FREE MODELS -->
                     <option value="minimax/minimax-m2.5:free">Minimax m2.5 (free)</option>
                     <option value="google/gemma-4-31b-it:free">Gemma-4-31b (free)</option>
@@ -1574,59 +1567,200 @@
         await callOpenRouter(apiMsgs, activeChar.name, appState.groupChats[currentId], botCharId);
     }
 
-    // --- ОБЩИЙ ВЫЗОВ API ---
+    // --- ОБЩИЙ ВЫЗОВ API (С АВТО-АДАПТАЦИЕЙ ПАРАМЕТРОВ) ---
     async function callOpenRouter(apiMessages, aiName, targetHistoryArray, botCharId = null) {
         try {
             const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
-            const reqTemp = entity.temp || 0.8;
-            const reqTokens = entity.maxTokens || 1000;
+            const reqTemp = Number(entity.temp || 0.8);
+            const reqTokens = Math.floor(Number(entity.maxTokens || 8000)); // СТРОГО ЦЕЛОЕ ЧИСЛО
 
-            // МАРШРУТИЗАЦИЯ: Определяем, куда слать запрос и с каким ключом
-            const isFreeModel = appState.settings.model.endsWith(':free');
-            const apiUrl = isFreeModel 
-                ? 'https://openrouter.ai/api/v1/chat/completions' 
-                : 'https://api.proxyapi.ru/openrouter/v1/chat/completions';
-            
-            const authKey = isFreeModel 
-                ? appState.settings.openRouterKey 
-                : appState.settings.apiKey;
+            const model = appState.settings.model;
+            const isFreeModel = model.endsWith(':free');
 
-                const res = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': `Bearer ${authKey}`,
-                    // ОБЯЗАТЕЛЬНЫЕ заголовки для оригинального OpenRouter
-                    'HTTP-Referer': window.location.href || 'https://ai-roleplay.com',
-                    'X-Title': 'Roleplay AI Chat'
-                },
-                body: JSON.stringify({ 
-                    model: appState.settings.model, 
-                    messages: apiMessages,
+            let apiUrl = '';
+            let authKey = isFreeModel ? appState.settings.openRouterKey : appState.settings.apiKey;
+            let headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authKey}`,
+                'HTTP-Referer': window.location.href || 'https://ai-roleplay.com',
+                'X-Title': 'Roleplay AI Chat'
+            };
+            let bodyPayload = {};
+            let reply = "";
+
+            // ЖЕСТКОЕ ПРАВИЛО: Есть слэш = OpenRouter. Нет слэша = Нативный ProxyAPI.
+            if (model.includes('/')) {
+                // 1. OPENROUTER МОДЕЛИ
+                apiUrl = isFreeModel 
+                    ? 'https://openrouter.ai/api/v1/chat/completions' 
+                    : 'https://api.proxyapi.ru/openrouter/v1/chat/completions';
+                
+                bodyPayload = {
+                    model: model,
+                    messages: apiMessages.filter(m => m.content && String(m.content).trim() !== ""), 
                     temperature: reqTemp,
                     max_tokens: reqTokens
-                })
+                };
+            } else {
+                // 2. НАТИВНЫЕ МОДЕЛИ PROXYAPI
+                if (model.includes('claude')) {
+                    // Anthropic (Claude)
+                    apiUrl = 'https://api.proxyapi.ru/anthropic/v1/messages';
+                    headers['x-api-key'] = authKey;
+                    headers['anthropic-version'] = '2023-06-01';
+                    delete headers['Authorization']; // У Anthropic другой заголовок
+                    
+                    let systemPrompt = "";
+                    let anthropicMessages =[];
+                    
+                    apiMessages.forEach(m => {
+                        let content = m.content ? String(m.content).trim() : "";
+                        if (!content) content = "."; // Защита от пустых строк
+                        
+                        if (m.role === 'system') {
+                            systemPrompt += content + "\n\n";
+                        } else {
+                            let role = m.role === 'assistant' ? 'assistant' : 'user';
+                            
+                            // Claude ТРЕБУЕТ, чтобы ПЕРВОЕ сообщение было от user
+                            if (anthropicMessages.length === 0 && role === 'assistant') {
+                                anthropicMessages.push({ role: 'user', content: '[System: Продолжение диалога]' });
+                            }
+                            
+                            // Claude ЗАПРЕЩАЕТ два сообщения подряд от одной роли (склеиваем их)
+                            if (anthropicMessages.length > 0 && anthropicMessages[anthropicMessages.length - 1].role === role) {
+                                anthropicMessages[anthropicMessages.length - 1].content += "\n\n" + content;
+                            } else {
+                                anthropicMessages.push({ role: role, content: content });
+                            }
+                        }
+                    });
+
+                    if (anthropicMessages.length === 0) {
+                        anthropicMessages.push({ role: 'user', content: 'Привет' });
+                    }
+
+                    let claudeTemp = reqTemp > 1.0 ? 1.0 : reqTemp;
+
+                    bodyPayload = {
+                        model: model,
+                        messages: anthropicMessages,
+                        temperature: claudeTemp,
+                        max_tokens: reqTokens > 8192 ? 8192 : reqTokens
+                    };
+                    
+                    if (systemPrompt.trim() !== "") {
+                        bodyPayload.system = systemPrompt.trim();
+                    }
+
+                } else if (model.includes('gemini')) {
+                    // Google (Gemini)
+                    apiUrl = `https://api.proxyapi.ru/google/v1beta/models/${model}:generateContent?key=${authKey}`;
+                    delete headers['Authorization'];
+                    
+                    let systemPrompt = "";
+                    const geminiContents =[];
+                    apiMessages.forEach(m => {
+                        let content = m.content ? String(m.content).trim() : ".";
+                        if (m.role === 'system') {
+                            systemPrompt += content + "\n";
+                        } else {
+                            geminiContents.push({
+                                role: m.role === 'assistant' ? 'model' : 'user',
+                                parts: [{ text: content }]
+                            });
+                        }
+                    });
+
+                    bodyPayload = {
+                        contents: geminiContents,
+                        generationConfig: {
+                            temperature: reqTemp,
+                            maxOutputTokens: reqTokens
+                        }
+                    };
+
+                    // <-- ВОТ ИЗМЕНЕНИЕ: Отключаем встроенную цензуру Gemini, если стоит галочка NSFW
+                    if (appState.settings.nsfwEnabled) {
+                        bodyPayload.safetySettings = [
+                            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+                        ];
+                    }
+
+                    if (systemPrompt.trim() !== "") {
+                        bodyPayload.systemInstruction = { parts:[{ text: systemPrompt.trim() }] };
+                    }
+                } else {
+                    // OpenAI (gpt, o1, o3 и т.д.)
+                    apiUrl = 'https://api.proxyapi.ru/openai/v1/chat/completions';
+                    
+                    let safeModel = model;
+                    if (model === 'gpt-5.3-chat') safeModel = 'gpt-5.2-chat-latest'; // Алиас в ProxyAPI
+                    if (model === 'gpt-5.2-chat') safeModel = 'gpt-5.2-chat-latest'; // Алиас в ProxyAPI
+
+                    let cleanMessages = apiMessages.filter(m => m.content && String(m.content).trim() !== "");
+                    if (cleanMessages.length === 0) cleanMessages.push({ role: 'user', content: 'Привет' });
+
+                    bodyPayload = {
+                        model: safeModel,
+                        messages: cleanMessages
+                    };
+
+                    const isReasoningModel = safeModel.includes('gpt-5.3') || safeModel.includes('gpt-5.4') || safeModel.includes('o1') || safeModel.includes('o3');
+
+                    if (isReasoningModel) {
+                        bodyPayload.max_completion_tokens = reqTokens;
+                        // НЕ передаем температуру, чтобы API использовало значение по умолчанию (1)
+                    } else {
+                        bodyPayload.max_tokens = reqTokens;
+                        bodyPayload.temperature = reqTemp;
+                    }
+                }
+            }
+
+            // Выполнение запроса
+            const res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(bodyPayload)
             });
             
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error?.message || "API Error");
+            if (!res.ok) {
+                let errorMsg = `HTTP Error ${res.status}`;
+                if (data.error) {
+                    if (typeof data.error === 'string') errorMsg = data.error;
+                    else if (data.error.message) errorMsg = data.error.message;
+                    else errorMsg = JSON.stringify(data.error);
+                }
+                throw new Error(errorMsg);
+            }
 
-            let reply = data.choices[0].message.content;
-            
-            // Если ИИ случайно добавил префикс своего имени в начале, убираем его
+            // Извлечение ответа
+            if (apiUrl.includes('/anthropic')) {
+                reply = data.content?.[0]?.text || "";
+            } else if (apiUrl.includes('/google')) {
+                reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            } else {
+                reply = data.choices?.[0]?.message?.content || "";
+            }
+
             const prefixRegex = new RegExp(`^${aiName}:\\s*`, 'i');
             reply = reply.replace(prefixRegex, '');
 
             targetHistoryArray.push({
                 role: 'ai',
                 name: aiName,
-                charId: botCharId, // Для групп важно
+                charId: botCharId,
                 content: reply,
                 timestamp: Date.now()
             });
 
         } catch (err) {
-            targetHistoryArray.push({ role: 'ai', name: 'System', content: `[Ошибка: ${err.message}]`, timestamp: Date.now() });
+            targetHistoryArray.push({ role: 'ai', name: 'System', content: `[Ошибка API: ${err.message}]`, timestamp: Date.now() });
         } finally {
             removeLoader(); isWaitingForAI = false; saveData(); renderMessages(); scrollToBottom();
         }
