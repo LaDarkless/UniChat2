@@ -415,10 +415,31 @@
         .sp-block { background: rgba(255,255,255,0.03); border-radius: 16px; padding: 20px; margin: 10px 20px; display: flex; flex-direction: column; gap: 20px; }
         .sp-block-title { font-size: 15px; font-weight: 600; }
         
-        /* Слайдер Shy/Flirty */
+        /* Улучшенные слайдеры с кнопками */
         .slider-labels { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
-        .custom-slider { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: #333; outline: none; }
-        .custom-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; cursor: pointer; box-shadow: 0 0 10px rgba(123, 90, 255, 0.5); border: 2px solid var(--accent-color); }
+        
+        .slider-container { display: flex; align-items: center; gap: 12px; width: 100%; }
+        .slider-btn { 
+            width: 32px; height: 32px; border-radius: 10px; border: none; 
+            background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; 
+            display: flex; justify-content: center; align-items: center; 
+            cursor: pointer; transition: 0.2s; flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(255,255,255,0.05);
+        }
+        .slider-btn:hover { background: rgba(123, 90, 255, 0.2); color: var(--accent-color); }
+        .slider-btn:active { transform: scale(0.85); }
+
+        .custom-slider { 
+            -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; 
+            background: rgba(255,255,255,0.1); outline: none; transition: 0.2s;
+        }
+        .custom-slider:hover { background: rgba(255,255,255,0.15); }
+        .custom-slider::-webkit-slider-thumb { 
+            -webkit-appearance: none; appearance: none; width: 24px; height: 24px; 
+            border-radius: 50%; background: #fff; cursor: pointer; 
+            box-shadow: 0 0 15px rgba(123, 90, 255, 0.6); border: 4px solid var(--accent-color); 
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .custom-slider::-webkit-slider-thumb:active { transform: scale(1.2); border-width: 6px; }
         
         /* Переключатель (Toggle) */
         .toggle-row { display: flex; justify-content: space-between; align-items: center; }
@@ -442,31 +463,88 @@
         .history-item-date { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
         .history-item-msgs { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* Модалка выбора моделей (Скриншот 3) */
-#model-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 200; background: #121318; overflow-y: auto; display: none; padding-bottom: 100px; }
-#model-screen.active { display: block; }
+        /* --- ПРЕМИАЛЬНАЯ МОДАЛКА ВЫБОРА МОДЕЛЕЙ (V3 - СТИЛЬ НАСТРОЕК) --- */
+        #model-screen { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 200; 
+            background: var(--bg-dark); display: none; flex-direction: column; 
+            /* Теперь используем Flexbox. Никаких плавающих элементов. */
+        }
+        #model-screen.active { 
+            display: flex; 
+            animation: slideUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+        }
+        @keyframes slideUpModal {
+            from { opacity: 0; transform: translateY(100%); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         
-        .ms-header { display: flex; align-items: center; justify-content: space-between; padding: 20px; position: sticky; top: 0; background: #121318; z-index: 10; }
-        .ms-title { font-size: 20px; font-weight: 700; text-align: center; flex: 1; }
-        .ms-energy { font-weight: 700; color: #ffd700; font-size: 18px; display: flex; align-items: center; gap: 5px; }
+        /* Жестко закрепленная шапка */
+        .ms-header { 
+            display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; 
+            background: rgba(18, 19, 24, 0.95); backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; z-index: 10;
+        }
+        .ms-title { font-size: 16px; font-weight: 600; text-align: center; flex: 1; }
         
-        .ms-category { padding: 0 20px; margin-bottom: 25px; }
-        .ms-badge { display: inline-block; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 14px; margin-bottom: 15px; }
-        .ms-badge.free { background: #6eff8f; color: #000; }
-        .ms-badge.premium { background: linear-gradient(90deg, #4a8dff, #b54aff); color: #fff; }
-        .ms-badge.energy { background: #ffaa00; color: #000; }
+        /* Скроллируемая область контента */
+        .ms-content-scroll {
+            flex: 1; overflow-y: auto; padding: 0 15px 20px 15px;
+        }
+
+        .ms-category { margin-top: 25px; }
         
-        .ms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .ms-card { background: #1e2028; border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 18px; position: relative; cursor: pointer; transition: 0.2s; min-height: 180px; display: flex; flex-direction: column; }
-        .ms-card.active { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(123, 90, 255, 0.2); }
-        .ms-card-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; }
-        .ms-card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; flex: 1; }
-        .ms-card-icon { position: absolute; bottom: 15px; right: 15px; color: var(--text-muted); font-size: 16px; }
-        .ms-check { position: absolute; top: 15px; right: 15px; background: var(--accent-color); color: #fff; width: 22px; height: 22px; border-radius: 6px; display: none; justify-content: center; align-items: center; font-size: 12px; }
-        .ms-card.active .ms-check { display: flex; }
+        .ms-badge { 
+            display: flex; align-items: center; gap: 8px; 
+            font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; 
+            color: var(--text-muted); margin-bottom: 10px; margin-left: 5px;
+        }
+        .ms-badge i { font-size: 14px; }
         
-        .ms-fixed-bottom { position: fixed; bottom: 0; left: 0; width: 100%; padding: 20px; background: linear-gradient(to top, #121318 80%, transparent); }
-        .ms-update-btn { width: 100%; max-width: 600px; margin: 0 auto; background: var(--accent-gradient); color: #fff; font-size: 18px; font-weight: 700; padding: 18px; border-radius: 30px; border: none; cursor: pointer; display: block; box-shadow: 0 10px 20px rgba(123, 90, 255, 0.3); }
+        /* Вертикальный список моделей */
+        .ms-grid { display: flex; flex-direction: column; gap: 8px; }
+        
+        .ms-card { 
+            display: flex; align-items: center; justify-content: space-between; gap: 15px;
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); 
+            border-radius: 16px; padding: 14px 16px; cursor: pointer; 
+            transition: all 0.2s ease;
+        }
+        .ms-card:hover { background: rgba(255,255,255,0.04); }
+        .ms-card.active { 
+            background: rgba(123, 90, 255, 0.1); 
+            border-color: rgba(123, 90, 255, 0.3);
+        }
+        
+        .ms-card-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .ms-card-title { font-size: 15px; font-weight: 600; color: #fff; }
+        .ms-card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+        
+        /* Круглый Radio-Button справа */
+        .ms-radio {
+            width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--text-muted);
+            display: flex; justify-content: center; align-items: center; transition: 0.2s;
+            flex-shrink: 0; background: rgba(0,0,0,0.2);
+        }
+        .ms-card.active .ms-radio {
+            border-color: var(--accent-color); background: var(--accent-color);
+        }
+        .ms-radio::after {
+            content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff;
+            transform: scale(0); transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .ms-card.active .ms-radio::after { transform: scale(1); }
+
+        /* Жестко закрепленный подвал (никогда не съедет) */
+        .ms-fixed-bottom { 
+            padding: 15px 20px 25px 20px; background: rgba(18, 19, 24, 0.95); backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;
+        }
+        .ms-update-btn { 
+            width: 100%; background: var(--accent-color); color: #fff; 
+            font-size: 16px; font-weight: 600; padding: 16px; border-radius: 16px; 
+            border: none; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(123, 90, 255, 0.3);
+        }
+        .ms-update-btn:active { transform: scale(0.97); }
 
         /* Модальное окно редактирования сообщений */
 .edit-modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 300; display: none; justify-content: center; align-items: center; padding: 20px; }
@@ -533,191 +611,131 @@
         </div>
     </div>
 
-    <!-- ЭКРАН ВЫБОРА МОДЕЛИ -->
+    <!-- ЭКРАН ВЫБОРА МОДЕЛИ (V3) -->
     <div id="model-screen">
         <div class="ms-header">
-            <i class="fa-solid fa-chevron-left" style="font-size: 20px; cursor:pointer;" onclick="closeModelSelection()"></i>
-            <div class="ms-title">Выбор модели</div>
+            <i class="fa-solid fa-chevron-down" style="font-size: 20px; cursor:pointer; color: var(--text-muted);" onclick="closeModelSelection()"></i>
+            <div class="ms-title">Выбор модели ИИ</div>
             <div style="width: 20px;"></div> <!-- Spacer -->
         </div>
 
-        <div class="ms-category">
-            <div class="ms-badge free">Free Models</div>
-            <div class="ms-grid">
-                <div class="ms-card" data-model="z-ai/glm-4.5-air:free" onclick="selectModelCard(this, 'z-ai/glm-4.5-air:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">GLM 4.5 Air</div>
-                    <div class="ms-card-desc">Сбалансированная бесплатная модель.</div>
-                </div>
-                    <div class="ms-card" data-model="inclusionai/ling-2.6-1t:free" onclick="selectModelCard(this, 'inclusionai/ling-2.6-1t:free')">
-                        <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                        <div class="ms-card-title">Ling 2.6 1T</div>
-                        <div class="ms-card-desc">Продвинутая логика, доступная бесплатно (Preview).</div>
+        <div class="ms-content-scroll">
+            <div class="ms-category">
+                <div class="ms-badge"><i class="fa-solid fa-bolt" style="color: #6eff8f;"></i> Free Models (Unreliable)</div>
+                <div class="ms-grid">
+                    <div class="ms-card" data-model="z-ai/glm-4.5-air:free" onclick="selectModelCard(this, 'z-ai/glm-4.5-air:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">GLM 4.5 Air</div><div class="ms-card-desc">Сбалансированная бесплатная модель.</div></div><div class="ms-radio"></div>
                     </div>
-                <div class="ms-card" data-model="tencent/hy3-preview:free" onclick="selectModelCard(this, 'tencent/hy3-preview:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">hy3-preview</div>
-                    <div class="ms-card-desc">Бесплатная модель с улучшенной логикой.</div>
-                </div>
-                <div class="ms-card" data-model="inclusionai/ling-2.6-flash:free" onclick="selectModelCard(this, 'inclusionai/ling-2.6-flash:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Ling 2.6 flash</div>
-                    <div class="ms-card-desc">Это тестовая и бесплатная модель.</div>
-                </div>
-                <div class="ms-card" data-model="minimax/minimax-m2.5:free" onclick="selectModelCard(this, 'minimax/minimax-m2.5:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Minimax-m2.5</div>
-                    <div class="ms-card-desc">Это тестовая и бесплатная модель.</div>
-                </div>
-                <div class="ms-card" data-model="google/gemma-4-31b-it:free" onclick="selectModelCard(this, 'google/gemma-4-31b-it:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Gemma-4-31b</div>
-                    <div class="ms-card-desc">Это тестовая и бесплатная модель.</div>
-                </div>
-                <div class="ms-card" data-model="google/gemma-4-26b-a4b-it:free" onclick="selectModelCard(this, 'google/gemma-4-26b-a4b-it:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Gemma-4-26b</div>
-                    <div class="ms-card-desc">Это тестовая и бесплатная модель.</div>
-                </div>
-                <div class="ms-card" data-model="openai/gpt-oss-20b:free" onclick="selectModelCard(this, 'openai/gpt-oss-20b:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">GPT OSS 20b free</div>
-                    <div class="ms-card-desc">Это тестовая и бесплатная модель.</div>
-                </div>
-                <div class="ms-card" data-model="openai/gpt-oss-120b:free" onclick="selectModelCard(this, 'openai/gpt-oss-120b:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">GPT OSS 120b free</div>
-                    <div class="ms-card-desc">Это тестовая и бесплатная модель.</div>
-                </div>
-                <div class="ms-card" data-model="nvidia/nemotron-3-super-120b-a12b:free" onclick="selectModelCard(this, 'nvidia/nemotron-3-super-120b-a12b:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Nemotron 3 Super</div>
-                    <div class="ms-card-desc">Это тестовая и бесплатная модель.</div>
-                </div>
-                <div class="ms-card" data-model="poolside/laguna-xs.2:free" onclick="selectModelCard(this, 'poolside/laguna-xs.2:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Laguna-XS.2</div>
-                    <div class="ms-card-desc">Это тестовая и бесплатная модель.</div>
-                </div>
-                <div class="ms-card" data-model="poolside/laguna-m.1:free" onclick="selectModelCard(this, 'poolside/laguna-m.1:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Laguna-m.1</div>
-                    <div class="ms-card-desc">Это тестовая и бесплатная модель.</div>
-                </div>
-                <div class="ms-card" data-model="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free" onclick="selectModelCard(this, 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Nemotron-3-nano-omni</div>
-                    <div class="ms-card-desc">Это тестовая и бесплатная модель. 30 миллиардов параметров</div>
-                </div>
-                <div class="ms-card" data-model="qwen/qwen3-coder:free" onclick="selectModelCard(this, 'qwen/qwen3-coder:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Qwen 3 coder</div>
-                    <div class="ms-card-desc">Почему Coder? Просто тест...</div>
-                </div>
-                <div class="ms-card" data-model="qwen/qwen3-next-80b-a3b-instruct:free" onclick="selectModelCard(this, 'qwen/qwen3-next-80b-a3b-instruct:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Qwen 3 instruct</div>
-                    <div class="ms-card-desc">Просто тест...</div>
-                </div>
-                <div class="ms-card" data-model="meta-llama/llama-3.2-3b-instruct:free" onclick="selectModelCard(this, 'meta-llama/llama-3.2-3b-instruct:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Llama 3.2</div>
-                    <div class="ms-card-desc">Просто тест...</div>
-                </div>
-                <div class="ms-card" data-model="baidu/qianfan-ocr-fast:free" onclick="selectModelCard(this, 'baidu/qianfan-ocr-fast:free')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">baidu</div>
-                    <div class="ms-card-desc">Просто тест...</div>
+                    <div class="ms-card" data-model="inclusionai/ling-2.6-1t:free" onclick="selectModelCard(this, 'inclusionai/ling-2.6-1t:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">Ling 2.6 1T</div><div class="ms-card-desc">Продвинутая логика, доступная бесплатно (Preview).</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="tencent/hy3-preview:free" onclick="selectModelCard(this, 'tencent/hy3-preview:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">hy3-preview</div><div class="ms-card-desc">Бесплатная модель с улучшенной логикой.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="inclusionai/ling-2.6-flash:free" onclick="selectModelCard(this, 'inclusionai/ling-2.6-flash:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">Ling 2.6 flash</div><div class="ms-card-desc">Тестовая и бесплатная модель.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="minimax/minimax-m2.5:free" onclick="selectModelCard(this, 'minimax/minimax-m2.5:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">Minimax-m2.5</div><div class="ms-card-desc">Тестовая и бесплатная модель.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="google/gemma-4-31b-it:free" onclick="selectModelCard(this, 'google/gemma-4-31b-it:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">Gemma-4-31b</div><div class="ms-card-desc">Тестовая и бесплатная модель.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="openai/gpt-oss-20b:free" onclick="selectModelCard(this, 'openai/gpt-oss-20b:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">GPT OSS 20b free</div><div class="ms-card-desc">Тестовая и бесплатная модель.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="openai/gpt-oss-120b:free" onclick="selectModelCard(this, 'openai/gpt-oss-120b:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">GPT OSS 120b free</div><div class="ms-card-desc">Тестовая и бесплатная модель.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="nvidia/nemotron-3-super-120b-a12b:free" onclick="selectModelCard(this, 'nvidia/nemotron-3-super-120b-a12b:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">Nemotron 3 Super</div><div class="ms-card-desc">Тестовая и бесплатная модель.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="poolside/laguna-xs.2:free" onclick="selectModelCard(this, 'poolside/laguna-xs.2:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">Laguna-XS.2</div><div class="ms-card-desc">Тестовая и бесплатная модель.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="poolside/laguna-m.1:free" onclick="selectModelCard(this, 'poolside/laguna-m.1:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">Laguna-m.1</div><div class="ms-card-desc">Тестовая и бесплатная модель.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free" onclick="selectModelCard(this, 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">Nemotron-3-nano-omni</div><div class="ms-card-desc">Тестовая и бесплатная модель. 30 млрд параметров.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="qwen/qwen3-coder:free" onclick="selectModelCard(this, 'qwen/qwen3-coder:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">Qwen 3 coder</div><div class="ms-card-desc">Почему Coder? Просто тест...</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="qwen/qwen3-next-80b-a3b-instruct:free" onclick="selectModelCard(this, 'qwen/qwen3-next-80b-a3b-instruct:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">Qwen 3 instruct</div><div class="ms-card-desc">Просто тест...</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="meta-llama/llama-3.2-3b-instruct:free" onclick="selectModelCard(this, 'meta-llama/llama-3.2-3b-instruct:free')">
+                        <div class="ms-card-info"><div class="ms-card-title">Llama 3.2</div><div class="ms-card-desc">Просто тест...</div></div><div class="ms-radio"></div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="ms-category">
-            <div class="ms-badge energy">Roleplay Standard</div>
-            <div class="ms-grid">
-                <div class="ms-card" data-model="xiaomi/mimo-v2-flash" onclick="selectModelCard(this, 'xiaomi/mimo-v2-flash')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Mimo 2 flash</div>
-                    <div class="ms-card-desc">Проверенная мною модель от Xiaomi. Нормально для RP</div>
-                </div>
-                <div class="ms-card" data-model="xiaomi/mimo-v2.5" onclick="selectModelCard(this, 'xiaomi/mimo-v2.5')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Mimo 2.5</div>
-                    <div class="ms-card-desc">Тестовая модель от Xiaomi. Лучше второй версии, соответсвенно, дороже</div>
-                </div>
-                <div class="ms-card" data-model="xiaomi/mimo-v2.5-pro" onclick="selectModelCard(this, 'xiaomi/mimo-v2.5-pro')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Mimo 2.5 PRO</div>
-                    <div class="ms-card-desc">Тестовая модель от Xiaomi. PRO-версия.</div>
+            <div class="ms-category">
+                <div class="ms-badge"><i class="fa-solid fa-fire" style="color: #ffaa00;"></i> Standard Models</div>
+                <div class="ms-grid">
+                    <div class="ms-card" data-model="xiaomi/mimo-v2-flash" onclick="selectModelCard(this, 'xiaomi/mimo-v2-flash')">
+                        <div class="ms-card-info"><div class="ms-card-title">Mimo 2 flash</div><div class="ms-card-desc">Проверенная мною модель от Xiaomi. Нормально для RP</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="xiaomi/mimo-v2.5" onclick="selectModelCard(this, 'xiaomi/mimo-v2.5')">
+                        <div class="ms-card-info"><div class="ms-card-title">Mimo 2.5</div><div class="ms-card-desc">Тестовая модель от Xiaomi. Лучше второй версии.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="deepseek/deepseek-v3.2" onclick="selectModelCard(this, 'deepseek/deepseek-v3.2')">
+                        <div class="ms-card-info"><div class="ms-card-title">DeepSeek 3.2</div><div class="ms-card-desc">Очень мощная модель от DeepSeek.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="gpt-5-mini" onclick="selectModelCard(this, 'gpt-5-mini')">
+                        <div class="ms-card-info"><div class="ms-card-title">GPT-5 mini</div><div class="ms-card-desc">Минимальная модель GPT-5.4. Очень подходит для RP. Хуже полной версии.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="gpt-5-nano" onclick="selectModelCard(this, 'gpt-5-nano')">
+                        <div class="ms-card-info"><div class="ms-card-title">GPT-5 nano</div><div class="ms-card-desc">Нативная модель GPT-5.4. Очень подходит для RP. Лучше GPT-5.4 mini, иногда может путаться в контексте.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="qwen/qwen3-235b-a22b-2507" onclick="selectModelCard(this, 'qwen/qwen3-235b-a22b-2507')">
+                        <div class="ms-card-info"><div class="ms-card-title">Qwen 3 235B</div><div class="ms-card-desc">Массивная модель с огромными знаниями и логикой.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="openai/gpt-oss-20b" onclick="selectModelCard(this, 'openai/gpt-oss-20b')">
+                        <div class="ms-card-info"><div class="ms-card-title">GPT-OSS-20B</div><div class="ms-card-desc">GPT с открытым исходным кодом. Легкая и быстрая.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="openai/gpt-oss-120b" onclick="selectModelCard(this, 'openai/gpt-oss-120b')">
+                        <div class="ms-card-info"><div class="ms-card-title">GPT-OSS-120B</div><div class="ms-card-desc">Тяжелая GPT-модель со 120 млрд параметров.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="mistralai/mistral-medium-3.1" onclick="selectModelCard(this, 'mistralai/mistral-medium-3.1')">
+                        <div class="ms-card-info"><div class="ms-card-title">Mistral Medium 3.1</div><div class="ms-card-desc">Продвинутая модель. Великолепное понимание сложного контекста.</div></div><div class="ms-radio"></div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="ms-category">
-            <div class="ms-badge premium">Advanced Models</div>
-            <div class="ms-grid">
-                <div class="ms-card" data-model="mistralai/mistral-medium-3.1" onclick="selectModelCard(this, 'mistralai/mistral-medium-3.1')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Mistral Medium 3.1</div>
-                    <div class="ms-card-desc">Продвинутая модель. Великолепное понимание сложного контекста.</div>
-                    <i class="fa-solid fa-star ms-card-icon" style="color: #ffd700;"></i>
-                </div>
-                <div class="ms-card" data-model="qwen/qwen3-235b-a22b-2507" onclick="selectModelCard(this, 'qwen/qwen3-235b-a22b-2507')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Qwen 3 235B</div>
-                    <div class="ms-card-desc">Массивная модель с огромными знаниями и логикой.</div>
-                    <i class="fa-solid fa-brain ms-card-icon" style="color: #b54aff;"></i>
-                </div>
-                <div class="ms-card" data-model="x-ai/grok-4.1-fast" onclick="selectModelCard(this, 'x-ai/grok-4.1-fast')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Grok 4.1 fast</div>
-                    <div class="ms-card-desc">Массивная модель с огромными знаниями и логикой. Без цензуры (18+).</div>
-                    <i class="fa-solid fa-fire ms-card-icon" style="color: firebrick;"></i>
-                </div>
-                <div class="ms-card" data-model="deepseek/deepseek-v4-flash" onclick="selectModelCard(this, 'deepseek/deepseek-v4-flash')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">DeepSeek 4</div>
-                    <div class="ms-card-desc">Последняя и очень мощная модель от DeepSeek</div>
-                    <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
-                </div>
-                <div class="ms-card" data-model="deepseek/deepseek-v3.2" onclick="selectModelCard(this, 'deepseek/deepseek-v3.2')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">DeepSeek 3.2</div>
-                    <div class="ms-card-desc">Очень мощная модель от DeepSeek</div>
-                    <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
-                </div>
-                <div class="ms-card" data-model="openai/gpt-oss-20b" onclick="selectModelCard(this, 'openai/gpt-oss-20b')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">GPT-OSS-20B</div>
-                    <div class="ms-card-desc">GPT-модель с открытым исходным кодом. Легкая, быстрая и качественная. Может не подходить для некоторых сценариев</div>
-                    <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
-                </div>
-                <div class="ms-card" data-model="openai/gpt-oss-120b" onclick="selectModelCard(this, 'openai/gpt-oss-120b')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">GPT-OSS-120B</div>
-                    <div class="ms-card-desc">GPT-модель с открытым исходным кодом. Тяжелая модель с сотней миллиардов параметрами. Дороже 20-миллиардного GPT, но качественнее.</div>
-                    <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
-                </div>
-                <div class="ms-card" data-model="gpt-5.3-chat" onclick="selectModelCard(this, 'gpt-5.3-chat')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">GPT-5.3</div>
-                    <div class="ms-card-desc">Пятое поколение GPT. Сильный, качественный и полезный AI, который ведёт довольно душевные диалоги.</div>
-                    <i class="fa-solid fa-brain ms-card-icon" style="color: aquamarine;"></i>
-                </div>
-                <div class="ms-card" data-model="gemini-3-flash-preview" onclick="selectModelCard(this, 'gemini-3-flash-preview')">
-                    <div class="ms-check"><i class="fa-solid fa-check"></i></div>
-                    <div class="ms-card-title">Gemini-3-flash</div>
-                    <div class="ms-card-desc">Самая мощная модель в семействе Gemini flash и отлично подходит для RP.</div>
-                    <i class="fa-solid fa-users ms-card-icon" style="color: aquamarine;"></i>
+            <div class="ms-category">
+                <div class="ms-badge"><i class="fa-solid fa-crown" style="color: #b54aff;"></i> Best Models</div>
+                <div class="ms-grid">
+                    <div class="ms-card" data-model="claude-haiku-4-5" onclick="selectModelCard(this, 'claude-haiku-4-5')">
+                        <div class="ms-card-info"><div class="ms-card-title">Claude 4.5 Haiku</div><div class="ms-card-desc">Модель Claude 4.5 Haiku. Очень хорошая модель для RP.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="xiaomi/mimo-v2.5-pro" onclick="selectModelCard(this, 'xiaomi/mimo-v2.5-pro')">
+                        <div class="ms-card-info"><div class="ms-card-title">Mimo 2.5 PRO</div><div class="ms-card-desc">Тестовая модель от Xiaomi. PRO-версия.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="qwen/qwen3.5-flash-02-23" onclick="selectModelCard(this, 'qwen/qwen3.5-flash-02-23')">
+                        <div class="ms-card-info"><div class="ms-card-title">Qwen 3.5 flash</div><div class="ms-card-desc">Продвинутая модель. Великолепное понимание сложного контекста. Она мощнее Qwen 3 235B и чуть дороже.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="x-ai/grok-4.1-fast" onclick="selectModelCard(this, 'x-ai/grok-4.1-fast')">
+                        <div class="ms-card-info"><div class="ms-card-title">Grok 4.1 fast</div><div class="ms-card-desc">Без цензуры (18+). С огромными знаниями.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="deepseek/deepseek-v4-flash" onclick="selectModelCard(this, 'deepseek/deepseek-v4-flash')">
+                        <div class="ms-card-info"><div class="ms-card-title">DeepSeek 4 flash</div><div class="ms-card-desc">Последняя и очень мощная модель от DeepSeek.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="gpt-5.3-chat" onclick="selectModelCard(this, 'gpt-5.3-chat')">
+                        <div class="ms-card-info"><div class="ms-card-title">GPT-5.3</div><div class="ms-card-desc">Пятое поколение GPT. Сильный и душевный AI.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="gemini-3-flash-preview" onclick="selectModelCard(this, 'gemini-3-flash-preview')">
+                        <div class="ms-card-info"><div class="ms-card-title">Gemini-3-flash</div><div class="ms-card-desc">Самая мощная модель в семействе Gemini flash.</div></div><div class="ms-radio"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="ms-fixed-bottom">
-            <button class="ms-update-btn" onclick="closeModelSelection()">Применить модель</button>
+            <button class="ms-update-btn" onclick="closeModelSelection()">Применить выбранную</button>
         </div>
     </div>
-
         <!-- НОВЫЙ ЭКРАН 1: НАСТОЯЩАЯ ГЛАВНАЯ (HOME) -->
         <div id="real-home-screen" class="screen active">
             <div class="header">
@@ -907,7 +925,11 @@
                     </div>
                     <div>
                         <div class="slider-labels"><span>Shy</span><span>Flirty</span></div>
-                        <input type="range" class="custom-slider" id="sp-trait-slider" min="1" max="100" value="50" oninput="updateTraits()">
+                        <div class="slider-container">
+                            <button class="slider-btn" onclick="adjustSlider('sp-trait-slider', -5)"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" class="custom-slider" id="sp-trait-slider" min="1" max="100" value="50" oninput="updateTraits()">
+                            <button class="slider-btn" onclick="adjustSlider('sp-trait-slider', 5)"><i class="fa-solid fa-plus"></i></button>
+                        </div>
                     </div>
                     
                     <div class="toggle-row">
@@ -921,6 +943,25 @@
                         <button style="flex:1; padding:10px; border-radius:20px; background:var(--accent-color); border:none; color:white; font-weight:600;">ACG</button>
                         <button style="flex:1; padding:10px; border-radius:20px; background:rgba(255,255,255,0.05); border:none; color:var(--text-muted); font-weight:600;">Realistic</button>
                     </div>
+                </div>
+
+                <!-- НОВЫЙ БЛОК: Память, Токены и Экспорт -->
+                <div class="sp-block">
+                    <span class="sp-block-title" style="margin:0;"><i class="fa-solid fa-chart-pie"></i> Memory & Context</span>
+                    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 5px;">
+                        Примерный вес: <strong id="sp-token-count" style="color: #6eff8f; font-size: 15px;">0</strong> токенов
+                    </div>
+                    
+                    <div class="slider-labels" style="margin-top: 10px;"><span>Память в этом чате</span><span id="sp-history-val">20</span></div>
+                    <div class="slider-container">
+                        <button class="slider-btn" onclick="adjustSlider('sp-history-slider', -1)"><i class="fa-solid fa-minus"></i></button>
+                        <input type="range" class="custom-slider" id="sp-history-slider" min="2" max="150" value="20" oninput="updateTraits()">
+                        <button class="slider-btn" onclick="adjustSlider('sp-history-slider', 1)"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    
+                    <button class="sp-bottom-btn" onclick="exportChat()" style="margin: 15px 0 0 0; padding: 12px; font-size: 14px; background: rgba(123, 90, 255, 0.15); border-color: rgba(123, 90, 255, 0.3); color: #fff;">
+                        <i class="fa-solid fa-file-export"></i> Скачать чат (.txt)
+                    </button>
                 </div>
 
                 <div style="flex:1;"></div> <!-- Spacer -->
@@ -953,6 +994,9 @@
         </div>
 
         <div class="chat-input-wrapper">
+            <!-- Токенизатор текущего сообщения -->
+            <div id="typing-token-counter" style="position: absolute; right: 25px; top: -5px; font-size: 11px; font-weight: 600; color: var(--accent-color); background: rgba(20,21,26,0.9); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border-color); display: none;">0 tks</div>
+            
             <div class="chat-input-pill">
                 <button class="input-icon-btn"><i class="fa-solid fa-microphone"></i></button>
                 <textarea id="chat-input" placeholder="Type a message" oninput="autoResizeTextarea(this)"></textarea>
@@ -1012,7 +1056,22 @@
 
             <hr style="border:0; border-top: 1px solid var(--border-color); margin: 10px 0;">
 
-            <h3 style="margin-bottom: 5px;">Настройки API</h3>
+            <h3 style="margin-bottom: 5px;">Настройки API и Контекста</h3>
+            
+            <!-- Глобальный лимит контекста -->
+            <div class="form-group" style="background: rgba(123, 90, 255, 0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <label class="form-label" style="margin:0;"><i class="fa-solid fa-brain"></i> Глубина памяти (сообщений)</label>
+                    <span id="global-history-val" style="font-weight: 700; color: #fff;">20</span>
+                </div>
+                <div class="slider-container">
+                    <button class="slider-btn" onclick="adjustSlider('global-history-input', -1)"><i class="fa-solid fa-minus"></i></button>
+                    <input type="range" class="custom-slider" id="global-history-input" min="2" max="150" value="20" oninput="document.getElementById('global-history-val').innerText = this.value">
+                    <button class="slider-btn" onclick="adjustSlider('global-history-input', 1)"><i class="fa-solid fa-plus"></i></button>
+                </div>
+                <small style="color:var(--text-muted); font-size:11px;">Сколько последних сообщений помнит ИИ. Меньше сообщений = дешевле запросы.</small>
+            </div>
+
             <div class="form-group">
                 <label class="form-label">ProxyAPI Key (Платные модели)</label>
                 <input type="password" id="api-key-input" placeholder="sk-...">
@@ -1024,10 +1083,14 @@
             <div class="form-group">
                 <label class="form-label">Модель ИИ</label>
                 <select id="model-input">
+                    <option value="claude-haiku-4-5">Claude 4.5 Haiku</option>
                     <option value="qwen/qwen3-235b-a22b-2507">Qwen 3 235B</option>
+                    <option value="qwen/qwen3.5-flash-02-23">Qwen 3.5 flash</option>
+                    <option value="gpt-5-nano">GPT-5 nano (Нативная)</option>
                     <option value="x-ai/grok-4.1-fast">Grok4.1 fast</option>
                     <option value="mistralai/mistral-medium-3.1">Mistral Medium 3.1 (Отлично для RP)</option>
                     <option value="z-ai/glm-4.5-air:free">GLM 4.5-air (Бесплатно)</option>
+                    <option value="gpt-5-mini">GPT-5 mini (Нативная)</option>
                     <option value="deepseek/deepseek-v3.2">DeepSeek 3.2</option>
                     <option value="xiaomi/mimo-v2-flash">Mimo 2 flash (Очень дешевая)</option>
                     <option value="xiaomi/mimo-v2.5-pro">Mimo 2.5 PRO (test)</option>
@@ -1040,7 +1103,6 @@
                     <!-- FREE MODELS -->
                     <option value="minimax/minimax-m2.5:free">Minimax m2.5 (free)</option>
                     <option value="google/gemma-4-31b-it:free">Gemma-4-31b (free)</option>
-                    <option value="google/gemma-4-26b-a4b-it:free">Gemma-4-26b (free)</option>
                     <option value="openai/gpt-oss-20b">gpt-oss-20b (free)</option>
                     <option value="openai/gpt-oss-120b">gpt-oss-120b (free)</option>
                     <option value="tencent/hy3-preview:free">hy3 Preview (free)</option>
@@ -1050,7 +1112,6 @@
                     <option value="qwen/qwen3-coder:free">Qwen 3 Coder (Бесплатно)</option>
                     <option value="qwen/qwen3-next-80b-a3b-instruct:free">Qwen 3 instruct (Бесплатно)</option>
                     <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 (Бесплатно)</option>
-                    <option value="baidu/qianfan-ocr-fast:free">Baidu (Бесплатно)</option>
                     <option value="poolside/laguna-m.1:free">Laguna-m.1 (Бесплатно)</option>
                     <option value="poolside/laguna-xs.2:free">Laguna-XS.2 (Бесплатно)</option>
                     <option value="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free">Nemotron 3 nano omni (Бесплатно)</option>
@@ -1607,36 +1668,19 @@
         const container = document.getElementById('chat-messages-container');
         container.scrollTop = container.scrollHeight;
     }
-    function autoResizeTextarea(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
-
-    // --- ГАМБУРГЕР-МЕНЮ И НАСТРОЙКИ ЧАТА ---
-    function toggleChatMenu(e) {
-        if (e && e.target !== e.currentTarget && e.type === 'click') return;
-        const overlay = document.getElementById('chat-menu-overlay');
-        const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+    function autoResizeTextarea(el) { 
+        el.style.height = 'auto'; 
+        el.style.height = el.scrollHeight + 'px'; 
         
-        if (!overlay.classList.contains('active')) {
-            // Подгружаем настройки перед открытием
-            document.getElementById('chat-temp').value = entity.temp || 0.8;
-            document.getElementById('temp-val').innerText = entity.temp || 0.8;
-            document.getElementById('chat-length').value = entity.maxTokens || 1000;
-            document.getElementById('length-val').innerText = entity.maxTokens || 1000;
-            overlay.classList.add('active');
+        // НОВОЕ: Подсчет токенов "на лету" (Приблизительная формула: 1 токен ≈ 3.5 символа)
+        const counter = document.getElementById('typing-token-counter');
+        if (el.value.length > 0) {
+            const tokens = Math.ceil(el.value.length / 3.5);
+            counter.innerText = `~${tokens} tks`;
+            counter.style.display = 'block';
         } else {
-            overlay.classList.remove('active');
+            counter.style.display = 'none';
         }
-    }
-
-    function updateChatSettings() {
-        const temp = document.getElementById('chat-temp').value;
-        const len = document.getElementById('chat-length').value;
-        document.getElementById('temp-val').innerText = temp;
-        document.getElementById('length-val').innerText = len;
-        
-        const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
-        entity.temp = parseFloat(temp);
-        entity.maxTokens = parseInt(len);
-        saveData();
     }
 
     // --- ИСТОРИЯ И РЕСТАРТ ---
@@ -1849,7 +1893,8 @@
         }
 
         const apiMsgs = [{ role: 'system', content: sys }];
-        history.slice(-20).forEach(msg => apiMsgs.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content }));
+        const limit = char.maxHistory || appState.settings.maxHistory || 20;
+        history.slice(-limit).forEach(msg => apiMsgs.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content }));
 
         await callOpenRouter(apiMsgs, char.name, appState.chats[currentId]);
     }
@@ -1902,7 +1947,8 @@
         const apiMsgs = [{ role: 'system', content: sys }];
         
         // Конвертация истории для группового восприятия
-        history.slice(-20).forEach(msg => {
+        const limit = group.maxHistory || appState.settings.maxHistory || 20;
+        history.slice(-limit).forEach(msg => {
             // Если сообщение от текущего бота - это assistant. Иначе - это user (для бота все остальные - юзеры)
             if (msg.charId === botCharId) {
                 apiMsgs.push({ role: 'assistant', content: msg.content });
@@ -1913,6 +1959,58 @@
         });
 
         await callOpenRouter(apiMsgs, activeChar.name, appState.groupChats[currentId], botCharId);
+    }
+
+    // --- ТОЧНЫЙ КОНТРОЛЬ ПОЛЗУНКОВ (+ / -) ---
+    function adjustSlider(sliderId, step) {
+        const el = document.getElementById(sliderId);
+        if (!el) return;
+        
+        // Получаем текущее значение и прибавляем шаг
+        let current = parseInt(el.value);
+        let next = current + step;
+        
+        // Не даем выйти за рамки минимума и максимума
+        if (next < parseInt(el.min)) next = parseInt(el.min);
+        if (next > parseInt(el.max)) next = parseInt(el.max);
+        
+        // Устанавливаем значение
+        el.value = next;
+        
+        // Имитируем событие ввода (чтобы сработали функции сохранения и обновления цифр на экране)
+        el.dispatchEvent(new Event('input'));
+    }
+
+    // --- ЭКСПОРТ ЧАТА ---
+    function exportChat() {
+        const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+        const messages = currentMode === 'groups' ? (appState.groupChats[currentId] || []) : (appState.chats[currentId] ||[]);
+        
+        if (messages.length === 0) return showToast("Чат пуст!", true);
+
+        let text = `=======================================\n`;
+        text += ` ROLEPLAY ARCHIVE: ${entity.name.toUpperCase()}\n`;
+        text += ` DATE: ${new Date().toLocaleString()}\n`;
+        text += `=======================================\n\n`;
+        
+        messages.forEach(m => {
+            const time = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            text += `[${time}] ${m.name}:\n${m.content}\n\n`;
+            text += `---------------------------------------\n\n`;
+        });
+        
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `RP_Log_${entity.name.replace(/\s+/g, '_')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast("Файл чата успешно сохранен!");
+        document.getElementById('chat-menu-overlay').classList.remove('active');
     }
 
     // --- ВЫЗОВ СЛУЧАЙНОГО БОТА В ГРУППЕ ---
@@ -1971,9 +2069,10 @@
                 if (model.includes('claude')) {
                     // Anthropic (Claude)
                     apiUrl = 'https://api.proxyapi.ru/anthropic/v1/messages';
-                    headers['x-api-key'] = authKey;
+                    // ProxyAPI использует стандартный Bearer токен даже для Anthropic, 
+                    // поэтому МЫ НЕ УДАЛЯЕМ заголовок Authorization!
                     headers['anthropic-version'] = '2023-06-01';
-                    delete headers['Authorization']; // У Anthropic другой заголовок
+                    headers['x-api-key'] = authKey; // Оставляем на всякий случай для совместимости
                     
                     let systemPrompt = "";
                     let anthropicMessages =[];
@@ -2157,6 +2256,9 @@
         document.getElementById('model-input').value = appState.settings.model;
         document.getElementById('nsfw-toggle').checked = !!appState.settings.nsfwEnabled;
         if (appState.userProfile.avatar) { document.getElementById('user-avatar-img').src = appState.userProfile.avatar; document.getElementById('user-avatar-img').style.display = 'block'; document.getElementById('user-avatar-icon').style.display = 'none'; }
+        const maxHist = appState.settings.maxHistory || 20;
+        document.getElementById('global-history-input').value = maxHist;
+        document.getElementById('global-history-val').innerText = maxHist;
         switchScreen('profile-screen');
     }
 
@@ -2168,6 +2270,7 @@
         appState.settings.openRouterKey = document.getElementById('openrouter-key-input').value.trim();
         appState.settings.model = document.getElementById('model-input').value;
         appState.settings.nsfwEnabled = document.getElementById('nsfw-toggle').checked;
+        appState.settings.maxHistory = parseInt(document.getElementById('global-history-input').value);
         saveData(); goHome();
     }
 
@@ -2284,6 +2387,24 @@
             document.getElementById('sp-trait-toggle').checked = entity.traits.enabled;
             document.getElementById('sp-trait-slider').value = entity.traits.value;
             document.getElementById('sp-trait-slider').style.opacity = entity.traits.enabled ? '1' : '0.5';
+
+            // Подгрузка индивидуального лимита памяти для этого чата
+            const chatHistoryLimit = entity.maxHistory || appState.settings.maxHistory || 20;
+            document.getElementById('sp-history-slider').value = chatHistoryLimit;
+            document.getElementById('sp-history-val').innerText = chatHistoryLimit;
+
+            // Оценка общего контекста (Токенизатор)
+            let totalChars = 0;
+            // Считаем системные данные
+            totalChars += (entity.protocol || '').length + (entity.scenario || '').length + (entity.greeting || '').length;
+            if (entity.memoryBoxes) entity.memoryBoxes.forEach(b => totalChars += (b.content || b).length);
+            // Считаем историю сообщений (с учетом лимита!)
+            const activeMessages = messages.slice(-chatHistoryLimit);
+            activeMessages.forEach(m => totalChars += m.content.length);
+            // Добавляем закрепленные сообщения (они идут поверх лимита)
+            messages.filter(m => m.isPinned && !activeMessages.includes(m)).forEach(m => totalChars += m.content.length);
+            
+            document.getElementById('sp-token-count').innerText = `~${Math.ceil(totalChars / 3.5)}`;
             
             overlay.classList.add('active');
         } else {
@@ -2291,13 +2412,17 @@
         }
     }
 
-    // --- НОВОЕ: Обновление Shy/Flirty ---
     function updateTraits() {
         const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
         if (!entity.traits) entity.traits = {};
         entity.traits.enabled = document.getElementById('sp-trait-toggle').checked;
         entity.traits.value = parseInt(document.getElementById('sp-trait-slider').value);
         document.getElementById('sp-trait-slider').style.opacity = entity.traits.enabled ? '1' : '0.5';
+        
+        // НОВОЕ: Сохраняем локальный лимит памяти
+        entity.maxHistory = parseInt(document.getElementById('sp-history-slider').value);
+        document.getElementById('sp-history-val').innerText = entity.maxHistory;
+        
         saveData();
     }
 
