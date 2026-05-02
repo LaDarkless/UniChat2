@@ -1,1382 +1,1736 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <title>Block Blast</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+      @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap");
 
-        .particle {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 500;
-            opacity: 1;
-            animation: particleFade 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      .particle {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 500;
+        opacity: 1;
+        animation: particleFade 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+          forwards;
+      }
+
+      @keyframes particleFade {
+        0% {
+          transform: translate(0, 0) scale(1);
+          opacity: 1;
         }
-
-        @keyframes particleFade {
-            0% { transform: translate(0, 0) scale(1); opacity: 1; }
-            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        100% {
+          transform: translate(var(--tx), var(--ty)) scale(0);
+          opacity: 0;
         }
+      }
 
+      :root {
+        --bg-color: #0f172a;
+        --grid-bg: rgba(255, 255, 255, 0.05);
+        --cell-bg: rgba(255, 255, 255, 0.03);
+        --cell-border: rgba(255, 255, 255, 0.08);
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --primary: #3b82f6;
+        --cell-size: calc((100vw - 32px) / 8); /* Responsive cell size */
+      }
+
+      /* Responsive max size for larger screens (tablets) */
+      @media (min-width: 500px) {
         :root {
-            --bg-color: #0f172a;
-            --grid-bg: rgba(255, 255, 255, 0.05);
-            --cell-bg: rgba(255, 255, 255, 0.03);
-            --cell-border: rgba(255, 255, 255, 0.08);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --primary: #3b82f6;
-            --cell-size: calc((100vw - 32px) / 8); /* Responsive cell size */
+          --cell-size: 50px;
         }
+      }
 
-        /* Responsive max size for larger screens (tablets) */
-        @media (min-width: 500px) {
-            :root {
-                --cell-size: 50px;
-            }
-        }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
-        }
+      body {
+        font-family: "Poppins", sans-serif;
+        background: radial-gradient(circle at top, #1e293b, var(--bg-color));
+        color: var(--text-main);
+        height: 100vh;
+        height: 100dvh; /* For modern mobile browsers */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+        touch-action: none; /* Prevents pull-to-refresh and scrolling */
+      }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: radial-gradient(circle at top, #1e293b, var(--bg-color));
-            color: var(--text-main);
-            height: 100vh;
-            height: 100dvh; /* For modern mobile browsers */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow: hidden;
-            touch-action: none; /* Prevents pull-to-refresh and scrolling */
-        }
+      /* HEADER */
+      .header {
+        width: 100%;
+        max-width: 500px;
+        padding: 20px 20px 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
 
-        /* HEADER */
-        .header {
-            width: 100%;
-            max-width: 500px;
-            padding: 20px 20px 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+      .score-board {
+        display: flex;
+        gap: 20px;
+      }
 
-        .score-board {
-            display: flex;
-            gap: 20px;
-        }
+      .score-box {
+        display: flex;
+        flex-direction: column;
+      }
 
-        .score-box {
-            display: flex;
-            flex-direction: column;
-        }
+      .score-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 1px;
+      }
 
-        .score-label {
-            font-size: 12px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
+      .score-value {
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1.2;
+      }
 
-        .score-value {
-            font-size: 28px;
-            font-weight: 800;
-            line-height: 1.2;
-        }
+      .high-score-value {
+        color: #fbbf24;
+      }
 
-        .high-score-value {
-            color: #fbbf24;
-        }
+      .btn-restart {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 10px;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.2s;
+        backdrop-filter: blur(10px);
+      }
 
-        .btn-restart {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            padding: 10px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.2s;
-            backdrop-filter: blur(10px);
-        }
+      .btn-restart:active {
+        transform: scale(0.9);
+        background: rgba(255, 255, 255, 0.2);
+      }
 
-        .btn-restart:active {
-            transform: scale(0.9);
-            background: rgba(255, 255, 255, 0.2);
-        }
+      .btn-restart svg {
+        width: 24px;
+        height: 24px;
+        fill: var(--text-main);
+      }
 
-        .btn-restart svg {
-            width: 24px;
-            height: 24px;
-            fill: var(--text-main);
-        }
+      /* MAIN GRID */
+      .grid-container {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+      }
 
-        /* MAIN GRID */
-        .grid-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(8, var(--cell-size));
+        grid-template-rows: repeat(8, var(--cell-size));
+        gap: 2px;
+        background: var(--grid-bg);
+        padding: 4px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(8, var(--cell-size));
-            grid-template-rows: repeat(8, var(--cell-size));
-            gap: 2px;
-            background: var(--grid-bg);
-            padding: 4px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
+      .cell {
+        width: var(--cell-size);
+        height: var(--cell-size);
+        background: var(--cell-bg);
+        border-radius: 6px;
+        transition: background 0.1s;
+      }
 
-        .cell {
-            width: var(--cell-size);
-            height: var(--cell-size);
-            background: var(--cell-bg);
-            border-radius: 6px;
-            transition: background 0.1s;
-        }
+      .cell.highlight {
+        background: rgba(255, 255, 255, 0.2) !important;
+      }
 
-        .cell.highlight {
-            background: rgba(255, 255, 255, 0.2) !important;
-        }
+      /* BLOCKS */
+      .block {
+        border-radius: 6px;
+        box-shadow:
+          inset 0 0 0 2px rgba(255, 255, 255, 0.2),
+          inset 2px 2px 5px rgba(255, 255, 255, 0.3),
+          inset -2px -2px 5px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        height: 100%;
+        animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      }
 
-        /* BLOCKS */
-        .block {
-            border-radius: 6px;
-            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2), 
-                        inset 2px 2px 5px rgba(255, 255, 255, 0.3),
-                        inset -2px -2px 5px rgba(0, 0, 0, 0.2);
-            width: 100%;
-            height: 100%;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
+      /* TRAY (SPAWN AREA) */
+      .tray {
+        width: 100%;
+        height: 180px;
+        display: flex;
+        justify-content: space-evenly;
+        align-items: center;
+        padding-bottom: 30px;
+        max-width: 500px;
+      }
 
-        /* TRAY (SPAWN AREA) */
-        .tray {
-            width: 100%;
-            height: 180px;
-            display: flex;
-            justify-content: space-evenly;
-            align-items: center;
-            padding-bottom: 30px;
-            max-width: 500px;
-        }
+      .shape-container {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+      }
 
-        .shape-container {
-            width: 80px;
-            height: 80px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
+      .shape-preview {
+        display: grid;
+        gap: 2px;
+        transition: transform 0.2s;
+      }
 
-        .shape-preview {
-            display: grid;
-            gap: 2px;
-            transition: transform 0.2s;
-        }
+      .shape-preview .preview-block {
+        width: calc(var(--cell-size) * 0.6);
+        height: calc(var(--cell-size) * 0.6);
+        border-radius: 4px;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+      }
 
-        .shape-preview .preview-block {
-            width: calc(var(--cell-size) * 0.6);
-            height: calc(var(--cell-size) * 0.6);
-            border-radius: 4px;
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-        }
+      .shape-container.empty .shape-preview {
+        display: none;
+      }
 
-        .shape-container.empty .shape-preview {
-            display: none;
-        }
+      /* DRAGGING ELEMENT */
+      .dragging {
+        position: absolute;
+        pointer-events: none;
+        z-index: 1000;
+        display: grid;
+        gap: 2px;
+        transform: scale(1.1); /* Slightly larger while dragging */
+        filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.5));
+      }
 
-        /* DRAGGING ELEMENT */
-        .dragging {
-            position: absolute;
-            pointer-events: none;
-            z-index: 1000;
-            display: grid;
-            gap: 2px;
-            transform: scale(1.1); /* Slightly larger while dragging */
-            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
-        }
-        
-        .dragging .drag-block {
-            width: var(--cell-size);
-            height: var(--cell-size);
-            border-radius: 6px;
-            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2);
-        }
+      .dragging .drag-block {
+        width: var(--cell-size);
+        height: var(--cell-size);
+        border-radius: 6px;
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2);
+      }
 
-        /* GAME OVER MODAL */
-        .modal-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
+      /* GAME OVER MODAL */
+      .modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
 
-        .modal {
-            background: var(--bg-color);
-            padding: 40px;
-            border-radius: 20px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            transform: translateY(20px);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
+      .modal {
+        background: var(--bg-color);
+        padding: 40px;
+        border-radius: 20px;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        transform: translateY(20px);
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
 
-        .modal h2 {
-            font-size: 32px;
-            margin-bottom: 10px;
-            color: #f8fafc;
-        }
+      .modal h2 {
+        font-size: 32px;
+        margin-bottom: 10px;
+        color: #f8fafc;
+      }
 
-        .modal p {
-            color: var(--text-muted);
-            margin-bottom: 30px;
-            font-size: 18px;
-        }
+      .modal p {
+        color: var(--text-muted);
+        margin-bottom: 30px;
+        font-size: 18px;
+      }
 
-        .btn-primary {
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            padding: 15px 40px;
-            border-radius: 30px;
-            font-size: 18px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            transition: background 0.2s;
-            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
-        }
+      .btn-primary {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        padding: 15px 40px;
+        border-radius: 30px;
+        font-size: 18px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: background 0.2s;
+        box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+      }
 
-        .btn-primary:active {
-            transform: scale(0.95);
-        }
+      .btn-primary:active {
+        transform: scale(0.95);
+      }
 
-        .super-combo-img {
-            position: absolute;
-            width: 180px;
-            height: 180px;
-            object-fit: cover;
-            border-radius: 20px;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            z-index: 3000;
-            pointer-events: none; /* Чтобы не мешала нажимать */
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 20px var(--primary);
-            animation: superComboPop 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
+      .super-combo-img {
+        position: absolute;
+        width: 180px;
+        height: 180px;
+        object-fit: cover;
+        border-radius: 20px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        z-index: 3000;
+        pointer-events: none; /* Чтобы не мешала нажимать */
+        box-shadow:
+          0 15px 35px rgba(0, 0, 0, 0.8),
+          0 0 20px var(--primary);
+        animation: superComboPop 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)
+          forwards;
+      }
 
-        @keyframes superComboPop {
-            0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; }
-            15% { transform: translate(-50%, -50%) scale(1.2) rotate(10deg); opacity: 1; }
-            30% { transform: translate(-50%, -50%) scale(1) rotate(-5deg); opacity: 1; }
-            85% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1.3); opacity: 0; } /* Убрали blur, оставили чистое исчезновение */
+      @keyframes superComboPop {
+        0% {
+          transform: translate(-50%, -50%) scale(0) rotate(-15deg);
+          opacity: 0;
         }
-
-        @keyframes clearLine {
-            0% { transform: scale(1); opacity: 1; filter: brightness(1); }
-            50% { transform: scale(1.1); opacity: 0.8; filter: brightness(2); }
-            100% { transform: scale(0); opacity: 0; filter: brightness(1); }
+        15% {
+          transform: translate(-50%, -50%) scale(1.2) rotate(10deg);
+          opacity: 1;
         }
-
-        .clearing {
-            animation: clearLine 0.3s forwards;
+        30% {
+          transform: translate(-50%, -50%) scale(1) rotate(-5deg);
+          opacity: 1;
         }
-
-        .combo-text {
-            position: absolute;
-            color: #fff;
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(0,0,0,0.8);
-            pointer-events: none;
-            z-index: 100;
-            animation: floatUp 1s forwards;
+        85% {
+          transform: translate(-50%, -50%) scale(1) rotate(0deg);
+          opacity: 1;
         }
+        100% {
+          transform: translate(-50%, -50%) scale(1.3);
+          opacity: 0;
+        } /* Убрали blur, оставили чистое исчезновение */
+      }
 
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(1); opacity: 1; }
-            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+      @keyframes clearLine {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+          filter: brightness(1);
         }
+        50% {
+          transform: scale(1.1);
+          opacity: 0.8;
+          filter: brightness(2);
+        }
+        100% {
+          transform: scale(0);
+          opacity: 0;
+          filter: brightness(1);
+        }
+      }
 
+      .clearing {
+        animation: clearLine 0.3s forwards;
+      }
+
+      .combo-text {
+        position: absolute;
+        color: #fff;
+        font-size: 24px;
+        font-weight: bold;
+        text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+        pointer-events: none;
+        z-index: 100;
+        animation: floatUp 1s forwards;
+      }
+
+      @keyframes floatUp {
+        0% {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-50px) scale(1.5);
+          opacity: 0;
+        }
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <div class="header">
-        <div class="score-board">
-            <div class="score-box">
-                <span class="score-label">Счет</span>
-                <span class="score-value" id="score">0</span>
-            </div>
-            <div class="score-box">
-                <span class="score-label">Рекорд</span>
-                <span class="score-value high-score-value" id="highScore">0</span>
-            </div>
+      <div class="score-board">
+        <div class="score-box">
+          <span class="score-label">Счет</span>
+          <span class="score-value" id="score">0</span>
         </div>
-        <button class="btn-restart" id="restartBtn" aria-label="Restart Game">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
-            </svg>
-        </button>
+        <div class="score-box">
+          <span class="score-label">Рекорд</span>
+          <span class="score-value high-score-value" id="highScore">0</span>
+        </div>
+      </div>
+      <button class="btn-restart" id="restartBtn" aria-label="Restart Game">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path
+            d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"
+          />
+        </svg>
+      </button>
     </div>
 
     <div class="grid-container">
-        <div class="grid" id="grid"></div>
+      <div class="grid" id="grid"></div>
     </div>
 
     <div class="tray" id="tray">
-        <div class="shape-container" data-index="0"></div>
-        <div class="shape-container" data-index="1"></div>
-        <div class="shape-container" data-index="2"></div>
+      <div class="shape-container" data-index="0"></div>
+      <div class="shape-container" data-index="1"></div>
+      <div class="shape-container" data-index="2"></div>
     </div>
 
     <div class="modal-overlay" id="gameOverModal">
-        <div class="modal">
-            <h2>Игра окончена!</h2>
-            <p>Ваш счет: <span id="finalScore">0</span></p>
-            <button class="btn-primary" id="playAgainBtn">Играть снова</button>
-        </div>
+      <div class="modal">
+        <h2>Игра окончена!</h2>
+        <p>Ваш счет: <span id="finalScore">0</span></p>
+        <button class="btn-primary" id="playAgainBtn">Играть снова</button>
+      </div>
     </div>
 
     <script>
-        // --- GAME CONFIGURATION ---
-        const GRID_SIZE = 8;
-        const CELL_SIZE = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')) || 50;
-        
-        // Colors for shapes
-        const COLORS = {
-            c1: '#ef4444', // Red
-            c2: '#f59e0b', // Orange
-            c3: '#eab308', // Yellow
-            c4: '#22c55e', // Green
-            c5: '#06b6d4', // Cyan
-            c6: '#3b82f6', // Blue
-            c7: '#a855f7', // Purple
-            c8: '#ec4899'  // Pink
-        };
+      // --- GAME CONFIGURATION ---
+      const GRID_SIZE = 8;
+      const CELL_SIZE = () =>
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--cell-size",
+          ),
+        ) || 50;
 
-        // Defining Shapes (relative coordinates: [row, col])
-        const SHAPES_DATA = [
-            // 1x1
-            { coords: [[0,0]], color: COLORS.c5, cols: 1, rows: 1 },
-            // 2x2
-            { coords: [[0,0],[0,1],[1,0],[1,1]], color: COLORS.c3, cols: 2, rows: 2 },
-            // 3x3
-            { coords: [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]], color: COLORS.c1, cols: 3, rows: 3 },
-            // Horizontal lines
-            { coords: [[0,0],[0,1]], color: COLORS.c4, cols: 2, rows: 1 },
-            { coords: [[0,0],[0,1],[0,2]], color: COLORS.c4, cols: 3, rows: 1 },
-            { coords: [[0,0],[0,1],[0,2],[0,3]], color: COLORS.c4, cols: 4, rows: 1 },
-            { coords: [[0,0],[0,1],[0,2],[0,3],[0,4]], color: COLORS.c4, cols: 5, rows: 1 },
-            // Vertical lines
-            { coords: [[0,0],[1,0]], color: COLORS.c6, cols: 1, rows: 2 },
-            { coords: [[0,0],[1,0],[2,0]], color: COLORS.c6, cols: 1, rows: 3 },
-            { coords: [[0,0],[1,0],[2,0],[3,0]], color: COLORS.c6, cols: 1, rows: 4 },
-            { coords: [[0,0],[1,0],[2,0],[3,0],[4,0]], color: COLORS.c6, cols: 1, rows: 5 },
-            // L-shapes small
-            { coords: [[0,0],[1,0],[1,1]], color: COLORS.c2, cols: 2, rows: 2 },
-            { coords: [[0,1],[1,0],[1,1]], color: COLORS.c2, cols: 2, rows: 2 },
-            { coords: [[0,0],[0,1],[1,0]], color: COLORS.c2, cols: 2, rows: 2 },
-            { coords: [[0,0],[0,1],[1,1]], color: COLORS.c2, cols: 2, rows: 2 },
-            // L-shapes large (3x3 bounds)
-            { coords: [[0,0],[1,0],[2,0],[2,1],[2,2]], color: COLORS.c7, cols: 3, rows: 3 },
-            { coords: [[0,2],[1,2],[2,0],[2,1],[2,2]], color: COLORS.c7, cols: 3, rows: 3 },
-            { coords: [[0,0],[0,1],[0,2],[1,0],[2,0]], color: COLORS.c7, cols: 3, rows: 3 },
-            { coords: [[0,0],[0,1],[0,2],[1,2],[2,2]], color: COLORS.c7, cols: 3, rows: 3 },
-            // T-shape
-            { coords: [[0,1],[1,0],[1,1],[1,2]], color: COLORS.c8, cols: 3, rows: 2 },
-            { coords: [[0,0],[0,1],[0,2],[1,1]], color: COLORS.c8, cols: 3, rows: 2 },
-            { coords: [[0,0],[1,0],[2,0],[1,1]], color: COLORS.c8, cols: 2, rows: 3 },
-            { coords: [[1,0],[0,1],[1,1],[2,1]], color: COLORS.c8, cols: 2, rows: 3 },
-        ];
+      // Colors for shapes
+      const COLORS = {
+        c1: "#ef4444", // Red
+        c2: "#f59e0b", // Orange
+        c3: "#eab308", // Yellow
+        c4: "#22c55e", // Green
+        c5: "#06b6d4", // Cyan
+        c6: "#3b82f6", // Blue
+        c7: "#a855f7", // Purple
+        c8: "#ec4899", // Pink
+      };
 
-        // --- STATE ---
-        let board = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
-        let score = 0;
-        let highScore = 0; // Инициализируем нулем, загрузим из БД позже
-        let currentTray = [null, null, null];
+      // Defining Shapes (relative coordinates: [row, col])
+      const SHAPES_DATA = [
+        // 1x1
+        { coords: [[0, 0]], color: COLORS.c5, cols: 1, rows: 1 },
+        // 2x2
+        {
+          coords: [
+            [0, 0],
+            [0, 1],
+            [1, 0],
+            [1, 1],
+          ],
+          color: COLORS.c3,
+          cols: 2,
+          rows: 2,
+        },
+        // 3x3
+        {
+          coords: [
+            [0, 0],
+            [0, 1],
+            [0, 2],
+            [1, 0],
+            [1, 1],
+            [1, 2],
+            [2, 0],
+            [2, 1],
+            [2, 2],
+          ],
+          color: COLORS.c1,
+          cols: 3,
+          rows: 3,
+        },
+        // Horizontal lines
+        {
+          coords: [
+            [0, 0],
+            [0, 1],
+          ],
+          color: COLORS.c4,
+          cols: 2,
+          rows: 1,
+        },
+        {
+          coords: [
+            [0, 0],
+            [0, 1],
+            [0, 2],
+          ],
+          color: COLORS.c4,
+          cols: 3,
+          rows: 1,
+        },
+        {
+          coords: [
+            [0, 0],
+            [0, 1],
+            [0, 2],
+            [0, 3],
+          ],
+          color: COLORS.c4,
+          cols: 4,
+          rows: 1,
+        },
+        {
+          coords: [
+            [0, 0],
+            [0, 1],
+            [0, 2],
+            [0, 3],
+            [0, 4],
+          ],
+          color: COLORS.c4,
+          cols: 5,
+          rows: 1,
+        },
+        // Vertical lines
+        {
+          coords: [
+            [0, 0],
+            [1, 0],
+          ],
+          color: COLORS.c6,
+          cols: 1,
+          rows: 2,
+        },
+        {
+          coords: [
+            [0, 0],
+            [1, 0],
+            [2, 0],
+          ],
+          color: COLORS.c6,
+          cols: 1,
+          rows: 3,
+        },
+        {
+          coords: [
+            [0, 0],
+            [1, 0],
+            [2, 0],
+            [3, 0],
+          ],
+          color: COLORS.c6,
+          cols: 1,
+          rows: 4,
+        },
+        {
+          coords: [
+            [0, 0],
+            [1, 0],
+            [2, 0],
+            [3, 0],
+            [4, 0],
+          ],
+          color: COLORS.c6,
+          cols: 1,
+          rows: 5,
+        },
+        // L-shapes small
+        {
+          coords: [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+          ],
+          color: COLORS.c2,
+          cols: 2,
+          rows: 2,
+        },
+        {
+          coords: [
+            [0, 1],
+            [1, 0],
+            [1, 1],
+          ],
+          color: COLORS.c2,
+          cols: 2,
+          rows: 2,
+        },
+        {
+          coords: [
+            [0, 0],
+            [0, 1],
+            [1, 0],
+          ],
+          color: COLORS.c2,
+          cols: 2,
+          rows: 2,
+        },
+        {
+          coords: [
+            [0, 0],
+            [0, 1],
+            [1, 1],
+          ],
+          color: COLORS.c2,
+          cols: 2,
+          rows: 2,
+        },
+        // L-shapes large (3x3 bounds)
+        {
+          coords: [
+            [0, 0],
+            [1, 0],
+            [2, 0],
+            [2, 1],
+            [2, 2],
+          ],
+          color: COLORS.c7,
+          cols: 3,
+          rows: 3,
+        },
+        {
+          coords: [
+            [0, 2],
+            [1, 2],
+            [2, 0],
+            [2, 1],
+            [2, 2],
+          ],
+          color: COLORS.c7,
+          cols: 3,
+          rows: 3,
+        },
+        {
+          coords: [
+            [0, 0],
+            [0, 1],
+            [0, 2],
+            [1, 0],
+            [2, 0],
+          ],
+          color: COLORS.c7,
+          cols: 3,
+          rows: 3,
+        },
+        {
+          coords: [
+            [0, 0],
+            [0, 1],
+            [0, 2],
+            [1, 2],
+            [2, 2],
+          ],
+          color: COLORS.c7,
+          cols: 3,
+          rows: 3,
+        },
+        // T-shape
+        {
+          coords: [
+            [0, 1],
+            [1, 0],
+            [1, 1],
+            [1, 2],
+          ],
+          color: COLORS.c8,
+          cols: 3,
+          rows: 2,
+        },
+        {
+          coords: [
+            [0, 0],
+            [0, 1],
+            [0, 2],
+            [1, 1],
+          ],
+          color: COLORS.c8,
+          cols: 3,
+          rows: 2,
+        },
+        {
+          coords: [
+            [0, 0],
+            [1, 0],
+            [2, 0],
+            [1, 1],
+          ],
+          color: COLORS.c8,
+          cols: 2,
+          rows: 3,
+        },
+        {
+          coords: [
+            [1, 0],
+            [0, 1],
+            [1, 1],
+            [2, 1],
+          ],
+          color: COLORS.c8,
+          cols: 2,
+          rows: 3,
+        },
+      ];
 
-        // --- DRAGGING STATE (возвращаем переменные для перетаскивания) ---
-        let dragItem = null;
-        let dragEl = null;
-        let dragOffset = { x: 0, y: 0 };
-        let touchOffset = -60; 
-        let hoveredCells = [];
+      // --- STATE ---
+      let board = Array(GRID_SIZE)
+        .fill()
+        .map(() => Array(GRID_SIZE).fill(null));
+      let score = 0;
+      let highScore = 0; // Инициализируем нулем, загрузим из БД позже
+      let currentTray = [null, null, null];
 
-        const scoreEl = document.getElementById('score');
-const highScoreEl = document.getElementById('highScore');
-const gridEl = document.getElementById('grid');
-const trayContainers = document.querySelectorAll('.shape-container');
-const gameOverModal = document.getElementById('gameOverModal');
-const finalScoreEl = document.getElementById('finalScore');
+      // --- DRAGGING STATE (возвращаем переменные для перетаскивания) ---
+      let dragItem = null;
+      let dragEl = null;
+      let dragOffset = { x: 0, y: 0 };
+      let touchOffset = -60;
+      let hoveredCells = [];
 
-        // --- БАЗА ДАННЫХ (IndexedDB) ---
-        const DB_NAME = 'AmeflyDB';
-        const STORE_NAME = 'game_data';
+      const scoreEl = document.getElementById("score");
+      const highScoreEl = document.getElementById("highScore");
+      const gridEl = document.getElementById("grid");
+      const trayContainers = document.querySelectorAll(".shape-container");
+      const gameOverModal = document.getElementById("gameOverModal");
+      const finalScoreEl = document.getElementById("finalScore");
 
-        const dbHelper = {
-            db: null,
-            init: function() {
-                return new Promise((resolve, reject) => {
-                    const request = indexedDB.open(DB_NAME, 1);
-                    request.onupgradeneeded = (e) => {
-                        let db = e.target.result;
-                        if (!db.objectStoreNames.contains(STORE_NAME)) {
-                            db.createObjectStore(STORE_NAME);
-                        }
-                    };
-                    request.onsuccess = (e) => {
-                        this.db = e.target.result;
-                        resolve();
-                    };
-                    request.onerror = (e) => reject(e.target.error);
-                });
-            },
-            saveHighScore: function(score) {
-                const tx = this.db.transaction(STORE_NAME, 'readwrite');
-                tx.objectStore(STORE_NAME).put(score, 'highScore');
-            },
-            getHighScore: function() {
-                return new Promise((resolve) => {
-                    const tx = this.db.transaction(STORE_NAME, 'readonly');
-                    const request = tx.objectStore(STORE_NAME).get('highScore');
-                    request.onsuccess = () => resolve(request.result || 0);
-                    request.onerror = () => resolve(0);
-                });
-            }
-        };
+      // --- БАЗА ДАННЫХ (IndexedDB) ---
+      const DB_NAME = "AmeflyDB";
+      const STORE_NAME = "game_data";
 
-        // --- ИЗМЕНЕННАЯ ИНИЦИАЛИЗАЦИЯ ---
-        async function init() {
-            // Сначала подключаемся к БД и грузим рекорд
-            await dbHelper.init();
-            highScore = await dbHelper.getHighScore();
-            highScoreEl.textContent = highScore;
+      const dbHelper = {
+        db: null,
+        init: function () {
+          return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onupgradeneeded = (e) => {
+              let db = e.target.result;
+              if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+              }
+            };
+            request.onsuccess = (e) => {
+              this.db = e.target.result;
+              resolve();
+            };
+            request.onerror = (e) => reject(e.target.error);
+          });
+        },
+        saveHighScore: function (score) {
+          const tx = this.db.transaction(STORE_NAME, "readwrite");
+          tx.objectStore(STORE_NAME).put(score, "highScore");
+        },
+        getHighScore: function () {
+          return new Promise((resolve) => {
+            const tx = this.db.transaction(STORE_NAME, "readonly");
+            const request = tx.objectStore(STORE_NAME).get("highScore");
+            request.onsuccess = () => resolve(request.result || 0);
+            request.onerror = () => resolve(0);
+          });
+        },
+      };
 
-            buildGrid();
-            resetGame();
-            
-            document.getElementById('restartBtn').addEventListener('click', resetGame);
-            document.getElementById('playAgainBtn').addEventListener('click', resetGame);
+      // --- ИЗМЕНЕННАЯ ИНИЦИАЛИЗАЦИЯ ---
+      async function init() {
+        // Сначала подключаемся к БД и грузим рекорд
+        await dbHelper.init();
+        highScore = await dbHelper.getHighScore();
+        highScoreEl.textContent = highScore;
 
-            document.addEventListener('mousemove', onDragMove, {passive: false});
-            document.addEventListener('mouseup', onDragEnd);
-            document.addEventListener('touchmove', onDragMove, {passive: false});
-            document.addEventListener('touchend', onDragEnd);
+        buildGrid();
+        resetGame();
+
+        document
+          .getElementById("restartBtn")
+          .addEventListener("click", resetGame);
+        document
+          .getElementById("playAgainBtn")
+          .addEventListener("click", resetGame);
+
+        document.addEventListener("mousemove", onDragMove, { passive: false });
+        document.addEventListener("mouseup", onDragEnd);
+        document.addEventListener("touchmove", onDragMove, { passive: false });
+        document.addEventListener("touchend", onDragEnd);
+      }
+
+      // --- ИЗМЕНЕННОЕ ОБНОВЛЕНИЕ СЧЕТА ---
+      function updateScore(addPoints) {
+        score += addPoints;
+        scoreEl.textContent = score;
+
+        if (score > highScore) {
+          highScore = score;
+          highScoreEl.textContent = highScore;
+          dbHelper.saveHighScore(highScore); // Сохраняем в IndexedDB
         }
+      }
 
-        // --- ИЗМЕНЕННОЕ ОБНОВЛЕНИЕ СЧЕТА ---
-        function updateScore(addPoints) {
-            score += addPoints;
-            scoreEl.textContent = score;
-
-            if (score > highScore) {
-                highScore = score;
-                highScoreEl.textContent = highScore;
-                dbHelper.saveHighScore(highScore); // Сохраняем в IndexedDB
-            }
+      function buildGrid() {
+        gridEl.innerHTML = "";
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            const cell = document.createElement("div");
+            cell.className = "cell";
+            cell.id = `cell-${r}-${c}`;
+            gridEl.appendChild(cell);
+          }
         }
+      }
 
-        function buildGrid() {
-            gridEl.innerHTML = '';
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.id = `cell-${r}-${c}`;
-                    gridEl.appendChild(cell);
-                }
-            }
-        }
+      function resetGame() {
+        board = Array(GRID_SIZE)
+          .fill()
+          .map(() => Array(GRID_SIZE).fill(null));
+        score = 0;
+        updateScore(0);
 
-        function resetGame() {
-            board = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(null));
-            score = 0;
-            updateScore(0);
-            
-            // Clear visual grid
-            const cells = document.querySelectorAll('.cell');
-            cells.forEach(cell => cell.innerHTML = '');
+        // Clear visual grid
+        const cells = document.querySelectorAll(".cell");
+        cells.forEach((cell) => (cell.innerHTML = ""));
 
-            hideGameOver();
-            fillTray();
-        }
+        hideGameOver();
+        fillTray();
+      }
 
-       // Вспомогательная функция для симуляции: ищет все доступные позиции для фигуры на конкретной доске
-       function getValidPositionsForBoard(testBoard, shape) {
-            let positions =[];
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    let fits = true;
-                    for (let coord of shape.coords) {
-                        const tr = r + coord[0];
-                        const tc = c + coord[1];
-                        if (tr < 0 || tr >= GRID_SIZE || tc < 0 || tc >= GRID_SIZE || testBoard[tr][tc] !== null) {
-                            fits = false;
-                            break;
-                        }
-                    }
-                    if (fits) positions.push({r, c});
-                }
-            }
-            return positions;
-        }
-
-        // Интеллектуальный генератор сета из 3 фигур
-        function generateSmartTray() {
-            const MAX_ATTEMPTS = 20; // Пытаемся найти идеальную комбинацию 20 раз
-            
-            for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-                // Создаем виртуальную копию текущей доски
-                let virtualBoard = board.map(row =>[...row]);
-                let generatedShapes =[];
-                let success = true;
-
-                for (let i = 0; i < 3; i++) {
-                    // Находим все фигуры, которые влезут на виртуальную доску СЕЙЧАС
-                    let possibleShapes = SHAPES_DATA.filter(shape => getValidPositionsForBoard(virtualBoard, shape).length > 0);
-                    
-                    if (possibleShapes.length === 0) {
-                        success = false;
-                        break; // Места больше нет, эта комбинация неудачна
-                    }
-
-                    // Берем случайную фигуру из возможных
-                    let randomShape = possibleShapes[Math.floor(Math.random() * possibleShapes.length)];
-                    generatedShapes.push(randomShape);
-
-                    // Находим все места, куда она влезает, и "ставим" её в виртуальную доску
-                    let positions = getValidPositionsForBoard(virtualBoard, randomShape);
-                    let randomPos = positions[Math.floor(Math.random() * positions.length)];
-                    
-                    randomShape.coords.forEach(coord => {
-                        virtualBoard[randomPos.r + coord[0]][randomPos.c + coord[1]] = 'filled';
-                    });
-                }
-
-                // Если мы смогли поставить все 3 фигуры - ура, это решаемый сет!
-                if (success) {
-                    return generatedShapes;
-                }
-            }
-
-            // Если за 20 попыток идеальный сет не найден (доска почти забита), 
-            // просто генерируем 3 минимальные фигуры, чтобы дать шанс выжить, либо игра завершится.
-            return [SHAPES_DATA[0], SHAPES_DATA[0], SHAPES_DATA[0]]; // Три кубика 1x1 как запасной вариант
-        }
-
-        function fillTray() {
-            let emptyCount = 0;
-            currentTray.forEach(shape => { if (shape === null) emptyCount++; });
-
-            if (emptyCount === 3) {
-                // Используем наш умный генератор
-                const smartShapes = generateSmartTray();
-                
-                for (let i = 0; i < 3; i++) {
-                    currentTray[i] = smartShapes[i];
-                    renderTrayShape(i);
-                }
-                checkGameOver();
-            }
-        }
-
-        function renderTrayShape(index) {
-            const container = trayContainers[index];
-            const shape = currentTray[index];
-            container.innerHTML = '';
-            
-            if (!shape) {
-                container.classList.add('empty');
-                return;
-            }
-
-            container.classList.remove('empty');
-            
-            const preview = document.createElement('div');
-            preview.className = 'shape-preview';
-            preview.style.gridTemplateColumns = `repeat(${shape.cols}, 1fr)`;
-            preview.style.gridTemplateRows = `repeat(${shape.rows}, 1fr)`;
-
-            // Create grid for preview
-            for (let r = 0; r < shape.rows; r++) {
-                for (let c = 0; c < shape.cols; c++) {
-                    const block = document.createElement('div');
-                    // Check if coord exists in shape
-                    const isFilled = shape.coords.some(coord => coord[0] === r && coord[1] === c);
-                    if (isFilled) {
-                        block.className = 'preview-block';
-                        block.style.background = shape.color;
-                    }
-                    preview.appendChild(block);
-                }
-            }
-
-            container.appendChild(preview);
-
-            // Add events
-            container.onmousedown = (e) => startDrag(e, index);
-            container.ontouchstart = (e) => startDrag(e, index, true);
-        }
-
-        // --- DRAG & DROP LOGIC ---
-        function startDrag(e, index, isTouch = false) {
-            if (!currentTray[index]) return;
-
-            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
-            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-
-            dragItem = { shape: currentTray[index], index: index };
-            
-            // Create dragging DOM element
-            dragEl = document.createElement('div');
-            dragEl.className = 'dragging';
-            dragEl.style.gridTemplateColumns = `repeat(${dragItem.shape.cols}, var(--cell-size))`;
-            dragEl.style.gridTemplateRows = `repeat(${dragItem.shape.rows}, var(--cell-size))`;
-
-            dragItem.shape.coords.forEach(coord => {
-                const block = document.createElement('div');
-                block.className = 'drag-block';
-                block.style.background = dragItem.shape.color;
-                block.style.gridRowStart = coord[0] + 1;
-                block.style.gridColumnStart = coord[1] + 1;
-                dragEl.appendChild(block);
-            });
-
-            document.body.appendChild(dragEl);
-
-            // Hide original in tray
-            trayContainers[index].style.opacity = '0.2';
-
-            // Calculate center offset
-            const sWidth = dragItem.shape.cols * CELL_SIZE();
-            const sHeight = dragItem.shape.rows * CELL_SIZE();
-            
-            dragOffset.x = sWidth / 2;
-            dragOffset.y = sHeight / 2;
-
-            moveDragEl(clientX, clientY, isTouch);
-        }
-
-        function moveDragEl(clientX, clientY, isTouch) {
-            if (!dragEl) return;
-            
-            // Apply touch offset so finger doesn't hide shape
-            const y = isTouch ? clientY + touchOffset : clientY;
-            
-            dragEl.style.left = `${clientX - dragOffset.x}px`;
-            dragEl.style.top = `${y - dragOffset.y}px`;
-
-            highlightGrid(clientX, y);
-        }
-
-        function onDragMove(e) {
-            if (!dragEl) return;
-            e.preventDefault(); // Prevent scrolling while dragging
-            
-            const isTouch = e.type.includes('touch');
-            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
-            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
-
-            moveDragEl(clientX, clientY, isTouch);
-        }
-
-        function onDragEnd(e) {
-            if (!dragEl) return;
-            
-            const isTouch = e.type.includes('touch');
-            let clientX, clientY;
-            
-            if (isTouch) {
-                clientX = e.changedTouches[0].clientX;
-                clientY = e.changedTouches[0].clientY + touchOffset;
-            } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
-            }
-
-            const dropPos = getGridPosition(clientX, clientY);
-
-            clearHighlights();
-
-            if (dropPos && canPlace(dragItem.shape, dropPos.row, dropPos.col)) {
-                // Success
-                placeShape(dragItem.shape, dropPos.row, dropPos.col);
-                currentTray[dragItem.index] = null;
-                trayContainers[dragItem.index].innerHTML = '';
-                trayContainers[dragItem.index].classList.add('empty');
-                trayContainers[dragItem.index].style.opacity = '1';
-                
-                checkLines();
-                fillTray();
-            } else {
-                // Return to tray
-                trayContainers[dragItem.index].style.opacity = '1';
-            }
-
-            // Cleanup
-            dragEl.remove();
-            dragEl = null;
-            dragItem = null;
-        }
-
-        // --- GRID MATH & LOGIC ---
-        function getGridPosition(x, y) {
-            const rect = gridEl.getBoundingClientRect();
-            
-            // Check if dropped within grid bounds (with some margin for error)
-            const cs = CELL_SIZE();
-            const shapeWidth = dragItem.shape.cols * cs;
-            const shapeHeight = dragItem.shape.rows * cs;
-
-            // Calculate top-left corner of the shape
-            const shapeX = x - dragOffset.x;
-            const shapeY = y - dragOffset.y;
-
-            if (shapeX + shapeWidth < rect.left || shapeX > rect.right || 
-                shapeY + shapeHeight < rect.top || shapeY > rect.bottom) {
-                return null;
-            }
-
-            // Calculate nearest row and col
-            const col = Math.round((shapeX - rect.left) / cs);
-            const row = Math.round((shapeY - rect.top) / cs);
-
-            return { row, col };
-        }
-
-        function canPlace(shape, startRow, startCol) {
+      // Вспомогательная функция для симуляции: ищет все доступные позиции для фигуры на конкретной доске
+      function getValidPositionsForBoard(testBoard, shape) {
+        let positions = [];
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            let fits = true;
             for (let coord of shape.coords) {
-                const r = startRow + coord[0];
-                const c = startCol + coord[1];
-                
-                // Check bounds
-                if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) return false;
-                // Check collision
-                if (board[r][c] !== null) return false;
+              const tr = r + coord[0];
+              const tc = c + coord[1];
+              if (
+                tr < 0 ||
+                tr >= GRID_SIZE ||
+                tc < 0 ||
+                tc >= GRID_SIZE ||
+                testBoard[tr][tc] !== null
+              ) {
+                fits = false;
+                break;
+              }
             }
-            return true;
+            if (fits) positions.push({ r, c });
+          }
         }
+        return positions;
+      }
 
-        function highlightGrid(x, y) {
-            clearHighlights();
-            const pos = getGridPosition(x, y);
-            if (!pos) return;
+      // Интеллектуальный генератор сета из 3 фигур
+      function generateSmartTray() {
+        const MAX_ATTEMPTS = 20; // Пытаемся найти идеальную комбинацию 20 раз
 
-            if (canPlace(dragItem.shape, pos.row, pos.col)) {
-                dragItem.shape.coords.forEach(coord => {
-                    const r = pos.row + coord[0];
-                    const c = pos.col + coord[1];
-                    const cell = document.getElementById(`cell-${r}-${c}`);
-                    if (cell) {
-                        cell.classList.add('highlight');
-                        hoveredCells.push(cell);
-                    }
-                });
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+          // Создаем виртуальную копию текущей доски
+          let virtualBoard = board.map((row) => [...row]);
+          let generatedShapes = [];
+          let success = true;
+
+          for (let i = 0; i < 3; i++) {
+            // Находим все фигуры, которые влезут на виртуальную доску СЕЙЧАС
+            let possibleShapes = SHAPES_DATA.filter(
+              (shape) =>
+                getValidPositionsForBoard(virtualBoard, shape).length > 0,
+            );
+
+            if (possibleShapes.length === 0) {
+              success = false;
+              break; // Места больше нет, эта комбинация неудачна
             }
-        }
 
-        function clearHighlights() {
-            hoveredCells.forEach(cell => cell.classList.remove('highlight'));
-            hoveredCells = [];
-        }
+            // Берем случайную фигуру из возможных
+            let randomShape =
+              possibleShapes[Math.floor(Math.random() * possibleShapes.length)];
+            generatedShapes.push(randomShape);
 
-        function placeShape(shape, startRow, startCol) {
-            // Add points for placing (size of shape)
-            updateScore(shape.coords.length);
+            // Находим все места, куда она влезает, и "ставим" её в виртуальную доску
+            let positions = getValidPositionsForBoard(
+              virtualBoard,
+              randomShape,
+            );
+            let randomPos =
+              positions[Math.floor(Math.random() * positions.length)];
 
-            shape.coords.forEach(coord => {
-                const r = startRow + coord[0];
-                const c = startCol + coord[1];
-                board[r][c] = shape.color;
-
-                const cell = document.getElementById(`cell-${r}-${c}`);
-                const block = document.createElement('div');
-                block.className = 'block';
-                block.style.background = shape.color;
-                cell.appendChild(block);
+            randomShape.coords.forEach((coord) => {
+              virtualBoard[randomPos.r + coord[0]][randomPos.c + coord[1]] =
+                "filled";
             });
+          }
+
+          // Если мы смогли поставить все 3 фигуры - ура, это решаемый сет!
+          if (success) {
+            return generatedShapes;
+          }
         }
 
-        function spawnParticles(x, y, color) {
-            const particleCount = 5; // По 5 осколков на каждый блок
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.background = color;
-                particle.style.boxShadow = `0 0 10px ${color}`;
-                
-                // Рандомное направление разлета
-                const angle = Math.random() * Math.PI * 2;
-                const distance = Math.random() * 50 + 20; // От 20 до 70 пикселей
-                const tx = Math.cos(angle) * distance;
-                const ty = Math.sin(angle) * distance;
-                
-                particle.style.setProperty('--tx', `${tx}px`);
-                particle.style.setProperty('--ty', `${ty}px`);
-                
-                particle.style.left = `${x}px`;
-                particle.style.top = `${y}px`;
-                
-                document.body.appendChild(particle);
-                
-                setTimeout(() => particle.remove(), 600);
-            }
+        // Если за 20 попыток идеальный сет не найден (доска почти забита),
+        // просто генерируем 3 минимальные фигуры, чтобы дать шанс выжить, либо игра завершится.
+        return [SHAPES_DATA[0], SHAPES_DATA[0], SHAPES_DATA[0]]; // Три кубика 1x1 как запасной вариант
+      }
+
+      function fillTray() {
+        let emptyCount = 0;
+        currentTray.forEach((shape) => {
+          if (shape === null) emptyCount++;
+        });
+
+        if (emptyCount === 3) {
+          // Используем наш умный генератор
+          const smartShapes = generateSmartTray();
+
+          for (let i = 0; i < 3; i++) {
+            currentTray[i] = smartShapes[i];
+            renderTrayShape(i);
+          }
+          checkGameOver();
+        }
+      }
+
+      function renderTrayShape(index) {
+        const container = trayContainers[index];
+        const shape = currentTray[index];
+        container.innerHTML = "";
+
+        if (!shape) {
+          container.classList.add("empty");
+          return;
         }
 
-        function checkLines() {
-            let linesToClear = [];
+        container.classList.remove("empty");
 
-            // Check Rows
-            for (let r = 0; r < GRID_SIZE; r++) {
-                if (board[r].every(cell => cell !== null)) {
-                    linesToClear.push({ type: 'row', index: r });
-                }
+        const preview = document.createElement("div");
+        preview.className = "shape-preview";
+        preview.style.gridTemplateColumns = `repeat(${shape.cols}, 1fr)`;
+        preview.style.gridTemplateRows = `repeat(${shape.rows}, 1fr)`;
+
+        // Create grid for preview
+        for (let r = 0; r < shape.rows; r++) {
+          for (let c = 0; c < shape.cols; c++) {
+            const block = document.createElement("div");
+            // Check if coord exists in shape
+            const isFilled = shape.coords.some(
+              (coord) => coord[0] === r && coord[1] === c,
+            );
+            if (isFilled) {
+              block.className = "preview-block";
+              block.style.background = shape.color;
             }
+            preview.appendChild(block);
+          }
+        }
 
-            // Check Cols
+        container.appendChild(preview);
+
+        // Add events
+        container.onmousedown = (e) => startDrag(e, index);
+        container.ontouchstart = (e) => startDrag(e, index, true);
+      }
+
+      // --- DRAG & DROP LOGIC ---
+      function startDrag(e, index, isTouch = false) {
+        if (!currentTray[index]) return;
+
+        const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+        const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
+        dragItem = { shape: currentTray[index], index: index };
+
+        // Create dragging DOM element
+        dragEl = document.createElement("div");
+        dragEl.className = "dragging";
+        dragEl.style.gridTemplateColumns = `repeat(${dragItem.shape.cols}, var(--cell-size))`;
+        dragEl.style.gridTemplateRows = `repeat(${dragItem.shape.rows}, var(--cell-size))`;
+
+        dragItem.shape.coords.forEach((coord) => {
+          const block = document.createElement("div");
+          block.className = "drag-block";
+          block.style.background = dragItem.shape.color;
+          block.style.gridRowStart = coord[0] + 1;
+          block.style.gridColumnStart = coord[1] + 1;
+          dragEl.appendChild(block);
+        });
+
+        document.body.appendChild(dragEl);
+
+        // Hide original in tray
+        trayContainers[index].style.opacity = "0.2";
+
+        // Calculate center offset
+        const sWidth = dragItem.shape.cols * CELL_SIZE();
+        const sHeight = dragItem.shape.rows * CELL_SIZE();
+
+        dragOffset.x = sWidth / 2;
+        dragOffset.y = sHeight / 2;
+
+        moveDragEl(clientX, clientY, isTouch);
+      }
+
+      function moveDragEl(clientX, clientY, isTouch) {
+        if (!dragEl) return;
+
+        // Apply touch offset so finger doesn't hide shape
+        const y = isTouch ? clientY + touchOffset : clientY;
+
+        dragEl.style.left = `${clientX - dragOffset.x}px`;
+        dragEl.style.top = `${y - dragOffset.y}px`;
+
+        highlightGrid(clientX, y);
+      }
+
+      function onDragMove(e) {
+        if (!dragEl) return;
+        e.preventDefault(); // Prevent scrolling while dragging
+
+        const isTouch = e.type.includes("touch");
+        const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+        const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
+        moveDragEl(clientX, clientY, isTouch);
+      }
+
+      function onDragEnd(e) {
+        if (!dragEl) return;
+
+        const isTouch = e.type.includes("touch");
+        let clientX, clientY;
+
+        if (isTouch) {
+          clientX = e.changedTouches[0].clientX;
+          clientY = e.changedTouches[0].clientY + touchOffset;
+        } else {
+          clientX = e.clientX;
+          clientY = e.clientY;
+        }
+
+        const dropPos = getGridPosition(clientX, clientY);
+
+        clearHighlights();
+
+        if (dropPos && canPlace(dragItem.shape, dropPos.row, dropPos.col)) {
+          // Success
+          placeShape(dragItem.shape, dropPos.row, dropPos.col);
+          currentTray[dragItem.index] = null;
+          trayContainers[dragItem.index].innerHTML = "";
+          trayContainers[dragItem.index].classList.add("empty");
+          trayContainers[dragItem.index].style.opacity = "1";
+
+          checkLines();
+          fillTray();
+        } else {
+          // Return to tray
+          trayContainers[dragItem.index].style.opacity = "1";
+        }
+
+        // Cleanup
+        dragEl.remove();
+        dragEl = null;
+        dragItem = null;
+      }
+
+      // --- GRID MATH & LOGIC ---
+      function getGridPosition(x, y) {
+        const rect = gridEl.getBoundingClientRect();
+
+        // Check if dropped within grid bounds (with some margin for error)
+        const cs = CELL_SIZE();
+        const shapeWidth = dragItem.shape.cols * cs;
+        const shapeHeight = dragItem.shape.rows * cs;
+
+        // Calculate top-left corner of the shape
+        const shapeX = x - dragOffset.x;
+        const shapeY = y - dragOffset.y;
+
+        if (
+          shapeX + shapeWidth < rect.left ||
+          shapeX > rect.right ||
+          shapeY + shapeHeight < rect.top ||
+          shapeY > rect.bottom
+        ) {
+          return null;
+        }
+
+        // Calculate nearest row and col
+        const col = Math.round((shapeX - rect.left) / cs);
+        const row = Math.round((shapeY - rect.top) / cs);
+
+        return { row, col };
+      }
+
+      function canPlace(shape, startRow, startCol) {
+        for (let coord of shape.coords) {
+          const r = startRow + coord[0];
+          const c = startCol + coord[1];
+
+          // Check bounds
+          if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) return false;
+          // Check collision
+          if (board[r][c] !== null) return false;
+        }
+        return true;
+      }
+
+      function highlightGrid(x, y) {
+        clearHighlights();
+        const pos = getGridPosition(x, y);
+        if (!pos) return;
+
+        if (canPlace(dragItem.shape, pos.row, pos.col)) {
+          dragItem.shape.coords.forEach((coord) => {
+            const r = pos.row + coord[0];
+            const c = pos.col + coord[1];
+            const cell = document.getElementById(`cell-${r}-${c}`);
+            if (cell) {
+              cell.classList.add("highlight");
+              hoveredCells.push(cell);
+            }
+          });
+        }
+      }
+
+      function clearHighlights() {
+        hoveredCells.forEach((cell) => cell.classList.remove("highlight"));
+        hoveredCells = [];
+      }
+
+      function placeShape(shape, startRow, startCol) {
+        // Add points for placing (size of shape)
+        updateScore(shape.coords.length);
+
+        shape.coords.forEach((coord) => {
+          const r = startRow + coord[0];
+          const c = startCol + coord[1];
+          board[r][c] = shape.color;
+
+          const cell = document.getElementById(`cell-${r}-${c}`);
+          const block = document.createElement("div");
+          block.className = "block";
+          block.style.background = shape.color;
+          cell.appendChild(block);
+        });
+      }
+
+      function spawnParticles(x, y, color) {
+        const particleCount = 5; // По 5 осколков на каждый блок
+        for (let i = 0; i < particleCount; i++) {
+          const particle = document.createElement("div");
+          particle.className = "particle";
+          particle.style.background = color;
+          particle.style.boxShadow = `0 0 10px ${color}`;
+
+          // Рандомное направление разлета
+          const angle = Math.random() * Math.PI * 2;
+          const distance = Math.random() * 50 + 20; // От 20 до 70 пикселей
+          const tx = Math.cos(angle) * distance;
+          const ty = Math.sin(angle) * distance;
+
+          particle.style.setProperty("--tx", `${tx}px`);
+          particle.style.setProperty("--ty", `${ty}px`);
+
+          particle.style.left = `${x}px`;
+          particle.style.top = `${y}px`;
+
+          document.body.appendChild(particle);
+
+          setTimeout(() => particle.remove(), 600);
+        }
+      }
+
+      function checkLines() {
+        let linesToClear = [];
+
+        // Check Rows
+        for (let r = 0; r < GRID_SIZE; r++) {
+          if (board[r].every((cell) => cell !== null)) {
+            linesToClear.push({ type: "row", index: r });
+          }
+        }
+
+        // Check Cols
+        for (let c = 0; c < GRID_SIZE; c++) {
+          let full = true;
+          for (let r = 0; r < GRID_SIZE; r++) {
+            if (board[r][c] === null) {
+              full = false;
+              break;
+            }
+          }
+          if (full) linesToClear.push({ type: "col", index: c });
+        }
+
+        if (linesToClear.length > 0) {
+          clearLines(linesToClear);
+        } else {
+          checkGameOver();
+        }
+      }
+
+      function clearLines(lines) {
+        const linesCount = lines.length;
+        const points = linesCount * 10 * linesCount;
+        updateScore(points);
+
+        if (linesCount > 1) {
+          showComboText(linesCount);
+          // ДОБАВЛЕНО: Вызов картинки при супер комбо (2 линии и больше)
+          showSuperComboImage();
+        }
+
+        let cellsToClear = new Set();
+
+        lines.forEach((line) => {
+          if (line.type === "row") {
+            for (let c = 0; c < GRID_SIZE; c++)
+              cellsToClear.add(`${line.index}-${c}`);
+          } else {
+            for (let r = 0; r < GRID_SIZE; r++)
+              cellsToClear.add(`${r}-${line.index}`);
+          }
+        });
+
+        // Animate and clear
+        cellsToClear.forEach((id) => {
+          const [r, c] = id.split("-");
+          const cell = document.getElementById(`cell-${r}-${c}`);
+          const block = cell.firstChild;
+
+          if (block) {
+            // Забираем координаты ячейки для спавна частиц
+            const rect = cell.getBoundingClientRect();
+            const color = block.style.background;
+
+            // Вызываем нашу новую крутую функцию!
+            spawnParticles(
+              rect.left + rect.width / 2,
+              rect.top + rect.height / 2,
+              color,
+            );
+
+            block.classList.add("clearing");
+            board[r][c] = null;
+          }
+        });
+
+        // Wait for animation, then remove DOM elements and check Game Over
+        setTimeout(() => {
+          cellsToClear.forEach((id) => {
+            const [r, c] = id.split("-");
+            const cell = document.getElementById(`cell-${r}-${c}`);
+            cell.innerHTML = "";
+          });
+          checkGameOver();
+        }, 300);
+      }
+
+      function showComboText(count) {
+        const text = document.createElement("div");
+        text.className = "combo-text";
+        text.textContent = `COMBO x${count}!`;
+        text.style.left = "50%";
+        text.style.top = "40%";
+        text.style.transform = "translate(-50%, -50%)";
+        document.body.appendChild(text);
+
+        setTimeout(() => text.remove(), 1000);
+      }
+
+      // НОВАЯ ФУНКЦИЯ: Появление кастомной картинки
+      function showSuperComboImage() {
+        const img = document.createElement("img");
+        img.src =
+          "https://i.postimg.cc/XqY7PXrP/photo-2-2026-04-09-17-22-42.jpg";
+        img.className = "super-combo-img";
+        document.body.appendChild(img);
+
+        // Удаляем элемент из DOM после завершения анимации (1.5 секунды)
+        setTimeout(() => {
+          if (img.parentNode) {
+            img.remove();
+          }
+        }, 1500);
+      }
+
+      function checkGameOver() {
+        // Check if ANY of the current shapes in tray can be placed
+        let canPlay = false;
+
+        for (let shape of currentTray) {
+          if (!shape) continue;
+
+          let shapeFits = false;
+          for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
-                let full = true;
-                for (let r = 0; r < GRID_SIZE; r++) {
-                    if (board[r][c] === null) {
-                        full = false;
-                        break;
-                    }
-                }
-                if (full) linesToClear.push({ type: 'col', index: c });
+              if (canPlace(shape, r, c)) {
+                shapeFits = true;
+                break;
+              }
             }
+            if (shapeFits) break;
+          }
 
-            if (linesToClear.length > 0) {
-                clearLines(linesToClear);
-            } else {
-                checkGameOver();
-            }
+          if (shapeFits) {
+            canPlay = true;
+            break;
+          }
         }
 
-        function clearLines(lines) {
-            const linesCount = lines.length;
-            const points = (linesCount * 10) * linesCount;
-            updateScore(points);
-
-            if (linesCount > 1) {
-                showComboText(linesCount);
-                // ДОБАВЛЕНО: Вызов картинки при супер комбо (2 линии и больше)
-                showSuperComboImage();
-            }
-
-            let cellsToClear = new Set();
-
-            lines.forEach(line => {
-                if (line.type === 'row') {
-                    for (let c = 0; c < GRID_SIZE; c++) cellsToClear.add(`${line.index}-${c}`);
-                } else {
-                    for (let r = 0; r < GRID_SIZE; r++) cellsToClear.add(`${r}-${line.index}`);
-                }
-            });
-
-            // Animate and clear
-            cellsToClear.forEach(id => {
-                const [r, c] = id.split('-');
-                const cell = document.getElementById(`cell-${r}-${c}`);
-                const block = cell.firstChild;
-                
-                if (block) {
-                    // Забираем координаты ячейки для спавна частиц
-                    const rect = cell.getBoundingClientRect();
-                    const color = block.style.background;
-                    
-                    // Вызываем нашу новую крутую функцию!
-                    spawnParticles(rect.left + rect.width/2, rect.top + rect.height/2, color);
-
-                    block.classList.add('clearing');
-                    board[r][c] = null;
-                }
-            });
-
-            // Wait for animation, then remove DOM elements and check Game Over
-            setTimeout(() => {
-                cellsToClear.forEach(id => {
-                    const [r, c] = id.split('-');
-                    const cell = document.getElementById(`cell-${r}-${c}`);
-                    cell.innerHTML = '';
-                });
-                checkGameOver();
-            }, 300);
+        if (!canPlay && currentTray.some((s) => s !== null)) {
+          showGameOver();
         }
+      }
 
-        function showComboText(count) {
-            const text = document.createElement('div');
-            text.className = 'combo-text';
-            text.textContent = `COMBO x${count}!`;
-            text.style.left = '50%';
-            text.style.top = '40%';
-            text.style.transform = 'translate(-50%, -50%)';
-            document.body.appendChild(text);
+      function showGameOver() {
+        finalScoreEl.textContent = score;
+        gameOverModal.style.display = "flex";
+        // Slight delay for transition
+        setTimeout(() => {
+          gameOverModal.style.opacity = "1";
+          gameOverModal.querySelector(".modal").style.transform =
+            "translateY(0)";
+        }, 10);
+      }
 
-            setTimeout(() => text.remove(), 1000);
-        }
+      function hideGameOver() {
+        gameOverModal.style.opacity = "0";
+        gameOverModal.querySelector(".modal").style.transform =
+          "translateY(20px)";
+        setTimeout(() => {
+          gameOverModal.style.display = "none";
+        }, 300);
+      }
 
-        // НОВАЯ ФУНКЦИЯ: Появление кастомной картинки
-        function showSuperComboImage() {
-            const img = document.createElement('img');
-            img.src = 'https://i.postimg.cc/XqY7PXrP/photo-2-2026-04-09-17-22-42.jpg';
-            img.className = 'super-combo-img';
-            document.body.appendChild(img);
-
-            // Удаляем элемент из DOM после завершения анимации (1.5 секунды)
-            setTimeout(() => {
-                if (img.parentNode) {
-                    img.remove();
-                }
-            }, 1500);
-        }
-
-        function checkGameOver() {
-            // Check if ANY of the current shapes in tray can be placed
-            let canPlay = false;
-
-            for (let shape of currentTray) {
-                if (!shape) continue;
-
-                let shapeFits = false;
-                for (let r = 0; r < GRID_SIZE; r++) {
-                    for (let c = 0; c < GRID_SIZE; c++) {
-                        if (canPlace(shape, r, c)) {
-                            shapeFits = true;
-                            break;
-                        }
-                    }
-                    if (shapeFits) break;
-                }
-
-                if (shapeFits) {
-                    canPlay = true;
-                    break;
-                }
-            }
-
-            if (!canPlay && currentTray.some(s => s !== null)) {
-                showGameOver();
-            }
-        }
-
-        function showGameOver() {
-            finalScoreEl.textContent = score;
-            gameOverModal.style.display = 'flex';
-            // Slight delay for transition
-            setTimeout(() => {
-                gameOverModal.style.opacity = '1';
-                gameOverModal.querySelector('.modal').style.transform = 'translateY(0)';
-            }, 10);
-        }
-
-        function hideGameOver() {
-            gameOverModal.style.opacity = '0';
-            gameOverModal.querySelector('.modal').style.transform = 'translateY(20px)';
-            setTimeout(() => {
-                gameOverModal.style.display = 'none';
-            }, 300);
-        }
-
-        // Start game
-        init();
-
+      // Start game
+      init();
     </script>
-</body>
-<!-- ========================================== -->
-<!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
-<!-- ========================================== -->
-<style>
+  </body>
+  <!-- ========================================== -->
+  <!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
+  <!-- ========================================== -->
+  <style>
     .fab-wrapper {
-        position: fixed;
-        bottom: 25px;
-        right: 25px; 
-        z-index: 999999;
-        display: flex;
-        flex-direction: row-reverse;
-        align-items: center;
-        gap: 15px;
-        /* ФИКС: Оболочка больше не перехватывает клики! */
-        pointer-events: none; 
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      z-index: 999999;
+      display: flex;
+      flex-direction: row-reverse;
+      align-items: center;
+      gap: 15px;
+      /* ФИКС: Оболочка больше не перехватывает клики! */
+      pointer-events: none;
     }
 
     /* Сама кнопка-триггер */
     .fab-button {
-        /* ФИКС: Делаем саму кнопку кликабельной */
-        pointer-events: auto; 
-        width: 54px;
-        height: 54px;
-        border-radius: 50%;
-        background: rgba(20, 20, 25, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        outline: none;
-        padding: 0;
+      /* ФИКС: Делаем саму кнопку кликабельной */
+      pointer-events: auto;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: rgba(20, 20, 25, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      outline: none;
+      padding: 0;
     }
 
     .fab-button:hover {
-        transform: scale(1.1);
-        background: rgba(40, 40, 50, 0.9);
-        border-color: rgba(255, 255, 255, 0.4);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 1px 5px rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+      background: rgba(40, 40, 50, 0.9);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.8),
+        inset 0 1px 5px rgba(255, 255, 255, 0.3);
     }
 
     .fab-button svg {
-        transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     }
-    
+
     .fab-wrapper.open .fab-button svg {
-        transform: rotate(90deg) scale(0.9);
-        color: #a78bfa; 
+      transform: rotate(90deg) scale(0.9);
+      color: #a78bfa;
     }
 
     /* Выезжающая панель навигации */
     .global-dock {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        background: rgba(12, 12, 14, 0.85);
-        backdrop-filter: blur(25px);
-        -webkit-backdrop-filter: blur(25px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 100px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        
-        /* ФИКС: Игнорирует клики и полностью скрыта в закрытом виде */
-        opacity: 0;
-        visibility: hidden; 
-        pointer-events: none; 
-        
-        transform: translateX(40px) scale(0.9);
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        transform-origin: right center;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(12, 12, 14, 0.85);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 100px;
+      box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.7),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+      /* ФИКС: Игнорирует клики и полностью скрыта в закрытом виде */
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+
+      transform: translateX(40px) scale(0.9);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transform-origin: right center;
     }
 
     /* Состояние открытого меню */
     .fab-wrapper.open .global-dock {
-        opacity: 1;
-        visibility: visible; 
-        pointer-events: auto; /* ФИКС: Кнопки меню работают, только когда открыты */
-        transform: translateX(0) scale(1);
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto; /* ФИКС: Кнопки меню работают, только когда открыты */
+      transform: translateX(0) scale(1);
     }
 
     .dock-item {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 10px 18px;
-        border-radius: 100px;
-        color: rgba(255, 255, 255, 0.6);
-        text-decoration: none;
-        font-family: 'Inter', 'Segoe UI', sans-serif;
-        font-size: 14px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        position: relative;
-        white-space: nowrap;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 100px;
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      position: relative;
+      white-space: nowrap;
     }
 
     .dock-item:hover {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
     }
 
     .dock-item.active {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.12);
-        box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
     }
 
     .dock-item.active::after {
-        content: '';
-        position: absolute;
-        bottom: -6px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 18px;
-        height: 3px;
-        background: #fff;
-        border-radius: 10px;
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+      content: "";
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 18px;
+      height: 3px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
     }
 
     .dock-icon {
-        font-size: 18px;
-        filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+      font-size: 18px;
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
     }
 
     @media (max-width: 768px) {
-        .fab-wrapper {
-            bottom: 20px;
-            right: 20px;
-            gap: 10px;
-        }
-        .fab-button {
-            width: 48px;
-            height: 48px;
-        }
-        .global-dock {
-            padding: 6px 8px;
-            gap: 4px;
-        }
-        .dock-item {
-            padding: 12px;
-        }
-        .dock-text {
-            display: none; 
-        }
-        .dock-icon {
-            font-size: 22px;
-        }
-        .dock-item.active::after {
-            bottom: -2px;
-        }
+      .fab-wrapper {
+        bottom: 20px;
+        right: 20px;
+        gap: 10px;
+      }
+      .fab-button {
+        width: 48px;
+        height: 48px;
+      }
+      .global-dock {
+        padding: 6px 8px;
+        gap: 4px;
+      }
+      .dock-item {
+        padding: 12px;
+      }
+      .dock-text {
+        display: none;
+      }
+      .dock-icon {
+        font-size: 22px;
+      }
+      .dock-item.active::after {
+        bottom: -2px;
+      }
     }
 
     /* --- НОВЫЕ СТИЛИ ДЛЯ ИКОНОК-КАРТИНОК И ПЕРЕТАСКИВАНИЯ --- */
 
-.dock-icon {
-    width: 20px; /* Размер ваших иконок */
-    height: 20px;
-    object-fit: contain; /* Чтобы картинка не искажалась */
-    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
-    /* Важно! Запрещаем перетаскивать саму картинку браузером */
-    pointer-events: none; 
-    user-select: none;
-}
-
-@media (max-width: 768px) {
     .dock-icon {
+      width: 20px; /* Размер ваших иконок */
+      height: 20px;
+      object-fit: contain; /* Чтобы картинка не искажалась */
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+      /* Важно! Запрещаем перетаскивать саму картинку браузером */
+      pointer-events: none;
+      user-select: none;
+    }
+
+    @media (max-width: 768px) {
+      .dock-icon {
         width: 24px; /* На телефоне иконки чуть больше */
         height: 24px;
+      }
     }
-}
 
-/* Курсоры для кнопки перетаскивания */
-.fab-button {
-    cursor: grab;
-    touch-action: none; /* Запрещаем скролл страницы при касании кнопки на телефоне */
-}
+    /* Курсоры для кнопки перетаскивания */
+    .fab-button {
+      cursor: grab;
+      touch-action: none; /* Запрещаем скролл страницы при касании кнопки на телефоне */
+    }
 
-.fab-button:active {
-    cursor: grabbing;
-}
+    .fab-button:active {
+      cursor: grabbing;
+    }
 
-/* Класс для плавного возврата в границы экрана (если меню открыли у самого края) */
-.fab-wrapper.snap-transition {
-    transition: left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
+    /* Класс для плавного возврата в границы экрана (если меню открыли у самого края) */
+    .fab-wrapper.snap-transition {
+      transition:
+        left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+        top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+  </style>
 
-</style>
-
-<div class="fab-wrapper" id="fabWrapper">
+  <div class="fab-wrapper" id="fabWrapper">
     <!-- Кнопка открытия/закрытия меню (она же ручка для перетаскивания) -->
     <button class="fab-button" id="fabToggleBtn" title="Навигация">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-        </svg>
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+      </svg>
     </button>
 
     <!-- Сама панель (Dock) -->
     <div class="global-dock" id="globalDock">
-        <a href="index.html" class="dock-item">
-            <img src="https://i.imgur.com/tpFK0jG.png" alt="Menu" class="dock-icon">
-            <span class="dock-text">Menu</span>
-        </a>
-        <a href="ai.html" class="dock-item">
-            <img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon">
-            <span class="dock-text">AI</span>
-        </a>
-        <a href="agent.html" class="dock-item">
-            <img src="https://i.imgur.com/HTTz55C.png" alt="Agent" class="dock-icon">
-            <span class="dock-text">Agent</span>
-        </a>
-        <a href="music.html" class="dock-item">
-            <img src="https://cdn-icons-png.flaticon.com/512/2995/2995101.png" alt="Music" class="dock-icon">
-            <span class="dock-text">Music</span>
-        </a>
-        <a href="note.html" class="dock-item">
-            <img src="https://i.imgur.com/GcjfCTh.png" alt="Note" class="dock-icon">
-            <span class="dock-text">Note</span>
-        </a>
-        <a href="googleweb.html" class="dock-item">
-            <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="dock-icon">
-            <span class="dock-text">Google</span>
-        </a>
-        <a href="browser.html" class="dock-item">
-            <img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX" class="dock-icon">
-            <span class="dock-text">SearX</span>
-        </a>
+      <a href="index.html" class="dock-item">
+        <img
+          src="https://i.imgur.com/tpFK0jG.png"
+          alt="Menu"
+          class="dock-icon"
+        />
+        <span class="dock-text">Menu</span>
+      </a>
+      <a href="ai.html" class="dock-item">
+        <img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon" />
+        <span class="dock-text">AI</span>
+      </a>
+      <a href="agent.html" class="dock-item">
+        <img
+          src="https://i.imgur.com/HTTz55C.png"
+          alt="Agent"
+          class="dock-icon"
+        />
+        <span class="dock-text">Agent</span>
+      </a>
+      <a href="music.html" class="dock-item">
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/2995/2995101.png"
+          alt="Music"
+          class="dock-icon"
+        />
+        <span class="dock-text">Music</span>
+      </a>
+      <a href="note.html" class="dock-item">
+        <img
+          src="https://i.imgur.com/GcjfCTh.png"
+          alt="Note"
+          class="dock-icon"
+        />
+        <span class="dock-text">Note</span>
+      </a>
+      <a href="googleweb.html" class="dock-item">
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png"
+          alt="Google"
+          class="dock-icon"
+        />
+        <span class="dock-text">Google</span>
+      </a>
+      <a href="browser.html" class="dock-item">
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png"
+          alt="SearX"
+          class="dock-icon"
+        />
+        <span class="dock-text">SearX</span>
+      </a>
     </div>
-</div>
+  </div>
 
-<script>
+  <script>
     document.addEventListener("DOMContentLoaded", () => {
-    const fabWrapper = document.getElementById('fabWrapper');
-    const fabToggleBtn = document.getElementById('fabToggleBtn');
-    
-    // Подсветка активной ссылки (ваш код)
-    let currentPath = window.location.pathname.split('/').pop();
-    if (currentPath === '') currentPath = 'index.html';
-    document.querySelectorAll('.dock-item').forEach(item => {
-        const href = item.getAttribute('href');
+      const fabWrapper = document.getElementById("fabWrapper");
+      const fabToggleBtn = document.getElementById("fabToggleBtn");
+
+      // Подсветка активной ссылки (ваш код)
+      let currentPath = window.location.pathname.split("/").pop();
+      if (currentPath === "") currentPath = "index.html";
+      document.querySelectorAll(".dock-item").forEach((item) => {
+        const href = item.getAttribute("href");
         if (currentPath === href) {
-            item.classList.add('active');
+          item.classList.add("active");
         }
-    });
+      });
 
-    // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
-    let isDragging = false;
-    let hasMoved = false; // Отличаем клик от перетаскивания
-    let startX, startY;
-    let initialLeft, initialTop;
+      // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
+      let isDragging = false;
+      let hasMoved = false; // Отличаем клик от перетаскивания
+      let startX, startY;
+      let initialLeft, initialTop;
 
-    function dragStart(e) {
-        if (e.type === 'touchstart') {
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
+      function dragStart(e) {
+        if (e.type === "touchstart") {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
         } else {
-            startX = e.clientX;
-            startY = e.clientY;
-            e.preventDefault(); // Предотвращаем стандартное выделение на ПК
+          startX = e.clientX;
+          startY = e.clientY;
+          e.preventDefault(); // Предотвращаем стандартное выделение на ПК
         }
 
         // Получаем текущие координаты элемента на экране
         const rect = fabWrapper.getBoundingClientRect();
-        
+
         // Отключаем bottom/right, переходим на жесткое позиционирование left/top
-        fabWrapper.style.bottom = 'auto';
-        fabWrapper.style.right = 'auto';
-        fabWrapper.style.left = rect.left + 'px';
-        fabWrapper.style.top = rect.top + 'px';
+        fabWrapper.style.bottom = "auto";
+        fabWrapper.style.right = "auto";
+        fabWrapper.style.left = rect.left + "px";
+        fabWrapper.style.top = rect.top + "px";
 
         initialLeft = rect.left;
         initialTop = rect.top;
 
         isDragging = true;
         hasMoved = false;
-        
+
         // Убираем плавность при самом перетаскивании
-        fabWrapper.classList.remove('snap-transition');
+        fabWrapper.classList.remove("snap-transition");
 
-        document.addEventListener('mousemove', dragMove);
-        document.addEventListener('mouseup', dragEnd);
-        document.addEventListener('touchmove', dragMove, { passive: false });
-        document.addEventListener('touchend', dragEnd);
-    }
+        document.addEventListener("mousemove", dragMove);
+        document.addEventListener("mouseup", dragEnd);
+        document.addEventListener("touchmove", dragMove, { passive: false });
+        document.addEventListener("touchend", dragEnd);
+      }
 
-    function dragMove(e) {
+      function dragMove(e) {
         if (!isDragging) return;
 
-        let currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        let currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        let currentX =
+          e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+        let currentY =
+          e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
 
         let deltaX = currentX - startX;
         let deltaY = currentY - startY;
 
         // Если сдвинули больше чем на 5 пикселей, считаем это перетаскиванием, а не кликом
         if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-            hasMoved = true;
-            if (e.type === 'touchmove') e.preventDefault(); // Блокируем скролл страницы
+          hasMoved = true;
+          if (e.type === "touchmove") e.preventDefault(); // Блокируем скролл страницы
         }
 
         if (hasMoved) {
-            let newLeft = initialLeft + deltaX;
-            let newTop = initialTop + deltaY;
+          let newLeft = initialLeft + deltaX;
+          let newTop = initialTop + deltaY;
 
-            // --- ОГРАНИЧЕНИЕ ВЫХОДА ЗА ПРЕДЕЛЫ ЭКРАНА ---
-            const rect = fabWrapper.getBoundingClientRect();
-            const maxLeft = window.innerWidth - rect.width;
-            const maxTop = window.innerHeight - rect.height;
+          // --- ОГРАНИЧЕНИЕ ВЫХОДА ЗА ПРЕДЕЛЫ ЭКРАНА ---
+          const rect = fabWrapper.getBoundingClientRect();
+          const maxLeft = window.innerWidth - rect.width;
+          const maxTop = window.innerHeight - rect.height;
 
-            // Запрещаем уходить за левый/правый и верхний/нижний края
-            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-            newTop = Math.max(0, Math.min(newTop, maxTop));
+          // Запрещаем уходить за левый/правый и верхний/нижний края
+          newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+          newTop = Math.max(0, Math.min(newTop, maxTop));
 
-            fabWrapper.style.left = newLeft + 'px';
-            fabWrapper.style.top = newTop + 'px';
+          fabWrapper.style.left = newLeft + "px";
+          fabWrapper.style.top = newTop + "px";
         }
-    }
+      }
 
-    function dragEnd() {
+      function dragEnd() {
         isDragging = false;
-        document.removeEventListener('mousemove', dragMove);
-        document.removeEventListener('mouseup', dragEnd);
-        document.removeEventListener('touchmove', dragMove);
-        document.removeEventListener('touchend', dragEnd);
-    }
+        document.removeEventListener("mousemove", dragMove);
+        document.removeEventListener("mouseup", dragEnd);
+        document.removeEventListener("touchmove", dragMove);
+        document.removeEventListener("touchend", dragEnd);
+      }
 
-    // Слушатели для начала перетаскивания (с кнопки)
-    fabToggleBtn.addEventListener('mousedown', dragStart);
-    fabToggleBtn.addEventListener('touchstart', dragStart, { passive: true });
+      // Слушатели для начала перетаскивания (с кнопки)
+      fabToggleBtn.addEventListener("mousedown", dragStart);
+      fabToggleBtn.addEventListener("touchstart", dragStart, { passive: true });
 
-    // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ ---
-    fabToggleBtn.addEventListener('click', (e) => {
+      // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ ---
+      fabToggleBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        
+
         // Если было перетаскивание, отменяем клик!
         if (hasMoved) {
-            e.preventDefault();
-            return;
+          e.preventDefault();
+          return;
         }
 
-        fabWrapper.classList.toggle('open');
-        
+        fabWrapper.classList.toggle("open");
+
         // Если меню открылось и вылезло за края экрана (т.к. стало шире),
         // плавно задвигаем его обратно в пределы экрана.
-        if (fabWrapper.classList.contains('open')) {
-            setTimeout(keepInBounds, 50); // Ждем долю секунды, чтобы CSS применил ширину
+        if (fabWrapper.classList.contains("open")) {
+          setTimeout(keepInBounds, 50); // Ждем долю секунды, чтобы CSS применил ширину
         }
-    });
+      });
 
-    // Функция возврата в рамки экрана при изменении ширины меню
-    function keepInBounds() {
+      // Функция возврата в рамки экрана при изменении ширины меню
+      function keepInBounds() {
         const rect = fabWrapper.getBoundingClientRect();
         const maxLeft = window.innerWidth - rect.width;
         const maxTop = window.innerHeight - rect.height;
@@ -1386,24 +1740,27 @@ const finalScoreEl = document.getElementById('finalScore');
 
         // Если позиция нуждается в корректировке
         if (correctedLeft !== rect.left || correctedTop !== rect.top) {
-            fabWrapper.classList.add('snap-transition'); // Добавляем плавность
-            fabWrapper.style.left = correctedLeft + 'px';
-            fabWrapper.style.top = correctedTop + 'px';
+          fabWrapper.classList.add("snap-transition"); // Добавляем плавность
+          fabWrapper.style.left = correctedLeft + "px";
+          fabWrapper.style.top = correctedTop + "px";
         }
-    }
+      }
 
-    // Закрытие меню при клике в любое другое место
-    document.addEventListener('click', (e) => {
-        if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains('open')) {
-            fabWrapper.classList.remove('open');
-            // При закрытии (ширина уменьшилась) тоже проверяем границы на всякий случай
-            setTimeout(keepInBounds, 300); 
+      // Закрытие меню при клике в любое другое место
+      document.addEventListener("click", (e) => {
+        if (
+          !fabWrapper.contains(e.target) &&
+          fabWrapper.classList.contains("open")
+        ) {
+          fabWrapper.classList.remove("open");
+          // При закрытии (ширина уменьшилась) тоже проверяем границы на всякий случай
+          setTimeout(keepInBounds, 300);
         }
+      });
+
+      // Пересчет границ при повороте экрана телефона / изменении размера окна
+      window.addEventListener("resize", keepInBounds);
     });
-
-    // Пересчет границ при повороте экрана телефона / изменении размера окна
-    window.addEventListener('resize', keepInBounds);
-});
-</script>
-<!-- ========================================== -->
+  </script>
+  <!-- ========================================== -->
 </html>

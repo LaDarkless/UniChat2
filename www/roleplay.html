@@ -48,7 +48,8 @@
         .screen { 
     display: none; 
     flex-direction: column; 
-    height: 100%; 
+    height: calc(100% - 70px);
+    padding-bottom: 70px;
     width: 100%; 
     position: absolute; 
     top: 0; 
@@ -225,7 +226,12 @@
         .check-overlay { position: absolute; right: 10px; top: 50%; transform: translateY(-50%) scale(0.5); color: var(--accent-color); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size: 18px; }
 
         /* Полноэкранные окна (перекрывают нижнюю навигацию) */
-        #chat-screen, #creator-screen, #group-creator-screen, #profile-screen { z-index: 50; }
+        #chat-screen,
+#creator-screen,
+#group-creator-screen,
+#profile-screen {
+    z-index: 5;
+}
         #history-view-screen { z-index: 60; } 
         /* Фон чата для обоев */
         #chat-screen {
@@ -364,7 +370,7 @@
     backdrop-filter: blur(15px); 
     display: flex; justify-content: space-around; align-items: center; 
     border-top: 1px solid var(--border-color); 
-    z-index: 30; 
+    z-index: 9999; 
 }
 
 /* Также стоит поднять кнопку прокрутки вниз */
@@ -577,6 +583,111 @@
             box-shadow: 0 10px 30px rgba(123, 90, 255, 0.15);
             border: 2px dashed rgba(123, 90, 255, 0.4);
         }
+
+        /* --- ЭКРАН ПРОФИЛЯ V2 (Премиальный редизайн) --- */
+        .profile-cover { 
+            height: 120px; 
+            background: linear-gradient(135deg, #1e1042, #7b5aff); 
+            position: relative; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+        }
+        .profile-avatar-container { 
+            position: relative; display: flex; justify-content: center; 
+            margin-top: -50px; margin-bottom: 20px; 
+        }
+        .profile-avatar-wrapper { 
+            width: 100px; height: 100px; border-radius: 30px; 
+            background: var(--bg-panel); border: 4px solid var(--bg-dark); 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; 
+            justify-content: center; align-items: center; font-size: 30px; 
+            color: var(--text-muted); cursor: pointer; position: relative; overflow: hidden; 
+            transition: 0.3s;
+        }
+        .profile-avatar-wrapper:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(123, 90, 255, 0.4); }
+        .profile-avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-avatar-wrapper .edit-overlay { 
+            position: absolute; bottom: 0; left: 0; right: 0; 
+            background: rgba(0,0,0,0.6); padding: 4px 0; text-align: center; 
+            font-size: 12px; color: #fff; opacity: 0; transition: 0.2s; backdrop-filter: blur(2px);
+        }
+        .profile-avatar-wrapper:hover .edit-overlay { opacity: 1; }
+        
+        .profile-section { 
+            background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2)); 
+            border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; 
+            padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+        }
+        .profile-section-title { 
+            font-size: 13px; font-weight: 700; color: var(--accent-color); 
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; 
+            display: flex; align-items: center; gap: 8px; 
+        }
+        .profile-input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        .profile-input-group:last-child { margin-bottom: 0; }
+        .profile-input-group label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+        .profile-input { 
+            background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); 
+            color: #fff; padding: 14px; border-radius: 12px; font-size: 15px; 
+            outline: none; transition: 0.2s; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .profile-input:focus { border-color: var(--accent-color); background: rgba(123, 90, 255, 0.05); }
+        
+        .profile-setting-row { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.2s;
+        }
+        .profile-setting-row:hover { background: rgba(255,255,255,0.02); border-radius: 8px; padding: 12px 8px; margin: 0 -8px; }
+        .profile-setting-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .profile-setting-info { display: flex; flex-direction: column; gap: 4px; }
+        .profile-setting-name { font-size: 15px; font-weight: 600; color: #fff; }
+        .profile-setting-desc { font-size: 12px; color: var(--text-muted); }
+
+        /* --- ЭКРАН DISCOVER (КОМПАС ИДЕЙ) --- */
+        #discover-screen { z-index: 10; } /* Уменьшили z-index, чтобы не перекрывать меню */
+        #discover-screen .scroll-container { display: flex; flex-direction: column; gap: 20px; padding-bottom: 110px; } /* Отступ снизу для меню */
+        
+        .gacha-box { 
+            background: linear-gradient(145deg, #1a1c23, #121318); border: 1px solid rgba(123, 90, 255, 0.3); 
+            border-radius: 24px; padding: 30px 20px; text-align: center; position: relative; 
+            overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+        }
+        .gacha-box::before { 
+            content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%; 
+            background: radial-gradient(circle, rgba(123,90,255,0.1) 0%, transparent 70%); pointer-events: none; 
+        }
+        .gacha-btn { 
+            background: var(--accent-gradient); color: #fff; font-size: 18px; font-weight: 700; 
+            padding: 16px 30px; border-radius: 30px; border: none; cursor: pointer; 
+            box-shadow: 0 10px 20px rgba(123, 90, 255, 0.4); transition: 0.3s; position: relative; z-index: 2;
+        }
+        .gacha-btn:hover { transform: scale(1.05); box-shadow: 0 15px 30px rgba(123, 90, 255, 0.6); }
+        .gacha-btn:active { transform: scale(0.95); }
+        
+        .gacha-result { 
+            display: none; margin-top: 25px; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
+            text-align: left; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); 
+            position: relative; z-index: 2;
+        }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        
+        .gacha-char-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .gacha-char-avatar { width: 60px; height: 60px; border-radius: 16px; object-fit: cover; border: 2px solid var(--accent-color); }
+        .gacha-char-name { font-size: 18px; font-weight: 700; color: #fff; }
+        .gacha-char-desc { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+        
+        .add-gacha-btn { 
+            width: 100%; background: rgba(123, 90, 255, 0.2); color: #fff; border: 1px solid var(--accent-color); 
+            padding: 12px; border-radius: 12px; font-weight: 600; margin-top: 15px; cursor: pointer; transition: 0.2s; 
+        }
+        .add-gacha-btn:hover { background: var(--accent-color); }
+
+        .scenario-box { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; }
+        .scenario-text { 
+            font-size: 14px; color: #fff; line-height: 1.5; font-style: italic; margin-top: 15px; padding: 15px; 
+            background: rgba(0,0,0,0.3); border-left: 3px solid #ffaa00; border-radius: 4px 12px 12px 4px; display: none; 
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -733,7 +844,7 @@
         </div>
 
         <div class="ms-fixed-bottom">
-            <button class="ms-update-btn" onclick="closeModelSelection()">Применить выбранную</button>
+            <button class="ms-update-btn" onclick="closeModelSelection()">Выбрать</button>
         </div>
     </div>
         <!-- НОВЫЙ ЭКРАН 1: НАСТОЯЩАЯ ГЛАВНАЯ (HOME) -->
@@ -775,11 +886,47 @@
                 <!-- Список генерируется JS -->
             </div>
         </div>
+
+        <!-- ЭКРАН 1.8: DISCOVER (ТАВЕРНА И ИДЕИ) -->
+    <div id="discover-screen" class="screen">
+        <div class="header" style="background: rgba(18, 19, 24, 0.95);">
+            <div class="header-title">Компас идей</div>
+        </div>
+        <div class="scroll-container">
+            
+            <!-- Гача персонажей -->
+            <div class="gacha-box">
+                <h3 style="margin-bottom: 10px;">Случайная встреча</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 25px;">Вызовите нового, уникального собеседника из базы.</p>
+                <button class="gacha-btn" onclick="rollGachaCharacter()"><i class="fa-solid fa-dice-d20"></i> Искать</button>
+                
+                <div class="gacha-result" id="gacha-result">
+                    <div class="gacha-char-header">
+                        <img src="" class="gacha-char-avatar" id="gc-avatar">
+                        <div>
+                            <div class="gacha-char-name" id="gc-name">Имя</div>
+                            <div class="gacha-char-desc" id="gc-desc">Описание</div>
+                        </div>
+                    </div>
+                    <button class="add-gacha-btn" onclick="saveGachaCharacter()">Добавить в мои чаты</button>
+                </div>
+            </div>
+
+            <!-- Генератор сценариев -->
+            <div class="scenario-box">
+                <h3 style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-scroll" style="color: #ffaa00;"></i> Идея для сюжета</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Не знаете с чего начать Roleplay? Сгенерируйте случайную завязку.</p>
+                <button class="add-btn" style="width: 100%; border-style: solid; background: rgba(255,170,0,0.1); border-color: rgba(255,170,0,0.3); color: #ffaa00;" onclick="rollScenario()">Сгенерировать ситуацию</button>
+                <div class="scenario-text" id="scenario-result"></div>
+            </div>
+
+        </div>
+    </div>
     
         <!-- НИЖНЯЯ НАВИГАЦИЯ (ОБЩАЯ) -->
         <div class="bottom-nav">
             <div class="nav-item active" id="nav-home" onclick="openNavTab('home')"><i class="fa-solid fa-house"></i>Home</div>
-            <div class="nav-item" id="nav-circles"><i class="fa-regular fa-circle-play"></i>Circles</div>
+            <div class="nav-item" id="nav-discover" onclick="openNavTab('discover')"><i class="fa-solid fa-compass"></i>Discover</div>
             <div class="nav-fab-container" onclick="openCreatorMenu()">
                 <div class="nav-fab"><i class="fa-solid fa-plus"></i></div>
             </div>
@@ -1035,100 +1182,109 @@
         </div>
     </div>
 
-    <!-- ЭКРАН 5: ПРОФИЛЬ -->
+    <!-- ЭКРАН 5: ПРОФИЛЬ V2 -->
     <div id="profile-screen" class="screen">
-        <div class="header">
-            <button class="icon-btn" onclick="goHome()"><i class="fa-solid fa-arrow-left"></i></button>
-            <div class="header-title">Мой профиль</div>
-            <button class="icon-btn" onclick="saveProfile()"><i class="fa-solid fa-check"></i></button>
+        <div class="header" style="background: rgba(18, 19, 24, 0.95); position: absolute; width: 100%;">
+            <button class="icon-btn" onclick="goHome()" style="background:transparent; border:none;"><i class="fa-solid fa-arrow-left"></i></button>
+            <div class="header-title" style="font-size: 16px;">Настройки профиля</div>
+            <button class="icon-btn" onclick="saveProfile()" style="background:transparent; border:none; color: var(--accent-color);"><i class="fa-solid fa-check"></i></button>
         </div>
-        <div class="scroll-container">
-            <h3 style="margin-bottom: 5px;">Как ИИ видит вас</h3>
-            <div class="avatar-upload">
-                <div class="avatar-preview" onclick="document.getElementById('user-avatar-input').click()">
+        
+        <div class="scroll-container" style="padding: 0; padding-bottom: 40px; margin-top: 60px;">
+            <!-- Неоновый фон профиля -->
+            <div class="profile-cover"></div>
+            
+            <!-- Аватарка -->
+            <div class="profile-avatar-container">
+                <div class="profile-avatar-wrapper" onclick="document.getElementById('user-avatar-input').click()">
                     <i class="fa-solid fa-user" id="user-avatar-icon"></i>
                     <img id="user-avatar-img" src="" style="display:none;">
+                    <div class="edit-overlay"><i class="fa-solid fa-camera"></i></div>
                 </div>
-                <input type="file" id="user-avatar-input" accept="image/*" onchange="handleAvatarUpload(event, 'user-avatar-img', 'user-avatar-icon')">
-            </div>
-            <div class="form-group"><label class="form-label">Ваше имя</label><input type="text" id="user-name" placeholder="Например: Харуто"></div>
-            <div class="form-group"><label class="form-label">О себе (Внешность, характер)</label><textarea id="user-desc" rows="3"></textarea></div>
-
-            <hr style="border:0; border-top: 1px solid var(--border-color); margin: 10px 0;">
-
-            <h3 style="margin-bottom: 5px;">Настройки API и Контекста</h3>
-            
-            <!-- Глобальный лимит контекста -->
-            <div class="form-group" style="background: rgba(123, 90, 255, 0.05);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <label class="form-label" style="margin:0;"><i class="fa-solid fa-brain"></i> Глубина памяти (сообщений)</label>
-                    <span id="global-history-val" style="font-weight: 700; color: #fff;">20</span>
-                </div>
-                <div class="slider-container">
-                    <button class="slider-btn" onclick="adjustSlider('global-history-input', -1)"><i class="fa-solid fa-minus"></i></button>
-                    <input type="range" class="custom-slider" id="global-history-input" min="2" max="150" value="20" oninput="document.getElementById('global-history-val').innerText = this.value">
-                    <button class="slider-btn" onclick="adjustSlider('global-history-input', 1)"><i class="fa-solid fa-plus"></i></button>
-                </div>
-                <small style="color:var(--text-muted); font-size:11px;">Сколько последних сообщений помнит ИИ. Меньше сообщений = дешевле запросы.</small>
+                <!-- Скрытый настоящий инпут загрузки файла -->
+                <input type="file" id="user-avatar-input" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event, 'user-avatar-img', 'user-avatar-icon')">
             </div>
 
-            <div class="form-group">
-                <label class="form-label">ProxyAPI Key (Платные модели)</label>
-                <input type="password" id="api-key-input" placeholder="sk-...">
+            <div style="padding: 0 20px;">
+                
+                <!-- Карточка 1: Личные данные -->
+                <div class="profile-section">
+                    <div class="profile-section-title"><i class="fa-regular fa-id-badge"></i> Личность</div>
+                    <div class="profile-input-group">
+                        <label>Ваше имя</label>
+                        <input type="text" class="profile-input" id="user-name" placeholder="Как ИИ будет вас называть?">
+                    </div>
+                    <div class="profile-input-group">
+                        <label>О себе (Внешность, характер)</label>
+                        <textarea class="profile-input" id="user-desc" rows="3" placeholder="Опишите себя, чтобы ИИ понимал с кем говорит..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Карточка 2: API Ключи -->
+                <div class="profile-section">
+                    <div class="profile-section-title"><i class="fa-solid fa-key"></i> Ключи доступа</div>
+                    <div class="profile-input-group">
+                        <label>ProxyAPI Key (Для платных моделей)</label>
+                        <input type="password" class="profile-input" id="api-key-input" placeholder="sk-...">
+                    </div>
+                    <div class="profile-input-group" style="margin-top: 10px;">
+                        <label style="color: #a78bfa;">OpenRouter Key (Для бесплатных моделей)</label>
+                        <input type="password" class="profile-input" id="openrouter-key-input" placeholder="sk-or-v1-...">
+                    </div>
+                </div>
+
+                <!-- Карточка 3: Настройки ИИ и Контекста -->
+                <div class="profile-section">
+                    <div class="profile-section-title"><i class="fa-solid fa-microchip"></i> Настройки нейросети</div>
+                    
+                    <!-- Вызов окна выбора моделей -->
+                    <div class="profile-setting-row" onclick="openModelSelection()">
+                        <div class="profile-setting-info">
+                            <div class="profile-setting-name">Модель генерации</div>
+                            <div class="profile-setting-desc">Текущая: <span id="profile-current-model-name" style="color: var(--accent-color); font-weight:600;">Не выбрана</span></div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right" style="color: var(--text-muted);"></i>
+                    </div>
+                    <!-- Невидимый инпут, чтобы не сломать сохранение -->
+                    <input type="hidden" id="model-input">
+
+                    <hr style="border:0; border-top: 1px solid rgba(255,255,255,0.05); margin: 15px 0;">
+                    
+                    <!-- Глобальный лимит контекста -->
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 15px; font-weight: 600; color: #fff;">Глубина памяти</span>
+                            <span id="global-history-val" style="font-weight: 700; color: var(--accent-color);">20</span>
+                        </div>
+                        <div class="slider-container">
+                            <button class="slider-btn" onclick="adjustSlider('global-history-input', -1)"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" class="custom-slider" id="global-history-input" min="2" max="150" value="20" oninput="document.getElementById('global-history-val').innerText = this.value">
+                            <button class="slider-btn" onclick="adjustSlider('global-history-input', 1)"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Сколько сообщений ИИ держит в контексте.</div>
+                    </div>
+
+                    <hr style="border:0; border-top: 1px solid rgba(255,255,255,0.05); margin: 15px 0;">
+
+                    <!-- Тумблер NSFW -->
+                    <div class="profile-setting-row" style="border: none;">
+                        <div class="profile-setting-info">
+                            <div class="profile-setting-name" style="color: var(--danger);">NSFW Контент (18+)</div>
+                            <div class="profile-setting-desc">Отключить встроенную цензуру ИИ</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="nsfw-toggle">
+                            <span class="slider-round" style="background-color: rgba(255,255,255,0.1);"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="saveProfile()" style="margin-top: 10px; font-size: 18px; padding: 18px; border-radius: 20px;"><i class="fa-solid fa-floppy-disk"></i> Сохранить профиль</button>
+                
             </div>
-            <div class="form-group">
-                <label class="form-label" style="color: #a78bfa;">OpenRouter Key (Модели :free)</label>
-                <input type="password" id="openrouter-key-input" placeholder="sk-or-v1-...">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Модель ИИ</label>
-                <select id="model-input">
-                    <option value="claude-haiku-4-5">Claude 4.5 Haiku</option>
-                    <option value="qwen/qwen3-235b-a22b-2507">Qwen 3 235B</option>
-                    <option value="qwen/qwen3.5-flash-02-23">Qwen 3.5 flash</option>
-                    <option value="gpt-5-nano">GPT-5 nano (Нативная)</option>
-                    <option value="x-ai/grok-4.1-fast">Grok4.1 fast</option>
-                    <option value="mistralai/mistral-medium-3.1">Mistral Medium 3.1 (Отлично для RP)</option>
-                    <option value="z-ai/glm-4.5-air:free">GLM 4.5-air (Бесплатно)</option>
-                    <option value="gpt-5-mini">GPT-5 mini (Нативная)</option>
-                    <option value="deepseek/deepseek-v3.2">DeepSeek 3.2</option>
-                    <option value="xiaomi/mimo-v2-flash">Mimo 2 flash (Очень дешевая)</option>
-                    <option value="xiaomi/mimo-v2.5-pro">Mimo 2.5 PRO (test)</option>
-                    <option value="xiaomi/mimo-v2.5">Mimo 2.5 (test)</option>
-                    <option value="openai/gpt-oss-20b">gpt-oss-20b (через OpenRouter)</option>
-                    <option value="openai/gpt-oss-120b">gpt-oss-120b (через OpenRouter)</option>
-                    <option value="gpt-5.3-chat">gpt 5.3 (Нативная)</option>
-                    <option value="deepseek/deepseek-v4-flash">DeepSeek 4 flash</option>
-                    <option value="gemini-3-flash-preview">Gemini-3-flash (Нативная)</option>
-                    <!-- FREE MODELS -->
-                    <option value="minimax/minimax-m2.5:free">Minimax m2.5 (free)</option>
-                    <option value="google/gemma-4-31b-it:free">Gemma-4-31b (free)</option>
-                    <option value="openai/gpt-oss-20b">gpt-oss-20b (free)</option>
-                    <option value="openai/gpt-oss-120b">gpt-oss-120b (free)</option>
-                    <option value="tencent/hy3-preview:free">hy3 Preview (free)</option>
-                    <option value="inclusionai/ling-2.6-1t:free">Ling 2.6 1T (free)</option>
-                    <option value="inclusionai/ling-2.6-flash:free">Ling-2.6-flash (Бесплатно)</option>
-                    <option value="nvidia/nemotron-3-super-120b-a12b:free">Nemotron 3 super (Бесплатно)</option>
-                    <option value="qwen/qwen3-coder:free">Qwen 3 Coder (Бесплатно)</option>
-                    <option value="qwen/qwen3-next-80b-a3b-instruct:free">Qwen 3 instruct (Бесплатно)</option>
-                    <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 (Бесплатно)</option>
-                    <option value="poolside/laguna-m.1:free">Laguna-m.1 (Бесплатно)</option>
-                    <option value="poolside/laguna-xs.2:free">Laguna-XS.2 (Бесплатно)</option>
-                    <option value="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free">Nemotron 3 nano omni (Бесплатно)</option>
-                </select>
-                <small style="color:var(--text-muted); font-size:11px;">Выберите модель для генерации ответов.</small>
-            </div>
-            
-            <div class="form-group" style="flex-direction: row; align-items: center; justify-content: space-between; margin-top: 15px;">
-                <label class="form-label" style="margin-bottom:0; font-size:15px; color:var(--danger);">Отключить цензуру (NSFW 18+)</label>
-                <input type="checkbox" id="nsfw-toggle" style="width: 22px; height: 22px; accent-color: var(--danger);">
-            </div>
-            
-            <button class="btn-primary" onclick="saveProfile()" style="margin-top: 20px;">Сохранить все</button>
         </div>
     </div>
 
-</div>
 
 <script>
     // --- НАСТРОЙКИ MARKDOWN ---
@@ -2259,6 +2415,7 @@
         const maxHist = appState.settings.maxHistory || 20;
         document.getElementById('global-history-input').value = maxHist;
         document.getElementById('global-history-val').innerText = maxHist;
+        document.getElementById('profile-current-model-name').innerText = appState.settings.model.split('/').pop();
         switchScreen('profile-screen');
     }
 
@@ -2354,6 +2511,8 @@
         document.getElementById('model-screen').classList.remove('active');
         // Синхронизируем select в профиле, если модель изменилась
         document.getElementById('model-input').value = appState.settings.model;
+        const profileModelLabel = document.getElementById('profile-current-model-name');
+        if (profileModelLabel) profileModelLabel.innerText = appState.settings.model.split('/').pop();
         saveData();
         // Обновляем название в открытом чате, если меню открыто
         const spanModel = document.getElementById('sp-model-name');
@@ -2578,6 +2737,216 @@
                 document.addEventListener('mousedown', removeSelectionMode);
                 document.addEventListener('touchstart', removeSelectionMode);
             }, 100);
+        }
+    }
+    // --- ОБНОВЛЕНИЕ НАВИГАЦИИ (Добавлен 'discover') ---
+    // Найдите старую функцию openNavTab и ЗАМЕНИТЕ ЕЁ на эту:
+    function openNavTab(tabName) {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        if(tabName === 'home') {
+            document.getElementById('nav-home').classList.add('active');
+            updateHomeStats();
+            switchScreen('real-home-screen');
+        } else if (tabName === 'chat') {
+            document.getElementById('nav-chat').classList.add('active');
+            switchMainTab(currentTab);
+            switchScreen('chat-list-screen');
+        } else if (tabName === 'discover') {
+            document.getElementById('nav-discover').classList.add('active');
+            switchScreen('discover-screen');
+        }
+    }
+
+    // --- ЛОГИКА ВКЛАДКИ DISCOVER (ТАВЕРНА) С ИСПОЛЬЗОВАНИЕМ ИИ ---
+
+    let currentGachaChar = null;
+
+    // Вспомогательная функция для одиночных быстрых запросов к ИИ
+    async function fetchAIGeneration(systemPrompt, userPrompt) {
+        const model = appState.settings.model;
+        const isFreeModel = model.endsWith(':free');
+        const authKey = isFreeModel ? appState.settings.openRouterKey : appState.settings.apiKey;
+        
+        if (!authKey) throw new Error("Укажите API ключ в профиле (My)!");
+
+        let apiUrl = '';
+        let headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authKey}` };
+        let bodyPayload = {};
+
+        if (model.includes('/')) {
+            apiUrl = isFreeModel ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.proxyapi.ru/openrouter/v1/chat/completions';
+            bodyPayload = { model: model, messages:[{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] };
+        } else if (model.includes('claude')) {
+            apiUrl = 'https://api.proxyapi.ru/anthropic/v1/messages';
+            headers['x-api-key'] = authKey;
+            headers['anthropic-version'] = '2023-06-01';
+            bodyPayload = { model: model, system: systemPrompt, messages:[{ role: 'user', content: userPrompt }], max_tokens: 2000 };
+        } else if (model.includes('gemini')) {
+            apiUrl = `https://api.proxyapi.ru/google/v1beta/models/${model}:generateContent?key=${authKey}`;
+            delete headers['Authorization'];
+            bodyPayload = {
+                systemInstruction: { parts:[{ text: systemPrompt }] },
+                contents: [{ role: 'user', parts: [{ text: userPrompt }] }]
+            };
+        } else {
+            apiUrl = 'https://api.proxyapi.ru/openai/v1/chat/completions';
+            let safeModel = model;
+            if (model === 'gpt-5.3-chat' || model === 'gpt-5.2-chat') safeModel = 'gpt-5.2-chat-latest';
+            bodyPayload = { model: safeModel, messages:[{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] };
+            
+            if (safeModel.includes('gpt-5') || safeModel.includes('o1') || safeModel.includes('o3')) {
+                bodyPayload.max_completion_tokens = 2000;
+            } else {
+                bodyPayload.max_tokens = 2000;
+            }
+        }
+
+        const res = await fetch(apiUrl, { method: 'POST', headers, body: JSON.stringify(bodyPayload) });
+        if (!res.ok) {
+            const errData = await res.json().catch(()=>({}));
+            throw new Error(errData.error?.message || `Ошибка API: ${res.status}`);
+        }
+        const data = await res.json();
+        
+        if (apiUrl.includes('/anthropic')) return data.content?.[0]?.text || "";
+        if (apiUrl.includes('/google')) return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        return data.choices?.[0]?.message?.content || "";
+    }
+
+    // 1. Генерация СЛУЧАЙНОГО персонажа нейросетью
+    async function rollGachaCharacter() {
+        if (isWaitingForAI) return showToast("Дождитесь окончания другой генерации...", true);
+        
+        const btn = document.querySelector('.gacha-btn');
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Нейросеть придумывает...`;
+        document.getElementById('gacha-result').style.display = 'none';
+        isWaitingForAI = true;
+
+        try {
+            const sys = `You are a creative roleplay character generator. You must output ONLY a raw, valid JSON object without any markdown wrapping. Return everything in Russian language except the JSON keys.`;
+            const prompt = `Сгенерируй случайного, очень детализированного и уникального персонажа для ролплея. Жанр выбери случайно (фэнтези, киберпанк, повседневность, нуар и т.д.).
+Верни строго JSON объект с этими ключами:
+"name" (имя),
+"gender" ("male" или "female"),
+"description" (коротко 2 предложения кто это),
+"relationship" (отношение к собеседнику, например "Враг", "Напарник", "Незнакомец"),
+"tone" (стиль речи),
+"scenario" (описание ситуации, где начинается чат),
+"greeting" (первое сообщение от лица персонажа, действия в *звездочках*),
+"protocol" (подробный промпт-инструкция о том, как ИИ должен отыгрывать этого персонажа).`;
+
+            const aiResponse = await fetchAIGeneration(sys, prompt);
+            
+            // Защита от мусора: ищем JSON регулярным выражением (если ИИ добавит лишний текст до/после скобок)
+            const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) throw new Error("ИИ вернул неверный формат (не JSON).");
+            
+            const charData = JSON.parse(jsonMatch[0]);
+            
+            // Динамически подбираем стиль аватара на основе придуманного ИИ пола
+            const avatarStyle = charData.gender.toLowerCase().includes('female') ? 'lorelei' : 'adventurer';
+            charData.avatar = `https://api.dicebear.com/9.x/${avatarStyle}/svg?seed=${encodeURIComponent(charData.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+
+            currentGachaChar = charData;
+            
+            document.getElementById('gc-avatar').src = currentGachaChar.avatar;
+            document.getElementById('gc-name').innerText = currentGachaChar.name;
+            document.getElementById('gc-desc').innerText = currentGachaChar.description;
+            
+            document.getElementById('gacha-result').style.display = 'block';
+        } catch (e) {
+            showToast("Ошибка генерации: " + e.message, true);
+        } finally {
+            btn.innerHTML = `<i class="fa-solid fa-dice-d20"></i> Искать еще`;
+            isWaitingForAI = false;
+        }
+    }
+
+    function saveGachaCharacter() {
+        if (!currentGachaChar) return;
+        
+        const newCharId = 'char_' + Date.now();
+        
+        const newChar = {
+            id: newCharId,
+            name: currentGachaChar.name || "Неизвестный",
+            gender: currentGachaChar.gender || "male",
+            description: currentGachaChar.description || "",
+            relationship: currentGachaChar.relationship || '',
+            tone: currentGachaChar.tone || '',
+            scenario: currentGachaChar.scenario || '',
+            greeting: currentGachaChar.greeting || '',
+            protocol: currentGachaChar.protocol || '',
+            avatar: currentGachaChar.avatar,
+            pinned: false,
+            memoryBoxes:[] // Пустой массив, так как протокол уже вписан выше
+        };
+
+        // 1. Добавляем персонажа в начало списка
+        appState.characters.unshift(newChar);
+
+        // 2. Инициализируем для него чистую историю чата
+        appState.chats[newCharId] =[];
+
+        // 3. Сохраняем все данные
+        saveData();
+        updateHomeStats();
+        
+        // 4. Скрываем карточку рулетки и показываем уведомление
+        document.getElementById('gacha-result').style.display = 'none';
+        showToast(`Успех! "${newChar.name}" добавлен в чаты.`);
+
+        // 5. Автоматически переключаем вкладку и открываем чат с этим ИИ
+        openNavTab('chat');
+        openChat(newCharId, 'solo');
+    }
+
+    // --- ГЕНЕРАТОР СЦЕНАРИЕВ ---
+    async function rollScenario() {
+        if (isWaitingForAI) return showToast("Дождитесь окончания генерации...", true);
+
+        // Находим кнопку и блок результата
+        const btn = document.querySelector('.scenario-box .add-btn');
+        const resultDiv = document.getElementById('scenario-result');
+        
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Нейросеть придумывает...`;
+        resultDiv.style.display = 'none';
+        isWaitingForAI = true;
+
+        try {
+            const sys = `You are an expert roleplay Game Master. Output ONLY a short, highly engaging roleplay scenario (3-5 sentences) in Russian. No markdown, no json.`;
+            const prompt = `Придумай интригующую, необычную завязку для ролевой игры (Roleplay). Жанр выбери абсолютно случайно (киберпанк, космос, школа, детектив, мистика, постапокалипсис). Опиши ситуацию вокруг нас.`;
+
+            // Вызываем ИИ (используем ту же функцию, что и для персонажей)
+            const aiResponse = await fetchAIGeneration(sys, prompt);
+
+            // Сохраняем результат в глобальную переменную (чтобы потом скопировать)
+            window.currentGeneratedScenario = aiResponse.trim();
+
+            // Выводим текст и добавляем кнопку копирования прямо внутрь блока
+            resultDiv.innerHTML = `
+                ${window.currentGeneratedScenario}
+                <div style="margin-top: 15px;">
+                    <button class="add-btn" style="width: 100%; border: none; background: var(--accent-color); color: #fff; border-radius: 10px;" onclick="copyScenario()">
+                        <i class="fa-regular fa-copy"></i> Скопировать идею
+                    </button>
+                </div>
+            `;
+            resultDiv.style.display = 'block';
+        } catch (e) {
+            showToast("Ошибка генерации: " + e.message, true);
+        } finally {
+            btn.innerHTML = `Сгенерировать ситуацию`;
+            isWaitingForAI = false;
+        }
+    }
+
+    // Функция для копирования сценария в буфер обмена
+    function copyScenario() {
+        if (window.currentGeneratedScenario) {
+            navigator.clipboard.writeText(window.currentGeneratedScenario).then(() => {
+                showToast("Сценарий скопирован! Вставьте его в настройки персонажа или чат.");
+            });
         }
     }
 </script>
