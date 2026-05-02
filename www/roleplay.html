@@ -1427,8 +1427,32 @@
     }
 
     function switchScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
+        // Убираем активность со всех экранов и сбрасываем их размеры
+        document.querySelectorAll('.screen').forEach(s => {
+            s.classList.remove('active');
+            s.style.height = '';
+            s.style.paddingBottom = '';
+        });
+        
+        const activeScreen = document.getElementById(id);
+        activeScreen.classList.add('active');
+
+        // Список главных экранов, где нужна навигация
+        const mainScreens =['real-home-screen', 'chat-list-screen', 'discover-screen'];
+        const isMain = mainScreens.includes(id);
+        
+        const bottomNav = document.querySelector('.bottom-nav');
+        const fabWrapper = document.getElementById('fabWrapper');
+        
+        // Скрываем обе панели на внутренних экранах (в чате, профиле и т.д.)
+        if (bottomNav) bottomNav.style.display = isMain ? 'flex' : 'none';
+        if (fabWrapper) fabWrapper.style.display = isMain ? 'flex' : 'none';
+        
+        // Если это внутренний экран, расширяем его на 100% (чтобы не было дыры внизу)
+        if (!isMain) {
+            activeScreen.style.height = '100%';
+            activeScreen.style.paddingBottom = '0';
+        }
     }
 
     function goHome() {
