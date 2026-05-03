@@ -783,16 +783,28 @@
             </div>
 
             <div class="ms-category">
-                <div class="ms-badge"><i class="fa-solid fa-fire" style="color: #ffaa00;"></i> Standard Models</div>
+                <div class="ms-badge"><i class="fa-solid fa-clock" style="color: #eefff6;"></i> Test Models</div>
+                <div class="ms-grid">
+                    <div class="ms-card" data-model="arcee-ai/trinity-large-preview" onclick="selectModelCard(this, 'arcee-ai/trinity-large-preview')">
+                        <div class="ms-card-info"><div class="ms-card-title">Trinity Large Preview</div><div class="ms-card-desc">Тестовая модель от Arcee AI. Очень мощная модель.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="minimax/minimax-m2-her" onclick="selectModelCard(this, 'minimax/minimax-m2-her')">
+                        <div class="ms-card-info"><div class="ms-card-title">Minimax-m2-her</div><div class="ms-card-desc">Тестовая модель от Minimax.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="z-ai/glm-4.7-flash" onclick="selectModelCard(this, 'z-ai/glm-4.7-flash')">
+                        <div class="ms-card-info"><div class="ms-card-title">GLM 4.7 flash</div><div class="ms-card-desc">Тестовая модель от Z-AI.</div></div><div class="ms-radio"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ms-category">
+                <div class="ms-badge"><i class="fa-solid fa-crown" style="color: #ffaa00;"></i> Standard Models</div>
                 <div class="ms-grid">
                     <div class="ms-card" data-model="xiaomi/mimo-v2-flash" onclick="selectModelCard(this, 'xiaomi/mimo-v2-flash')">
                         <div class="ms-card-info"><div class="ms-card-title">Mimo 2 flash</div><div class="ms-card-desc">Проверенная мною модель от Xiaomi. Нормально для RP</div></div><div class="ms-radio"></div>
                     </div>
                     <div class="ms-card" data-model="xiaomi/mimo-v2.5" onclick="selectModelCard(this, 'xiaomi/mimo-v2.5')">
                         <div class="ms-card-info"><div class="ms-card-title">Mimo 2.5</div><div class="ms-card-desc">Тестовая модель от Xiaomi. Лучше второй версии.</div></div><div class="ms-radio"></div>
-                    </div>
-                    <div class="ms-card" data-model="deepseek/deepseek-v3.2" onclick="selectModelCard(this, 'deepseek/deepseek-v3.2')">
-                        <div class="ms-card-info"><div class="ms-card-title">DeepSeek 3.2</div><div class="ms-card-desc">Очень мощная модель от DeepSeek.</div></div><div class="ms-radio"></div>
                     </div>
                     <div class="ms-card" data-model="gpt-5-mini" onclick="selectModelCard(this, 'gpt-5-mini')">
                         <div class="ms-card-info"><div class="ms-card-title">GPT-5 mini</div><div class="ms-card-desc">Минимальная модель GPT-5.4. Очень подходит для RP. Хуже полной версии.</div></div><div class="ms-radio"></div>
@@ -812,11 +824,14 @@
                     <div class="ms-card" data-model="mistralai/mistral-medium-3.1" onclick="selectModelCard(this, 'mistralai/mistral-medium-3.1')">
                         <div class="ms-card-info"><div class="ms-card-title">Mistral Medium 3.1</div><div class="ms-card-desc">Продвинутая модель. Великолепное понимание сложного контекста.</div></div><div class="ms-radio"></div>
                     </div>
+                    <div class="ms-card" data-model="deepseek/deepseek-v4-flash" onclick="selectModelCard(this, 'deepseek/deepseek-v4-flash')">
+                        <div class="ms-card-info"><div class="ms-card-title">DeepSeek 4 flash</div><div class="ms-card-desc">Последняя и очень мощная модель от DeepSeek.</div></div><div class="ms-radio"></div>
+                    </div>
                 </div>
             </div>
 
             <div class="ms-category">
-                <div class="ms-badge"><i class="fa-solid fa-crown" style="color: #b54aff;"></i> Best Models</div>
+                <div class="ms-badge"><i class="fa-solid fa-gem" style="color: #4afff0;"></i> Best Models</div>
                 <div class="ms-grid">
                     <div class="ms-card" data-model="claude-haiku-4-5" onclick="selectModelCard(this, 'claude-haiku-4-5')">
                         <div class="ms-card-info"><div class="ms-card-title">Claude 4.5 Haiku</div><div class="ms-card-desc">Модель Claude 4.5 Haiku. Очень хорошая модель для RP.</div></div><div class="ms-radio"></div>
@@ -830,11 +845,14 @@
                     <div class="ms-card" data-model="x-ai/grok-4.1-fast" onclick="selectModelCard(this, 'x-ai/grok-4.1-fast')">
                         <div class="ms-card-info"><div class="ms-card-title">Grok 4.1 fast</div><div class="ms-card-desc">Без цензуры (18+). С огромными знаниями.</div></div><div class="ms-radio"></div>
                     </div>
-                    <div class="ms-card" data-model="deepseek/deepseek-v4-flash" onclick="selectModelCard(this, 'deepseek/deepseek-v4-flash')">
-                        <div class="ms-card-info"><div class="ms-card-title">DeepSeek 4 flash</div><div class="ms-card-desc">Последняя и очень мощная модель от DeepSeek.</div></div><div class="ms-radio"></div>
+                    <div class="ms-card" data-model="deepseek/deepseek-v3.2" onclick="selectModelCard(this, 'deepseek/deepseek-v3.2')">
+                        <div class="ms-card-info"><div class="ms-card-title">DeepSeek 3.2</div><div class="ms-card-desc">Очень мощная модель от DeepSeek.</div></div><div class="ms-radio"></div>
                     </div>
                     <div class="ms-card" data-model="gpt-5.3-chat" onclick="selectModelCard(this, 'gpt-5.3-chat')">
                         <div class="ms-card-info"><div class="ms-card-title">GPT-5.3</div><div class="ms-card-desc">Пятое поколение GPT. Сильный и душевный AI.</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="google/gemma-4-26b-a4b-it" onclick="selectModelCard(this, 'google/gemma-4-26b-a4b-it')">
+                        <div class="ms-card-info"><div class="ms-card-title">Gemma 4 26B</div><div class="ms-card-desc">Модель Gemma 4 26B. Очень мощная модель.</div></div><div class="ms-radio"></div>
                     </div>
                     <div class="ms-card" data-model="gemini-3-flash-preview" onclick="selectModelCard(this, 'gemini-3-flash-preview')">
                         <div class="ms-card-info"><div class="ms-card-title">Gemini-3-flash</div><div class="ms-card-desc">Самая мощная модель в семействе Gemini flash.</div></div><div class="ms-radio"></div>
@@ -859,7 +877,7 @@
                 
                 <div class="stats-cards">
                     <div class="stat-card" onclick="openNavTab('chat')">
-                        <i class="fa-solid fa-robot"></i>
+                        <i class="fa-solid fa-user"></i>
                         <h2 id="stat-chars">0</h2>
                         <p>Персонажей</p>
                     </div>
@@ -869,7 +887,7 @@
                         <p>Групп</p>
                     </div>
                 </div>
-                <button class="btn-primary" style="margin-top: 30px;" onclick="openCreatorMenu()"><i class="fa-solid fa-plus"></i> Создать нового ИИ</button>
+                <button class="btn-primary" style="margin-top: 30px;" onclick="openCreatorMenu()"><i class="fa-solid fa-plus"></i> Создать персонажа</button>
             </div>
         </div>
     
