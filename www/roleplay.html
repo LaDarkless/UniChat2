@@ -794,6 +794,32 @@
                     <div class="ms-card" data-model="z-ai/glm-4.7-flash" onclick="selectModelCard(this, 'z-ai/glm-4.7-flash')">
                         <div class="ms-card-info"><div class="ms-card-title">GLM 4.7 flash</div><div class="ms-card-desc">Тестовая модель от Z-AI.</div></div><div class="ms-radio"></div>
                     </div>
+                    <div class="ms-card" data-model="meta-llama/llama-3.1-8b-instruct" onclick="selectModelCard(this, 'meta-llama/llama-3.1-8b-instruct')">
+                        <div class="ms-card-info"><div class="ms-card-title">llama 3.1 8b instruct</div><div class="ms-card-desc">Meta's latest class of model (Llama 3.1) launched with a variety of sizes & flavors. This 8B instruct-tuned version is fast and efficient.
+
+                            It has demonstrated strong performance compared to leading closed-source models in human evaluations.
+                            
+                            To read more about the model release, click here(opens in new tab). Usage of this model is subject to Meta's Acceptable Use Policy(opens in new tab).</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="mistralai/mistral-small-3.2-24b-instruct" onclick="selectModelCard(this, 'mistralai/mistral-small-3.2-24b-instruct')">
+                        <div class="ms-card-info"><div class="ms-card-title">Mistral-small 3.2 24B</div><div class="ms-card-desc">Mistral-Small-3.2-24B-Instruct-2506 is an updated 24B parameter model from Mistral optimized for instruction following, repetition reduction, and improved function calling. Compared to the 3.1 release, version 3.2 significantly improves accuracy on WildBench and Arena Hard, reduces infinite generations, and delivers gains in tool use and structured output tasks.
+
+                            It supports image and text inputs with structured outputs, function/tool calling, and strong performance across coding (HumanEval+, MBPP), STEM (MMLU, MATH, GPQA), and vision benchmarks (ChartQA, DocVQA).</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="meta-llama/llama-3.3-70b-instruct" onclick="selectModelCard(this, 'meta-llama/llama-3.3-70b-instruct')">
+                        <div class="ms-card-info"><div class="ms-card-title">llama 3.3 70B</div><div class="ms-card-desc">The Meta Llama 3.3 multilingual large language model (LLM) is a pretrained and instruction tuned generative model in 70B (text in/text out). The Llama 3.3 instruction tuned text only model is optimized for multilingual dialogue use cases and outperforms many of the available open source and closed chat models on common industry benchmarks.
+
+                            Supported languages: English, German, French, Italian, Portuguese, Hindi, Spanish, and Thai.
+                            
+                            Model Card</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="meta-llama/llama-3.1-70b-instruct" onclick="selectModelCard(this, 'meta-llama/llama-3.1-70b-instruct')">
+                        <div class="ms-card-info"><div class="ms-card-title">llama 3.1 -70b-instruct</div><div class="ms-card-desc">Meta's latest class of model (Llama 3.1) launched with a variety of sizes & flavors. This 70B instruct-tuned version is optimized for high quality dialogue usecases.
+
+                            It has demonstrated strong performance compared to leading closed-source models in human evaluations.
+                            
+                            To read more about the model release, click here(opens in new tab). Usage of this model is subject to Meta's Acceptable Use Policy(opens in new tab).</div></div><div class="ms-radio"></div>
+                    </div>
                 </div>
             </div>
 
@@ -1111,22 +1137,40 @@
                 </div>
 
                 <!-- НОВЫЙ БЛОК: Память, Токены и Экспорт -->
-                <div class="sp-block">
-                    <span class="sp-block-title" style="margin:0;"><i class="fa-solid fa-chart-pie"></i> Memory & Context</span>
-                    <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 5px;">
-                        Примерный вес: <strong id="sp-token-count" style="color: #6eff8f; font-size: 15px;">0</strong> токенов
-                    </div>
+<div class="sp-block">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span class="sp-block-title" style="margin:0;"><i class="fa-solid fa-chart-pie"></i> Memory & Summary</span>
+        <span style="font-size: 12px; color: var(--text-muted);">Занято: <strong id="sp-token-count" style="color: #fff;">~0</strong> tks</span>
+    </div>
+    
+    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+        Текстовый лимит чата: <strong id="sp-history-val" style="color: var(--accent-color);">4000</strong> tks
+    </div>
                     
-                    <div class="slider-labels" style="margin-top: 10px;"><span>Память в этом чате</span><span id="sp-history-val">20</span></div>
                     <div class="slider-container">
-                        <button class="slider-btn" onclick="adjustSlider('sp-history-slider', -1)"><i class="fa-solid fa-minus"></i></button>
-                        <input type="range" class="custom-slider" id="sp-history-slider" min="2" max="150" value="20" oninput="updateTraits()">
-                        <button class="slider-btn" onclick="adjustSlider('sp-history-slider', 1)"><i class="fa-solid fa-plus"></i></button>
+                        <button class="slider-btn" onclick="adjustSlider('sp-history-slider', -500)"><i class="fa-solid fa-minus"></i></button>
+                        <input type="range" class="custom-slider" id="sp-history-slider" min="500" max="8000" step="500" value="4000" oninput="updateTraits()">
+                        <button class="slider-btn" onclick="adjustSlider('sp-history-slider', 500)"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                
+                    <hr style="border:0; border-top: 1px solid rgba(255,255,255,0.05); margin: 15px 0;">
+                
+                    <div class="toggle-row" style="margin-bottom: 10px;">
+                        <span class="sp-item-title">Использовать сжатую память</span>
+                        <label class="switch">
+                            <input type="checkbox" id="sp-summary-toggle" onchange="updateTraits()">
+                            <span class="slider-round"></span>
+                        </label>
                     </div>
                     
-                    <button class="sp-bottom-btn" onclick="exportChat()" style="margin: 15px 0 0 0; padding: 12px; font-size: 14px; background: rgba(123, 90, 255, 0.15); border-color: rgba(123, 90, 255, 0.3); color: #fff;">
-                        <i class="fa-solid fa-file-export"></i> Скачать чат (.txt)
-                    </button>
+                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                        <button class="sp-bottom-btn" onclick="openSummaryEditor()" style="flex: 1; margin: 0; padding: 12px; font-size: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                            <i class="fa-solid fa-eye"></i> Просмотр
+                        </button>
+                        <button class="sp-bottom-btn" id="summarize-btn" onclick="createContextSummary()" style="flex: 2; margin: 0; padding: 12px; font-size: 13px; background: rgba(123, 90, 255, 0.15); border: 1px solid rgba(123, 90, 255, 0.3); color: #fff;">
+                            <i class="fa-solid fa-compress"></i> Авто-сжатие
+                        </button>
+                    </div>
                 </div>
 
                 <div style="flex:1;"></div> <!-- Spacer -->
@@ -1184,6 +1228,27 @@
             <!-- Карточки генерируются JS -->
         </div>
     </div>
+
+    <!-- ЭКРАН 4.2: РЕДАКТОР СЖАТОЙ ПАМЯТИ -->
+<div id="summary-edit-screen" class="screen">
+    <div class="header">
+        <button class="icon-btn" onclick="closeSummaryEditor()"><i class="fa-solid fa-arrow-left"></i></button>
+        <div class="header-title" style="font-size: 16px;">Сжатая память (Summary)</div>
+        <button class="icon-btn" onclick="saveSummaryEditor()" style="color: var(--accent-color);"><i class="fa-solid fa-check"></i></button>
+    </div>
+    
+    <div style="padding: 20px; color: var(--text-muted); font-size: 13px; text-align: center; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color);">
+        Этот текст добавляется в системный промпт ИИ. Вы можете редактировать его вручную или сгенерировать автоматически.
+    </div>
+
+    <div style="flex: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden;">
+        <textarea id="summary-textarea" style="flex: 1; width: 100%; resize: none; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(123, 90, 255, 0.2); border-radius: 16px; padding: 15px; font-size: 14px; line-height: 1.6; outline: none; box-shadow: inset 0 5px 15px rgba(0,0,0,0.3);" placeholder="Сюда будет записан пересказ чата... Вы можете написать его сами."></textarea>
+    </div>
+    
+    <div style="padding: 0 20px 30px 20px;">
+        <button class="btn-primary" onclick="saveSummaryEditor()"><i class="fa-solid fa-floppy-disk"></i> Сохранить изменения</button>
+    </div>
+</div>
 
     <!-- ЭКРАН 4.5: ПРОСМОТР ИСТОРИИ ЧАТА -->
     <div id="history-view-screen" class="screen">
@@ -1271,15 +1336,15 @@
                     <!-- Глобальный лимит контекста -->
                     <div style="margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span style="font-size: 15px; font-weight: 600; color: #fff;">Глубина памяти</span>
-                            <span id="global-history-val" style="font-weight: 700; color: var(--accent-color);">20</span>
+                            <span style="font-size: 15px; font-weight: 600; color: #fff;">Глубина памяти (Токены)</span>
+                            <span id="global-history-val" style="font-weight: 700; color: var(--accent-color);">4000</span>
                         </div>
                         <div class="slider-container">
-                            <button class="slider-btn" onclick="adjustSlider('global-history-input', -1)"><i class="fa-solid fa-minus"></i></button>
-                            <input type="range" class="custom-slider" id="global-history-input" min="2" max="150" value="20" oninput="document.getElementById('global-history-val').innerText = this.value">
-                            <button class="slider-btn" onclick="adjustSlider('global-history-input', 1)"><i class="fa-solid fa-plus"></i></button>
+                            <button class="slider-btn" onclick="adjustSlider('global-history-input', -500)"><i class="fa-solid fa-minus"></i></button>
+                            <input type="range" class="custom-slider" id="global-history-input" min="1000" max="128000" step="500" value="4000" oninput="document.getElementById('global-history-val').innerText = this.value">
+                            <button class="slider-btn" onclick="adjustSlider('global-history-input', 500)"><i class="fa-solid fa-plus"></i></button>
                         </div>
-                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Сколько сообщений ИИ держит в контексте.</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Объем истории в токенах (1 токен ≈ 3.5 символа), который помнит ИИ.</div>
                     </div>
 
                     <hr style="border:0; border-top: 1px solid rgba(255,255,255,0.05); margin: 15px 0;">
@@ -1305,6 +1370,49 @@
 
 
 <script>
+    const MODEL_LIMITS = {
+    // Free
+    "z-ai/glm-4.5-air:free": 128000,
+    "inclusionai/ling-2.6-1t:free": 32000,
+    "tencent/hy3-preview:free": 32000,
+    "inclusionai/ling-2.6-flash:free": 32000,
+    "minimax/minimax-m2.5:free": 128000,
+    "google/gemma-4-31b-it:free": 32000,
+    "openai/gpt-oss-20b:free": 16000,
+    "openai/gpt-oss-120b:free": 32000,
+    "nvidia/nemotron-3-super-120b-a12b:free": 32000,
+    "poolside/laguna-xs.2:free": 32000,
+    "poolside/laguna-m.1:free": 32000,
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free": 32000,
+    "qwen/qwen3-coder:free": 32000,
+    "qwen/qwen3-next-80b-a3b-instruct:free": 32000,
+    "meta-llama/llama-3.2-3b-instruct:free": 16000,
+    // Test
+    "arcee-ai/trinity-large-preview": 32000,
+    "minimax/minimax-m2-her": 128000,
+    "z-ai/glm-4.7-flash": 128000,
+    "openrouter/owl-alpha": 1000000,
+    // Standard
+    "xiaomi/mimo-v2-flash": 32000,
+    "xiaomi/mimo-v2.5": 32000,
+    "gpt-5-mini": 128000,
+    "gpt-5-nano": 128000,
+    "qwen/qwen3-235b-a22b-2507": 32000,
+    "openai/gpt-oss-20b": 16000,
+    "openai/gpt-oss-120b": 32000,
+    "mistralai/mistral-medium-3.1": 32000,
+    "deepseek/deepseek-v4-flash": 128000,
+    // Best
+    "claude-haiku-4-5": 200000,
+    "xiaomi/mimo-v2.5-pro": 32000,
+    "qwen/qwen3.5-flash-02-23": 32000,
+    "x-ai/grok-4.1-fast": 131000,
+    "deepseek/deepseek-v3.2": 128000,
+    "gpt-5.3-chat": 128000,
+    "google/gemma-4-26b-a4b-it": 32000,
+    "gemini-3-flash-preview": 1000000,
+    "default": 8000
+};
     // --- НАСТРОЙКИ MARKDOWN ---
     marked.setOptions({ breaks: true, gfm: true }); // Включаем переносы строк
 
@@ -1408,6 +1516,42 @@
             slider.scrollLeft = scrollLeft - walk;
         });
     });
+
+    // --- ЛОГИКА СЖАТОЙ ПАМЯТИ (SUMMARY) ---
+
+function openSummaryEditor() {
+    document.getElementById('chat-menu-overlay').classList.remove('active'); // Закрываем боковое меню
+    const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+    
+    // Загружаем текущую память
+    document.getElementById('summary-textarea').value = entity.currentSummary || '';
+    
+    switchScreen('summary-edit-screen');
+}
+
+function closeSummaryEditor() {
+    switchScreen('chat-screen');
+}
+
+function saveSummaryEditor() {
+    const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+    const newText = document.getElementById('summary-textarea').value.trim();
+    
+    entity.currentSummary = newText;
+    
+    if (!entity.traits) entity.traits = {};
+    
+    // Если текст не пустой, автоматически включаем тумблер сжатой памяти
+    if (newText.length > 0) {
+        entity.traits.summaryEnabled = true;
+    } else {
+        entity.traits.summaryEnabled = false; // Если стерли, отключаем
+    }
+    
+    saveData();
+    showToast("Сжатая память успешно сохранена!");
+    switchScreen('chat-screen');
+}
 
     function showToast(message, isError = false) {
     const container = document.getElementById('toast-container');
@@ -2040,6 +2184,21 @@
     }
 
     // --- ФЕТЧ ОДИНОЧНОГО ЧАТА ---
+
+    function getMessagesByTokenLimit(messages, tokenLimit) {
+    let currentTokens = 0;
+    let result = [];
+    const CHARS_PER_TOKEN = 3.5; // Приблизительный вес токена
+
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const msgTokens = Math.ceil(messages[i].content.length / CHARS_PER_TOKEN);
+        if (currentTokens + msgTokens > tokenLimit) break;
+        currentTokens += msgTokens;
+        result.unshift(messages[i]);
+    }
+    return result;
+}
+
     async function fetchAIResponseSolo() {
         isWaitingForAI = true; showLoader();
         const char = appState.characters.find(c => c.id === currentId);
@@ -2090,9 +2249,19 @@
             sys += `[END PINNED MEMORIES]\n\n`;
         }
 
+        // Добавляем сжатую память в System Prompt, если она включена
+        const entity = appState.characters.find(c => c.id === currentId);
+        if (entity.traits?.summaryEnabled && entity.currentSummary) {
+            sys += `\n[SUMMARY OF OLD CONTEXT]: ${entity.currentSummary}\n`;
+        }
+
         const apiMsgs = [{ role: 'system', content: sys }];
-        const limit = char.maxHistory || appState.settings.maxHistory || 20;
-        history.slice(-limit).forEach(msg => apiMsgs.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content }));
+        
+        // Лимит теперь в токенах (например 4000 или 8000), а не в сообщениях
+        const tokenLimit = entity.maxHistory || appState.settings.maxHistory || 4000;
+        const limitedHistory = getMessagesByTokenLimit(history, tokenLimit);
+        
+        limitedHistory.forEach(msg => apiMsgs.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content }));
 
         await callOpenRouter(apiMsgs, char.name, appState.chats[currentId]);
     }
@@ -2142,16 +2311,20 @@
         sys += `Chat Members: ${members.join(', ')}.\n`;
         sys += `Instructions: Respond ONLY in character as ${activeChar.name}. Do NOT act or speak for other members. The history below shows who is speaking prefixed by "Name: ".\n`;
 
+        const entity = appState.groups.find(g => g.id === currentId);
+        if (entity.traits?.summaryEnabled && entity.currentSummary) {
+            sys += `\n[OVERALL PLOT SUMMARY]: ${entity.currentSummary}\n`;
+        }
+
         const apiMsgs = [{ role: 'system', content: sys }];
         
-        // Конвертация истории для группового восприятия
-        const limit = group.maxHistory || appState.settings.maxHistory || 20;
-        history.slice(-limit).forEach(msg => {
-            // Если сообщение от текущего бота - это assistant. Иначе - это user (для бота все остальные - юзеры)
+        const tokenLimit = entity.maxHistory || appState.settings.maxHistory || 4000;
+        const limitedHistory = getMessagesByTokenLimit(history, tokenLimit);
+
+        limitedHistory.forEach(msg => {
             if (msg.charId === botCharId) {
                 apiMsgs.push({ role: 'assistant', content: msg.content });
             } else {
-                // Префиксируем имя отправителя
                 apiMsgs.push({ role: 'user', content: `${msg.name} says: ${msg.content}` });
             }
         });
@@ -2454,7 +2627,10 @@
         document.getElementById('model-input').value = appState.settings.model;
         document.getElementById('nsfw-toggle').checked = !!appState.settings.nsfwEnabled;
         if (appState.userProfile.avatar) { document.getElementById('user-avatar-img').src = appState.userProfile.avatar; document.getElementById('user-avatar-img').style.display = 'block'; document.getElementById('user-avatar-icon').style.display = 'none'; }
-        const maxHist = appState.settings.maxHistory || 20;
+        
+        // ЗАМЕНЕНО: теперь базовый лимит профиля - 4000 токенов
+        const maxHist = appState.settings.maxHistory || 4000;
+        
         document.getElementById('global-history-input').value = maxHist;
         document.getElementById('global-history-val').innerText = maxHist;
         document.getElementById('profile-current-model-name').innerText = appState.settings.model.split('/').pop();
@@ -2562,70 +2738,123 @@
     }
 
     function selectModelCard(element, modelValue) {
-        document.querySelectorAll('.ms-card').forEach(card => card.classList.remove('active'));
-        element.classList.add('active');
-        appState.settings.model = modelValue;
-    }
+    document.querySelectorAll('.ms-card').forEach(card => card.classList.remove('active'));
+    element.classList.add('active');
+    appState.settings.model = modelValue;
 
-    function toggleChatMenu(e) {
-        if (e && e.target !== e.currentTarget && e.type === 'click') return;
-        const overlay = document.getElementById('chat-menu-overlay');
-        
-        if (!overlay.classList.contains('active')) {
-            const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
-            const messages = currentMode === 'groups' ? (appState.groupChats[currentId] || []) : (appState.chats[currentId] || []);
-            
-            // Подсчет закрепленных сообщений
-            const pinnedCount = messages.filter(m => m.isPinned).length;
-            
-            document.getElementById('sp-persona-name').innerHTML = `${appState.userProfile.name || 'User'} <i class="fa-solid fa-chevron-right"></i>`;
-            document.getElementById('sp-chat-name').innerHTML = `${entity.name.substring(0, 15)}${entity.name.length > 15 ? '...' : ''} <i class="fa-solid fa-chevron-right"></i>`;
-            document.getElementById('sp-pinned-count').innerHTML = `${pinnedCount} <i class="fa-solid fa-chevron-right"></i>`;
-            document.getElementById('sp-model-name').innerHTML = `${appState.settings.model.split('/').pop()} <i class="fa-solid fa-chevron-right"></i>`;
-            
-            // Загружаем настройки Personality (Shy/Flirty)
-            if (!entity.traits) entity.traits = { enabled: false, value: 50 };
-            document.getElementById('sp-trait-toggle').checked = entity.traits.enabled;
-            document.getElementById('sp-trait-slider').value = entity.traits.value;
-            document.getElementById('sp-trait-slider').style.opacity = entity.traits.enabled ? '1' : '0.5';
-
-            // Подгрузка индивидуального лимита памяти для этого чата
-            const chatHistoryLimit = entity.maxHistory || appState.settings.maxHistory || 20;
-            document.getElementById('sp-history-slider').value = chatHistoryLimit;
-            document.getElementById('sp-history-val').innerText = chatHistoryLimit;
-
-            // Оценка общего контекста (Токенизатор)
-            let totalChars = 0;
-            // Считаем системные данные
-            totalChars += (entity.protocol || '').length + (entity.scenario || '').length + (entity.greeting || '').length;
-            if (entity.memoryBoxes) entity.memoryBoxes.forEach(b => totalChars += (b.content || b).length);
-            // Считаем историю сообщений (с учетом лимита!)
-            const activeMessages = messages.slice(-chatHistoryLimit);
-            activeMessages.forEach(m => totalChars += m.content.length);
-            // Добавляем закрепленные сообщения (они идут поверх лимита)
-            messages.filter(m => m.isPinned && !activeMessages.includes(m)).forEach(m => totalChars += m.content.length);
-            
-            document.getElementById('sp-token-count').innerText = `~${Math.ceil(totalChars / 3.5)}`;
-            
-            overlay.classList.add('active');
-        } else {
-            overlay.classList.remove('active');
+    // Обновляем ползунок под лимиты модели
+    const slider = document.getElementById('sp-history-slider');
+    const limit = MODEL_LIMITS[modelValue] || MODEL_LIMITS["default"];
+    
+    if (slider) {
+        slider.max = limit;
+        // Если текущее значение памяти больше нового лимита - сбрасываем до максимума
+        if (parseInt(slider.value) > limit) {
+            slider.value = limit;
+            const label = document.getElementById('sp-history-val');
+            if (label) label.innerText = limit;
         }
     }
+}
+
+function toggleChatMenu(e) {
+    if (e && e.target !== e.currentTarget && e.type === 'click') return;
+    const overlay = document.getElementById('chat-menu-overlay');
+    
+    if (!overlay.classList.contains('active')) {
+        const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+        const messages = currentMode === 'groups' ? (appState.groupChats[currentId] || []) : (appState.chats[currentId] || []);
+        
+        const pinnedCount = messages.filter(m => m.isPinned).length;
+        
+        document.getElementById('sp-persona-name').innerHTML = `${appState.userProfile.name || 'User'} <i class="fa-solid fa-chevron-right"></i>`;
+        document.getElementById('sp-chat-name').innerHTML = `${entity.name.substring(0, 15)}${entity.name.length > 15 ? '...' : ''} <i class="fa-solid fa-chevron-right"></i>`;
+        document.getElementById('sp-pinned-count').innerHTML = `${pinnedCount} <i class="fa-solid fa-chevron-right"></i>`;
+        document.getElementById('sp-model-name').innerHTML = `${appState.settings.model.split('/').pop()} <i class="fa-solid fa-chevron-right"></i>`;
+        
+        if (!entity.traits) entity.traits = { enabled: false, value: 50 };
+        document.getElementById('sp-trait-toggle').checked = entity.traits.enabled;
+        document.getElementById('sp-trait-slider').value = entity.traits.value;
+        document.getElementById('sp-trait-slider').style.opacity = entity.traits.enabled ? '1' : '0.5';
+
+        // --- НОВАЯ ЛОГИКА ---
+        const summaryToggle = document.getElementById('sp-summary-toggle');
+        if (summaryToggle) summaryToggle.checked = !!entity.traits.summaryEnabled;
+
+        const chatHistoryLimit = entity.maxHistory || appState.settings.maxHistory || 4000;
+        const slider = document.getElementById('sp-history-slider');
+        const modelLimit = MODEL_LIMITS[appState.settings.model] || MODEL_LIMITS["default"];
+
+        slider.max = modelLimit;
+        slider.value = chatHistoryLimit;
+        document.getElementById('sp-history-val').innerText = chatHistoryLimit;
+
+        slider.max = modelLimit;
+        slider.value = chatHistoryLimit;
+        document.getElementById('sp-history-val').innerText = chatHistoryLimit;
+
+        // Просто вызываем нашу новую функцию, она сама всё посчитает и вставит
+        updateTokenCounterDisplay();
+        
+        overlay.classList.add('active');
+    } else {
+        overlay.classList.remove('active');
+    }
+}
+    // --- ДИНАМИЧЕСКИЙ ПОДСЧЕТ ТОКЕНОВ В МЕНЮ ---
+function updateTokenCounterDisplay() {
+    const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+    const messages = currentMode === 'groups' ? (appState.groupChats[currentId] || []) : (appState.chats[currentId] || []);
+    
+    let totalChars = 0;
+    
+    // 1. Несгораемый системный промпт
+    totalChars += (entity.protocol || '').length + (entity.scenario || '').length + (entity.greeting || '').length;
+    if (entity.memoryBoxes) entity.memoryBoxes.forEach(b => totalChars += (b.content || b).length);
+    
+    // 2. Сжатая память (Берем статус ПРЯМО ИЗ ТУМБЛЕРА, чтобы реагировать мгновенно)
+    const summaryToggle = document.getElementById('sp-summary-toggle');
+    if (summaryToggle && summaryToggle.checked && entity.currentSummary) {
+        totalChars += entity.currentSummary.length;
+    }
+
+    // 3. Активные сообщения чата (Берем лимит ПРЯМО С ПОЛЗУНКА)
+    const historySlider = document.getElementById('sp-history-slider');
+    const currentLimit = historySlider ? parseInt(historySlider.value) : 4000;
+    
+    const activeMessages = getMessagesByTokenLimit(messages, currentLimit);
+    activeMessages.forEach(m => totalChars += m.content.length);
+
+    // 4. Закрепленные сообщения (если они еще не учтены в activeMessages)
+    messages.filter(m => m.isPinned && !activeMessages.includes(m)).forEach(m => totalChars += m.content.length);
+    
+    // 5. Вывод результата в UI
+    const tokenDisplay = document.getElementById('sp-token-count');
+    if (tokenDisplay) {
+        tokenDisplay.innerText = `~${Math.ceil(totalChars / 3.5)}`;
+    }
+}
 
     function updateTraits() {
-        const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
-        if (!entity.traits) entity.traits = {};
-        entity.traits.enabled = document.getElementById('sp-trait-toggle').checked;
-        entity.traits.value = parseInt(document.getElementById('sp-trait-slider').value);
-        document.getElementById('sp-trait-slider').style.opacity = entity.traits.enabled ? '1' : '0.5';
-        
-        // НОВОЕ: Сохраняем локальный лимит памяти
-        entity.maxHistory = parseInt(document.getElementById('sp-history-slider').value);
-        document.getElementById('sp-history-val').innerText = entity.maxHistory;
-        
-        saveData();
-    }
+    const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+    if (!entity.traits) entity.traits = {};
+    
+    entity.traits.enabled = document.getElementById('sp-trait-toggle').checked;
+    entity.traits.value = parseInt(document.getElementById('sp-trait-slider').value);
+    
+    // ДОБАВЛЕНО: Сохранение состояния сжатой памяти
+    const summaryToggle = document.getElementById('sp-summary-toggle');
+    if (summaryToggle) entity.traits.summaryEnabled = summaryToggle.checked;
+
+    entity.maxHistory = parseInt(document.getElementById('sp-history-slider').value);
+    const historyLabel = document.getElementById('sp-history-val');
+    if (historyLabel) historyLabel.innerText = entity.maxHistory;
+    
+    saveData();
+    
+    // НОВОЕ: Сразу обновляем цифру занятых токенов при движении ползунка или клике на тумблер
+    updateTokenCounterDisplay();
+}
 
     // --- ПОЛНОЭКРАННОЕ ОКНО ПРИКРЕПЛЕННЫХ СООБЩЕНИЙ ---
     function openPinnedModal() {
@@ -2991,6 +3220,44 @@
             });
         }
     }
+    
+    async function createContextSummary() {
+    if (isWaitingForAI) return;
+    const btn = document.getElementById('summarize-btn');
+    const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+    const messages = currentMode === 'groups' ? appState.groupChats[currentId] : appState.chats[currentId];
+    
+    if (messages.length < 5) return showToast("Слишком мало сообщений для пересказа", true);
+    
+    if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Сжимаю...`;
+    isWaitingForAI = true;
+
+    try {
+        const fullChat = messages.map(m => `${m.name}: ${m.content}`).join('\n');
+        // Даем ИИ строгую установку
+        const sys = "Ты — аналитик. Твоя задача: прочитать историю Roleplay диалога и составить максимально плотный пересказ ключевых событий, отношений, локаций и важных деталей. Пиши от 3 лица, кратко, только факты. ИИ будет использовать этот текст, чтобы помнить прошлое.";
+        const prompt = `Сделай резюме (summary) этого чата:\n\n${fullChat.substring(0, 100000)}`; // Передаем много текста
+
+        const summary = await fetchAIGeneration(sys, prompt);
+        
+        // Сохраняем в память сущности
+        entity.currentSummary = summary;
+        if (!entity.traits) entity.traits = {};
+        entity.traits.summaryEnabled = true; // Автоматически включаем тумблер
+        
+        saveData();
+        
+        // ВАЖНО: Сразу открываем экран редактора, чтобы пользователь увидел результат!
+        openSummaryEditor();
+        showToast("Диалог успешно сжат! Вы можете отредактировать результат.");
+
+    } catch (e) {
+        showToast("Ошибка сжатия: " + e.message, true);
+    } finally {
+        if (btn) btn.innerHTML = `<i class="fa-solid fa-compress"></i> Авто-сжатие`;
+        isWaitingForAI = false;
+    }
+}
 </script>
 </body>
 <!-- ========================================== -->
