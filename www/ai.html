@@ -62,6 +62,54 @@
       }
 
       /* ==========================================
+           СТИЛИССИМА ССЫЛОК (PRO LINKS)
+           ========================================== */
+      
+      /* Ссылки в сообщениях, дисклеймере и настройках */
+      .message-content a,
+      .disclaimer a,
+      .settings-pane a,
+      .auth-box a {
+        color: #60a5fa; /* Мягкий небесно-голубой (хорошо виден в темноте) */
+        text-decoration: none;
+        border-bottom: 1px solid rgba(96, 165, 250, 0.2);
+        transition: all 0.2s ease;
+        word-break: break-all; /* Чтобы длинные ссылки не ломали верстку на мобилках */
+      }
+
+      .message-content a:hover,
+      .disclaimer a:hover,
+      .settings-pane a:hover,
+      .auth-box a:hover {
+        color: #93c5fd;
+        border-bottom-color: #93c5fd;
+        background: rgba(96, 165, 250, 0.05);
+      }
+
+      /* Адаптация ссылок под СВЕТЛУЮ ТЕМУ */
+      [data-theme="light"] .message-content a,
+      [data-theme="light"] .disclaimer a,
+      [data-theme="light"] .settings-pane a,
+      [data-theme="light"] .auth-box a {
+        color: #2563eb; /* Насыщенный синий (Royal Blue) для белого фона */
+        border-bottom-color: rgba(37, 99, 235, 0.3);
+      }
+
+      [data-theme="light"] .message-content a:hover,
+      [data-theme="light"] .disclaimer a:hover,
+      [data-theme="light"] .settings-pane a:hover {
+        color: #1d4ed8;
+        border-bottom-color: #1d4ed8;
+        background: rgba(37, 99, 235, 0.05);
+      }
+
+      /* Специфический фикс для ссылок внутри блоков "рассуждений" (Thinking) */
+      .thinking-content a {
+        opacity: 0.8;
+        font-size: 0.95em;
+      }
+
+      /* ==========================================
            PREMIUM PRO UI VARIABLES (BLACK & GREY)
            ========================================== */
       :root {
@@ -4747,7 +4795,8 @@ input, textarea {
       document.addEventListener("contextmenu", (event) => {
         const target = event.target;
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-        if (window.getSelection().toString().length > 0) return;
+        // Если текст выделен, не мешаем стандартному меню браузера (Копировать)
+        if (window.getSelection().toString().trim().length > 0) return;
 
         const row = target.closest('.message-row');
         if (row && !row.classList.contains('ai')) {
@@ -4760,7 +4809,7 @@ input, textarea {
 
       // 2. ДОЛГОЕ НАЖАТИЕ (Для ТЕЛЕФОНА)
       document.addEventListener('touchstart', (e) => {
-        if (window.getSelection().toString().length > 0) return; 
+        if (window.getSelection().toString().trim().length > 0) return; 
         
         const row = e.target.closest('.message-row');
         if (!row || row.classList.contains('ai')) return;
@@ -5004,6 +5053,7 @@ input, textarea {
               return katex.renderToString(item.content, {
                 displayMode: type === "BLOCK",
                 throwOnError: false,
+                strict: false // Отключаем предупреждения о кириллице
               });
             } catch (e) {
               return item.content;
@@ -6104,6 +6154,12 @@ input, textarea {
         },
 
         //1
+        {
+          id: "inclusionai/ring-2.6-1t:free",
+          name: "ring-2.6-1t (free)",
+          group: "OpenRouter",
+          provider: "openrouter",
+        },
         {
           id: "alibaba/tongyi-deepresearch-30b-a3b",
           name: "Tongyi-deepresearch-30b-a3b",
@@ -8818,13 +8874,11 @@ input, textarea {
 
         // Превращаем текст в редактируемую зону
         contentDiv.innerHTML = `
-        <textarea class="form-control" style="width:100%; min-height:150px; background:rgba(0,0,0,0.4); color:white; border:1px solid var(--primary-color); resize:vertical;">${currentText}</textarea>
+        <textarea class="form-control" style="width:100%; min-height:150px; background:rgba(0,0,0,0.4); color:white; border:1px solid var(--primary-color); resize:vertical; font-family: inherit;">${currentText}</textarea>
         <div style="margin-top:10px; display:flex; gap:10px;">
-            <button class="btn btn-primary btn-save-edit" style="padding: 6px 12px; font-size: 12px;">Сохранить изменения</button>
+            <button class="btn btn-primary btn-save-edit" style="padding: 6px 12px; font-size: 12px;">Сохранить</button>
             <button class="btn btn-secondary btn-cancel-edit" style="padding: 6px 12px; font-size: 12px;">Отмена</button>
         </div>`;
-
-        row.querySelector(".message-actions").style.display = "none"; // Прячем кнопки действий
 
         const textarea = contentDiv.querySelector("textarea");
         textarea.focus();
