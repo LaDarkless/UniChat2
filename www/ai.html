@@ -2339,19 +2339,27 @@
       }
 
       /* ==========================================
-           ФИКСЫ ДЛЯ МОБИЛЬНЫХ: ВЫДЕЛЕНИЕ И КОПИРОВАНИЕ
-           ========================================== */
+     ФИКСЫ ДЛЯ МОБИЛЬНЫХ: ВЫДЕЛЕНИЕ И КОПИРОВАНИЕ
+     ========================================== */
 
-      /* 1. Жестко разрешаем выделение текста и появление системного меню (Копировать/Поделиться) */
-      .message-content,
-      .message-content p,
-      .message-content pre,
-      .message-content code,
-      .compare-body {
-        -webkit-user-select: text !important;
-        user-select: text !important;
-        -webkit-touch-callout: default !important;
-      }
+/* ДОБАВИТЬ ЭТОТ БЛОК: Принудительно возвращаем системное меню для текстовых полей */
+input, textarea {
+  -webkit-user-select: auto !important;
+  user-select: auto !important;
+  -webkit-touch-callout: default !important;
+}
+
+/* Твой старый код ниже... */
+/* 1. Жестко разрешаем выделение текста и появление системного меню (Копировать/Поделиться) */
+.message-content,
+.message-content p,
+.message-content pre,
+.message-content code,
+.compare-body {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
 
       /* Запрещаем выделять служебные кнопки, чтобы они не попадали в скопированный текст */
       .msg-action-btn,
@@ -2460,6 +2468,77 @@
       [data-theme="light"] .search-btn.active {
         color: #2563eb !important;
       }
+
+      /* ==========================================
+         CUSTOM CONTEXT MENU (PRO)
+         ========================================== */
+         .custom-context-menu {
+        position: fixed;
+        background: rgba(15, 15, 19, 0.85);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+        padding: 6px;
+        z-index: 100000;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 180px;
+        opacity: 0;
+        visibility: hidden;
+        transform: scale(0.95);
+        transform-origin: top left;
+        transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+        /* ЗАПРЕТ ВЫДЕЛЕНИЯ ТЕКСТА НА КНОПКАХ */
+        -webkit-user-select: none !important;
+        user-select: none !important;
+        -webkit-touch-callout: none !important;
+      }
+
+      .custom-context-menu.show {
+        opacity: 1;
+        visibility: visible;
+        transform: scale(1);
+      }
+
+      [data-theme="light"] .custom-context-menu {
+        background: rgba(255, 255, 255, 0.9);
+        border-color: rgba(0, 0, 0, 0.1);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+      }
+
+      .context-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .context-menu-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      [data-theme="light"] .context-menu-item {
+        color: #111827;
+      }
+      [data-theme="light"] .context-menu-item:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      .context-menu-item svg {
+        color: var(--text-secondary);
+      }
+
+      /* Скрываем навсегда старые инлайн-кнопки */
+      .message-actions { display: none !important; }
     </style>
   </head>
   <body data-theme="dark">
@@ -4621,10 +4700,125 @@
     </div>
 
     <script>
-      // Запрет правой кнопки мыши (на случай если откроют в браузере)
-      document.addEventListener("contextmenu", (event) =>
-        event.preventDefault(),
-      );
+      // ==========================================
+      // ЛОГИКА КАСТОМНОГО КОНТЕКСТНОГО МЕНЮ
+      // ==========================================
+      let contextMenu = null;
+      let activeMessageRow = null;
+      let pressTimer = null;
+
+      // Динамическое получение меню, чтобы скрипт не падал при загрузке
+      function getMenu() {
+        if (!contextMenu) contextMenu = document.getElementById("custom-message-menu");
+        return contextMenu;
+      }
+
+      // Функция показа меню
+      function showContextMenu(x, y, row) {
+        const menu = getMenu();
+        if (!menu) return;
+        
+        activeMessageRow = row;
+        
+        const isUser = row.classList.contains('user');
+        const regenBtn = document.getElementById('cmenu-regen');
+        if (regenBtn) regenBtn.style.display = isUser ? 'none' : 'flex';
+        
+        menu.classList.add('show');
+
+        const menuRect = menu.getBoundingClientRect();
+        let posX = x;
+        let posY = y;
+
+        if (posX + menuRect.width > window.innerWidth) posX = window.innerWidth - menuRect.width - 10;
+        if (posY + menuRect.height > window.innerHeight) posY = window.innerHeight - menuRect.height - 10;
+
+        menu.style.left = `${posX}px`;
+        menu.style.top = `${posY}px`;
+      }
+
+      function hideContextMenu() {
+        const menu = getMenu();
+        if (menu) menu.classList.remove('show');
+        activeMessageRow = null;
+      }
+
+      // 1. ПРАВЫЙ КЛИК (Для ПК)
+      document.addEventListener("contextmenu", (event) => {
+        const target = event.target;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+        if (window.getSelection().toString().length > 0) return;
+
+        const row = target.closest('.message-row');
+        if (row && !row.classList.contains('ai')) {
+          event.preventDefault();
+          showContextMenu(event.clientX, event.clientY, row);
+          return;
+        }
+        event.preventDefault();
+      });
+
+      // 2. ДОЛГОЕ НАЖАТИЕ (Для ТЕЛЕФОНА)
+      document.addEventListener('touchstart', (e) => {
+        if (window.getSelection().toString().length > 0) return; 
+        
+        const row = e.target.closest('.message-row');
+        if (!row || row.classList.contains('ai')) return;
+
+        pressTimer = setTimeout(() => {
+          showContextMenu(e.touches[0].clientX, e.touches[0].clientY, row);
+          if (window.getSelection) window.getSelection().removeAllRanges();
+        }, 500); 
+      }, { passive: true });
+
+      document.addEventListener('touchend', () => clearTimeout(pressTimer));
+      document.addEventListener('touchmove', () => clearTimeout(pressTimer), { passive: true });
+
+      // Закрытие меню при клике/тапе мимо
+      document.addEventListener("click", (e) => {
+        const menu = getMenu();
+        if (menu && !menu.contains(e.target)) hideContextMenu();
+      });
+
+      // 3. ПРИВЯЗКА КНОПОК МЕНЮ К ФУНКЦИЯМ (Ждем загрузки HTML)
+      window.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('cmenu-copy')?.addEventListener('click', () => {
+          if (!activeMessageRow) return;
+          const fakeBtn = document.createElement('button');
+          activeMessageRow.appendChild(fakeBtn);
+          window.copyMessageText(fakeBtn);
+          fakeBtn.remove();
+          hideContextMenu();
+        });
+
+        document.getElementById('cmenu-download')?.addEventListener('click', () => {
+          if (!activeMessageRow) return;
+          const fakeBtn = document.createElement('button');
+          activeMessageRow.appendChild(fakeBtn);
+          window.downloadSingleMessage(fakeBtn);
+          fakeBtn.remove();
+          hideContextMenu();
+        });
+
+        document.getElementById('cmenu-edit')?.addEventListener('click', () => {
+          if (!activeMessageRow) return;
+          const fakeBtn = document.createElement('button');
+          activeMessageRow.appendChild(fakeBtn);
+          if (activeMessageRow.classList.contains('user')) {
+            window.editMessage(fakeBtn);
+          } else {
+            window.editAIMessage(fakeBtn);
+          }
+          fakeBtn.remove();
+          hideContextMenu();
+        });
+
+        document.getElementById('cmenu-regen')?.addEventListener('click', () => {
+          if (!activeMessageRow) return;
+          window.regenerateLast();
+          hideContextMenu();
+        });
+      });
 
       // Попытка блокировки инструментов разработчика
       setInterval(function () {
@@ -6884,43 +7078,24 @@
             ? avatarIcon
             : `<div class="avatar user-avatar"></div>`;
 
-        let actions = "";
-        if (msg.role === "assistant") {
-          actions = `<div class="message-actions">
-                <button class="msg-action-btn" title="Копировать" onclick="copyMessageText(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
-                <button class="msg-action-btn" title="Скачать как .md" onclick="downloadSingleMessage(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
-                <button class="msg-action-btn" title="Повторить" onclick="regenerateLast()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg></button>
-                <button class="msg-action-btn" title="Редактировать ответ" onclick="editAIMessage(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></button>
-            </div>`;
-        } else if (msg.role === "user") {
-          actions = `<div class="message-actions">
-                <button class="msg-action-btn" title="Редактировать" onclick="editMessage(this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></button>
-            </div>`;
-        }
+            // БЛОК с let actions = ""; и if/else ПОЛНОСТЬЮ УДАЛИТЬ ИЛИ ЗАКОММЕНТИРОВАТЬ.
 
-        const htmlContent =
-          msg.role === "user"
-            ? `<p>${msg.content.replace(/</g, "&lt;").replace(/\n/g, "<br>")}</p>`
-            : window.safeRenderMarkdown(msg.content);
-        div.innerHTML = `<div class="message-content-wrapper">${avatar}<div class="message-content">${imagesHtml}<div class="text-body">${htmlContent}</div></div>${actions}</div>`;
-        // Добавляем проверку на наличие данных о расходе
-        let usageHtml = "";
-        if (msg.role === "assistant" && msg.usage) {
-          const cost = msg.usage.cost
-            ? `Cost: $${msg.usage.cost.toFixed(5)}`
-            : "";
-          const tokens = msg.usage.total_tokens
-            ? `Tokens: ${msg.usage.total_tokens}`
-            : "";
-          // Добавляем инфо о токенах рассуждения, если они есть
-          const reasoning = msg.usage.reasoning_tokens
-            ? ` | Thinking: ${msg.usage.reasoning_tokens}`
-            : "";
-
-          usageHtml = `<div class="usage-info">${tokens}${reasoning} ${cost}</div>`;
-        }
-
-        div.innerHTML = `<div class="message-content-wrapper">${avatar}<div class="message-content">${imagesHtml}<div class="text-body">${htmlContent}</div>${usageHtml}</div>${actions}</div>`;
+            const htmlContent =
+              msg.role === "user"
+                ? `<p>${msg.content.replace(/</g, "&lt;").replace(/\n/g, "<br>")}</p>`
+                : window.safeRenderMarkdown(msg.content);
+                
+            // Изменяем финальный вывод, убрав ${actions}
+            let usageHtml = "";
+            if (msg.role === "assistant" && msg.usage) {
+              const cost = msg.usage.cost ? `Cost: $${msg.usage.cost.toFixed(5)}` : "";
+              const tokens = msg.usage.total_tokens ? `Tokens: ${msg.usage.total_tokens}` : "";
+              const reasoning = msg.usage.reasoning_tokens ? ` | Thinking: ${msg.usage.reasoning_tokens}` : "";
+              usageHtml = `<div class="usage-info">${tokens}${reasoning} ${cost}</div>`;
+            }
+    
+            // Вставляем БЕЗ ${actions}
+            div.innerHTML = `<div class="message-content-wrapper">${avatar}<div class="message-content">${imagesHtml}<div class="text-body">${htmlContent}</div>${usageHtml}</div></div>`;
         if (msgIndex !== null) div.dataset.msgIndex = msgIndex;
         chatHistoryDOM.appendChild(div);
         return div.querySelector(".text-body");
@@ -9314,7 +9489,29 @@
         </button>
       </div>
     </div>
-  </body>
+
+    <!-- ========================================== -->
+  <!-- КАСТОМНОЕ КОНТЕКСТНОЕ МЕНЮ ДЛЯ СООБЩЕНИЙ   -->
+  <!-- ========================================== -->
+  <div id="custom-message-menu" class="custom-context-menu">
+    <div class="context-menu-item" id="cmenu-copy">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      <span>Копировать</span>
+    </div>
+    <div class="context-menu-item" id="cmenu-download">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      <span>Скачать .md</span>
+    </div>
+    <div class="context-menu-item" id="cmenu-edit">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg>
+      <span>Редактировать</span>
+    </div>
+    <div class="context-menu-item" id="cmenu-regen">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>
+      <span>Повторить</span>
+    </div>
+  </div>
+
   <!-- ========================================== -->
   <!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
   <!-- ========================================== -->
@@ -9750,4 +9947,5 @@
     });
   </script>
   <!-- ========================================== -->
+  </body>
 </html>

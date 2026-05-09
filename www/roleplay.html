@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Roleplay AI Chat</title>
-    <!-- Иконки FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>Roleplay AI Chat</title>
+        <!-- Заглушка для Favicon (убирает ошибку 404) -->
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+        <!-- Иконки FontAwesome (Обновленная, более стабильная ссылка) -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Библиотека Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
 
 #toast-container {
@@ -325,6 +329,14 @@
             display: flex; align-items: center; gap: 15px; padding: 16px 20px;
             font-size: 16px; font-weight: 500; color: #fff; cursor: pointer;
             border-radius: 16px; transition: 0.2s;
+            /* Отключаем выделение текста */
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        .msg-menu-content {
+            user-select: none;
+            -webkit-user-select: none;
         }
         .msg-menu-item:hover { background: rgba(255,255,255,0.05); }
         .msg-menu-item.danger { color: var(--danger); }
@@ -688,6 +700,58 @@
             animation: fadeIn 0.3s ease;
         }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Меню плюсика */
+        .plus-menu-container {
+            position: absolute; bottom: 80px; left: 20px;
+            background: rgba(28, 30, 38, 0.95); backdrop-filter: blur(15px);
+            border: 1px solid var(--border-color); border-radius: 16px;
+            padding: 8px; display: none; flex-direction: column; gap: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100;
+            transform-origin: bottom left;
+        }
+        .plus-menu-container.active { display: flex; animation: popUp 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popUp { from { opacity: 0; transform: scale(0.8) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        
+        .plus-menu-item {
+            padding: 12px 16px; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 12px;
+            border-radius: 10px; cursor: pointer; user-select: none; -webkit-user-select: none;
+        }
+        .plus-menu-item:hover { background: rgba(255,255,255,0.05); }
+        .plus-menu-item i { width: 20px; text-align: center; font-size: 16px; }
+
+        /* Галерея обоев в меню */
+        .wp-gallery { display: flex; gap: 10px; overflow-x: auto; padding: 5px 0; scrollbar-width: none; }
+        .wp-gallery::-webkit-scrollbar { display: none; }
+        
+        /* НОВАЯ ОБЕРТКА */
+        .wp-item-wrapper { position: relative; display: inline-block; flex-shrink: 0; }
+        
+        .wp-item { width: 50px; height: 70px; border-radius: 10px; object-fit: cover; cursor: pointer; border: 2px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.2s; }
+        .wp-item:hover { transform: translateY(-2px); }
+        .wp-item.active { border-color: var(--accent-color); transform: scale(1.05); }
+        .wp-add { width: 50px; height: 70px; border-radius: 10px; border: 1px dashed var(--text-muted); display: flex; justify-content: center; align-items: center; cursor: pointer; flex-shrink: 0; transition: 0.2s; background: rgba(255,255,255,0.02); }
+        .wp-add:hover { background: rgba(255,255,255,0.05); border-color: #fff; }
+
+        /* КНОПКА УДАЛЕНИЯ */
+        .wp-delete-btn {
+            position: absolute; top: -5px; right: -5px;
+            background: var(--danger); color: white; border: none;
+            width: 22px; height: 22px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 10px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            opacity: 0; transition: 0.2s; z-index: 10;
+        }
+        .wp-item-wrapper:hover .wp-delete-btn { opacity: 1; transform: scale(1.1); }
+        @media (max-width: 768px) { .wp-delete-btn { opacity: 1; } } /* На телефоне всегда видно */
+
+        /* Дзен-режим (скрытие интерфейса) */
+        #chat-screen .header, #chat-screen .chat-messages, #chat-screen .chat-input-wrapper {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        #chat-screen.zen-mode .header { opacity: 0; transform: translateY(-20px); pointer-events: none; }
+        #chat-screen.zen-mode .chat-messages { opacity: 0; pointer-events: none; }
+        #chat-screen.zen-mode .chat-input-wrapper { opacity: 0; transform: translateY(20px); pointer-events: none; }
     </style>
 </head>
 <body>
@@ -819,6 +883,9 @@
                             It has demonstrated strong performance compared to leading closed-source models in human evaluations.
                             
                             To read more about the model release, click here(opens in new tab). Usage of this model is subject to Meta's Acceptable Use Policy(opens in new tab).</div></div><div class="ms-radio"></div>
+                    </div>
+                    <div class="ms-card" data-model="gemini-3.1-flash" onclick="selectModelCard(this, 'gemini-3.1-flash-preview')">
+                        <div class="ms-card-info"><div class="ms-card-title">Gemini-3.1-flash-lite</div><div class="ms-card-desc">Gemini-3.1-flash-lite. Новая модель</div></div><div class="ms-radio"></div>
                     </div>
                 </div>
             </div>
@@ -1092,9 +1159,11 @@
                         <span class="sp-item-title">Chat Name</span>
                         <span class="sp-item-value" id="sp-chat-name">Name <i class="fa-solid fa-chevron-right"></i></span>
                     </div>
-                    <div class="sp-item" onclick="document.getElementById('chat-wallpaper-input').click()">
-                        <span class="sp-item-title"><i class="fa-regular fa-image" style="margin-right:8px; color:var(--text-muted);"></i> Wallpaper</span>
-                        <span class="sp-item-value">Изменить <i class="fa-solid fa-chevron-right"></i></span>
+                    <div class="sp-block" style="padding: 15px 20px;">
+                        <span class="sp-block-title" style="margin-bottom: 10px; font-size: 13px;"><i class="fa-regular fa-image"></i> Обои чата</span>
+                        <div class="wp-gallery" id="wallpaper-gallery">
+                            <!-- Галерея сгенерируется через JS -->
+                        </div>
                     </div>
                     <div class="sp-item" onclick="openHistoryModal()">
                         <span class="sp-item-title"><i class="fa-solid fa-clock-rotate-left" style="margin-right:8px; color:var(--text-muted);"></i> History</span>
@@ -1206,10 +1275,20 @@
             <!-- Токенизатор текущего сообщения -->
             <div id="typing-token-counter" style="position: absolute; right: 25px; top: -5px; font-size: 11px; font-weight: 600; color: var(--accent-color); background: rgba(20,21,26,0.9); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border-color); display: none;">0 tks</div>
             
+            <!-- Выпадающее меню Плюсика -->
+            <div id="plus-menu" class="plus-menu-container">
+                <div class="plus-menu-item" onclick="triggerRandomEvent()"><i class="fa-solid fa-dice" style="color: #ff9a9e;"></i> Бросить кубик (Событие)</div>
+                <div class="plus-menu-item" onclick="document.getElementById('chat-wallpaper-input').click()"><i class="fa-solid fa-image" style="color: #a78bfa;"></i> Сменить обои</div>
+                <div class="plus-menu-item" onclick="exportChat()"><i class="fa-solid fa-download" style="color: #6eff8f;"></i> Скачать лог чата</div>
+                <div class="plus-menu-item" onclick="restartChat()" style="color: #ff6b6b;"><i class="fa-solid fa-rotate-left"></i> Начать сначала</div>
+            </div>
+
             <div class="chat-input-pill">
-                <button class="input-icon-btn"><i class="fa-solid fa-microphone"></i></button>
-                <textarea id="chat-input" placeholder="Type a message" oninput="autoResizeTextarea(this)"></textarea>
-                <button class="input-icon-btn" style="font-size: 16px;"><i class="fa-solid fa-plus"></i></button>
+                <!-- Плюсик -->
+                <button class="input-icon-btn" style="font-size: 20px;" onclick="togglePlusMenu(event)"><i class="fa-solid fa-circle-plus"></i></button>
+                
+                <textarea id="chat-input" placeholder="Введите сообщение..." oninput="autoResizeTextarea(this)"></textarea>
+                
                 <button class="input-icon-btn" onclick="sendMessage()" id="send-btn-icon"><i class="fa-solid fa-paper-plane" style="color: var(--accent-color);"></i></button>
             </div>
         </div>
@@ -1369,8 +1448,21 @@
     </div>
 
 
-<script>
-    const MODEL_LIMITS = {
+    <script>
+        // Инициализация Supabase
+        const SUPABASE_URL = 'https://qnklmktpzfphqynomsgw.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFua2xta3RwemZwaHF5bm9tc2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzY1NzIsImV4cCI6MjA5MjQ1MjU3Mn0.gfyXStXf1zkmDHV0Q-4LDwb7Az4UNmSL0BkMMqp1SdA'; // <--- Заменить здесь
+
+
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+        }
+    });
+    
+        const MODEL_LIMITS = {
     // Free
     "z-ai/glm-4.5-air:free": 128000,
     "inclusionai/ling-2.6-1t:free": 32000,
@@ -1409,7 +1501,7 @@
     "x-ai/grok-4.1-fast": 131000,
     "deepseek/deepseek-v3.2": 128000,
     "gpt-5.3-chat": 128000,
-    "google/gemma-4-26b-a4b-it": 32000,
+    "google/gemma-4-26b-a4b-it": 262144,
     "gemini-3-flash-preview": 1000000,
     "default": 8000
 };
@@ -1427,6 +1519,7 @@
         chats: {}, // solo chats
         groupChats: {}, // group chats
         chatHistories: {}, // { [entityId]: [ { date: timestamp, messages: [] } ] }
+        wallpapers: [], // <-- НОВОЕ: Добавили массив обоев сюда
         settings: { apiKey: '', openRouterKey: '', model: 'mistralai/mistral-medium-3.1' },
         userProfile: { name: 'User', description: '', avatar: '' }
     };
@@ -1463,6 +1556,7 @@
                     if(!appState.groups) appState.groups = [];
                     if(!appState.groupChats) appState.groupChats = {};
                     if(!appState.chatHistories) appState.chatHistories = {};
+                    if(!appState.wallpapers) appState.wallpapers = []; // <-- НОВОЕ
                 }
                 resolve();
             };
@@ -1478,9 +1572,7 @@
         await initDB();
         updateHomeStats();
         openNavTab('home'); // Стартуем с нового экрана Home
-        document.getElementById('chat-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-        });
+        
 
         // НОВОЕ: Перетаскивание блоков памяти мышкой на ПК (Drag-to-scroll)
         const slider = document.getElementById('memory-container');
@@ -1567,20 +1659,6 @@ function saveSummaryEditor() {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
-
-    // --- УПРАВЛЕНИЕ НАВИГАЦИЕЙ И ЭКРАНАМИ ---
-    function openNavTab(tabName) {
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        if(tabName === 'home') {
-            document.getElementById('nav-home').classList.add('active');
-            updateHomeStats();
-            switchScreen('real-home-screen');
-        } else if (tabName === 'chat') {
-            document.getElementById('nav-chat').classList.add('active');
-            switchMainTab(currentTab);
-            switchScreen('chat-list-screen');
-        }
-    }
 
     function updateHomeStats() {
         document.getElementById('stat-chars').innerText = appState.characters.length;
@@ -2401,12 +2479,12 @@ function saveSummaryEditor() {
         triggerAIGroupReply(randomCharId);
     }
 
-    // --- ОБЩИЙ ВЫЗОВ API (С АВТО-АДАПТАЦИЕЙ ПАРАМЕТРОВ) ---
+    // --- ОБЩИЙ ВЫЗОВ API (С АВТО-АДАПТАЦИЕЙ ПАРАМЕТРОВ И УМНЫМ РОУТИНГОМ) ---
     async function callOpenRouter(apiMessages, aiName, targetHistoryArray, botCharId = null) {
         try {
             const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
             const reqTemp = Number(entity.temp || 0.8);
-            const reqTokens = Math.floor(Number(entity.maxTokens || 8000)); // СТРОГО ЦЕЛОЕ ЧИСЛО
+            const reqTokens = Math.floor(Number(entity.maxTokens || 8000));
 
             const model = appState.settings.model;
             const isFreeModel = model.endsWith(':free');
@@ -2422,47 +2500,57 @@ function saveSummaryEditor() {
             let bodyPayload = {};
             let reply = "";
 
-            // ЖЕСТКОЕ ПРАВИЛО: Есть слэш = OpenRouter. Нет слэша = Нативный ProxyAPI.
-            if (model.includes('/')) {
-                // 1. OPENROUTER МОДЕЛИ
+            // --- УМНЫЙ РОУТИНГ PROXY API ---
+            let isNativeProxy = false;
+
+            if (!isFreeModel) {
+                // Платные ключи ProxyAPI запрещают Google/Claude/OpenAI через свой OpenRouter эндпоинт.
+                // Поэтому принудительно переводим их на нативные эндпоинты.
+                if (model.includes('gemini') || model.includes('claude') || (model.includes('gpt') && !model.includes('gpt-oss'))) {
+                    isNativeProxy = true;
+                } else if (!model.includes('/')) {
+                    isNativeProxy = true;
+                }
+            }
+
+            // Очищаем имя (например "google/gemini-3.1-flash-lite" превращаем в "gemini-3.1-flash-lite") 
+            // Это нужно, так как нативный Google API не понимает приставку "google/"
+            const cleanModelName = model.includes('/') ? model.split('/')[1] : model;
+
+            if (!isNativeProxy) {
+                // 1. OPENROUTER МОДЕЛИ (Все бесплатные + платные сторонние вроде Mistral/Llama)
                 apiUrl = isFreeModel 
                     ? 'https://openrouter.ai/api/v1/chat/completions' 
                     : 'https://api.proxyapi.ru/openrouter/v1/chat/completions';
                 
                 bodyPayload = {
-                    model: model,
+                    model: model, // Здесь передаем оригинальное полное имя
                     messages: apiMessages.filter(m => m.content && String(m.content).trim() !== ""), 
                     temperature: reqTemp,
                     max_tokens: reqTokens
                 };
             } else {
-                // 2. НАТИВНЫЕ МОДЕЛИ PROXYAPI
-                if (model.includes('claude')) {
-                    // Anthropic (Claude)
+                // 2. НАТИВНЫЕ МОДЕЛИ PROXYAPI (Google, Anthropic, OpenAI)
+                if (cleanModelName.includes('claude')) {
+                    // --- Anthropic (Claude) ---
                     apiUrl = 'https://api.proxyapi.ru/anthropic/v1/messages';
-                    // ProxyAPI использует стандартный Bearer токен даже для Anthropic, 
-                    // поэтому МЫ НЕ УДАЛЯЕМ заголовок Authorization!
                     headers['anthropic-version'] = '2023-06-01';
-                    headers['x-api-key'] = authKey; // Оставляем на всякий случай для совместимости
+                    headers['x-api-key'] = authKey; 
                     
                     let systemPrompt = "";
                     let anthropicMessages =[];
                     
                     apiMessages.forEach(m => {
                         let content = m.content ? String(m.content).trim() : "";
-                        if (!content) content = "."; // Защита от пустых строк
+                        if (!content) content = ".";
                         
                         if (m.role === 'system') {
                             systemPrompt += content + "\n\n";
                         } else {
                             let role = m.role === 'assistant' ? 'assistant' : 'user';
-                            
-                            // Claude ТРЕБУЕТ, чтобы ПЕРВОЕ сообщение было от user
                             if (anthropicMessages.length === 0 && role === 'assistant') {
                                 anthropicMessages.push({ role: 'user', content: '[System: Продолжение диалога]' });
                             }
-                            
-                            // Claude ЗАПРЕЩАЕТ два сообщения подряд от одной роли (склеиваем их)
                             if (anthropicMessages.length > 0 && anthropicMessages[anthropicMessages.length - 1].role === role) {
                                 anthropicMessages[anthropicMessages.length - 1].content += "\n\n" + content;
                             } else {
@@ -2471,51 +2559,61 @@ function saveSummaryEditor() {
                         }
                     });
 
-                    if (anthropicMessages.length === 0) {
-                        anthropicMessages.push({ role: 'user', content: 'Привет' });
-                    }
-
-                    let claudeTemp = reqTemp > 1.0 ? 1.0 : reqTemp;
+                    if (anthropicMessages.length === 0) anthropicMessages.push({ role: 'user', content: 'Привет' });
 
                     bodyPayload = {
-                        model: model,
+                        model: cleanModelName, // Используем очищенное имя
                         messages: anthropicMessages,
-                        temperature: claudeTemp,
+                        temperature: reqTemp > 1.0 ? 1.0 : reqTemp,
                         max_tokens: reqTokens > 8192 ? 8192 : reqTokens
                     };
-                    
-                    if (systemPrompt.trim() !== "") {
-                        bodyPayload.system = systemPrompt.trim();
-                    }
+                    if (systemPrompt.trim() !== "") bodyPayload.system = systemPrompt.trim();
 
-                } else if (model.includes('gemini')) {
-                    // Google (Gemini)
-                    apiUrl = `https://api.proxyapi.ru/google/v1beta/models/${model}:generateContent?key=${authKey}`;
+                } else if (cleanModelName.includes('gemini')) {
+                    // --- Google (Gemini) ---
+                    apiUrl = `https://api.proxyapi.ru/google/v1beta/models/${cleanModelName}:generateContent?key=${authKey}`;
                     delete headers['Authorization'];
                     
                     let systemPrompt = "";
-                    const geminiContents =[];
+                    let geminiContents = [];
+                    
                     apiMessages.forEach(m => {
-                        let content = m.content ? String(m.content).trim() : ".";
+                        let content = m.content ? String(m.content).trim() : "";
+                        if (!content) content = "."; // Защита от пустых сообщений
+                        
                         if (m.role === 'system') {
                             systemPrompt += content + "\n";
                         } else {
-                            geminiContents.push({
-                                role: m.role === 'assistant' ? 'model' : 'user',
-                                parts: [{ text: content }]
-                            });
+                            let role = m.role === 'assistant' ? 'model' : 'user';
+                            
+                            // 1. Gemini ТРЕБУЕТ, чтобы ПЕРВОЕ сообщение было от user
+                            if (geminiContents.length === 0 && role === 'model') {
+                                geminiContents.push({ role: 'user', parts: [{ text: '[System: Продолжение диалога]' }] });
+                            }
+                            
+                            // 2. Gemini ЗАПРЕЩАЕТ два сообщения подряд от одной роли (склеиваем их)
+                            if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role === role) {
+                                geminiContents[geminiContents.length - 1].parts[0].text += "\n\n" + content;
+                            } else {
+                                geminiContents.push({ role: role, parts: [{ text: content }] });
+                            }
                         }
                     });
 
+                    // 3. Защита от пустого массива
+                    if (geminiContents.length === 0) {
+                        geminiContents.push({ role: 'user', parts: [{ text: 'Привет' }] });
+                    }
+
+                    // 4. Ограничиваем температуру (Google выдает 400 ошибку, если temp > 2.0)
+                    let safeTemp = reqTemp > 2.0 ? 2.0 : reqTemp;
+
                     bodyPayload = {
                         contents: geminiContents,
-                        generationConfig: {
-                            temperature: reqTemp,
-                            maxOutputTokens: reqTokens
-                        }
+                        generationConfig: { temperature: safeTemp, maxOutputTokens: reqTokens }
                     };
 
-                    // <-- ВОТ ИЗМЕНЕНИЕ: Отключаем встроенную цензуру Gemini, если стоит галочка NSFW
+                    // Отключение цензуры
                     if (appState.settings.nsfwEnabled) {
                         bodyPayload.safetySettings = [
                             { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -2524,35 +2622,31 @@ function saveSummaryEditor() {
                             { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
                         ];
                     }
-
+                    
+                    // Строгий формат System Prompt
                     if (systemPrompt.trim() !== "") {
-                        bodyPayload.systemInstruction = { parts:[{ text: systemPrompt.trim() }] };
+                        bodyPayload.systemInstruction = { 
+                            role: "system", // Обязательное поле для новых версий API
+                            parts: [{ text: systemPrompt.trim() }] 
+                        };
                     }
+
                 } else {
-                    // OpenAI (gpt, o1, o3 и т.д.)
+                    // --- OpenAI (GPT) ---
                     apiUrl = 'https://api.proxyapi.ru/openai/v1/chat/completions';
                     
-                    let safeModel = model;
-                    if (model === 'gpt-5.3-chat') safeModel = 'gpt-5.2-chat-latest'; // Алиас в ProxyAPI
-                    if (model === 'gpt-5.2-chat') safeModel = 'gpt-5.2-chat-latest'; // Алиас в ProxyAPI
+                    let safeModel = cleanModelName;
+                    if (safeModel === 'gpt-5.3-chat' || safeModel === 'gpt-5.2-chat') safeModel = 'gpt-5.2-chat-latest';
 
                     let cleanMessages = apiMessages.filter(m => m.content && String(m.content).trim() !== "");
                     if (cleanMessages.length === 0) cleanMessages.push({ role: 'user', content: 'Привет' });
 
-                    bodyPayload = {
-                        model: safeModel,
-                        messages: cleanMessages
-                    };
+                    bodyPayload = { model: safeModel, messages: cleanMessages };
 
-                    // Проверяем как оригинальное имя модели (model), так и её алиас (safeModel)
-                    const isReasoningModel = model.includes('gpt-5') || safeModel.includes('gpt-5') || safeModel.includes('o1') || safeModel.includes('o3');
-
+                    const isReasoningModel = safeModel.includes('gpt-5') || safeModel.includes('o1') || safeModel.includes('o3');
                     if (isReasoningModel) {
-                        // Для Reasoning моделей (gpt-5.x, o1, o3) используется max_completion_tokens
                         bodyPayload.max_completion_tokens = reqTokens;
-                        // Температуру НЕ передаем, так как такие модели её не поддерживают или требуют строго 1
                     } else {
-                        // Для обычных моделей (gpt-4o, gpt-3.5 и прочие)
                         bodyPayload.max_tokens = reqTokens;
                         bodyPayload.temperature = reqTemp;
                     }
@@ -2714,6 +2808,186 @@ function saveSummaryEditor() {
         renderMessages();
     }
 
+    // --- ЛОГИКА ОБОЕВ (ГАЛЕРЕЯ, СОХРАНЕНИЕ В SUPABASE И УДАЛЕНИЕ) ---
+    
+    async function handleWallpaperUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        showToast("Сжатие и выгрузка в облако...", false);
+        if (!appState.wallpapers) appState.wallpapers = [];
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = async () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Сжатие (Full HD)
+                const MAX_WIDTH = 1080;
+                const MAX_HEIGHT = 1920;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                } else {
+                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Конвертируем canvas в Blob (сырой файл) вместо Base64
+                canvas.toBlob(async (blob) => {
+                    const fileName = `wp_${Date.now()}_${Math.floor(Math.random()*1000)}.jpg`;
+
+                    try {
+                        // 1. Отправляем в Supabase
+                        const { data, error } = await supabaseClient.storage
+                            .from('wallpapers') // Название бакета
+                            .upload(fileName, blob, {
+                                contentType: 'image/jpeg',
+                                upsert: false
+                            });
+
+                        if (error) throw error;
+
+                        // 2. Получаем публичный URL
+                        const { data: publicUrlData } = supabaseClient.storage
+                            .from('wallpapers')
+                            .getPublicUrl(fileName);
+
+                        const publicUrl = publicUrlData.publicUrl;
+                        
+                        // 3. Сохраняем ТОЛЬКО ссылку в IndexedDB
+                        if (!appState.wallpapers.includes(publicUrl)) {
+                            appState.wallpapers.unshift(publicUrl);
+                            // Лимит 15 обоев (старые просто уходят из UI)
+                            if (appState.wallpapers.length > 15) appState.wallpapers.pop();
+                        }
+                        
+                        saveData(); 
+                        selectWallpaper(publicUrl); 
+                        showToast("Обои успешно загружены!");
+
+                    } catch (err) {
+                        console.error(err);
+                        showToast("Ошибка загрузки: " + err.message, true);
+                    }
+                }, 'image/jpeg', 0.8);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = ''; 
+    }
+
+    // Удаление обоев (и из базы, и из Supabase)
+    async function deleteWallpaper(event, url) {
+        event.stopPropagation(); // Чтобы не сработал клик по картинке
+        if (!confirm("Удалить эти обои навсегда?")) return;
+
+        showToast("Удаление...", false);
+
+        try {
+            // Извлекаем имя файла из URL Supabase
+            const fileName = url.split('/').pop();
+
+            // Удаляем файл из облака
+            const { error } = await supabaseClient.storage
+                .from('wallpapers')
+                .remove([fileName]);
+
+            if (error) throw error;
+
+            // Удаляем из локальной базы данных (appState)
+            appState.wallpapers = appState.wallpapers.filter(wp => wp !== url);
+
+            // Если эти обои установлены в текущем чате, сбрасываем их на дефолтные
+            const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+            if (entity && entity.wallpaper === url) {
+                entity.wallpaper = null;
+                document.getElementById('chat-screen').style.backgroundImage = "url('https://i.imgur.com/8Q8XG0S.jpeg')";
+            }
+
+            saveData();
+            renderWallpaperGallery(); // Перерисовываем UI
+            showToast("Обои удалены!");
+
+        } catch (err) {
+            console.error(err);
+            showToast("Ошибка удаления: " + err.message, true);
+        }
+    }
+
+    function selectWallpaper(url) {
+        const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+        entity.wallpaper = url;
+        saveData();
+        
+        document.getElementById('chat-screen').style.backgroundImage = url ? `url('${url}')` : "url('https://i.imgur.com/8Q8XG0S.jpeg')";
+        renderWallpaperGallery(); 
+    }
+
+    function renderWallpaperGallery() {
+        const container = document.getElementById('wallpaper-gallery');
+        if(!container) return;
+        
+        if (!appState.wallpapers) appState.wallpapers = [];
+        
+        const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
+        const defaultWp = "https://i.imgur.com/8Q8XG0S.jpeg";
+        const currentWp = entity.wallpaper || defaultWp;
+
+        let html = `<div class="wp-add" onclick="document.getElementById('chat-wallpaper-input').click()"><i class="fa-solid fa-plus"></i></div>`;
+        
+        // Стандартные обои (без кнопки удаления)
+        html += `
+        <div class="wp-item-wrapper">
+            <img src="${defaultWp}" class="wp-item ${currentWp === defaultWp ? 'active' : ''}" onclick="selectWallpaper('${defaultWp}')">
+        </div>`;
+        
+        // Загруженные пользователем обои (с крестиком)
+        appState.wallpapers.forEach(wp => {
+            html += `
+            <div class="wp-item-wrapper">
+                <img src="${wp}" class="wp-item ${currentWp === wp ? 'active' : ''}" onclick="selectWallpaper('${wp}')">
+                <button class="wp-delete-btn" onclick="deleteWallpaper(event, '${wp}')"><i class="fa-solid fa-xmark"></i></button>
+            </div>`;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    // --- ДЗЕН-РЕЖИМ (Двойной тап для скрытия UI) ---
+    let lastTapTime = 0;
+    
+    document.addEventListener("DOMContentLoaded", () => {
+        const chatScreen = document.getElementById('chat-screen');
+        
+        chatScreen.addEventListener('click', (e) => {
+            // Если кликаем по интерфейсу (шапка, баббл сообщения, инпут) — игнорируем
+            if (e.target.closest('.header') || e.target.closest('.bubble') || e.target.closest('.chat-input-wrapper') || e.target.closest('.side-panel')) {
+                return; 
+            }
+
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTapTime;
+
+            if (chatScreen.classList.contains('zen-mode')) {
+                // Если режим включен — ОДИН клик возвращает всё обратно
+                chatScreen.classList.remove('zen-mode');
+            } else if (tapLength < 300 && tapLength > 0) {
+                // ДВОЙНОЙ клик по пустому месту включает Дзен-режим
+                chatScreen.classList.add('zen-mode');
+            }
+            lastTapTime = currentTime;
+        });
+    });
+
     // Логика нового выезжающего меню и экрана выбора моделей
     function openModelSelection() {
         document.getElementById('chat-menu-overlay').classList.remove('active');
@@ -2796,6 +3070,7 @@ function toggleChatMenu(e) {
         // Просто вызываем нашу новую функцию, она сама всё посчитает и вставит
         updateTokenCounterDisplay();
         
+        renderWallpaperGallery(); // Отрисовываем галерею обоев
         overlay.classList.add('active');
     } else {
         overlay.classList.remove('active');
@@ -2919,20 +3194,6 @@ function updateTokenCounterDisplay() {
         } else {
             await triggerAIGroupReply(charIdForGroup);
         }
-    }
-
-    // --- НОВОЕ: Обработка Обоев ---
-    function handleWallpaperUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
-            entity.wallpaper = e.target.result; // Сохраняем Base64 обоев в сущность
-            saveData();
-            document.getElementById('chat-screen').style.backgroundImage = `url('${entity.wallpaper}')`;
-        };
-        reader.readAsDataURL(file);
     }
 
     // Добавляем подгрузку обоев при открытии чата. Найдите функцию openChat() и в самый ее конец (ПЕРЕД switchScreen('chat-screen');) добавьте:
@@ -3258,6 +3519,27 @@ function updateTokenCounterDisplay() {
         isWaitingForAI = false;
     }
 }
+
+// --- ЛОГИКА МЕНЮ ПЛЮСИКА ---
+function togglePlusMenu(e) {
+        e.stopPropagation(); // Чтобы клик не закрыл меню сразу же
+        document.getElementById('plus-menu').classList.toggle('active');
+    }
+
+    // Закрываем меню плюсика, если кликнули в любое другое место
+    document.addEventListener('click', () => {
+        const pm = document.getElementById('plus-menu');
+        if(pm && pm.classList.contains('active')) pm.classList.remove('active');
+    });
+
+    // Функция: Бросить кубик (Случайное событие)
+    function triggerRandomEvent() {
+        if (isWaitingForAI) return;
+        const input = document.getElementById('chat-input');
+        // Добавляем красивое действие в чат
+        input.value = "*Внезапно происходит неожиданное событие, которое меняет ход ситуации...*";
+        sendMessage(); // Автоматически отправляем
+    }
 </script>
 </body>
 <!-- ========================================== -->

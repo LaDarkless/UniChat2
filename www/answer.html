@@ -322,7 +322,7 @@
 
     <main class="main-container" id="main">
         <h1>Ответы.</h1>
-        <p class="subtitle">Ваш личный встроенный ИИ-помощник (Модель: Trinity Large)</p>
+        <p class="subtitle">Ваш личный встроенный ИИ-помощник</p>
 
         <!-- Встроенные приветственные вопросы -->
         <div class="suggestions">
@@ -355,7 +355,8 @@
 
     <script>
         // === ВАШИ НАСТРОЙКИ ===
-        const API_KEY = "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"; 
+const API_KEY = "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"; 
+const AI_MODEL = "openai/gpt-oss-120b:free"; // ДОБАВЬТЕ ЭТУ СТРОКУ
         
         const SYSTEM_PROMPT = `Ты — профессиональный, дружелюбный и лаконичный ИИ-помощник в приложении UniChat. 
         Твоя задача — давать точные и полезные ответы. 
@@ -628,10 +629,10 @@ server:
                     "X-Title": "UniChat AI Answer"
                 },
                 body: JSON.stringify({
-                    model: "openai/gpt-oss-120b:free",
-                    messages: chatHistory,
-                    stream: true // <-- 1. ВКЛЮЧАЕМ ПОТОКОВУЮ ПЕРЕДАЧУ
-                })
+    model: AI_MODEL, // Теперь здесь используется переменная
+    messages: chatHistory,
+    stream: true 
+})
             });
 
             if (!response.ok) {
