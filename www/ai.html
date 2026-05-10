@@ -10,6 +10,9 @@
 
     <!-- Подключение библиотек -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <!-- EmailJS SDK -->
     <script
       type="text/javascript"
@@ -2387,33 +2390,44 @@
       }
 
       /* ==========================================
-     ФИКСЫ ДЛЯ МОБИЛЬНЫХ: ВЫДЕЛЕНИЕ И КОПИРОВАНИЕ
+     ЗАПРЕТ ВЫДЕЛЕНИЯ ТЕКСТА И ТОЧЕЧНАЯ РАЗБЛОКИРОВКА
      ========================================== */
 
-/* ДОБАВИТЬ ЭТОТ БЛОК: Принудительно возвращаем системное меню для текстовых полей */
-input, textarea {
-  -webkit-user-select: auto !important;
-  user-select: auto !important;
-  -webkit-touch-callout: default !important;
-}
+      /* 1. Глобальный запрет выделения на всем сайте (чтобы не выглядело дешево) */
+      body, html {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+      }
 
-/* Твой старый код ниже... */
-/* 1. Жестко разрешаем выделение текста и появление системного меню (Копировать/Поделиться) */
-.message-content,
-.message-content p,
-.message-content pre,
-.message-content code,
-.compare-body {
-  -webkit-user-select: text !important;
-  user-select: text !important;
-  -webkit-touch-callout: default !important;
-}
+      /* 2. Принудительно разрешаем выделение ТОЛЬКО в полях ввода (инпуты) */
+      input, textarea {
+        -webkit-user-select: auto !important;
+        user-select: auto !important;
+        -webkit-touch-callout: default !important;
+      }
 
-      /* Запрещаем выделять служебные кнопки, чтобы они не попадали в скопированный текст */
-      .msg-action-btn,
-      .copy-code-btn,
-      .avatar,
-      .thinking-header {
+      /* 3. ЖЕСТКО разрешаем выделение ВСЕГО внутри окна "Режима выделения" */
+      .select-mode-content,
+      .select-mode-content * {
+        -webkit-user-select: text !important;
+        user-select: text !important;
+        -webkit-touch-callout: default !important;
+        cursor: text !important;
+      }
+      
+      /* Чтобы код и картинки внутри модалки смотрелись хорошо */
+      .select-mode-content .code-block-wrapper { margin: 1em 0; }
+      .select-mode-content img { max-width: 100%; border-radius: 8px; }
+      .selectable-text .compare-body {
+        -webkit-user-select: text !important;
+        user-select: text !important;
+        -webkit-touch-callout: default !important;
+        cursor: text;
+      }
+
+      /* Запрещаем выделять служебные элементы, даже если сообщение разблокировано */
+      .msg-action-btn, .copy-code-btn, .avatar, .thinking-header {
         -webkit-user-select: none !important;
         user-select: none !important;
         -webkit-touch-callout: none !important;
@@ -4831,6 +4845,35 @@ input, textarea {
 
       // 3. ПРИВЯЗКА КНОПОК МЕНЮ К ФУНКЦИЯМ (Ждем загрузки HTML)
       window.addEventListener('DOMContentLoaded', () => {
+        
+        // --- НОВАЯ КНОПКА: ОТКРЫТЬ В РЕЖИМЕ ВЫДЕЛЕНИЯ ---
+        document.getElementById('cmenu-select')?.addEventListener('click', () => {
+          if (!activeMessageRow) return;
+          
+          // Ищем именно текстовую часть сообщения (без аватарок и кнопок)
+          const textBody = activeMessageRow.querySelector('.text-body');
+          if (!textBody) return;
+
+          // Находим модалку и область для контента
+          const modal = document.getElementById('text-select-modal');
+          const contentArea = document.getElementById('text-select-content');
+
+          // Копируем отрендеренный HTML-код сообщения в модальное окно
+          contentArea.innerHTML = textBody.innerHTML;
+
+          // Открываем окно
+          modal.classList.add('open');
+          hideContextMenu();
+        });
+
+        // --- ЛОГИКА ЗАКРЫТИЯ ОКНА ВЫДЕЛЕНИЯ ---
+        document.getElementById('close-text-select')?.addEventListener('click', () => {
+          document.getElementById('text-select-modal').classList.remove('open');
+        });
+        document.getElementById('btn-done-select')?.addEventListener('click', () => {
+          document.getElementById('text-select-modal').classList.remove('open');
+        });
+
         document.getElementById('cmenu-copy')?.addEventListener('click', () => {
           if (!activeMessageRow) return;
           const fakeBtn = document.createElement('button');
@@ -4940,16 +4983,12 @@ input, textarea {
         document.getElementById("char-memory").value = char.memory;
         document.getElementById("char-protocol").value = char.protocol;
 
-        buildPremiumSelect(
-          "list-char",
-          "text-char",
-          "char-model",
-          char.baseModel,
-        );
+        buildPremiumSelect("list-char", "text-char", "char-model", char.baseModel);
 
-        document.getElementById("save-character").textContent =
-          "Обновить персонажа";
-        window.showToast("Данные подгружены");
+        document.getElementById("save-character").textContent = "Обновить персонажа";
+        
+        // ИСПРАВЛЕНО: Открываем модальное окно, чтобы пользователь увидел данные
+        document.getElementById("character-modal").classList.add("open");
       };
 
       // TOAST HELPER (MUST BE GLOBAL)
@@ -5189,15 +5228,72 @@ input, textarea {
         });
       }
 
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
-          authOverlay.style.opacity = "0";
-          setTimeout(() => (authOverlay.style.visibility = "hidden"), 500);
-        } else {
-          authOverlay.style.visibility = "visible";
-          authOverlay.style.opacity = "1";
+      async function initializeAppData() {
+        // ---- ИНИЦИАЛИЗАЦИЯ СВЕТЛОЙ/ТЕМНОЙ ТЕМЫ ----
+        const savedTheme = localStorage.getItem("theme") || "dark";
+        document.body.setAttribute("data-theme", savedTheme);
+        const sunIcon = document.querySelector(".sun-icon");
+        const moonIcon = document.querySelector(".moon-icon");
+        if (sunIcon && moonIcon) {
+          if (savedTheme === "light") {
+            sunIcon.style.display = "none";
+            moonIcon.style.display = "block";
+          } else {
+            sunIcon.style.display = "block";
+            moonIcon.style.display = "none";
+          }
         }
-      });
+
+        // Загрузка АГЕНТОВ из Supabase
+        let dbAgents = await loadDataFromDB("agents");
+        customAgents = dbAgents || {};
+
+        // Загрузка ПЕРСОНАЖЕЙ из Supabase
+        let dbChars = await loadDataFromDB("characters");
+        customCharacters = dbChars || {};
+
+        // Загрузка ЧАТОВ (Только заголовки)
+        chats = await loadAllChatsFromDB();
+
+        const modelNameEl = document.getElementById("current-model-name");
+          // ИСПОЛЬЗУЕМ innerHTML, ЧТОБЫ ИКОНКА ОТРЕНДЕРИЛАСЬ
+          if (modelNameEl) modelNameEl.innerHTML = getPrettyModelName(selectedModel);
+
+          const modelName2El = document.getElementById("current-model-name-2");
+          if (modelName2El) modelName2El.innerHTML = getPrettyModelName(selectedModel2);
+
+          renderMainModelDropdown();
+
+        if (!chats || Object.keys(chats).length === 0) {
+          await createNewChat();
+        } else {
+          let savedId = localStorage.getItem("pa_current_chat_id");
+          if (!savedId || !chats[savedId]) {
+              savedId = Object.keys(chats).sort((a, b) => chats[b].updatedAt - chats[a].updatedAt)[0];
+          }
+          currentChatId = savedId;
+          // Подгружаем историю конкретного активного чата из БД в ОЗУ
+          chats[currentChatId].messages = await fetchChatMessagesFromDB(currentChatId) || [];
+          
+          renderChatList();
+          loadCurrentChat();
+        }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUserUid = user.uid; // Привязываем Supabase к Firebase UID
+        authOverlay.style.opacity = "0";
+        setTimeout(() => (authOverlay.style.visibility = "hidden"), 500);
+        
+        window.showToast("Синхронизация с облаком...");
+        await initializeAppData();
+      } else {
+        currentUserUid = "guest";
+        authOverlay.style.visibility = "visible";
+        authOverlay.style.opacity = "1";
+      }
+    });
     </script>
 
     <script>
@@ -5340,6 +5436,22 @@ input, textarea {
         },
 
         //Gemini:
+        {
+          id: "google/gemini-3.1-flash-lite",
+          name: "Gemini-3.1-flash-lite",
+          group: "Gemini",
+          provider: "openrouter",
+          inputPrice: "0.50/M input tokens",
+          outputPrice: "3/M output tokens",
+        },
+        {
+          id: "gemini-3.1-flash-preview",
+          name: "Gemini-3.1-flash",
+          group: "Gemini",
+          provider: "proxy-api",
+          inputPrice: "0.50/M input tokens",
+          outputPrice: "3/M output tokens",
+        },
         {
           id: "google/gemini-3-flash-preview",
           name: "Gemini-3-flash",
@@ -6401,146 +6513,99 @@ input, textarea {
       });
 
       // ==========================================
-      // БАЗА ДАННЫХ INDEXEDDB (УЛУЧШЕННАЯ ВЕРСИЯ)
+      // БАЗА ДАННЫХ SUPABASE (ОПТИМИЗАЦИЯ ПАМЯТИ)
       // ==========================================
-      const dbName = "AIStudioDB";
-      const chatStoreName = "chats";
-      const appDataStoreName = "appData"; // Новое хранилище для агентов, персонажей и т.д.
-      const dbVersion = 2; // Увеличиваем версию БД, чтобы она обновилась
+      const SUPABASE_URL = "https://qnklmktpzfphqynomsgw.supabase.co"; // Вставь свой URL
+      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFua2xta3RwemZwaHF5bm9tc2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzY1NzIsImV4cCI6MjA5MjQ1MjU3Mn0.gfyXStXf1zkmDHV0Q-4LDwb7Az4UNmSL0BkMMqp1SdA"; // Вставь свой KEY
+      const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      
+      let currentUserUid = "guest"; // Будет обновляться через Firebase Auth
 
-      let db = null;
-      let useFallbackStorage = false;
+      async function initDB() {
+        return Promise.resolve(); // Оставлено для совместимости
+      }
 
-      function initDB() {
-        return new Promise((resolve) => {
-          try {
-            const request = indexedDB.open(dbName, dbVersion);
-            request.onupgradeneeded = (event) => {
-              db = event.target.result;
-              // Хранилище для чатов
-              if (!db.objectStoreNames.contains(chatStoreName)) {
-                db.createObjectStore(chatStoreName, { keyPath: "id" });
-              }
-              // Универсальное хранилище ключ-значение (для Агентов и Персонажей)
-              if (!db.objectStoreNames.contains(appDataStoreName)) {
-                db.createObjectStore(appDataStoreName);
-              }
+      // Функция выгружает ТОЛЬКО заголовки чатов, не забивая ОЗУ сообщениями
+      async function loadAllChatsFromDB() {
+        if(currentUserUid === "guest") return {};
+        const { data, error } = await supabaseClient
+            .from('chats')
+            .select('id, title, updated_at')
+            .eq('user_id', currentUserUid);
+            
+        if (error) {
+            console.error("Supabase Error:", error);
+            return {};
+        }
+        
+        const result = {};
+        data.forEach(c => {
+            result[c.id] = {
+                id: c.id,
+                title: c.title,
+                updatedAt: c.updated_at,
+                messages: [] // Сообщения пока пустые!
             };
-            request.onsuccess = (event) => {
-              db = event.target.result;
-              resolve();
-            };
-            request.onerror = () => {
-              useFallbackStorage = true;
-              resolve();
-            };
-          } catch (e) {
-            useFallbackStorage = true;
-            resolve();
-          }
+        });
+        return result;
+      }
+
+      // Загружает историю конкретного чата по клику
+      async function fetchChatMessagesFromDB(chatId) {
+        if(currentUserUid === "guest") return [];
+        const { data, error } = await supabaseClient
+            .from('chats')
+            .select('messages')
+            .eq('id', chatId)
+            .eq('user_id', currentUserUid)
+            .maybeSingle(); // ИСПРАВЛЕНО: предотвращает ошибку 406, если чат пустой
+            
+        if (error || !data) return [];
+        return data.messages || [];
+      }
+
+      async function saveChatToDB(chat) {
+        if(currentUserUid === "guest") return;
+        await supabaseClient.from('chats').upsert({
+            id: chat.id,
+            user_id: currentUserUid,
+            title: chat.title || "Новый чат",
+            updated_at: chat.updatedAt,
+            messages: chat.messages
         });
       }
 
-      // --- ФУНКЦИИ ДЛЯ ЧАТОВ (Остались без изменений) ---
-      function saveChatToDB(chat) {
-        return new Promise((resolve) => {
-          if (useFallbackStorage || !db) {
-            try {
-              localStorage.setItem("pa_chats_fallback", JSON.stringify(chats));
-            } catch (e) {}
-            return resolve();
-          }
-          try {
-            const tx = db.transaction([chatStoreName], "readwrite");
-            tx.objectStore(chatStoreName).put(chat);
-            tx.oncomplete = resolve;
-            tx.onerror = resolve;
-          } catch (e) {
-            useFallbackStorage = true;
-            resolve();
-          }
+      async function deleteChatFromDB(id) {
+        if(currentUserUid === "guest") return;
+        await supabaseClient.from('chats').delete().eq('id', id).eq('user_id', currentUserUid);
+      }
+
+      async function clearChatsFromDB() {
+        if(currentUserUid === "guest") return;
+        await supabaseClient.from('chats').delete().eq('user_id', currentUserUid);
+      }
+
+      // Для агентов и персонажей
+      async function saveDataToDB(key, dataObj) {
+        if(currentUserUid === "guest") return;
+        await supabaseClient.from('app_data').upsert({
+            key: key,
+            user_id: currentUserUid,
+            data: dataObj
         });
       }
 
-      function loadAllChatsFromDB() {
-        return new Promise((resolve) => {
-          const fallback = localStorage.getItem("pa_chats_fallback");
-          let parsedFallback = {};
-          try {
-            if (fallback) parsedFallback = JSON.parse(fallback);
-          } catch (e) {}
-          if (useFallbackStorage || !db) return resolve(parsedFallback);
-
-          try {
-            const tx = db.transaction([chatStoreName], "readonly");
-            const req = tx.objectStore(chatStoreName).getAll();
-            req.onsuccess = () => {
-              const result = {};
-              req.result.forEach((c) => (result[c.id] = c));
-              resolve(Object.keys(result).length > 0 ? result : parsedFallback);
-            };
-            req.onerror = () => resolve(parsedFallback);
-          } catch (e) {
-            resolve(parsedFallback);
-          }
-        });
-      }
-
-      function deleteChatFromDB(id) {
-        return new Promise((resolve) => {
-          if (useFallbackStorage || !db) return resolve();
-          try {
-            const tx = db.transaction([chatStoreName], "readwrite");
-            tx.objectStore(chatStoreName).delete(id);
-            tx.oncomplete = resolve;
-          } catch (e) {
-            resolve();
-          }
-        });
-      }
-
-      function clearChatsFromDB() {
-        return new Promise((resolve) => {
-          try {
-            localStorage.removeItem("pa_chats_fallback");
-          } catch (e) {}
-          if (!db) return resolve();
-          try {
-            const tx = db.transaction([chatStoreName], "readwrite");
-            tx.objectStore(chatStoreName).clear();
-            tx.oncomplete = resolve;
-          } catch (e) {
-            resolve();
-          }
-        });
-      }
-
-      // --- НОВЫЕ ФУНКЦИИ ДЛЯ АГЕНТОВ И ПЕРСОНАЖЕЙ ---
-      function saveDataToDB(key, data) {
-        return new Promise((resolve) => {
-          if (useFallbackStorage || !db) return resolve();
-          try {
-            const tx = db.transaction([appDataStoreName], "readwrite");
-            tx.objectStore(appDataStoreName).put(data, key);
-            tx.oncomplete = resolve;
-          } catch (e) {
-            resolve();
-          }
-        });
-      }
-
-      function loadDataFromDB(key) {
-        return new Promise((resolve) => {
-          if (useFallbackStorage || !db) return resolve(null);
-          try {
-            const tx = db.transaction([appDataStoreName], "readonly");
-            const req = tx.objectStore(appDataStoreName).get(key);
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => resolve(null);
-          } catch (e) {
-            resolve(null);
-          }
-        });
+      async function loadDataFromDB(key) {
+        if(currentUserUid === "guest") return null;
+        const { data, error } = await supabaseClient
+            .from('app_data')
+            .select('data')
+            .eq('key', key)
+            .eq('user_id', currentUserUid)
+            .maybeSingle(); // ИСПРАВЛЕНО: предотвращает ошибку 406, если данных еще нет
+            
+        if (error || !data) return null;
+        return data.data;
       }
 
       // ==========================================
@@ -6582,12 +6647,18 @@ input, textarea {
       let selectedModel2 =
         localStorage.getItem("pa_model_2") || "claude-haiku-4-5-20251001";
 
-      // ==========================================
-      // UI LISTENERS
-      // ==========================================
-
-      // ЛОГИКА КНОПКИ ПОИСКА
-      const searchToggleBtn = document.getElementById("search-toggle-btn");
+        // ==========================================
+        // UI LISTENERS
+        // ==========================================
+        
+        // ЧИНИМ КНОПКУ "НОВЫЙ ЧАТ"
+        const btnNewChat = document.getElementById("btn-new-chat");
+        if (btnNewChat) {
+            btnNewChat.addEventListener("click", createNewChat);
+        }
+  
+        // ЛОГИКА КНОПКИ ПОИСКА
+        const searchToggleBtn = document.getElementById("search-toggle-btn");
       const searchDropdownContainer = document.getElementById(
         "search-dropdown-container",
       );
@@ -6788,13 +6859,14 @@ input, textarea {
               if (isSecond) {
                 selectedModel2 = targetModel;
                 localStorage.setItem("pa_model_2", selectedModel2);
-                document.getElementById("current-model-name-2").textContent =
-                  item.textContent;
+                // ИСПОЛЬЗУЕМ innerHTML и функцию getPrettyModelName
+                document.getElementById("current-model-name-2").innerHTML =
+                  getPrettyModelName(selectedModel2);
               } else {
                 selectedModel = targetModel;
                 localStorage.setItem("pa_model", selectedModel);
-                document.getElementById("current-model-name").textContent =
-                  item.textContent;
+                document.getElementById("current-model-name").innerHTML =
+                  getPrettyModelName(selectedModel);
               }
               list.closest(".custom-dropdown").classList.remove("open");
             });
@@ -6811,31 +6883,89 @@ input, textarea {
           .then(() => window.showToast("Скопировано!"));
       };
 
-      function saveChatsToStorage() {
-        if (currentChatId)
-          localStorage.setItem("pa_current_chat_id", currentChatId);
+      async function saveChatsToStorage() {
+        if (currentChatId) localStorage.setItem("pa_current_chat_id", currentChatId);
         else localStorage.removeItem("pa_current_chat_id");
 
-        // ЖЕЛЕЗНОЕ ПРАВИЛО: Всегда делаем резервную копию в localStorage
-        try {
-          localStorage.setItem("pa_chats_fallback", JSON.stringify(chats));
-        } catch (e) {}
-
-        // Если системная БД работает, пишем и туда
-        if (
-          currentChatId &&
-          chats[currentChatId] &&
-          db &&
-          !useFallbackStorage
-        ) {
-          try {
-            // ИСПРАВЛЕНО: storeName заменено на chatStoreName
-            const tx = db.transaction([chatStoreName], "readwrite");
-            tx.objectStore(chatStoreName).put(chats[currentChatId]);
-          } catch (e) {
-            useFallbackStorage = true;
-          }
+        if (currentChatId && chats[currentChatId]) {
+            chats[currentChatId].updatedAt = Date.now();
+            await saveChatToDB(chats[currentChatId]);
         }
+      }
+
+      let currentChatSubscription = null;
+
+function subscribeToCurrentChatRealtime(chatId) {
+    if (currentChatSubscription) {
+        supabaseClient.removeChannel(currentChatSubscription);
+    }
+    if (currentUserUid === "guest" || !chatId) return;
+
+    // Подписываемся на изменения ТОЛЬКО текущего чата в Supabase
+    currentChatSubscription = supabaseClient.channel(`chat_${chatId}`)
+        .on('postgres_changes', { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'chats', 
+            filter: `id=eq.${chatId}` 
+        }, payload => {
+            const incomingMessages = payload.new.messages;
+            // Обновляем UI только если данные в базе новее (изменилась длина контента последнего сообщения)
+            if (JSON.stringify(chats[chatId].messages) !== JSON.stringify(incomingMessages)) {
+                chats[chatId].messages = incomingMessages;
+                loadCurrentChat(); // Перерисовываем чат с новыми данными из фона
+                window.smartScroll(); // Скроллим аккуратно
+            }
+        })
+        .subscribe();
+}
+
+      async function switchToChat(id) {
+        if (currentChatId && chats[currentChatId]) {
+            await saveChatsToStorage();
+            chats[currentChatId].messages =[]; 
+        }
+        
+        currentChatId = id;
+        localStorage.setItem("pa_current_chat_id", currentChatId);
+        
+        // ФИКС: Подписываемся на фоновые обновления Supabase для этого чата
+        subscribeToCurrentChatRealtime(id);
+        
+        // Подгружаем сообщения из Supabase для нового чата
+        chats[id].messages = await fetchChatMessagesFromDB(id);
+        
+        renderChatList();
+        loadCurrentChat();
+        
+        const sb = document.getElementById("sidebar");
+        if (window.innerWidth <= 768 && sb) sb.classList.remove("open");
+        clearAttachments();
+      }
+
+      async function createNewChat() {
+        if (abortController) abortController.abort();
+        
+        // Сохраняем и выгружаем текущий перед созданием нового
+        if (currentChatId && chats[currentChatId]) {
+            await saveChatsToStorage();
+            chats[currentChatId].messages = []; // Очистка ОЗУ
+        }
+
+        const id = Date.now().toString(36) + Math.random().toString(36).substring(2);
+        chats[id] = { id, title: "Новый чат", messages: [], updatedAt: Date.now() };
+        currentChatId = id;
+        subscribeToCurrentChatRealtime(id);
+        
+        await saveChatsToStorage();
+        
+        renderChatList();
+        loadCurrentChat();
+        
+        const sb = document.getElementById("sidebar");
+        if (window.innerWidth <= 768 && sb) sb.classList.remove("open");
+        clearAttachments();
+        if (userInput) { userInput.value = ""; autoResizeInput(); userInput.focus(); }
       }
 
       function renderChatList() {
@@ -6870,42 +7000,6 @@ input, textarea {
           loadCurrentChat();
         }
       };
-
-      function switchToChat(id) {
-        currentChatId = id;
-        saveChatsToStorage();
-        renderChatList();
-        loadCurrentChat();
-        const sb = document.getElementById("sidebar");
-        if (window.innerWidth <= 768 && sb) sb.classList.remove("open");
-        clearAttachments();
-      }
-
-      function createNewChat() {
-        if (abortController) abortController.abort();
-        const id =
-          Date.now().toString(36) + Math.random().toString(36).substring(2);
-        chats[id] = {
-          id,
-          title: "Новый чат",
-          messages: [],
-          updatedAt: Date.now(),
-        };
-        currentChatId = id;
-        saveChatsToStorage();
-        renderChatList();
-        loadCurrentChat();
-        const sb = document.getElementById("sidebar");
-        if (window.innerWidth <= 768 && sb) sb.classList.remove("open");
-        clearAttachments();
-        if (userInput) {
-          userInput.value = "";
-          autoResizeInput();
-          userInput.focus();
-        }
-      }
-      const btnNewChat = document.getElementById("btn-new-chat");
-      if (btnNewChat) btnNewChat.addEventListener("click", createNewChat);
 
       function loadCurrentChat() {
         if (!chatHistoryDOM) return;
@@ -7568,8 +7662,8 @@ input, textarea {
         });
         const body = {
           model,
-          max_tokens: maxTokens || 4000,
-          temperature: temp,
+          max_tokens: maxTokens || 16000,
+          temperature: Math.min(parseFloat(temp), 1.0), // Ограничиваем макс. температуру до 1.0 для Claude
           messages: history,
         };
         if (sysInst) body.system = sysInst;
@@ -7961,12 +8055,16 @@ input, textarea {
         if (sendBtn) sendBtn.style.display = "none";
         if (stopBtn) stopBtn.style.display = "flex";
         if (typingIndicator) typingIndicator.style.display = "flex";
-        if (chatHistoryDOM)
-          chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+        
+        // ФИКС: Принудительно сохраняем чат в Supabase ПЕРЕД началом генерации.
+        // Если вкладка закроется, в БД уже будет лежать вопрос юзера и пустое сообщение ИИ.
+        chat.updatedAt = Date.now();
+        await saveChatsToStorage();
 
         abortController = new AbortController();
 
         try {
+            // ... (запуски генераций остаются без изменений)
           if (isCompareMode) {
             if (currentSearchMode !== "off")
               window.showToast(
@@ -8139,14 +8237,35 @@ input, textarea {
                 const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (txt) {
                   msgObj.content += txt;
-                  domEl.innerHTML = window.safeRenderMarkdown(msgObj.content);
-                  chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+                  // Используем оптимизированный рендер, передавая ID сообщения
+                  window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.messages.length);
                 }
               } catch (e) {}
             }
           }
         }
       }
+
+      // Умный автоскролл: прокручивает вниз ТОЛЬКО если пользователь уже находится внизу
+window.smartScroll = function() {
+    if (!chatHistoryDOM) return;
+    // Если пользователь отмотал вверх более чем на 150px, мы не мешаем ему читать
+    const isNearBottom = chatHistoryDOM.scrollHeight - chatHistoryDOM.scrollTop - chatHistoryDOM.clientHeight < 150;
+    if (isNearBottom) {
+        chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+    }
+};
+
+// Троттлинг (оптимизация рендера): обновляет тяжелый Markdown не чаще, чем раз в кадр
+let renderTimers = {};
+window.optimizedRender = function(domEl, content, msgId) {
+    if (renderTimers[msgId]) return; // Кадр уже запланирован
+    renderTimers[msgId] = requestAnimationFrame(() => {
+        domEl.innerHTML = window.safeRenderMarkdown(content);
+        window.smartScroll(); // Вызываем наш умный скролл
+        renderTimers[msgId] = null;
+    });
+};
 
       async function streamOpenAI(chat, domEl, msgObj, overrideModel = null) {
         const messages = [];
@@ -8214,8 +8333,8 @@ input, textarea {
                 const txt = data.choices?.[0]?.delta?.content;
                 if (txt) {
                   msgObj.content += txt;
-                  domEl.innerHTML = window.safeRenderMarkdown(msgObj.content);
-                  chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+                  // Используем оптимизированный рендер, передавая ID сообщения
+                  window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.messages.length);
                 }
               } catch (e) {}
             }
@@ -8258,8 +8377,8 @@ input, textarea {
 
         const body = {
           model: overrideModel || selectedModel,
-          max_tokens: maxTokens || 4000,
-          temperature: temperature,
+          max_tokens: maxTokens || 16000,
+          temperature: Math.min(parseFloat(temperature), 1.0), // Ограничиваем макс. температуру до 1.0 для Claude
           messages: messages,
           stream: true,
         };
@@ -8303,8 +8422,8 @@ input, textarea {
                   const txt = data.delta?.text;
                   if (txt) {
                     msgObj.content += txt;
-                    domEl.innerHTML = window.safeRenderMarkdown(msgObj.content);
-                    chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+                    // Используем оптимизированный рендер, передавая ID сообщения
+                    window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.messages.length);
                   }
                 }
               } catch (e) {}
@@ -8410,8 +8529,8 @@ input, textarea {
                 const txt = data.choices?.[0]?.delta?.content;
                 if (txt) {
                   msgObj.content += txt;
-                  domEl.innerHTML = window.safeRenderMarkdown(msgObj.content);
-                  chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+                  // Используем оптимизированный рендер, передавая ID сообщения
+                  window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.messages.length);
                 }
               } catch (e) {}
             }
@@ -8496,22 +8615,62 @@ input, textarea {
                 <span class="role-chip"><span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> ${getPrettyModelName(agent.finalizer)}</span>
             `;
 
-          item.innerHTML = `
-                <div><h4><span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg></span> ${agent.name}</h4><div class="agent-list-item-recipe">${recipeHtml}</div></div>
-                <button class="icon-btn" onclick="deleteAgent('${id}')" style="color:var(--danger-color); margin-left: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-            `;
+            item.innerHTML = `
+            <div><h4><span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg></span> ${agent.name}</h4><div class="agent-list-item-recipe">${recipeHtml}</div></div>
+            <div style="display:flex; gap:8px; margin-left: 10px;">
+                <button class="icon-btn" onclick="editAgent('${id}')" style="color:var(--primary-color);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                <button class="icon-btn" onclick="deleteAgent('${id}')" style="color:var(--danger-color);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+            </div>
+        `;
           listDOM.appendChild(item);
         });
       }
 
+      let editingAgentId = null; // Новая переменная для редактирования
+
       window.deleteAgent = async function (id) {
-        // Добавь async
         if (confirm("Удалить этого агента?")) {
           delete customAgents[id];
-          await saveDataToDB("agents", customAgents); // Заменяем localStorage
+          await saveDataToDB("agents", customAgents);
           renderSettingsAgentList();
           renderMainModelDropdown();
         }
+      };
+
+      window.editAgent = function (id) {
+        const agent = customAgents[id];
+        editingAgentId = id; // Переходим в режим редактирования
+
+        document.getElementById("agent-name").value = agent.name;
+        
+        buildPremiumSelect("list-res", "text-res", "agent-researcher", agent.researcher);
+        buildPremiumSelect("list-ana", "text-ana", "agent-analyst", agent.analyst);
+        buildPremiumSelect("list-cri", "text-cri", "agent-critic", agent.critic);
+        buildPremiumSelect("list-fin", "text-fin", "agent-finalizer", agent.finalizer);
+
+        // Восстанавливаем кастомных специалистов
+        document.getElementById("custom-steps-container").innerHTML = "";
+        customStepCounter = 0;
+        
+        if (agent.customSteps && agent.customSteps.length > 0) {
+            agent.customSteps.forEach(step => {
+                window.addCustomStep();
+                const blocks = document.querySelectorAll(".custom-step-block");
+                const lastBlock = blocks[blocks.length - 1];
+                
+                lastBlock.querySelector(".step-name").value = step.name;
+                lastBlock.querySelector(".step-prompt").value = step.prompt;
+                
+                const hiddenInput = lastBlock.querySelector(".step-model");
+                const selectText = lastBlock.querySelector(".premium-model-header span:first-child");
+                const listId = lastBlock.querySelector(".premium-model-list").id;
+
+                buildPremiumSelect(listId, selectText.id, hiddenInput.id, step.model);
+            });
+        }
+
+        document.getElementById("save-agent").textContent = "Обновить цепочку";
+        document.getElementById("agent-modal").classList.add("open");
       };
 
       function buildPremiumSelect(listId, textId, hiddenInputId, defaultValue) {
@@ -8611,30 +8770,14 @@ input, textarea {
       const btnOpenAgent = document.getElementById("btn-open-agent-creator");
       if (btnOpenAgent) {
         btnOpenAgent.addEventListener("click", () => {
-          buildPremiumSelect(
-            "list-res",
-            "text-res",
-            "agent-researcher",
-            "gpt-4o-search-preview-2025-03-11",
-          );
-          buildPremiumSelect(
-            "list-ana",
-            "text-ana",
-            "agent-analyst",
-            "o4-mini",
-          );
-          buildPremiumSelect(
-            "list-cri",
-            "text-cri",
-            "agent-critic",
-            "claude-haiku-4-5-20251001",
-          );
-          buildPremiumSelect(
-            "list-fin",
-            "text-fin",
-            "agent-finalizer",
-            "gpt-5.4",
-          );
+          editingAgentId = null; // Сбрасываем режим редактирования
+          document.getElementById("save-agent").textContent = "Сохранить цепочку";
+          
+          buildPremiumSelect("list-res", "text-res", "agent-researcher", "gpt-4o-search-preview-2025-03-11");
+          buildPremiumSelect("list-ana", "text-ana", "agent-analyst", "o4-mini");
+          buildPremiumSelect("list-cri", "text-cri", "agent-critic", "claude-haiku-4-5-20251001");
+          buildPremiumSelect("list-fin", "text-fin", "agent-finalizer", "gpt-5.4");
+          
           document.getElementById("agent-name").value = "";
           document.getElementById("custom-steps-container").innerHTML = "";
           customStepCounter = 0;
@@ -8644,14 +8787,8 @@ input, textarea {
 
       const btnCloseAgent = document.getElementById("close-agent-modal");
       const btnCancelAgent = document.getElementById("cancel-agent");
-      if (btnCloseAgent)
-        btnCloseAgent.addEventListener("click", () =>
-          agentModal.classList.remove("open"),
-        );
-      if (btnCancelAgent)
-        btnCancelAgent.addEventListener("click", () =>
-          agentModal.classList.remove("open"),
-        );
+      if (btnCloseAgent) btnCloseAgent.addEventListener("click", () => agentModal.classList.remove("open"));
+      if (btnCancelAgent) btnCancelAgent.addEventListener("click", () => agentModal.classList.remove("open"));
 
       const btnSaveAgent = document.getElementById("save-agent");
       if (btnSaveAgent) {
@@ -8661,16 +8798,14 @@ input, textarea {
 
           const customSteps = [];
           document.querySelectorAll(".custom-step-block").forEach((block) => {
-            const sName =
-              block.querySelector(".step-name").value.trim() || "Специалист";
-            const sPrompt =
-              block.querySelector(".step-prompt").value.trim() ||
-              "Обработай текст";
+            const sName = block.querySelector(".step-name").value.trim() || "Специалист";
+            const sPrompt = block.querySelector(".step-prompt").value.trim() || "Обработай текст";
             const sModel = block.querySelector(".step-model").value;
             customSteps.push({ name: sName, prompt: sPrompt, model: sModel });
           });
 
-          const id = "agent_" + Date.now().toString(36);
+          // ИСПРАВЛЕНО: Если редактируем, сохраняем старый ID, иначе создаем новый
+          const id = editingAgentId || "agent_" + Date.now().toString(36);
           customAgents[id] = {
             name: name,
             researcher: document.getElementById("agent-researcher").value,
@@ -8680,9 +8815,11 @@ input, textarea {
             finalizer: document.getElementById("agent-finalizer").value,
           };
 
-          saveDataToDB("agents", customAgents);
+          saveDataToDB("agents", customAgents); // Сохраняем в Supabase
           agentModal.classList.remove("open");
-          window.showToast("Агент создан!");
+          window.showToast(editingAgentId ? "Агент обновлен!" : "Агент создан!");
+          
+          editingAgentId = null; // Сбрасываем
           renderSettingsAgentList();
           renderMainModelDropdown();
         });
@@ -9338,100 +9475,6 @@ input, textarea {
           }
         });
       }
-      initDB()
-        .then(async () => {
-          // ---- ИНИЦИАЛИЗАЦИЯ СВЕТЛОЙ/ТЕМНОЙ ТЕМЫ ----
-          const savedTheme = localStorage.getItem("theme") || "dark";
-          document.body.setAttribute("data-theme", savedTheme);
-          const sunIcon = document.querySelector(".sun-icon");
-          const moonIcon = document.querySelector(".moon-icon");
-          if (sunIcon && moonIcon) {
-            if (savedTheme === "light") {
-              sunIcon.style.display = "none";
-              moonIcon.style.display = "block";
-            } else {
-              sunIcon.style.display = "block";
-              moonIcon.style.display = "none";
-            }
-          }
-
-          // 1. МИГРАЦИЯ И ЗАГРУЗКА АГЕНТОВ
-          let dbAgents = await loadDataFromDB("agents");
-          if (!dbAgents) {
-            // Если в БД пусто, ищем в localStorage и переносим
-            const legacyAgents = localStorage.getItem("pa_agents");
-            if (legacyAgents) {
-              try {
-                dbAgents = JSON.parse(legacyAgents);
-                await saveDataToDB("agents", dbAgents);
-                // localStorage.removeItem('pa_agents'); // Можно раскомментировать после тестов
-              } catch (e) {
-                dbAgents = {};
-              }
-            } else {
-              dbAgents = {};
-            }
-          }
-          customAgents = dbAgents;
-
-          // 2. МИГРАЦИЯ И ЗАГРУЗКА ПЕРСОНАЖЕЙ
-          let dbChars = await loadDataFromDB("characters");
-          if (!dbChars) {
-            const legacyChars = localStorage.getItem("pa_characters");
-            if (legacyChars) {
-              try {
-                dbChars = JSON.parse(legacyChars);
-                await saveDataToDB("characters", dbChars);
-              } catch (e) {
-                dbChars = {};
-              }
-            } else {
-              dbChars = {};
-            }
-          }
-          customCharacters = dbChars;
-
-          chats = await loadAllChatsFromDB();
-
-          // Лог для отладки: вы увидите в консоли (F12), откуда грузятся данные
-          if (useFallbackStorage) {
-            console.warn(
-              `<span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></span>️ БД недоступна, используем резервное хранилище (LocalStorage)`,
-            );
-          } else {
-            console.log(
-              `<span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span> База данных успешно подключена`,
-            );
-          }
-
-          // --- НОВЫЙ КОД: ОБНОВЛЕНИЕ ИНТЕРФЕЙСА МОДЕЛЕЙ ---
-          const modelNameEl = document.getElementById("current-model-name");
-          if (modelNameEl)
-            modelNameEl.textContent = getPrettyModelName(selectedModel);
-
-          const modelName2El = document.getElementById("current-model-name-2");
-          if (modelName2El)
-            modelName2El.textContent = getPrettyModelName(selectedModel2);
-          // ------------------------------------------------
-
-          renderMainModelDropdown();
-
-          if (!chats || Object.keys(chats).length === 0) {
-            createNewChat();
-          } else {
-            if (!currentChatId || !chats[currentChatId]) {
-              currentChatId = Object.keys(chats).sort(
-                (a, b) => chats[b].updatedAt - chats[a].updatedAt,
-              )[0];
-            }
-            renderChatList();
-            loadCurrentChat();
-          }
-        })
-        .catch((e) => {
-          console.error("Ошибка инициализации:", e);
-          window.showToast("Ошибка базы данных: " + e.message, "error");
-        });
     </script>
     <!-- EULA SCREEN (Лицензионное соглашение) -->
     <div
@@ -9544,10 +9587,43 @@ input, textarea {
       </div>
     </div>
 
+    <!-- TEXT SELECTION MODAL (Окно для выделения текста) -->
+    <div class="modal-overlay" id="text-select-modal" style="z-index: 100000;">
+      <div class="modal-box" style="max-width: 800px; height: 85vh; display: flex; flex-direction: column;">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span class="inline-svg-icon" style="margin-right:8px; color: var(--primary-color);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M4 17v3h16v-3M7 4v16M17 4v16"></path></svg>
+            </span>
+            Режим выделения текста
+          </div>
+          <button class="icon-btn" id="close-text-select">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <!-- ВАЖНО: Разрешаем выделение внутри этого блока -->
+        <div class="modal-body select-mode-content" id="text-select-content" style="flex: 1; overflow-y: auto; padding: 24px; line-height: 1.6; font-size: var(--dynamic-font-size, 15px);">
+          <!-- Сюда будет копироваться текст сообщения -->
+        </div>
+        <div class="modal-footer" style="justify-content: center;">
+          <button class="btn btn-primary" id="btn-done-select" style="width: 100%; max-width: 300px;">
+            Завершить и вернуться к ИИ
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ========================================== -->
   <!-- КАСТОМНОЕ КОНТЕКСТНОЕ МЕНЮ ДЛЯ СООБЩЕНИЙ   -->
   <!-- ========================================== -->
   <div id="custom-message-menu" class="custom-context-menu">
+    <div class="context-menu-item" id="cmenu-select">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M4 17v3h16v-3M7 4v16M17 4v16"></path></svg>
+      <span>Выделить текст</span>
+    </div>
     <div class="context-menu-item" id="cmenu-copy">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
       <span>Копировать</span>
