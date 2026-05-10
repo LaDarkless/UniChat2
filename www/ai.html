@@ -5183,10 +5183,25 @@
       }
 
       if (btnSkipAuth) {
-        btnSkipAuth.addEventListener("click", () => {
+        btnSkipAuth.addEventListener("click", async () => {
           authOverlay.style.opacity = "0";
           setTimeout(() => (authOverlay.style.visibility = "hidden"), 500);
-          window.showToast("Гость: сохранение данных локально");
+          
+          // Создаем или получаем уникальный ID устройства для Supabase
+          let anonId = localStorage.getItem("anon_device_id");
+          if (!anonId) {
+             // Генерируем надежный случайный ID, начинающийся с anon_
+             anonId = "anon_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+             localStorage.setItem("anon_device_id", anonId);
+          }
+          
+          // Притворяемся полноценным пользователем для Supabase
+          currentUserUid = anonId; 
+          
+          window.showToast("Гость: синхронизация данных с Supabase...");
+          
+          // САМОЕ ВАЖНОЕ: Запускаем рендер списков моделей и загрузку базы!
+          await initializeAppData();
         });
       }
 
