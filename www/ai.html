@@ -65,6 +65,42 @@
       }
 
       /* ==========================================
+         СТИЛИ ДЛЯ ЦИТАТ ИЗ ИНТЕРНЕТА (RAG)
+         ========================================== */
+         .search-citation {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(96, 165, 250, 0.15);
+        color: #60a5fa !important;
+        font-size: 10px;
+        font-weight: 700;
+        border-radius: 4px;
+        padding: 0 5px;
+        margin: 0 2px;
+        text-decoration: none !important;
+        vertical-align: super;
+        border: 1px solid rgba(96, 165, 250, 0.3);
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+      .search-citation:hover {
+        background: #60a5fa;
+        color: #fff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(96, 165, 250, 0.4);
+      }
+      [data-theme="light"] .search-citation {
+        background: rgba(37, 99, 235, 0.1);
+        color: #2563eb !important;
+        border-color: rgba(37, 99, 235, 0.2);
+      }
+      [data-theme="light"] .search-citation:hover {
+        background: #2563eb;
+        color: #fff !important;
+      }
+
+      /* ==========================================
            СТИЛИССИМА ССЫЛОК (PRO LINKS)
            ========================================== */
       
@@ -150,6 +186,41 @@
 
         /* Цвет сетки по умолчанию (светлый) */
         --grid-color: rgba(255, 255, 255, 0.03);
+      }
+
+      /* ==========================================
+         СТИЛИ ДЛЯ УМНОГО ПОИСКА И ЦИТАТ (RAG)
+         ========================================== */
+      .search-citation {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(96, 165, 250, 0.15);
+        color: #60a5fa;
+        font-size: 10px;
+        font-weight: 700;
+        border-radius: 4px;
+        padding: 0 4px;
+        margin: 0 2px;
+        text-decoration: none !important;
+        vertical-align: super;
+        border: 1px solid rgba(96, 165, 250, 0.3);
+        transition: 0.2s;
+        cursor: pointer;
+      }
+      .search-citation:hover {
+        background: #60a5fa;
+        color: #fff !important;
+        transform: translateY(-2px);
+      }
+      [data-theme="light"] .search-citation {
+        background: rgba(37, 99, 235, 0.1);
+        color: #2563eb;
+        border-color: rgba(37, 99, 235, 0.2);
+      }
+      [data-theme="light"] .search-citation:hover {
+        background: #2563eb;
+        color: #fff !important;
       }
 
       /* АНИМИРОВАННЫЙ ФОН (СЕТКА / КЛЕТОЧКИ) */
@@ -2716,15 +2787,16 @@
             Новый чат
           </button>
           <input
-            type="text"
+            type="search"
             id="chat-search-input"
             placeholder="Поиск чатов..."
+            autocomplete="off"
             style="
               width: 100%;
               margin-top: 10px;
               padding: 8px 12px;
               background: rgba(0, 0, 0, 0.2);
-              border: 1px solid var(--glass-border);
+              border: 1px solid var(--app-border);
               border-radius: var(--radius-md);
               color: var(--text-primary);
               outline: none;
@@ -3122,46 +3194,49 @@
 
               <!-- НОВАЯ КНОПКА ПОИСКА В ИНТЕРНЕТЕ -->
               <div class="custom-dropdown" id="search-dropdown-container">
-                <button
-                  class="file-btn search-btn"
-                  id="search-toggle-btn"
-                  title="Поиск в интернете"
-                >
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
+                <button class="file-btn search-btn" id="search-toggle-btn" title="Поиск в интернете">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="2" y1="12" x2="22" y2="12"></line>
-                    <path
-                      d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
-                    ></path>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                   </svg>
                 </button>
-                <div
-                  class="dropdown-menu"
-                  id="search-dropdown-menu"
-                  style="
-                    bottom: calc(100% + 15px);
-                    top: auto;
-                    left: -10px;
-                    width: 220px;
-                  "
-                >
+                
+                <div class="dropdown-menu" id="search-dropdown-menu" style="bottom: calc(100% + 15px); top: auto; left: -10px; width: 240px;">
                   <div class="dropdown-item selected" data-mode="off">
-                    <span>🚫 Без поиска</span>
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                      Без поиска
+                    </span>
+                    <div class="dropdown-item-subtitle">Стандартный режим ИИ</div>
                   </div>
                   <div class="dropdown-item" data-mode="fast">
-                    <span>⚡ Fast Search</span>
-                    <div class="dropdown-item-subtitle">Быстро</div>
+                    <span style="display: flex; align-items: center; gap: 8px; color: #fbbf24;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                      Быстрый ответ
+                    </span>
+                    <div class="dropdown-item-subtitle">Краткая выжимка фактов</div>
                   </div>
                   <div class="dropdown-item" data-mode="pro">
-                    <span>🌐 Pro Search</span>
-                    <div class="dropdown-item-subtitle">Глубоко</div>
+                    <span style="display: flex; align-items: center; gap: 8px; color: #60a5fa;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                      Глубокое исследование
+                    </span>
+                    <div class="dropdown-item-subtitle">Анализ из множества источников</div>
+                  </div>
+                  <div class="dropdown-item" data-mode="dev">
+                    <span style="display: flex; align-items: center; gap: 8px; color: #a78bfa;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                      Код и Документация
+                    </span>
+                    <div class="dropdown-item-subtitle">GitHub, StackOverflow, Docs</div>
+                  </div>
+                  <div class="dropdown-item" data-mode="news">
+                    <span style="display: flex; align-items: center; gap: 8px; color: #f87171;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M15 18h-5"></path></svg>
+                      Свежие новости
+                    </span>
+                    <div class="dropdown-item-subtitle">События за последние 24 часа</div>
                   </div>
                 </div>
               </div>
@@ -4807,9 +4882,11 @@
 
       // 1. ПРАВЫЙ КЛИК (Для ПК)
       document.addEventListener("contextmenu", (event) => {
+        const stopBtn = document.getElementById("stop-btn");
+        if (stopBtn && stopBtn.style.display === "flex") return; // Блокируем при генерации
+
         const target = event.target;
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-        // Если текст выделен, не мешаем стандартному меню браузера (Копировать)
         if (window.getSelection().toString().trim().length > 0) return;
 
         const row = target.closest('.message-row');
@@ -4823,6 +4900,9 @@
 
       // 2. ДОЛГОЕ НАЖАТИЕ (Для ТЕЛЕФОНА)
       document.addEventListener('touchstart', (e) => {
+        const stopBtn = document.getElementById("stop-btn");
+        if (stopBtn && stopBtn.style.display === "flex") return; // Блокируем при генерации
+
         if (window.getSelection().toString().trim().length > 0) return; 
         
         const row = e.target.closest('.message-row');
@@ -4831,7 +4911,7 @@
         pressTimer = setTimeout(() => {
           showContextMenu(e.touches[0].clientX, e.touches[0].clientY, row);
           if (window.getSelection) window.getSelection().removeAllRanges();
-        }, 500); 
+        }, 1000); // ИЗМЕНЕНО: 1000 мс (1 секунда)
       }, { passive: true });
 
       document.addEventListener('touchend', () => clearTimeout(pressTimer));
@@ -4842,6 +4922,107 @@
         const menu = getMenu();
         if (menu && !menu.contains(e.target)) hideContextMenu();
       });
+
+      // ==========================================
+      // ЛОГИКА МЕНЮ ДЛЯ СПИСКА ЧАТОВ
+      // ==========================================
+      let chatContextMenu = null;
+      window.targetChatId = null; // ВАЖНО: Делаем ID глобальным для второго скрипта
+
+      window.getChatMenu = function() {
+        if (!chatContextMenu) chatContextMenu = document.getElementById("custom-chat-menu");
+        return chatContextMenu;
+      };
+
+      window.showChatContextMenu = function(x, y, chatId) {
+        const menu = window.getChatMenu();
+        if (!menu) return;
+        
+        window.targetChatId = chatId;
+        menu.classList.add('show');
+
+        const menuRect = menu.getBoundingClientRect();
+        let posX = x;
+        let posY = y;
+
+        if (posX + menuRect.width > window.innerWidth) posX = window.innerWidth - menuRect.width - 10;
+        if (posY + menuRect.height > window.innerHeight) posY = window.innerHeight - menuRect.height - 10;
+
+        menu.style.left = `${posX}px`;
+        menu.style.top = `${posY}px`;
+      };
+
+      window.hideChatContextMenu = function() {
+        const menu = window.getChatMenu();
+        if (menu) menu.classList.remove('show');
+        window.targetChatId = null;
+      };
+
+      // Правый клик по списку чатов (ПК)
+      document.addEventListener("contextmenu", (event) => {
+        const chatItem = event.target.closest('.chat-item');
+        if (chatItem) {
+          event.preventDefault();
+          window.showChatContextMenu(event.clientX, event.clientY, chatItem.dataset.id);
+        }
+      });
+
+      // Долгое нажатие по списку чатов (Мобильные)
+      document.addEventListener('touchstart', (e) => {
+        const chatItem = e.target.closest('.chat-item');
+        if (!chatItem) return;
+
+        pressTimer = setTimeout(() => {
+          window.showChatContextMenu(e.touches[0].clientX, e.touches[0].clientY, chatItem.dataset.id);
+          if (window.getSelection) window.getSelection().removeAllRanges();
+        }, 1000);
+      }, { passive: true });
+
+      // Закрытие меню чатов при клике мимо
+      document.addEventListener("click", (e) => {
+        const menu = window.getChatMenu();
+        if (menu && !menu.contains(e.target)) window.hideChatContextMenu();
+      });
+
+      // ==========================================
+      // ГЛОБАЛЬНЫЕ ФУНКЦИИ МЕНЮ ЧАТОВ (НАДЕЖНЫЙ ВЫЗОВ)
+      // ==========================================
+      window.renameTargetChat = async function() {
+        hideChatContextMenu();
+        
+        // Жесткая проверка: существует ли ID и сам объект чата
+        if (!targetChatId || typeof chats === 'undefined' || !chats[targetChatId]) {
+            console.error("Ошибка: Чат не найден в памяти.");
+            return;
+        }
+        
+        const chatObj = chats[targetChatId];
+        const currentTitle = chatObj.title || "Новый чат";
+        const newTitle = prompt("Введите новое название чата:", currentTitle);
+        
+        if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
+          chatObj.title = newTitle.trim();
+          
+          // Вызываем функции сохранения
+          if (typeof saveChatToDB === 'function') await saveChatToDB(chatObj);
+          if (typeof saveChatsToStorage === 'function') saveChatsToStorage();
+          if (typeof renderChatList === 'function') renderChatList();
+          
+          window.showToast("Чат переименован");
+        }
+      };
+
+      window.deleteTargetChat = function() {
+        hideChatContextMenu();
+        if (!targetChatId) return;
+        
+        // Вызываем существующую глобальную функцию удаления
+        if (typeof window.deleteChat === 'function') {
+            window.deleteChat({ stopPropagation: () => {} }, targetChatId); 
+        } else {
+            window.showToast("Ошибка: Функция удаления недоступна", "error");
+        }
+      };
 
       // 3. ПРИВЯЗКА КНОПОК МЕНЮ К ФУНКЦИЯМ (Ждем загрузки HTML)
       window.addEventListener('DOMContentLoaded', () => {
@@ -6947,8 +7128,9 @@ function subscribeToCurrentChatRealtime(chatId) {
       async function switchToChat(id) {
         if (currentChatId && chats[currentChatId]) {
             await saveChatsToStorage();
-            chats[currentChatId].messages =[]; 
+            // УДАЛЕНА ОЧИСТКА МАССИВА, чтобы фоновая генерация не сломалась
         }
+        // ... все остальное в функции без изменений
         
         currentChatId = id;
         localStorage.setItem("pa_current_chat_id", currentChatId);
@@ -6968,13 +7150,12 @@ function subscribeToCurrentChatRealtime(chatId) {
       }
 
       async function createNewChat() {
-        if (abortController) abortController.abort();
+        // УДАЛЕН abortController.abort(), чтобы создание нового чата не убивало старую генерацию
         
-        // Сохраняем и выгружаем текущий перед созданием нового
         if (currentChatId && chats[currentChatId]) {
             await saveChatsToStorage();
-            chats[currentChatId].messages = []; // Очистка ОЗУ
         }
+        // ... все остальное в функции без изменений
 
         const id = Date.now().toString(36) + Math.random().toString(36).substring(2);
         chats[id] = { id, title: "Новый чат", messages: [], updatedAt: Date.now() };
@@ -6995,21 +7176,73 @@ function subscribeToCurrentChatRealtime(chatId) {
       function renderChatList() {
         if (!chatListDOM) return;
         chatListDOM.innerHTML = "";
+        
         const searchInput = document.getElementById("chat-search-input");
-        const query = searchInput ? searchInput.value.toLowerCase() : "";
+        const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+        const searchTerms = query.split(/\s+/).filter(Boolean);
 
-        Object.keys(chats)
-          .sort((a, b) => chats[b].updatedAt - chats[a].updatedAt)
-          .forEach((id) => {
-            const title = chats[id].title || "Новый чат";
-            if (query && !title.toLowerCase().includes(query)) return; // Фильтрация
+        // Превращаем объект чатов в массив для удобной сортировки
+        let chatArray = Object.values(chats);
 
-            const div = document.createElement("div");
-            div.className = `chat-item ${id === currentChatId ? "active" : ""}`;
-            div.innerHTML = `<span>${title}</span><button class="delete-btn" onclick="deleteChat(event, '${id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`;
-            div.addEventListener("click", () => switchToChat(id));
-            chatListDOM.appendChild(div);
-          });
+        if (searchTerms.length > 0) {
+            // 1. ФИЛЬТРАЦИЯ: Оставляем чаты, где в названии есть ВСЕ введенные слова
+            chatArray = chatArray.filter(chat => {
+                const lowerTitle = (chat.title || "Новый чат").toLowerCase();
+                return searchTerms.every(term => lowerTitle.includes(term));
+            });
+
+            // 2. СОРТИРОВКА: Точные совпадения целой фразы идут выше, чем совпадения по дате
+            chatArray.sort((a, b) => {
+                const aLower = (a.title || "").toLowerCase();
+                const bLower = (b.title || "").toLowerCase();
+                const aExact = aLower.includes(query) ? 1 : 0;
+                const bExact = bLower.includes(query) ? 1 : 0;
+                
+                if (aExact !== bExact) return bExact - aExact; // Точные вверх
+                return b.updatedAt - a.updatedAt; // Иначе по времени
+            });
+        } else {
+            // Обычная сортировка по времени (свежие сверху)
+            chatArray.sort((a, b) => b.updatedAt - a.updatedAt);
+        }
+
+        // 3. ПУСТОЕ СОСТОЯНИЕ (Если ничего не найдено)
+        if (chatArray.length === 0) {
+            chatListDOM.innerHTML = `
+              <div style="text-align: center; padding: 30px 10px; color: var(--text-muted); font-size: 12px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 8px; opacity: 0.5;">
+                  <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <br>Ничего не найдено
+              </div>`;
+            return;
+        }
+
+        // 4. РЕНДЕРИНГ И ПОДСВЕТКА СОВПАДЕНИЙ
+        chatArray.forEach((chat) => {
+          const id = chat.id;
+          const rawTitle = chat.title || "Новый чат";
+          let displayTitle = rawTitle.replace(/</g, "&lt;").replace(/>/g, "&gt;"); // Защита от HTML инъекций
+          
+          // Подсветка найденного текста (Хайлайт)
+          if (searchTerms.length > 0) {
+              searchTerms.forEach(term => {
+                  // Экранируем спецсимволы в поисковом слове, чтобы не сломать регулярку
+                  const safeTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                  const regex = new RegExp(`(${safeTerm})`, 'gi');
+                  // Оборачиваем совпадения в тег <mark> (Синий фон)
+                  displayTitle = displayTitle.replace(regex, '<mark style="background: rgba(96, 165, 250, 0.4); color: inherit; border-radius: 2px; padding: 0 1px;">$1</mark>');
+              });
+          }
+
+          const div = document.createElement("div");
+          div.className = `chat-item ${id === currentChatId ? "active" : ""}`;
+          div.dataset.id = id; 
+          
+          div.innerHTML = `<span>${displayTitle}</span>`;
+          div.addEventListener("click", () => switchToChat(id));
+          chatListDOM.appendChild(div);
+        });
       }
 
       window.deleteChat = async function (e, id) {
@@ -7023,6 +7256,46 @@ function subscribeToCurrentChatRealtime(chatId) {
           renderChatList();
           loadCurrentChat();
         }
+      };
+
+      // ==========================================
+      // ФУНКЦИИ КОНТЕКСТНОГО МЕНЮ (ИМЕЮТ ДОСТУП К SUPABASE И CHATS)
+      // ==========================================
+      window.renameTargetChat = async function() {
+        // ВАЖНО: Сначала запоминаем ID чата, и только потом прячем меню!
+        const chatId = window.targetChatId; 
+        
+        if (typeof window.hideChatContextMenu === 'function') window.hideChatContextMenu();
+        
+        if (!chatId || !chats[chatId]) {
+            console.error("Ошибка: Чат не найден в памяти.");
+            return;
+        }
+        
+        const chatObj = chats[chatId];
+        const currentTitle = chatObj.title || "Новый чат";
+        const newTitle = prompt("Введите новое название чата:", currentTitle);
+        
+        if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
+          chatObj.title = newTitle.trim();
+          
+          await saveChatToDB(chatObj); // Обновляем в Supabase
+          saveChatsToStorage();        // Обновляем локально
+          renderChatList();            // Перерисовываем боковое меню
+          
+          window.showToast("Чат переименован");
+        }
+      };
+
+      window.deleteTargetChat = function() {
+        // ВАЖНО: Сначала запоминаем ID чата
+        const chatId = window.targetChatId;
+        
+        if (typeof window.hideChatContextMenu === 'function') window.hideChatContextMenu();
+        if (!chatId) return;
+        
+        // Передаем сохраненный ID в функцию удаления
+        window.deleteChat({ stopPropagation: () => {} }, chatId);
       };
 
       function loadCurrentChat() {
@@ -7989,47 +8262,110 @@ function subscribeToCurrentChatRealtime(chatId) {
       }
 
       async function runSearchPipeline(chat, domEl, msgObj, mainModel) {
-        const searchModel =
-          currentSearchMode === "fast"
-            ? "gemini-3-flash-preview"
-            : "gpt-4o-search-preview-2025-03-11";
+        // 1. ВРЕМЕННОЙ КОНТЕКСТ (Чтобы ИИ знал, какой сейчас день и час)
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const timeStr = now.toLocaleTimeString('ru-RU');
+        const timeContext = `[СИСТЕМНОЕ ВРЕМЯ: Сегодня ${dateStr}, точное время ${timeStr}].\n`;
 
-        // 1. Показываем статус поиска
-        domEl.innerHTML = `<div class="agent-status"><span class="inline-svg-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></span> Сбор информации в интернете (${currentSearchMode.toUpperCase()})...</div>`;
-        chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+        // ==========================================
+        // НАСТРОЙКА МОДЕЛЕЙ ДЛЯ ПОИСКА
+        // Здесь ты можешь менять ID моделей, которые будут "гуглить" информацию
+        // ==========================================
+        const MODEL_FAST = "gemini-3-flash-preview"; // Дешевая и быстрая
+        const MODEL_PRO = "perplexity/sonar-pro-search";        // Глубокий ресерч
+        const MODEL_DEV = "gpt-4o-search-preview-2025-03-11";   // Лучше понимает код
+        const MODEL_NEWS = "perplexity/sonar-pro-search";       // Лучше ищет новости
 
-        // 2. Делаем запрос к поисковой модели
-        const searchHistory = JSON.parse(
-          JSON.stringify(chat.messages.slice(0, -1)),
-        );
-        const sysSearch =
-          "Ты автономный поисковик. Найди актуальную информацию для ответа на последний запрос пользователя. Верни только факты, даты и найденные данные. Без воды.";
+        let searchModel = MODEL_FAST;
+        let searchSystemPrompt = "";
+        let statusText = "";
+        let statusIcon = "";
 
-        let searchData;
-        try {
-          searchData = await callNonStream(
-            searchModel,
-            searchHistory,
-            sysSearch,
-          );
-        } catch (err) {
-          window.showToast("Ошибка поиска: " + err.message, "error");
-          searchData =
-            "Не удалось выполнить поиск. Ответь на основе своих базовых знаний.";
+        switch (currentSearchMode) {
+          case "fast":
+            searchModel = MODEL_FAST;
+            statusIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`;
+            statusText = "Быстрый сбор фактов...";
+            searchSystemPrompt = `${timeContext}Ты — быстрый поисковый агент. Найди точный и краткий ответ на запрос. Верни только факты и ссылки на источники. Без лишней воды.`;
+            break;
+            
+          case "pro":
+            searchModel = MODEL_PRO;
+            statusIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
+            statusText = "Глубокое исследование сети...";
+            searchSystemPrompt = `${timeContext}Ты — продвинутый исследовательский ИИ. Проведи глубокий анализ темы. Собери данные из надежных источников, сравни разные точки зрения и предоставь структурированный сырой материал со ссылками на источники.`;
+            break;
+
+          case "dev":
+            searchModel = MODEL_DEV;
+            statusIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`;
+            statusText = "Поиск по документации и коду...";
+            searchSystemPrompt = `${timeContext}Ты — Senior Developer. Ищи ответ ТОЛЬКО на технических ресурсах (официальные документации, GitHub, StackOverflow, Reddit). Верни актуальный код, архитектурные решения и ссылки на страницы документации.`;
+            break;
+
+          case "news":
+            searchModel = MODEL_NEWS;
+            statusIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><path d="M18 14h-8"></path><path d="M15 18h-5"></path></svg>`;
+            statusText = "Сбор свежих новостей...";
+            searchSystemPrompt = `${timeContext}Ты — журналист-аналитик. Ищи ТОЛЬКО самые свежие новости и события за последние несколько дней или часов. Обязательно указывай точные даты событий и прикрепляй ссылки на новостные издания.`;
+            break;
         }
 
-        // 3. Формируем "Блок мыслей" с результатами поиска для отображения пользователю
-        msgObj.content += `<think><span class="inline-svg-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></span> Результаты интернет-поиска (${currentSearchMode}):\n\n${searchData}</think>\n\n`;
+        // 2. Показываем статус поиска пользователю
+        domEl.innerHTML = `<div class="agent-status"><span class="inline-svg-icon">${statusIcon}</span> ${statusText}</div>`;
+        chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+
+        // 3. Запускаем поисковую модель
+        const searchHistory = JSON.parse(JSON.stringify(chat.messages.slice(0, -1)));
+        let searchData;
+        try {
+          searchData = await callNonStream(searchModel, searchHistory, searchSystemPrompt);
+        } catch (err) {
+          window.showToast("Ошибка поиска: " + err.message, "error");
+          searchData = "Не удалось выполнить поиск (ошибка сети). Ответь на основе своих базовых знаний.";
+        }
+
+        // 4. Оформляем сырые данные в блок <think> (пользователь сможет раскрыть и почитать)
+        msgObj.content += `<think><span class="inline-svg-icon">${statusIcon}</span> Результаты интернет-поиска:\n\n${searchData}</think>\n\n`;
         domEl.innerHTML = window.safeRenderMarkdown(msgObj.content);
 
-        // 4. Подменяем контекст для главной модели (не мутируя оригинальный chat.messages)
+        // 5. ПОДМЕНА КОНТЕКСТА: Формируем жесткий RAG-промпт для главной модели
         let chatCopy = { messages: JSON.parse(JSON.stringify(chat.messages)) };
         let lastUserMsg = chatCopy.messages[chatCopy.messages.length - 2];
-        lastUserMsg.content = `<результаты_поиска>\n${searchData}\n</результаты_поиска>\n\nИспользуй эти актуальные данные из интернета для ответа на следующий запрос:\n${lastUserMsg.content}`;
+        
+        lastUserMsg.content = `
+${timeContext}
+<информация_из_интернета>
+${searchData}
+</информация_из_интернета>
 
-        // 5. Запускаем основную модель с измененным контекстом
-        domEl.innerHTML += `<div class="agent-status">Ответ от ${getPrettyModelName(mainModel)}...</div>`;
-        await runStreamForModel(chatCopy, domEl, msgObj, mainModel);
+ИНСТРУКЦИЯ ДЛЯ ТЕБЯ:
+Ответь на мой следующий запрос, используя данные из блока <информация_из_интернета>. 
+ОБЯЗАТЕЛЬНО ставь кликабельные ссылки на источники в формате Markdown: [1](url), [2](url). 
+Не придумывай источники, используй только те, что есть в блоке информации.
+
+Мой запрос:
+${lastUserMsg.content}`;
+
+        // 6. Запускаем основную (выбранную юзером) модель для генерации финального текста
+        domEl.innerHTML += `<div class="agent-status"><span class="inline-svg-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></span> Формирование ответа от ${getPrettyModelName(mainModel)}...</div>`;
+        
+        // 7. МАГИЯ ЦИТИРОВАНИЯ: Перехватываем рендер, чтобы превратить ссылки [1](url) в красивые элементы
+        const originalRender = window.safeRenderMarkdown;
+        window.safeRenderMarkdown = function(text) {
+            let html = originalRender(text);
+            // Превращаем <a href="url">[1]</a> в стилизованные <a class="search-citation">
+            html = html.replace(/<a href="([^"]+)">\[(\d+)\]<\/a>/gi, '<a href="$1" target="_blank" class="search-citation" title="Перейти к источнику">[$2]</a>');
+            return html;
+        };
+
+        try {
+            await runStreamForModel(chatCopy, domEl, msgObj, mainModel);
+        } finally {
+            // Возвращаем стандартный рендер после завершения генерации
+            window.safeRenderMarkdown = originalRender;
+        }
       }
 
       async function handleSend() {
@@ -8262,7 +8598,7 @@ function subscribeToCurrentChatRealtime(chatId) {
                 if (txt) {
                   msgObj.content += txt;
                   // Используем оптимизированный рендер, передавая ID сообщения
-                  window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.messages.length);
+                  window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.id + '_' + chat.messages.length, chat);
                 }
               } catch (e) {}
             }
@@ -8282,22 +8618,29 @@ window.smartScroll = function() {
 
 // Троттлинг (оптимизация рендера): обновляет тяжелый Markdown не чаще, чем раз в кадр
 let renderTimers = {};
-let lastSaveTime = 0; // Добавляем таймер для отправки в базу
+let lastSaveTime = 0;
 
-window.optimizedRender = function(domEl, content, msgId) {
+// Добавили 4-й аргумент chatObj
+window.optimizedRender = function(domEl, content, msgId, chatObj) {
+    
+    // 1. БЕЗОТКАЗНОЕ СОХРАНЕНИЕ: Работает даже если браузер свернут и графика остановлена
+    const now = Date.now();
+    if (now - lastSaveTime > 2000) {
+        if (chatObj) {
+            chatObj.updatedAt = Date.now();
+            saveChatToDB(chatObj); // Сохраняем ИМЕННО ТОТ чат, который генерируется
+        }
+        lastSaveTime = now;
+    }
+
+    // 2. ОТРИСОВКА: Браузер поставит это на паузу при сворачивании окна, но генерация продолжится
     if (renderTimers[msgId]) return; 
     renderTimers[msgId] = requestAnimationFrame(() => {
-        domEl.innerHTML = window.safeRenderMarkdown(content);
-        window.smartScroll();
-        
-        // ФИКС: Сохраняем в Supabase не на каждую букву, а максимум раз в 2 секунды!
-        // Это полностью убирает "зависания" и очередь сетевых запросов
-        const now = Date.now();
-        if (now - lastSaveTime > 2000) {
-            if (chats[currentChatId]) saveChatsToStorage();
-            lastSaveTime = now;
+        // Защита: рисуем текст только если элемент всё ещё на экране
+        if (document.body.contains(domEl)) {
+            domEl.innerHTML = window.safeRenderMarkdown(content);
+            window.smartScroll();
         }
-        
         renderTimers[msgId] = null;
     });
 };
@@ -8369,7 +8712,7 @@ window.optimizedRender = function(domEl, content, msgId) {
                 if (txt) {
                   msgObj.content += txt;
                   // Используем оптимизированный рендер, передавая ID сообщения
-                  window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.messages.length);
+                  window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.id + '_' + chat.messages.length, chat);
                 }
               } catch (e) {}
             }
@@ -8458,7 +8801,7 @@ window.optimizedRender = function(domEl, content, msgId) {
                   if (txt) {
                     msgObj.content += txt;
                     // Используем оптимизированный рендер, передавая ID сообщения
-                    window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.messages.length);
+                    window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.id + '_' + chat.messages.length, chat);
                   }
                 }
               } catch (e) {}
@@ -8565,7 +8908,7 @@ window.optimizedRender = function(domEl, content, msgId) {
                 if (txt) {
                   msgObj.content += txt;
                   // Используем оптимизированный рендер, передавая ID сообщения
-                  window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.messages.length);
+                  window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.id + '_' + chat.messages.length, chat);
                 }
               } catch (e) {}
             }
@@ -9650,6 +9993,20 @@ window.optimizedRender = function(domEl, content, msgId) {
         </div>
       </div>
     </div>
+
+    <!-- ========================================== -->
+  <!-- КАСТОМНОЕ КОНТЕКСТНОЕ МЕНЮ ДЛЯ ЧАТОВ       -->
+  <!-- ========================================== -->
+  <div id="custom-chat-menu" class="custom-context-menu">
+    <div class="context-menu-item" onclick="window.renameTargetChat()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg>
+      <span>Переименовать</span>
+    </div>
+    <div class="context-menu-item" style="color: var(--danger-color);" onclick="window.deleteTargetChat()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      <span>Удалить чат</span>
+    </div>
+  </div>
 
     <!-- ========================================== -->
   <!-- КАСТОМНОЕ КОНТЕКСТНОЕ МЕНЮ ДЛЯ СООБЩЕНИЙ   -->
