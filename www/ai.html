@@ -6916,7 +6916,6 @@ function subscribeToCurrentChatRealtime(chatId) {
     }
     if (currentUserUid === "guest" || !chatId) return;
 
-    // Подписываемся на изменения ТОЛЬКО текущего чата в Supabase
     currentChatSubscription = supabaseClient.channel(`chat_${chatId}`)
         .on('postgres_changes', { 
             event: 'UPDATE', 
@@ -6925,11 +6924,21 @@ function subscribeToCurrentChatRealtime(chatId) {
             filter: `id=eq.${chatId}` 
         }, payload => {
             const incomingMessages = payload.new.messages;
-            // Обновляем UI только если данные в базе новее (изменилась длина контента последнего сообщения)
+            
+            // ФИКС: Проверяем, генерирует ли сайт ответ прямо сейчас (горит ли кнопка СТОП)
+            const stopBtn = document.getElementById("stop-btn");
+            const isGeneratingLocally = stopBtn && stopBtn.style.display === "flex";
+            
             if (JSON.stringify(chats[chatId].messages) !== JSON.stringify(incomingMessages)) {
+                // Всегда обновляем данные в памяти
                 chats[chatId].messages = incomingMessages;
-                loadCurrentChat(); // Перерисовываем чат с новыми данными из фона
-                window.smartScroll(); // Скроллим аккуратно
+                
+                // Перерисовываем чат ТОЛЬКО если текст пришел с другого устройства
+                // Если мы печатаем сами, не перерисовываем, чтобы не сбить анимацию Markdown
+                if (!isGeneratingLocally) {
+                    loadCurrentChat(); 
+                    window.smartScroll(); 
+                }
             }
         })
         .subscribe();
@@ -8273,11 +8282,22 @@ window.smartScroll = function() {
 
 // Троттлинг (оптимизация рендера): обновляет тяжелый Markdown не чаще, чем раз в кадр
 let renderTimers = {};
+let lastSaveTime = 0; // Добавляем таймер для отправки в базу
+
 window.optimizedRender = function(domEl, content, msgId) {
-    if (renderTimers[msgId]) return; // Кадр уже запланирован
+    if (renderTimers[msgId]) return; 
     renderTimers[msgId] = requestAnimationFrame(() => {
         domEl.innerHTML = window.safeRenderMarkdown(content);
-        window.smartScroll(); // Вызываем наш умный скролл
+        window.smartScroll();
+        
+        // ФИКС: Сохраняем в Supabase не на каждую букву, а максимум раз в 2 секунды!
+        // Это полностью убирает "зависания" и очередь сетевых запросов
+        const now = Date.now();
+        if (now - lastSaveTime > 2000) {
+            if (chats[currentChatId]) saveChatsToStorage();
+            lastSaveTime = now;
+        }
+        
         renderTimers[msgId] = null;
     });
 };
