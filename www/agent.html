@@ -1556,28 +1556,24 @@
   </script>
 </body>
 <!-- ========================================== -->
-<!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
-<!-- ========================================== -->
-<style>
-  .fab-wrapper {
+  <!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
+  <!-- ========================================== -->
+  <style>
+    .fab-wrapper {
       position: fixed;
       bottom: 25px;
-      right: 25px; 
+      right: 25px;
       z-index: 999999;
-      display: flex;
-      flex-direction: row-reverse;
-      align-items: center;
-      gap: 15px;
-      /* ФИКС: Оболочка больше не перехватывает клики! */
-      pointer-events: none; 
-  }
-
-  /* Сама кнопка-триггер */
-  .fab-button {
-      /* ФИКС: Делаем саму кнопку кликабельной */
-      pointer-events: auto; 
+      /* ФИКС: Убрали flex, жестко фиксируем размер под кнопку */
       width: 54px;
       height: 54px;
+      pointer-events: none;
+    }
+
+    .fab-button {
+      pointer-events: auto;
+      width: 100%; /* ФИКС: занимает 100% от враппера */
+      height: 100%;
       border-radius: 50%;
       background: rgba(20, 20, 25, 0.85);
       backdrop-filter: blur(20px);
@@ -1588,30 +1584,41 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
       transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       outline: none;
       padding: 0;
-  }
+      /* Для телефонов */
+      touch-action: none; 
+    }
 
-  .fab-button:hover {
+    .fab-button:hover {
       transform: scale(1.1);
       background: rgba(40, 40, 50, 0.9);
       border-color: rgba(255, 255, 255, 0.4);
       box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 1px 5px rgba(255, 255, 255, 0.3);
-  }
+    }
 
-  .fab-button svg {
+    .fab-button svg {
       transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  }
-  
-  .fab-wrapper.open .fab-button svg {
-      transform: rotate(90deg) scale(0.9);
-      color: #a78bfa; 
-  }
+    }
 
-  /* Выезжающая панель навигации */
-  .global-dock {
+    .fab-wrapper.open .fab-button svg {
+      transform: rotate(90deg) scale(0.9);
+      color: #a78bfa;
+    }
+
+    /* Выезжающая панель навигации */
+    .global-dock {
+      /* ФИКС: Абсолютное позиционирование, чтобы не ломать контейнер */
+      position: absolute;
+      top: 50%;
+      right: calc(100% + 15px); /* По умолчанию открывается влево */
+      transform: translateY(-50%) translateX(40px) scale(0.9);
+      transform-origin: right center;
+
       display: flex;
       align-items: center;
       gap: 8px;
@@ -1622,26 +1629,81 @@
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 100px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      
-      /* ФИКС: Игнорирует клики и полностью скрыта в закрытом виде */
+
+      /* ФИКС: Защита от вылета за экран и скролл */
+      max-width: calc(100vw - 100px); 
+      overflow-x: auto;
+      -ms-overflow-style: none; /* Скрытие ползунка скролла IE/Edge */
+      scrollbar-width: none;    /* Скрытие ползунка скролла Firefox */
+
       opacity: 0;
-      visibility: hidden; 
-      pointer-events: none; 
-      
-      transform: translateX(40px) scale(0.9);
+      visibility: hidden;
+      pointer-events: none;
       transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      transform-origin: right center;
-  }
+    }
 
-  /* Состояние открытого меню */
-  .fab-wrapper.open .global-dock {
+    /* Скрытие ползунка скролла Chrome/Safari */
+    .global-dock::-webkit-scrollbar { display: none; }
+
+    /* Состояние открытого меню */
+    .fab-wrapper.open .global-dock {
       opacity: 1;
-      visibility: visible; 
-      pointer-events: auto; /* ФИКС: Кнопки меню работают, только когда открыты */
-      transform: translateX(0) scale(1);
-  }
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(-50%) translateX(0) scale(1);
+    }
 
-  .dock-item {
+    /* === СТАРЫЙ КОД ОСТАЕТСЯ (открытия влево и вправо) === */
+    .fab-wrapper.is-left .global-dock {
+      right: auto;
+      left: calc(100% + 15px);
+      transform-origin: left center;
+      transform: translateY(-50%) translateX(-40px) scale(0.9);
+    }
+    .fab-wrapper.is-left.open .global-dock {
+      transform: translateY(-50%) translateX(0) scale(1);
+    }
+
+    /* === НОВЫЙ КОД (Добавить сюда) === */
+    
+    /* Вертикальный режим: Открывается ВВЕРХ */
+    .fab-wrapper.is-up .global-dock {
+      flex-direction: column;   /* Иконки выстраиваются в колонку */
+      right: 50%;               /* Центрируем ровно по центру кнопки */
+      top: auto;
+      bottom: calc(100% + 15px);
+      transform-origin: bottom center;
+      transform: translateX(50%) translateY(40px) scale(0.9);
+      
+      /* Защита от вылета по вертикали */
+      max-height: calc(100vh - 100px); 
+      max-width: none; 
+      overflow-y: auto;         /* Вертикальный скролл, если иконок очень много */
+      overflow-x: hidden;
+    }
+    .fab-wrapper.is-up.open .global-dock {
+      transform: translateX(50%) translateY(0) scale(1);
+    }
+
+    /* Вертикальный режим: Открывается ВНИЗ */
+    .fab-wrapper.is-down .global-dock {
+      flex-direction: column;
+      right: 50%;
+      bottom: auto;
+      top: calc(100% + 15px);
+      transform-origin: top center;
+      transform: translateX(50%) translateY(-40px) scale(0.9);
+      
+      max-height: calc(100vh - 100px);
+      max-width: none;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .fab-wrapper.is-down.open .global-dock {
+      transform: translateX(50%) translateY(0) scale(1);
+    }
+
+    .dock-item {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1650,27 +1712,27 @@
       border-radius: 100px;
       color: rgba(255, 255, 255, 0.6);
       text-decoration: none;
-      font-family: 'Inter', 'Segoe UI', sans-serif;
+      font-family: "Inter", "Segoe UI", sans-serif;
       font-size: 14px;
       font-weight: 600;
       transition: all 0.3s ease;
       position: relative;
       white-space: nowrap;
-  }
+    }
 
-  .dock-item:hover {
+    .dock-item:hover {
       color: #fff;
       background: rgba(255, 255, 255, 0.08);
-  }
+    }
 
-  .dock-item.active {
+    .dock-item.active {
       color: #fff;
       background: rgba(255, 255, 255, 0.12);
       box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
-  }
+    }
 
-  .dock-item.active::after {
-      content: '';
+    .dock-item.active::after {
+      content: "";
       position: absolute;
       bottom: -6px;
       left: 50%;
@@ -1680,242 +1742,309 @@
       background: #fff;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
-  }
+    }
 
-  .dock-icon {
+    .dock-icon {
       font-size: 18px;
-      filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
-  }
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+    }
 
-  @media (max-width: 768px) {
+    @media (max-width: 768px) {
       .fab-wrapper {
-          bottom: 20px;
-          right: 20px;
-          gap: 10px;
-      }
-      .fab-button {
-          width: 48px;
-          height: 48px;
+        bottom: 20px;
+        right: 20px;
+        width: 48px;  /* ФИКС: Изменяем ширину/высоту самого враппера */
+        height: 48px; 
       }
       .global-dock {
-          padding: 6px 8px;
-          gap: 4px;
+        padding: 6px 8px;
+        gap: 4px;
+        /* ФИКС: делаем отступ для узких экранов чуть меньше */
+        max-width: calc(100vw - 80px); 
       }
       .dock-item {
-          padding: 12px;
+        padding: 12px;
       }
       .dock-text {
-          display: none; 
+        display: none;
       }
       .dock-icon {
-          font-size: 22px;
+        font-size: 22px;
       }
       .dock-item.active::after {
-          bottom: -2px;
+        bottom: -2px;
       }
-  }
+    }
 
-  /* --- НОВЫЕ СТИЛИ ДЛЯ ИКОНОК-КАРТИНОК И ПЕРЕТАСКИВАНИЯ --- */
+    /* --- НОВЫЕ СТИЛИ ДЛЯ ИКОНОК-КАРТИНОК И ПЕРЕТАСКИВАНИЯ --- */
 
-.dock-icon {
-    width: 20px; /* Размер ваших иконок */
-    height: 20px;
-    object-fit: contain; /* Чтобы картинка не искажалась */
-    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
-    /* Важно! Запрещаем перетаскивать саму картинку браузером */
-    pointer-events: none; 
-    user-select: none;
-}
-
-@media (max-width: 768px) {
     .dock-icon {
+      width: 20px; /* Размер ваших иконок */
+      height: 20px;
+      object-fit: contain; /* Чтобы картинка не искажалась */
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+      /* Важно! Запрещаем перетаскивать саму картинку браузером */
+      pointer-events: none;
+      user-select: none;
+    }
+
+    @media (max-width: 768px) {
+      .dock-icon {
         width: 24px; /* На телефоне иконки чуть больше */
         height: 24px;
+      }
     }
-}
 
-/* Курсоры для кнопки перетаскивания */
-.fab-button {
-    cursor: grab;
-    touch-action: none; /* Запрещаем скролл страницы при касании кнопки на телефоне */
-}
+    /* Курсоры для кнопки перетаскивания */
+    .fab-button {
+      cursor: grab;
+      touch-action: none; /* Запрещаем скролл страницы при касании кнопки на телефоне */
+    }
 
-.fab-button:active {
-    cursor: grabbing;
-}
+    .fab-button:active {
+      cursor: grabbing;
+    }
 
-/* Класс для плавного возврата в границы экрана (если меню открыли у самого края) */
-.fab-wrapper.snap-transition {
-    transition: left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
+    /* Класс для плавного возврата в границы экрана (если меню открыли у самого края) */
+    .fab-wrapper.snap-transition {
+      transition:
+        left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+        top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+  </style>
 
-</style>
-
-<div class="fab-wrapper" id="fabWrapper">
-  <!-- Кнопка открытия/закрытия меню (она же ручка для перетаскивания) -->
-  <button class="fab-button" id="fabToggleBtn" title="Навигация">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-          <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+  <div class="fab-wrapper" id="fabWrapper">
+    <!-- Кнопка открытия/закрытия меню (она же ручка для перетаскивания) -->
+    <button class="fab-button" id="fabToggleBtn" title="Навигация">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
       </svg>
-  </button>
+    </button>
 
-  <!-- Сама панель (Dock) -->
-  <div class="global-dock" id="globalDock">
-    <a href="index.html" class="dock-item">
-        <img src="https://i.imgur.com/tpFK0jG.png" alt="Menu" class="dock-icon">
+    <!-- Сама панель (Dock) -->
+    <div class="global-dock" id="globalDock">
+      <a href="index.html" class="dock-item">
+        <img
+          src="https://i.imgur.com/tpFK0jG.png"
+          alt="Menu"
+          class="dock-icon"
+        />
         <span class="dock-text">Menu</span>
-    </a>
-    <a href="ai.html" class="dock-item">
-        <img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon">
+      </a>
+      <a href="ai.html" class="dock-item">
+        <img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon" />
         <span class="dock-text">AI</span>
-    </a>
-    <a href="agent.html" class="dock-item">
-        <img src="https://i.imgur.com/HTTz55C.png" alt="Agent" class="dock-icon">
+      </a>
+      <a href="agent.html" class="dock-item">
+        <img
+          src="https://i.imgur.com/HTTz55C.png"
+          alt="Agent"
+          class="dock-icon"
+        />
         <span class="dock-text">Agent</span>
-    </a>
-    <a href="game.html" class="dock-item">
-        <img src="https://i.imgur.com/4Uk0ui7.png" alt="Music" class="dock-icon">
+      </a>
+      <a href="game.html" class="dock-item">
+        <img
+          src="https://i.imgur.com/4Uk0ui7.png"
+          alt="Music"
+          class="dock-icon"
+        />
         <span class="dock-text">Tetris</span>
-    </a>
-    <a href="note.html" class="dock-item">
-        <img src="https://i.imgur.com/GcjfCTh.png" alt="Note" class="dock-icon">
+      </a>
+      <a href="note.html" class="dock-item">
+        <img
+          src="https://i.imgur.com/GcjfCTh.png"
+          alt="Note"
+          class="dock-icon"
+        />
         <span class="dock-text">Note</span>
-    </a>
-    <a href="googleweb.html" class="dock-item">
-        <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="dock-icon">
+      </a>
+      <a href="googleweb.html" class="dock-item">
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png"
+          alt="Google"
+          class="dock-icon"
+        />
         <span class="dock-text">Google</span>
-    </a>
-    <a href="browser.html" class="dock-item">
-        <img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX" class="dock-icon">
+      </a>
+      <a href="browser.html" class="dock-item">
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png"
+          alt="SearX"
+          class="dock-icon"
+        />
         <span class="dock-text">SearX</span>
-    </a>
-</div>
-</div>
+      </a>
+    </div>
+  </div>
 
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const fabWrapper = document.getElementById('fabWrapper');
-    const fabToggleBtn = document.getElementById('fabToggleBtn');
-    
-    // Подсветка активной ссылки (ваш код)
-    let currentPath = window.location.pathname.split('/').pop();
-    if (currentPath === '') currentPath = 'index.html';
-    document.querySelectorAll('.dock-item').forEach(item => {
-        const href = item.getAttribute('href');
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const fabWrapper = document.getElementById("fabWrapper");
+      const fabToggleBtn = document.getElementById("fabToggleBtn");
+      const globalDock = document.getElementById("globalDock");
+
+      // Подсветка активной ссылки
+      let currentPath = window.location.pathname.split("/").pop();
+      if (currentPath === "") currentPath = "index.html";
+      document.querySelectorAll(".dock-item").forEach((item) => {
+        const href = item.getAttribute("href");
         if (currentPath === href) {
-            item.classList.add('active');
+          item.classList.add("active");
         }
-    });
+      });
 
-    // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
-    let isDragging = false;
-    let hasMoved = false; // Отличаем клик от перетаскивания
-    let startX, startY;
-    let initialLeft, initialTop;
+      // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
+      let isDragging = false;
+      let hasMoved = false; 
+      let startX, startY;
+      let initialLeft, initialTop;
 
-    function dragStart(e) {
-        if (e.type === 'touchstart') {
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-        } else {
-            startX = e.clientX;
-            startY = e.clientY;
-            e.preventDefault(); // Предотвращаем стандартное выделение на ПК
-        }
-
-        // Получаем текущие координаты элемента на экране
+      // Умное направление (Влево, Вправо, Вверх, Вниз)
+      function updateDockDirection() {
         const rect = fabWrapper.getBoundingClientRect();
-        
-        // Отключаем bottom/right, переходим на жесткое позиционирование left/top
-        fabWrapper.style.bottom = 'auto';
-        fabWrapper.style.right = 'auto';
-        fabWrapper.style.left = rect.left + 'px';
-        fabWrapper.style.top = rect.top + 'px';
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        // Очищаем все классы направлений
+        fabWrapper.classList.remove("is-left", "is-up", "is-down");
+
+        // 1. Узнаем реальную ширину меню (принудительно делаем его строкой на секунду)
+        const oldFlexDir = globalDock.style.flexDirection;
+        globalDock.style.flexDirection = 'row';
+        const dockWidth = globalDock.scrollWidth; 
+        globalDock.style.flexDirection = oldFlexDir; // Возвращаем как было
+
+        const gap = 15; // Расстояние от кнопки до меню
+
+        // Считаем свободное место со всех четырех сторон от кнопки
+        const spaceLeft = rect.left;
+        const spaceRight = screenWidth - rect.right;
+        const spaceTop = rect.top;
+        const spaceBottom = screenHeight - rect.bottom;
+
+        // Логика принятия решения:
+        // Шаг 1: Влезает ли справа?
+        if (spaceRight >= dockWidth + gap) {
+          fabWrapper.classList.add("is-left"); // (открывается вправо, т.к. кнопка слева)
+        } 
+        // Шаг 2: Влезает ли слева?
+        else if (spaceLeft >= dockWidth + gap) {
+          // Ничего не добавляем, стандартный CSS открывает влево
+        } 
+        // Шаг 3: НЕ ВЛЕЗАЕТ ПО ГОРИЗОНТАЛИ (Экран слишком узкий) -> Переходим в вертикаль
+        else {
+          // Смотрим, где больше места - сверху или снизу?
+          if (spaceTop > spaceBottom) {
+            fabWrapper.classList.add("is-up"); // Открываем вверх
+          } else {
+            fabWrapper.classList.add("is-down"); // Открываем вниз
+          }
+        }
+      }
+
+      function dragStart(e) {
+        if (e.type === "touchstart") {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        } else {
+          startX = e.clientX;
+          startY = e.clientY;
+          e.preventDefault(); 
+        }
+
+        const rect = fabWrapper.getBoundingClientRect();
+
+        fabWrapper.style.bottom = "auto";
+        fabWrapper.style.right = "auto";
+        fabWrapper.style.left = rect.left + "px";
+        fabWrapper.style.top = rect.top + "px";
 
         initialLeft = rect.left;
         initialTop = rect.top;
 
         isDragging = true;
         hasMoved = false;
-        
-        // Убираем плавность при самом перетаскивании
-        fabWrapper.classList.remove('snap-transition');
 
-        document.addEventListener('mousemove', dragMove);
-        document.addEventListener('mouseup', dragEnd);
-        document.addEventListener('touchmove', dragMove, { passive: false });
-        document.addEventListener('touchend', dragEnd);
-    }
+        fabWrapper.classList.remove("snap-transition");
 
-    function dragMove(e) {
+        document.addEventListener("mousemove", dragMove);
+        document.addEventListener("mouseup", dragEnd);
+        document.addEventListener("touchmove", dragMove, { passive: false });
+        document.addEventListener("touchend", dragEnd);
+      }
+
+      function dragMove(e) {
         if (!isDragging) return;
 
-        let currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        let currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        let currentX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+        let currentY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
 
         let deltaX = currentX - startX;
         let deltaY = currentY - startY;
 
-        // Если сдвинули больше чем на 5 пикселей, считаем это перетаскиванием, а не кликом
         if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-            hasMoved = true;
-            if (e.type === 'touchmove') e.preventDefault(); // Блокируем скролл страницы
+          hasMoved = true;
+          if (e.type === "touchmove") e.preventDefault(); 
         }
 
         if (hasMoved) {
-            let newLeft = initialLeft + deltaX;
-            let newTop = initialTop + deltaY;
+          let newLeft = initialLeft + deltaX;
+          let newTop = initialTop + deltaY;
 
-            // --- ОГРАНИЧЕНИЕ ВЫХОДА ЗА ПРЕДЕЛЫ ЭКРАНА ---
-            const rect = fabWrapper.getBoundingClientRect();
-            const maxLeft = window.innerWidth - rect.width;
-            const maxTop = window.innerHeight - rect.height;
+          // Ограничение выхода за пределы экрана
+          // Так как враппер теперь всегда размером с кнопку (54x54), расчеты идеальны
+          const maxLeft = window.innerWidth - fabWrapper.offsetWidth;
+          const maxTop = window.innerHeight - fabWrapper.offsetHeight;
 
-            // Запрещаем уходить за левый/правый и верхний/нижний края
-            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-            newTop = Math.max(0, Math.min(newTop, maxTop));
+          newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+          newTop = Math.max(0, Math.min(newTop, maxTop));
 
-            fabWrapper.style.left = newLeft + 'px';
-            fabWrapper.style.top = newTop + 'px';
+          fabWrapper.style.left = newLeft + "px";
+          fabWrapper.style.top = newTop + "px";
+          
+          updateDockDirection(); // Проверяем на какую сторону перетащили
         }
-    }
+      }
 
-    function dragEnd() {
+      function dragEnd() {
         isDragging = false;
-        document.removeEventListener('mousemove', dragMove);
-        document.removeEventListener('mouseup', dragEnd);
-        document.removeEventListener('touchmove', dragMove);
-        document.removeEventListener('touchend', dragEnd);
-    }
+        document.removeEventListener("mousemove", dragMove);
+        document.removeEventListener("mouseup", dragEnd);
+        document.removeEventListener("touchmove", dragMove);
+        document.removeEventListener("touchend", dragEnd);
+      }
 
-    // Слушатели для начала перетаскивания (с кнопки)
-    fabToggleBtn.addEventListener('mousedown', dragStart);
-    fabToggleBtn.addEventListener('touchstart', dragStart, { passive: true });
+      fabToggleBtn.addEventListener("mousedown", dragStart);
+      fabToggleBtn.addEventListener("touchstart", dragStart, { passive: true });
 
-    // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ ---
-    fabToggleBtn.addEventListener('click', (e) => {
+      // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ ---
+      fabToggleBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        
-        // Если было перетаскивание, отменяем клик!
+
         if (hasMoved) {
-            e.preventDefault();
-            return;
+          e.preventDefault();
+          return;
         }
 
-        fabWrapper.classList.toggle('open');
-        
-        // Если меню открылось и вылезло за края экрана (т.к. стало шире),
-        // плавно задвигаем его обратно в пределы экрана.
-        if (fabWrapper.classList.contains('open')) {
-            setTimeout(keepInBounds, 50); // Ждем долю секунды, чтобы CSS применил ширину
-        }
-    });
+        updateDockDirection(); // Перед открытием проверяем сторону
+        fabWrapper.classList.toggle("open");
+      });
 
-    // Функция возврата в рамки экрана при изменении ширины меню
-    function keepInBounds() {
+      // Функция возврата в рамки при изменении размера окна (поворот телефона)
+      function keepInBounds() {
         const rect = fabWrapper.getBoundingClientRect();
         const maxLeft = window.innerWidth - rect.width;
         const maxTop = window.innerHeight - rect.height;
@@ -1923,26 +2052,25 @@
         let correctedLeft = Math.max(0, Math.min(rect.left, maxLeft));
         let correctedTop = Math.max(0, Math.min(rect.top, maxTop));
 
-        // Если позиция нуждается в корректировке
         if (correctedLeft !== rect.left || correctedTop !== rect.top) {
-            fabWrapper.classList.add('snap-transition'); // Добавляем плавность
-            fabWrapper.style.left = correctedLeft + 'px';
-            fabWrapper.style.top = correctedTop + 'px';
+          fabWrapper.classList.add("snap-transition"); 
+          fabWrapper.style.left = correctedLeft + "px";
+          fabWrapper.style.top = correctedTop + "px";
         }
-    }
+        updateDockDirection();
+      }
 
-    // Закрытие меню при клике в любое другое место
-    document.addEventListener('click', (e) => {
-        if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains('open')) {
-            fabWrapper.classList.remove('open');
-            // При закрытии (ширина уменьшилась) тоже проверяем границы на всякий случай
-            setTimeout(keepInBounds, 300); 
+      document.addEventListener("click", (e) => {
+        if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains("open")) {
+          fabWrapper.classList.remove("open");
         }
+      });
+
+      window.addEventListener("resize", keepInBounds);
+      // Инициализируем направление при загрузке (если изначально висит справа)
+      updateDockDirection(); 
     });
-
-    // Пересчет границ при повороте экрана телефона / изменении размера окна
-    window.addEventListener('resize', keepInBounds);
-});
-</script>
-<!-- ========================================== -->
+  </script>
+  <!-- ========================================== -->
+  </body>
 </html>
