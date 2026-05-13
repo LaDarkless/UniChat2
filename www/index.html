@@ -416,6 +416,11 @@
                     <span class="app-name">Music</span>
                 </div>
 
+                <div class="app-link" onclick="openApp('gallary.html')">
+                    <div class="app-icon" style="background: linear-gradient(135deg, #202020, #535255);"><img src="https://i.imgur.com/lecBWUY.png" alt="gallary"></div>
+                    <span class="app-name">Gallary</span>
+                </div>
+
                 <!-- ДОБАВЛЕНО: VIDEO -->
                 <div class="app-link" onmousedown="startTouch('video.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('video.html', event)" ontouchend="endTouch()">
                     <div class="app-icon" style="background: linear-gradient(135deg, #313435, #212831);"><img src="https://i.imgur.com/49xujFD.png" alt="Video"></div>
@@ -582,6 +587,7 @@
                 // В данном коде я привязал openApp к клику дока.
                 // Для иконок с Haptic Touch:
                 if(event.currentTarget.getAttribute('onmousedown').includes('music')) openApp('music.html');
+                if(event.currentTarget.getAttribute('onmousedown').includes('gallary')) openApp('gallary.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('video')) openApp('video.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('game')) openApp('game.html');
                 if(event.currentTarget.getAttribute('onmousedown').includes('browser')) openApp('browser.html');

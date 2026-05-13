@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Montserrat:wght@200;300;400&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* Убираем синие выделения при клике */
+  *, *::before, *::after {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-user-select: none;
+    user-select: none;
+    outline: none !important;
+  }
+
+  /* Но для инпутов оставляем выделение текста */
+  input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* Убираем focus ring на всех интерактивных элементах */
+  *:focus,
+  *:focus-visible,
+  *:focus-within,
+  *:active {
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  button, a, div[onclick], .choice {
+    -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+    tap-highlight-color: rgba(0,0,0,0) !important;
+    outline: none !important;
+    border: none;
+  }
+
+  button:focus, button:active,
+  a:focus, a:active,
+  div:focus, div:active {
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  :root {
+    --transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    font-family: 'Montserrat', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    background: #0a0a0a;
+  }
+
+  .lightbox-delete {
+    margin-top: 20px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 8px 24px;
+    border-radius: 4px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .lightbox-delete:hover {
+    background: #ff4444;
+    color: #fff;
+    border-color: #ff4444;
+  }
+
+  /* ═══════════════════════════════
+     MAIN SCREEN
+  ═══════════════════════════════ */
+  #main-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    z-index: 100;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+
+  #main-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .choice {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: flex var(--transition);
+  }
+
+  .choice:hover { flex: 1.3; }
+
+  /* Left — Minimal */
+  .choice.minimal {
+    background: #f5f0eb;
+  }
+
+  .choice.minimal::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #e8ddd0 0%, #f5f0eb 50%, #faf7f4 100%);
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+  .choice.minimal:hover::before { opacity: 1; }
+
+  .choice.minimal .choice-label {
+    color: #1a1a1a;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 300;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+    transition: transform var(--transition), letter-spacing var(--transition);
+  }
+  .choice.minimal:hover .choice-label {
+    transform: translateY(-8px);
+    letter-spacing: 0.35em;
+  }
+
+  .choice.minimal .choice-sub {
+    color: #999;
+    font-size: 0.65rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    margin-top: 16px;
+    position: relative;
+    z-index: 1;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity var(--transition), transform var(--transition);
+  }
+  .choice.minimal:hover .choice-sub {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .choice.minimal .deco-line {
+    position: absolute;
+    bottom: 40px;
+    width: 1px;
+    height: 0;
+    background: #1a1a1a;
+    transition: height var(--transition);
+  }
+  .choice.minimal:hover .deco-line { height: 60px; }
+
+  /* Right — Ocean */
+  .choice.ocean {
+    background: #0d2137;
+  }
+
+  .choice.ocean::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 60% 40%, #1a4a6b 0%, #0d2137 60%);
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+  .choice.ocean:hover::before { opacity: 1; }
+
+  /* Ocean waves animation */
+  .ocean-waves {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 200%;
+    height: 120px;
+    opacity: 0.12;
+    transition: opacity var(--transition);
+  }
+  .choice.ocean:hover .ocean-waves { opacity: 0.25; }
+
+  .wave {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 120'%3E%3Cpath fill='%234db8ff' d='M0,60 C240,100 480,20 720,60 C960,100 1200,20 1440,60 L1440,120 L0,120 Z'/%3E%3C/svg%3E") repeat-x bottom;
+    animation: waveMove 4s linear infinite;
+  }
+  .wave:nth-child(2) {
+    animation-delay: -2s;
+    opacity: 0.6;
+  }
+
+  @keyframes waveMove {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  .choice.ocean .choice-label {
+    color: #e8f4fd;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 300;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+    transition: transform var(--transition), letter-spacing var(--transition);
+    text-shadow: 0 0 40px rgba(77, 184, 255, 0.3);
+  }
+  .choice.ocean:hover .choice-label {
+    transform: translateY(-8px);
+    letter-spacing: 0.35em;
+    text-shadow: 0 0 60px rgba(77, 184, 255, 0.6);
+  }
+
+  .choice.ocean .choice-sub {
+    color: #4db8ff;
+    font-size: 0.65rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    margin-top: 16px;
+    position: relative;
+    z-index: 1;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity var(--transition), transform var(--transition);
+  }
+  .choice.ocean:hover .choice-sub {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Divider */
+  .divider {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    pointer-events: none;
+  }
+
+  .divider-line {
+    width: 1px;
+    height: 60px;
+    background: linear-gradient(to bottom, transparent, #888, transparent);
+  }
+
+  .divider-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #888;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.4); }
+  }
+
+  /* ═══════════════════════════════
+     GALLERY SCREENS
+  ═══════════════════════════════ */
+  .gallery-screen {
+    position: fixed;
+    inset: 0;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, visibility 0.7s ease, transform 0.7s ease;
+  }
+
+  .gallery-screen.active {
+    opacity: 1;
+    visibility: visible;
+    transform: none; /* Сбрасываем transform, чтобы position: fixed заработал */
+  }
+
+  /* Back button */
+  .back-btn {
+    position: fixed;
+    top: 28px;
+    left: 32px;
+    z-index: 500;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    transition: opacity 0.3s, transform 0.3s;
+    padding: 8px 0;
+  }
+  .back-btn:hover { opacity: 0.6; transform: translateX(-4px); }
+
+  .back-arrow {
+    width: 24px;
+    height: 1px;
+    position: relative;
+  }
+  .back-arrow::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: -4px;
+    width: 8px;
+    height: 8px;
+    border-left: 1px solid currentColor;
+    border-bottom: 1px solid currentColor;
+    transform: rotate(45deg);
+  }
+  .back-arrow::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+  }
+
+  /* Add photo button */
+  .add-btn {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    z-index: 500;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    transition: transform 0.3s, opacity 0.3s;
+    font-weight: 200;
+  }
+  .add-btn:hover { transform: rotate(90deg) scale(1.1); opacity: 0.7; }
+
+  /* ═══════════════════════════════
+     MINIMAL GALLERY
+  ═══════════════════════════════ */
+  #gallery-minimal {
+    background: #faf8f5;
+    min-height: 100vh;
+  }
+
+  #gallery-minimal .back-btn { color: #1a1a1a; }
+  #gallery-minimal .add-btn { color: #1a1a1a; }
+
+  .minimal-header {
+    padding: 80px 60px 40px;
+    border-bottom: 1px solid #e8e0d8;
+  }
+
+  .minimal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 300;
+    color: #1a1a1a;
+    letter-spacing: 0.05em;
+    line-height: 1;
+  }
+
+  .minimal-title em {
+    font-style: italic;
+    color: #888;
+  }
+
+  .minimal-count {
+    font-size: 0.6rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: #aaa;
+    margin-top: 16px;
+  }
+
+  .minimal-grid {
+    padding: 48px 60px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2px;
+  }
+
+  .photo-card.minimal-card {
+    position: relative;
+    overflow: hidden;
+    background: #e8e0d8;
+    aspect-ratio: 3/4;
+    cursor: pointer;
+  }
+
+  .photo-card.minimal-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s cubic-bezier(0.4,0,0.2,1), filter 0.5s;
+    filter: grayscale(15%);
+  }
+
+  .photo-card.minimal-card:hover img {
+    transform: scale(1.04);
+    filter: grayscale(0%);
+  }
+
+  .minimal-card-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px 18px 16px;
+    background: linear-gradient(to top, rgba(250,248,245,0.95) 0%, transparent 100%);
+    transform: translateY(100%);
+    transition: transform 0.4s ease;
+  }
+
+  .photo-card.minimal-card:hover .minimal-card-overlay {
+    transform: translateY(0);
+  }
+
+  .card-date {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: #999;
+    text-transform: uppercase;
+  }
+
+  .card-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    color: #333;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  /* Empty state minimal */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    gap: 16px;
+    color: #bbb;
+  }
+
+  .empty-state .empty-icon { font-size: 2rem; opacity: 0.4; }
+  .empty-state p { font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; }
+
+  /* ═══════════════════════════════
+     OCEAN GALLERY
+  ═══════════════════════════════ */
+  #gallery-ocean {
+    background: #071520;
+    min-height: 100vh;
+  }
+
+  #gallery-ocean .back-btn { color: #7dd3f0; }
+  #gallery-ocean .add-btn { color: #4db8ff; }
+
+  .ocean-header {
+    padding: 80px 60px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ocean-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #1a5a8a, transparent);
+  }
+
+  .ocean-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 300;
+    color: #e8f4fd;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    text-shadow: 0 0 80px rgba(77,184,255,0.2);
+  }
+
+  .ocean-title em {
+    font-style: italic;
+    color: #4db8ff;
+  }
+
+  .ocean-count {
+    font-size: 0.6rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: #2a6a9a;
+    margin-top: 16px;
+  }
+
+  /* Floating particles */
+  .ocean-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: #4db8ff;
+    border-radius: 50%;
+    opacity: 0;
+    animation: float-up var(--dur, 8s) var(--delay, 0s) ease-in infinite;
+  }
+
+  @keyframes float-up {
+    0% { opacity: 0; transform: translateY(100px) translateX(0); }
+    20% { opacity: 0.6; }
+    80% { opacity: 0.3; }
+    100% { opacity: 0; transform: translateY(-200px) translateX(var(--drift, 20px)); }
+  }
+
+  .ocean-grid {
+    padding: 48px 60px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 3px;
+  }
+
+  .photo-card.ocean-card {
+    position: relative;
+    overflow: hidden;
+    background: #0d2137;
+    aspect-ratio: 3/4;
+    cursor: pointer;
+  }
+
+  .photo-card.ocean-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s cubic-bezier(0.4,0,0.2,1);
+    filter: saturate(0.9) brightness(0.9);
+  }
+
+  .photo-card.ocean-card:hover img {
+    transform: scale(1.04);
+    filter: saturate(1.1) brightness(1);
+  }
+
+  .photo-card.ocean-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(77,184,255,0.08) 0%, transparent 60%);
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .photo-card.ocean-card:hover::before { opacity: 1; }
+
+  .ocean-card-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px 18px 16px;
+    background: linear-gradient(to top, rgba(7,21,32,0.97) 0%, transparent 100%);
+    z-index: 2;
+    transform: translateY(100%);
+    transition: transform 0.4s ease;
+  }
+
+  .photo-card.ocean-card:hover .ocean-card-overlay {
+    transform: translateY(0);
+  }
+
+  .ocean-card .card-date { color: #2a7ab0; }
+  .ocean-card .card-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    color: #7dd3f0;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  /* ═══════════════════════════════
+     MODAL — Add Photo
+  ═══════════════════════════════ */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .modal-backdrop {
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(8px);
+  }
+
+  #modal-minimal .modal-backdrop { background: rgba(250,248,245,0.85); }
+  #modal-ocean .modal-backdrop { background: rgba(7,21,32,0.9); }
+
+  .modal-box {
+    position: relative;
+    z-index: 1;
+    width: 480px;
+    max-width: 90vw;
+    padding: 48px;
+    transform: translateY(20px);
+    transition: transform 0.3s;
+  }
+
+  .modal-overlay.open .modal-box { transform: translateY(0); }
+
+  #modal-minimal .modal-box {
+    background: #faf8f5;
+    border: 1px solid #e0d8d0;
+  }
+
+  #modal-ocean .modal-box {
+    background: #0d2137;
+    border: 1px solid #1a4a6b;
+  }
+
+  .modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    font-weight: 300;
+    margin-bottom: 32px;
+  }
+
+  #modal-minimal .modal-title { color: #1a1a1a; }
+  #modal-ocean .modal-title { color: #e8f4fd; }
+
+  .modal-field {
+    margin-bottom: 20px;
+  }
+
+  .modal-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  #modal-minimal .modal-label { color: #999; }
+  #modal-ocean .modal-label { color: #2a7ab0; }
+
+  .modal-input {
+    width: 100%;
+    background: none;
+    border: none;
+    border-bottom: 1px solid;
+    padding: 8px 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 300;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  #modal-minimal .modal-input {
+    border-color: #ddd;
+    color: #1a1a1a;
+  }
+  #modal-minimal .modal-input:focus { border-color: #999; }
+
+  #modal-ocean .modal-input {
+    border-color: #1a4a6b;
+    color: #e8f4fd;
+  }
+  #modal-ocean .modal-input:focus { border-color: #4db8ff; }
+
+  .modal-actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 32px;
+  }
+
+  .modal-btn {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid;
+    background: none;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  #modal-minimal .modal-btn.primary {
+    background: #1a1a1a;
+    border-color: #1a1a1a;
+    color: #faf8f5;
+  }
+  #modal-minimal .modal-btn.primary:hover { background: #333; }
+  #modal-minimal .modal-btn.secondary {
+    border-color: #ddd;
+    color: #999;
+  }
+  #modal-minimal .modal-btn.secondary:hover { border-color: #999; color: #333; }
+
+  #modal-ocean .modal-btn.primary {
+    background: #1a4a6b;
+    border-color: #4db8ff;
+    color: #4db8ff;
+  }
+  #modal-ocean .modal-btn.primary:hover { background: #1f5a80; }
+  #modal-ocean .modal-btn.secondary {
+    border-color: #1a4a6b;
+    color: #2a7ab0;
+  }
+  #modal-ocean .modal-btn.secondary:hover { border-color: #2a7ab0; color: #7dd3f0; }
+
+  /* Lightbox */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    background: rgba(0,0,0,0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .lightbox.open { opacity: 1; visibility: visible; }
+
+  .lightbox img {
+    max-width: 90vw;
+    max-height: 80vh;
+    object-fit: contain;
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 24px;
+    right: 32px;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+  .lightbox-close:hover { opacity: 1; }
+
+  .lightbox-info {
+    text-align: center;
+  }
+  .lightbox-info .card-date { color: #666; font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; }
+  .lightbox-info .card-desc { color: #ccc; font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; margin-top: 4px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  #gallery-minimal::-webkit-scrollbar-track { background: #f0ece6; }
+  #gallery-minimal::-webkit-scrollbar-thumb { background: #c8bfb5; }
+  #gallery-ocean::-webkit-scrollbar-track { background: #071520; }
+  #gallery-ocean::-webkit-scrollbar-thumb { background: #1a4a6b; }
+
+  @media (max-width: 600px) {
+    .minimal-grid, .ocean-grid { padding: 24px 16px; gap: 2px; }
+    .minimal-header, .ocean-header { padding: 70px 20px 30px; }
+    .modal-box { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- MAIN SCREEN -->
+<div id="main-screen">
+  <div class="choice minimal" onclick="openGallery('minimal')">
+    <div class="choice-label">I</div>
+    <div class="choice-sub">Gallery One</div>
+    <div class="deco-line"></div>
+  </div>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-dot"></div>
+    <div class="divider-line"></div>
+  </div>
+
+  <div class="choice ocean" onclick="openGallery('ocean')">
+    <div class="ocean-waves">
+      <div class="wave"></div>
+      <div class="wave"></div>
+    </div>
+    <div class="choice-label">II</div>
+    <div class="choice-sub">Gallery Two</div>
+  </div>
+</div>
+
+<!-- MINIMAL GALLERY -->
+<div id="gallery-minimal" class="gallery-screen">
+  <button class="back-btn" onclick="goBack()" tabindex="-1">
+    <span class="back-arrow"></span>
+    <span>Назад</span>
+  </button>
+
+  <div class="minimal-header">
+    <div class="minimal-title">Gallery <em>One</em></div>
+    <div class="minimal-count" id="minimal-count">0 фотографий</div>
+  </div>
+
+  <div class="minimal-grid" id="minimal-grid">
+    <div class="empty-state" id="minimal-empty">
+      <div class="empty-icon">◯</div>
+      <p>Добавь первую фотографию</p>
+    </div>
+  </div>
+
+  <button class="add-btn" onclick="openModal('minimal')" tabindex="-1" title="Добавить фото">+</button>
+</div>
+
+<!-- OCEAN GALLERY -->
+<div id="gallery-ocean" class="gallery-screen">
+  <button class="back-btn" onclick="goBack()" tabindex="-1">
+    <span class="back-arrow"></span>
+    <span>Назад</span>
+  </button>
+
+  <div class="ocean-header">
+    <div class="ocean-particles" id="ocean-particles"></div>
+    <div class="ocean-title">Gallery <em>Two</em></div>
+    <div class="ocean-count" id="ocean-count">0 фотографий</div>
+  </div>
+
+  <div class="ocean-grid" id="ocean-grid">
+    <div class="empty-state" style="color:#1a5a8a;" id="ocean-empty">
+      <div class="empty-icon">◯</div>
+      <p style="color:#1a5a8a;">Добавь первую фотографию</p>
+    </div>
+  </div>
+
+  <button class="add-btn" onclick="openModal('ocean')" tabindex="-1" title="Добавить фото">+</button>
+</div>
+
+<!-- MODAL MINIMAL -->
+<div class="modal-overlay" id="modal-minimal">
+  <div class="modal-backdrop" onclick="closeModal('minimal')"></div>
+  <div class="modal-box">
+    <div class="modal-title">Добавить фото</div>
+    <div class="modal-field">
+      <label class="modal-label">Ссылка на фото</label>
+      <input class="modal-input" id="min-url" type="url" placeholder="https://..." />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Дата</label>
+      <input class="modal-input" id="min-date" type="date" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Описание</label>
+      <input class="modal-input" id="min-desc" type="text" placeholder="Момент..." />
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('minimal')">Отмена</button>
+      <button class="modal-btn primary" onclick="addPhoto('minimal')">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL OCEAN -->
+<div class="modal-overlay" id="modal-ocean">
+  <div class="modal-backdrop" onclick="closeModal('ocean')"></div>
+  <div class="modal-box">
+    <div class="modal-title">Добавить фото</div>
+    <div class="modal-field">
+      <label class="modal-label">Ссылка на фото</label>
+      <input class="modal-input" id="oce-url" type="url" placeholder="https://..." />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Дата</label>
+      <input class="modal-input" id="oce-date" type="date" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Описание</label>
+      <input class="modal-input" id="oce-desc" type="text" placeholder="Момент..." />
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('ocean')">Отмена</button>
+      <button class="modal-btn primary" onclick="addPhoto('ocean')">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="if(event.target === this) closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img id="lightbox-img" src="" alt="" />
+    <!-- Добавлена кнопка удаления -->
+    <button class="lightbox-delete" onclick="deleteCurrentPhoto()">Удалить фото</button>
+  <div class="lightbox-info">
+    <div class="card-date" id="lightbox-date"></div>
+    <div class="card-desc" id="lightbox-desc"></div>
+  </div>
+</div>
+
+<script>
+  // ═══════════════════════════════════════════════════════════
+  //  ПРЕДЗАГРУЖЕННЫЕ ФОТО — добавляй сюда свои фотографии
+  //  Формат: { url: "ссылка", date: "ГГГГ-ММ-ДД", desc: "описание" }
+  // ═══════════════════════════════════════════════════════════
+
+  const PRELOADED = {
+
+    // --- Gallery One (минимализм) ---
+    minimal: [
+       { url: "https://yandex.ru/images/touch/search?pos=6&img_url=https%3A%2F%2Flh3.googleusercontent.com%2FlPBVM50_eAFcTsYpD1kYHaOVefYc7KBMS9sswjEjtSrKH6XL5gMxjuU2WshcMzo-dG79VzZKW-7lh4vM%3Dw544-h544-p-l90-rj&text=amane+kana&rpt=simage&lr=215991&source=tabbar", date: "2024-03-15", desc: "Описание момента" },
+      // { url: "https://example.com/photo2.jpg", date: "2024-06-20", desc: "" },
+    ],
+
+    // --- Gallery Two (морская) ---
+    ocean: [
+      // { url: "https://example.com/photo1.jpg", date: "2024-05-10", desc: "Описание момента" },
+      // { url: "https://example.com/photo2.jpg", date: "2024-07-04", desc: "" },
+    ],
+
+  };
+
+  // ═══════════════════════════════════════════════════════════
+
+  // State — предзагруженные фото объединяются с добавленными вручную
+  // localStorage хранит только фото добавленные через кнопку "+"
+  const _saved = {
+    minimal: JSON.parse(localStorage.getItem('gallery-minimal') || '[]'),
+    ocean: JSON.parse(localStorage.getItem('gallery-ocean') || '[]'),
+  };
+
+  const state = {
+    minimal: [..._saved.minimal, ...PRELOADED.minimal],
+    ocean: [..._saved.ocean, ...PRELOADED.ocean],
+    current: null
+  };
+
+  // Init particles
+  function initParticles() {
+    const container = document.getElementById('ocean-particles');
+    for (let i = 0; i < 12; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.cssText = `
+        left: ${Math.random() * 100}%;
+        --dur: ${6 + Math.random() * 8}s;
+        --delay: ${Math.random() * 8}s;
+        --drift: ${(Math.random() - 0.5) * 60}px;
+        width: ${1 + Math.random() * 2}px;
+        height: ${1 + Math.random() * 2}px;
+      `;
+      container.appendChild(p);
+    }
+  }
+
+  // Render galleries
+  function renderGallery(type) {
+    const grid = document.getElementById(`${type}-grid`);
+    const empty = document.getElementById(`${type}-empty`);
+    const countEl = document.getElementById(`${type}-count`);
+    const photos = state[type];
+
+    countEl.textContent = `${photos.length} ${declNum(photos.length, ['фотография','фотографии','фотографий'])}`;
+
+    const cards = grid.querySelectorAll('.photo-card');
+    cards.forEach(c => c.remove());
+
+    if (photos.length === 0) {
+      empty.style.display = 'flex';
+      return;
+    }
+    empty.style.display = 'none';
+
+    photos.forEach((photo, i) => {
+      const card = document.createElement('div');
+      card.className = `photo-card ${type}-card`;
+      card.onclick = () => openLightbox(photo);
+
+      const formattedDate = photo.date
+        ? new Date(photo.date).toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' })
+        : '';
+
+      card.innerHTML = `
+        <img src="${photo.url}" alt="${photo.desc || ''}" loading="lazy"
+             onerror="this.style.opacity='0.3';this.parentElement.style.background='${type==='minimal'?'#e0d8d0':'#1a3a52'}'" />
+        <div class="${type}-card-overlay">
+          ${formattedDate ? `<div class="card-date">${formattedDate}</div>` : ''}
+          ${photo.desc ? `<div class="card-desc">${photo.desc}</div>` : ''}
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function declNum(n, words) {
+    const abs = Math.abs(n) % 100;
+    const n1 = abs % 10;
+    if (abs > 10 && abs < 20) return words[2];
+    if (n1 > 1 && n1 < 5) return words[1];
+    if (n1 === 1) return words[0];
+    return words[2];
+  }
+
+  // Navigation
+  function openGallery(type) {
+    state.current = type;
+    document.getElementById('main-screen').classList.add('hidden');
+    document.getElementById(`gallery-${type}`).classList.add('active');
+    renderGallery(type);
+  }
+
+  function goBack() {
+    if (state.current) {
+      document.getElementById(`gallery-${state.current}`).classList.remove('active');
+    }
+    document.getElementById('main-screen').classList.remove('hidden');
+    state.current = null;
+  }
+
+  // Modal
+  function openModal(type) {
+    // Set today as default date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById(`${type === 'minimal' ? 'min' : 'oce'}-date`).value = today;
+    document.getElementById(`modal-${type}`).classList.add('open');
+  }
+
+  function closeModal(type) {
+    document.getElementById(`modal-${type}`).classList.remove('open');
+    const pre = type === 'minimal' ? 'min' : 'oce';
+    document.getElementById(`${pre}-url`).value = '';
+    document.getElementById(`${pre}-desc`).value = '';
+  }
+
+  function addPhoto(type) {
+    const pre = type === 'minimal' ? 'min' : 'oce';
+    const url = document.getElementById(`${pre}-url`).value.trim();
+    const date = document.getElementById(`${pre}-date`).value;
+    const desc = document.getElementById(`${pre}-desc`).value.trim();
+
+    if (!url) {
+      document.getElementById(`${pre}-url`).focus();
+      return;
+    }
+
+    const newPhoto = { url, date, desc, id: Date.now() };
+    state[type].unshift(newPhoto);
+
+    // Сохраняем только фото добавленные вручную (не предзагруженные)
+    const saved = JSON.parse(localStorage.getItem(`gallery-${type}`) || '[]');
+    saved.unshift(newPhoto);
+    localStorage.setItem(`gallery-${type}`, JSON.stringify(saved));
+
+    closeModal(type);
+    renderGallery(type);
+  }
+
+  // Enter key in modal
+  document.querySelectorAll('.modal-input').forEach(input => {
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const type = input.id.startsWith('min') ? 'minimal' : 'ocean';
+        addPhoto(type);
+      }
+    });
+  });
+
+  // Lightbox
+  function openLightbox(photo) {
+    state.currentPhoto = photo; // Запоминаем какое фото сейчас открыто
+    document.getElementById('lightbox-img').src = photo.url;
+    document.getElementById('lightbox-date').textContent = photo.date
+      ? new Date(photo.date).toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' })
+      : '';
+    document.getElementById('lightbox-desc').textContent = photo.desc || '';
+    document.getElementById('lightbox').classList.add('open');
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+
+  // Функция удаления фото
+  function deleteCurrentPhoto() {
+    if (!state.currentPhoto || !state.current) return;
+    
+    const type = state.current;
+    const target = state.currentPhoto;
+
+    // Удаляем из текущего состояния страницы
+    state[type] = state[type].filter(p => p !== target);
+    
+    // Удаляем из памяти браузера (localStorage)
+    const saved = JSON.parse(localStorage.getItem(`gallery-${type}`) || '[]');
+    const updatedSaved = saved.filter(p => p.url !== target.url);
+    localStorage.setItem(`gallery-${type}`, JSON.stringify(updatedSaved));
+
+    // Закрываем окно и перерисовываем галерею
+    closeLightbox();
+    renderGallery(type);
+  }
+    
+  // Escape key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeLightbox();
+      if (state.current) {
+        closeModal('minimal');
+        closeModal('ocean');
+      }
+    }
+  });
+
+  // Init
+  initParticles();
+</script>
+</body>
+<!-- ========================================== -->
+  <!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
+  <!-- ========================================== -->
+  <style>
+    .fab-wrapper {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      z-index: 999999;
+      /* ФИКС: Убрали flex, жестко фиксируем размер под кнопку */
+      width: 54px;
+      height: 54px;
+      pointer-events: none;
+    }
+
+    .fab-button {
+      pointer-events: auto;
+      width: 100%; /* ФИКС: занимает 100% от враппера */
+      height: 100%;
+      border-radius: 50%;
+      background: rgba(20, 20, 25, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      outline: none;
+      padding: 0;
+      /* Для телефонов */
+      touch-action: none; 
+    }
+
+    .fab-button:hover {
+      transform: scale(1.1);
+      background: rgba(40, 40, 50, 0.9);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 1px 5px rgba(255, 255, 255, 0.3);
+    }
+
+    .fab-button svg {
+      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .fab-wrapper.open .fab-button svg {
+      transform: rotate(90deg) scale(0.9);
+      color: #a78bfa;
+    }
+
+    /* Выезжающая панель навигации */
+    .global-dock {
+      /* ФИКС: Абсолютное позиционирование, чтобы не ломать контейнер */
+      position: absolute;
+      top: 50%;
+      right: calc(100% + 15px); /* По умолчанию открывается влево */
+      transform: translateY(-50%) translateX(40px) scale(0.9);
+      transform-origin: right center;
+
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(12, 12, 14, 0.85);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 100px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+      /* ФИКС: Защита от вылета за экран и скролл */
+      max-width: calc(100vw - 100px); 
+      overflow-x: auto;
+      -ms-overflow-style: none; /* Скрытие ползунка скролла IE/Edge */
+      scrollbar-width: none;    /* Скрытие ползунка скролла Firefox */
+
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Скрытие ползунка скролла Chrome/Safari */
+    .global-dock::-webkit-scrollbar { display: none; }
+
+    /* Состояние открытого меню */
+    .fab-wrapper.open .global-dock {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(-50%) translateX(0) scale(1);
+    }
+
+    /* === СТАРЫЙ КОД ОСТАЕТСЯ (открытия влево и вправо) === */
+    .fab-wrapper.is-left .global-dock {
+      right: auto;
+      left: calc(100% + 15px);
+      transform-origin: left center;
+      transform: translateY(-50%) translateX(-40px) scale(0.9);
+    }
+    .fab-wrapper.is-left.open .global-dock {
+      transform: translateY(-50%) translateX(0) scale(1);
+    }
+
+    /* === НОВЫЙ КОД (Добавить сюда) === */
+    
+    /* Вертикальный режим: Открывается ВВЕРХ */
+    .fab-wrapper.is-up .global-dock {
+      flex-direction: column;   /* Иконки выстраиваются в колонку */
+      right: 50%;               /* Центрируем ровно по центру кнопки */
+      top: auto;
+      bottom: calc(100% + 15px);
+      transform-origin: bottom center;
+      transform: translateX(50%) translateY(40px) scale(0.9);
+      
+      /* Защита от вылета по вертикали */
+      max-height: calc(100vh - 100px); 
+      max-width: none; 
+      overflow-y: auto;         /* Вертикальный скролл, если иконок очень много */
+      overflow-x: hidden;
+    }
+    .fab-wrapper.is-up.open .global-dock {
+      transform: translateX(50%) translateY(0) scale(1);
+    }
+
+    /* Вертикальный режим: Открывается ВНИЗ */
+    .fab-wrapper.is-down .global-dock {
+      flex-direction: column;
+      right: 50%;
+      bottom: auto;
+      top: calc(100% + 15px);
+      transform-origin: top center;
+      transform: translateX(50%) translateY(-40px) scale(0.9);
+      
+      max-height: calc(100vh - 100px);
+      max-width: none;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .fab-wrapper.is-down.open .global-dock {
+      transform: translateX(50%) translateY(0) scale(1);
+    }
+
+    .dock-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 100px;
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      position: relative;
+      white-space: nowrap;
+    }
+
+    .dock-item:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .dock-item.active {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
+    }
+
+    .dock-item.active::after {
+      content: "";
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 18px;
+      height: 3px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+
+    .dock-icon {
+      font-size: 18px;
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+    }
+
+    @media (max-width: 768px) {
+      .fab-wrapper {
+        bottom: 20px;
+        right: 20px;
+        width: 48px;  /* ФИКС: Изменяем ширину/высоту самого враппера */
+        height: 48px; 
+      }
+      .global-dock {
+        padding: 6px 8px;
+        gap: 4px;
+        /* ФИКС: делаем отступ для узких экранов чуть меньше */
+        max-width: calc(100vw - 80px); 
+      }
+      .dock-item {
+        padding: 12px;
+      }
+      .dock-text {
+        display: none;
+      }
+      .dock-icon {
+        font-size: 22px;
+      }
+      .dock-item.active::after {
+        bottom: -2px;
+      }
+    }
+
+    /* --- НОВЫЕ СТИЛИ ДЛЯ ИКОНОК-КАРТИНОК И ПЕРЕТАСКИВАНИЯ --- */
+
+    .dock-icon {
+      width: 20px; /* Размер ваших иконок */
+      height: 20px;
+      object-fit: contain; /* Чтобы картинка не искажалась */
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+      /* Важно! Запрещаем перетаскивать саму картинку браузером */
+      pointer-events: none;
+      user-select: none;
+    }
+
+    @media (max-width: 768px) {
+      .dock-icon {
+        width: 24px; /* На телефоне иконки чуть больше */
+        height: 24px;
+      }
+    }
+
+    /* Курсоры для кнопки перетаскивания */
+    .fab-button {
+      cursor: grab;
+      touch-action: none; /* Запрещаем скролл страницы при касании кнопки на телефоне */
+    }
+
+    .fab-button:active {
+      cursor: grabbing;
+    }
+
+    /* Класс для плавного возврата в границы экрана (если меню открыли у самого края) */
+    .fab-wrapper.snap-transition {
+      transition:
+        left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+        top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+  </style>
+
+  <div class="fab-wrapper" id="fabWrapper">
+    <!-- Кнопка открытия/закрытия меню (она же ручка для перетаскивания) -->
+    <button class="fab-button" id="fabToggleBtn" title="Навигация">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+      </svg>
+    </button>
+
+    <!-- Сама панель (Dock) -->
+    <div class="global-dock" id="globalDock">
+      <a href="index.html" class="dock-item">
+        <img
+          src="https://i.imgur.com/tpFK0jG.png"
+          alt="Menu"
+          class="dock-icon"
+        />
+        <span class="dock-text">Menu</span>
+      </a>
+      <a href="ai.html" class="dock-item">
+        <img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon" />
+        <span class="dock-text">AI</span>
+      </a>
+      <a href="agent.html" class="dock-item">
+        <img
+          src="https://i.imgur.com/HTTz55C.png"
+          alt="Agent"
+          class="dock-icon"
+        />
+        <span class="dock-text">Agent</span>
+      </a>
+      <a href="game.html" class="dock-item">
+        <img
+          src="https://i.imgur.com/4Uk0ui7.png"
+          alt="Music"
+          class="dock-icon"
+        />
+        <span class="dock-text">Tetris</span>
+      </a>
+      <a href="note.html" class="dock-item">
+        <img
+          src="https://i.imgur.com/GcjfCTh.png"
+          alt="Note"
+          class="dock-icon"
+        />
+        <span class="dock-text">Note</span>
+      </a>
+      <a href="googleweb.html" class="dock-item">
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png"
+          alt="Google"
+          class="dock-icon"
+        />
+        <span class="dock-text">Google</span>
+      </a>
+      <a href="browser.html" class="dock-item">
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png"
+          alt="SearX"
+          class="dock-icon"
+        />
+        <span class="dock-text">SearX</span>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const fabWrapper = document.getElementById("fabWrapper");
+      const fabToggleBtn = document.getElementById("fabToggleBtn");
+      const globalDock = document.getElementById("globalDock");
+
+      // Подсветка активной ссылки
+      let currentPath = window.location.pathname.split("/").pop();
+      if (currentPath === "") currentPath = "index.html";
+      document.querySelectorAll(".dock-item").forEach((item) => {
+        const href = item.getAttribute("href");
+        if (currentPath === href) {
+          item.classList.add("active");
+        }
+      });
+
+      // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
+      let isDragging = false;
+      let hasMoved = false; 
+      let startX, startY;
+      let initialLeft, initialTop;
+
+      // Умное направление (Влево, Вправо, Вверх, Вниз)
+      function updateDockDirection() {
+        const rect = fabWrapper.getBoundingClientRect();
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        // Очищаем все классы направлений
+        fabWrapper.classList.remove("is-left", "is-up", "is-down");
+
+        // 1. Узнаем реальную ширину меню (принудительно делаем его строкой на секунду)
+        const oldFlexDir = globalDock.style.flexDirection;
+        globalDock.style.flexDirection = 'row';
+        const dockWidth = globalDock.scrollWidth; 
+        globalDock.style.flexDirection = oldFlexDir; // Возвращаем как было
+
+        const gap = 15; // Расстояние от кнопки до меню
+
+        // Считаем свободное место со всех четырех сторон от кнопки
+        const spaceLeft = rect.left;
+        const spaceRight = screenWidth - rect.right;
+        const spaceTop = rect.top;
+        const spaceBottom = screenHeight - rect.bottom;
+
+        // Логика принятия решения:
+        // Шаг 1: Влезает ли справа?
+        if (spaceRight >= dockWidth + gap) {
+          fabWrapper.classList.add("is-left"); // (открывается вправо, т.к. кнопка слева)
+        } 
+        // Шаг 2: Влезает ли слева?
+        else if (spaceLeft >= dockWidth + gap) {
+          // Ничего не добавляем, стандартный CSS открывает влево
+        } 
+        // Шаг 3: НЕ ВЛЕЗАЕТ ПО ГОРИЗОНТАЛИ (Экран слишком узкий) -> Переходим в вертикаль
+        else {
+          // Смотрим, где больше места - сверху или снизу?
+          if (spaceTop > spaceBottom) {
+            fabWrapper.classList.add("is-up"); // Открываем вверх
+          } else {
+            fabWrapper.classList.add("is-down"); // Открываем вниз
+          }
+        }
+      }
+
+      function dragStart(e) {
+        if (e.type === "touchstart") {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        } else {
+          startX = e.clientX;
+          startY = e.clientY;
+          e.preventDefault(); 
+        }
+
+        const rect = fabWrapper.getBoundingClientRect();
+
+        fabWrapper.style.bottom = "auto";
+        fabWrapper.style.right = "auto";
+        fabWrapper.style.left = rect.left + "px";
+        fabWrapper.style.top = rect.top + "px";
+
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        isDragging = true;
+        hasMoved = false;
+
+        fabWrapper.classList.remove("snap-transition");
+
+        document.addEventListener("mousemove", dragMove);
+        document.addEventListener("mouseup", dragEnd);
+        document.addEventListener("touchmove", dragMove, { passive: false });
+        document.addEventListener("touchend", dragEnd);
+      }
+
+      function dragMove(e) {
+        if (!isDragging) return;
+
+        let currentX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+        let currentY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+
+        let deltaX = currentX - startX;
+        let deltaY = currentY - startY;
+
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+          hasMoved = true;
+          if (e.type === "touchmove") e.preventDefault(); 
+        }
+
+        if (hasMoved) {
+          let newLeft = initialLeft + deltaX;
+          let newTop = initialTop + deltaY;
+
+          // Ограничение выхода за пределы экрана
+          // Так как враппер теперь всегда размером с кнопку (54x54), расчеты идеальны
+          const maxLeft = window.innerWidth - fabWrapper.offsetWidth;
+          const maxTop = window.innerHeight - fabWrapper.offsetHeight;
+
+          newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+          newTop = Math.max(0, Math.min(newTop, maxTop));
+
+          fabWrapper.style.left = newLeft + "px";
+          fabWrapper.style.top = newTop + "px";
+          
+          updateDockDirection(); // Проверяем на какую сторону перетащили
+        }
+      }
+
+      function dragEnd() {
+        isDragging = false;
+        document.removeEventListener("mousemove", dragMove);
+        document.removeEventListener("mouseup", dragEnd);
+        document.removeEventListener("touchmove", dragMove);
+        document.removeEventListener("touchend", dragEnd);
+      }
+
+      fabToggleBtn.addEventListener("mousedown", dragStart);
+      fabToggleBtn.addEventListener("touchstart", dragStart, { passive: true });
+
+      // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ ---
+      fabToggleBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        if (hasMoved) {
+          e.preventDefault();
+          return;
+        }
+
+        updateDockDirection(); // Перед открытием проверяем сторону
+        fabWrapper.classList.toggle("open");
+      });
+
+      // Функция возврата в рамки при изменении размера окна (поворот телефона)
+      function keepInBounds() {
+        const rect = fabWrapper.getBoundingClientRect();
+        const maxLeft = window.innerWidth - rect.width;
+        const maxTop = window.innerHeight - rect.height;
+
+        let correctedLeft = Math.max(0, Math.min(rect.left, maxLeft));
+        let correctedTop = Math.max(0, Math.min(rect.top, maxTop));
+
+        if (correctedLeft !== rect.left || correctedTop !== rect.top) {
+          fabWrapper.classList.add("snap-transition"); 
+          fabWrapper.style.left = correctedLeft + "px";
+          fabWrapper.style.top = correctedTop + "px";
+        }
+        updateDockDirection();
+      }
+
+      document.addEventListener("click", (e) => {
+        if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains("open")) {
+          fabWrapper.classList.remove("open");
+        }
+      });
+
+      window.addEventListener("resize", keepInBounds);
+      // Инициализируем направление при загрузке (если изначально висит справа)
+      updateDockDirection(); 
+    });
+  </script>
+  <!-- ========================================== -->
+</html>
