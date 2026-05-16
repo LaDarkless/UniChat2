@@ -2594,13 +2594,69 @@
       }
 
       /* Стили для активной кнопки поиска */
-      .search-btn.active {
-        color: #3b82f6 !important;
+      /* === СТИЛИ АВТО-ЗАДАЧ === */
+      #task-mode-btn.active {
+        color: #10b981 !important;
         animation: ai-breathe 2s ease-in-out infinite;
       }
-      [data-theme="light"] .search-btn.active {
-        color: #2563eb !important;
+      [data-theme="light"] #task-mode-btn.active {
+        color: #059669 !important;
       }
+      .task-trigger-msg {
+        text-align: center;
+        padding: 10px;
+        font-size: 12px;
+        color: var(--primary-color, #10b981);
+        font-weight: 500;
+        background: rgba(16, 185, 129, 0.1);
+        border-radius: 8px;
+        margin: 10px auto;
+        max-width: 80%;
+        border: 1px dashed rgba(16, 185, 129, 0.4);
+      }
+      
+      /* ПАНЕЛЬ УПРАВЛЕНИЯ ПЛАНОМ */
+      .agent-control-panel {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px dashed var(--app-border);
+        flex-wrap: wrap;
+      }
+      .agent-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s ease;
+      }
+      .agent-btn.start {
+        background: #10b981;
+        color: white;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      }
+      .agent-btn.start:hover { background: #059669; transform: translateY(-2px); }
+      
+      .agent-btn.edit {
+        background: transparent;
+        border: 1px solid var(--text-secondary);
+        color: var(--text-primary);
+      }
+      .agent-btn.edit:hover { background: rgba(255,255,255,0.05); }
+      [data-theme="light"] .agent-btn.edit:hover { background: rgba(0,0,0,0.05); }
+      
+      .agent-btn.stop {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+      .agent-btn.stop:hover { background: rgba(239, 68, 68, 0.2); }
 
       /* ==========================================
          CUSTOM CONTEXT MENU (PRO)
@@ -3189,6 +3245,14 @@
                   <path
                     d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
                   ></path>
+                </svg>
+              </button>
+
+              <!-- КНОПКА АВТО-ЗАДАЧ (АГЕНТ-ИСПОЛНИТЕЛЬ) -->
+              <button class="file-btn" id="task-mode-btn" title="Режим Авто-задач (ИИ сам выполнит чек-лист по шагам)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 11l3 3L22 4"></path>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                 </svg>
               </button>
 
@@ -5425,6 +5489,9 @@
       }
 
       async function initializeAppData() {
+        // Запуск локальной базы данных IndexedDB
+        await initDB();
+
         // ---- ИНИЦИАЛИЗАЦИЯ СВЕТЛОЙ/ТЕМНОЙ ТЕМЫ ----
         const savedTheme = localStorage.getItem("theme") || "dark";
         document.body.setAttribute("data-theme", savedTheme);
@@ -5633,7 +5700,7 @@
 
         //Gemini:
         {
-          id: "gemini-3.1-flash-lite",
+          id: "google/gemini-3.1-flash-lite",
           name: "Gemini-3.1-flash-lite",
           group: "Gemini",
           provider: "openrouter",
@@ -5649,7 +5716,7 @@
           outputPrice: "3/M output tokens",
         },
         {
-          id: "gemini-3-flash-preview",
+          id: "google/gemini-3-flash-preview",
           name: "Gemini-3-flash",
           group: "Gemini",
           provider: "proxy-api",
@@ -6032,47 +6099,138 @@
           provider: "openrouter",
         },
         {
+          id: "minimax/minimax-m2.5",
+          name: "Minimax-m2.5",
+          group: "Minimax",
+          provider: "openrouter",
+        },
+        {
           id: "minimax/minimax-m2-her",
           name: "Minimax-m2-her",
+          group: "Minimax",
+          provider: "openrouter",
+        },
+        {
+          id: "minimax/minimax-m2.1",
+          name: "Minimax-m2.1",
+          group: "Minimax",
+          provider: "openrouter",
+        },
+        {
+          id: "minimax/minimax-m2",
+          name: "Minimax-m",
+          group: "Minimax",
+          provider: "openrouter",
+        },
+        {
+          id: "minimax/minimax-m1",
+          name: "Minimax-m1",
+          group: "Minimax",
+          provider: "openrouter",
+        },
+        {
+          id: "minimax/minimax-01",
+          name: "Minimax-01",
           group: "Minimax",
           provider: "openrouter",
         },
 
         //Qwen new
         {
+          id: "qwen/qwen3.6-27b",
+          name: "Qwen 3.6-27b",
+          group: "Qwen | Alibaba",
+          provider: "openrouter",
+          inputPrice: "0,50/M input tokens",
+          outputPrice: "2/M output tokens",
+        },
+        {
+          id: "qwen/qwen3.6-max-preview",
+          name: "Qwen 3.6 max-preview",
+          group: "Qwen | Alibaba",
+          provider: "openrouter",
+          inputPrice: "1,30/M input tokens",
+          outputPrice: "7,80/M output tokens",
+        },
+        {
+          id: "qwen/qwen3.6-35b-a3b",
+          name: "Qwen 3.6-35b",
+          group: "Qwen | Alibaba",
+          provider: "openrouter",
+          inputPrice: "0,1612/M input tokens",
+          outputPrice: "0,9653/M output tokens",
+        },
+        {
           id: "qwen/qwen3.6-flash",
           name: "Qwen 3.6 flash",
           group: "Qwen | Alibaba",
           provider: "openrouter",
-          inputPrice: "0,1875 /M input tokens",
-          outputPrice: "1,125 /M output tokens",
+          inputPrice: "0,25/M input tokens",
+          outputPrice: "1,50/M output tokens",
         },
-
         {
-          id: "qwen/qwen3.6-35b-a3b",
-          name: "Qwen 3.6 35b",
+          id: "qwen/qwen3.5-plus-20260420",
+          name: "Qwen 3.5 plus",
           group: "Qwen | Alibaba",
           provider: "openrouter",
-          inputPrice: "0,15 /M input tokens",
-          outputPrice: "1 /M output tokens",
+          inputPrice: "0,40/M input tokens",
+          outputPrice: "2,40/M output tokens",
         },
 
+        //Qwen:
         {
-          id: "qwen/qwen3.6-max-preview",
-          name: "Qwen 3.6 max preview",
+          id: "qwen/qwen3.5-9b",
+          name: "Qwen 3.5-9b",
           group: "Qwen | Alibaba",
           provider: "openrouter",
-          inputPrice: "1,04 /M input tokens",
-          outputPrice: "6,24 /M output tokens",
         },
-
         {
-          id: "qwen/qwen3.6-plus",
-          name: "Qwen 3.6 plus",
+          id: "qwen/qwen3.5-35b-a3b",
+          name: "Qwen 3.5-35b",
           group: "Qwen | Alibaba",
           provider: "openrouter",
-          inputPrice: "0,325 /M input tokens",
-          outputPrice: "1,95 /M output tokens",
+        },
+        {
+          id: "qwen/qwen3.5-27b",
+          name: "Qwen 3.5-27b",
+          group: "Qwen | Alibaba",
+          provider: "openrouter",
+        },
+        {
+          id: "qwen/qwen3.5-122b-a10b",
+          name: "Qwen3.5-122b",
+          group: "Qwen | Alibaba",
+          provider: "openrouter",
+        },
+        {
+          id: "qwen/qwen3.5-flash-02-23",
+          name: "Qwen3.5 FLASH",
+          group: "Qwen | Alibaba",
+          provider: "openrouter",
+        },
+        {
+          id: "qwen/qwen3.5-plus-02-15",
+          name: "Qwen3.5 PLUS",
+          group: "Qwen | Alibaba",
+          provider: "openrouter",
+        },
+        {
+          id: "qwen/qwen3.5-397b-a17b",
+          name: "Qwen3.5-397b",
+          group: "Qwen | Alibaba",
+          provider: "openrouter",
+        },
+        {
+          id: "qwen/qwen3-max-thinking",
+          name: "Qwen3-max-thinking",
+          group: "Qwen | Alibaba",
+          provider: "openrouter",
+        },
+        {
+          id: "qwen/qwen3-coder-next",
+          name: "Qwen3-coder-next",
+          group: "Qwen | Alibaba",
+          provider: "openrouter",
         },
 
         //Moonshotai:
@@ -6618,16 +6776,57 @@
       });
 
       // ==========================================
-      // БАЗА ДАННЫХ SUPABASE (ОПТИМИЗАЦИЯ ПАМЯТИ)
+      // БАЗА ДАННЫХ SUPABASE И ЛОКАЛЬНАЯ INDEXEDDB
       // ==========================================
       const SUPABASE_URL = "https://qnklmktpzfphqynomsgw.supabase.co"; // Вставь свой URL
       const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFua2xta3RwemZwaHF5bm9tc2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzY1NzIsImV4cCI6MjA5MjQ1MjU3Mn0.gfyXStXf1zkmDHV0Q-4LDwb7Az4UNmSL0BkMMqp1SdA"; // Вставь свой KEY
       const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       
       let currentUserUid = "guest"; // Будет обновляться через Firebase Auth
+      window.localDB = null;
 
+      // 1. ИНИЦИАЛИЗАЦИЯ ЛОКАЛЬНОЙ БАЗЫ (INDEXEDDB)
       async function initDB() {
-        return Promise.resolve(); // Оставлено для совместимости
+        return new Promise((resolve) => {
+          const request = indexedDB.open("UniChatDB", 1);
+          request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("chats")) {
+              db.createObjectStore("chats", { keyPath: "id" });
+            }
+          };
+          request.onsuccess = (e) => {
+            window.localDB = e.target.result;
+            resolve();
+          };
+          request.onerror = (e) => {
+            console.error("Ошибка загрузки IndexedDB:", e.target.error);
+            resolve(); // Запускаем сайт даже если инкогнито-режим блокирует локальную БД
+          };
+        });
+      }
+
+      // Хелперы для работы с локальной базой браузера
+      async function saveToIndexedDB(chat) {
+        if (!window.localDB) return;
+        return new Promise((resolve) => {
+          const tx = window.localDB.transaction("chats", "readwrite");
+          const store = tx.objectStore("chats");
+          const req = store.put({ id: chat.id, messages: chat.messages, title: chat.title, updatedAt: chat.updatedAt });
+          req.onsuccess = () => resolve();
+          req.onerror = () => resolve();
+        });
+      }
+
+      async function getFromIndexedDB(id) {
+        if (!window.localDB) return null;
+        return new Promise((resolve) => {
+          const tx = window.localDB.transaction("chats", "readonly");
+          const store = tx.objectStore("chats");
+          const req = store.get(id);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+        });
       }
 
       // Функция выгружает ТОЛЬКО заголовки чатов, не забивая ОЗУ сообщениями
@@ -6655,21 +6854,39 @@
         return result;
       }
 
-      // Загружает историю конкретного чата по клику
+      // Загружает историю конкретного чата (Локальный Кэш -> Облако)
       async function fetchChatMessagesFromDB(chatId) {
+        // 1. Сначала МГНОВЕННО достаем из локальной памяти браузера
+        const localData = await getFromIndexedDB(chatId);
+        if (localData && localData.messages && localData.messages.length > 0) {
+            return localData.messages;
+        }
+
+        // 2. Если локально пусто (зашли с нового ПК) — тянем из облака
         if(currentUserUid === "guest") return [];
         const { data, error } = await supabaseClient
             .from('chats')
             .select('messages')
             .eq('id', chatId)
             .eq('user_id', currentUserUid)
-            .maybeSingle(); // ИСПРАВЛЕНО: предотвращает ошибку 406, если чат пустой
+            .maybeSingle(); 
             
         if (error || !data) return [];
+        
+        // Кэшируем скачанные сообщения локально на будущее
+        if (data.messages) {
+            saveToIndexedDB({ id: chatId, messages: data.messages });
+        }
+        
         return data.messages || [];
       }
 
+      // УНИВЕРСАЛЬНОЕ СОХРАНЕНИЕ
       async function saveChatToDB(chat) {
+        // 1. Мгновенное локальное сохранение (Защита от потери при обрыве интернета)
+        await saveToIndexedDB(chat);
+
+        // 2. Фоновое облачное сохранение
         if(currentUserUid === "guest") return;
         await supabaseClient.from('chats').upsert({
             id: chat.id,
@@ -6681,11 +6898,29 @@
       }
 
       async function deleteChatFromDB(id) {
+        // Локально
+        if (window.localDB) {
+            new Promise((resolve) => {
+                const tx = window.localDB.transaction("chats", "readwrite");
+                tx.objectStore("chats").delete(id);
+                tx.oncomplete = () => resolve();
+            });
+        }
+        // В облаке
         if(currentUserUid === "guest") return;
         await supabaseClient.from('chats').delete().eq('id', id).eq('user_id', currentUserUid);
       }
 
       async function clearChatsFromDB() {
+        // Локально
+        if (window.localDB) {
+            new Promise((resolve) => {
+                const tx = window.localDB.transaction("chats", "readwrite");
+                tx.objectStore("chats").clear();
+                tx.oncomplete = () => resolve();
+            });
+        }
+        // В облаке
         if(currentUserUid === "guest") return;
         await supabaseClient.from('chats').delete().eq('user_id', currentUserUid);
       }
@@ -6753,9 +6988,113 @@
         localStorage.getItem("pa_model_2") || "claude-haiku-4-5-20251001";
 
         // ==========================================
-        // UI LISTENERS
+        // UI LISTENERS & TASK MODE (PRO AGENT)
         // ==========================================
         
+        let isTaskMode = false;
+        let isAgentRunning = false; // Глобальный флаг работы Агента
+        
+        const taskModeBtn = document.getElementById("task-mode-btn");
+        if(taskModeBtn) {
+            taskModeBtn.addEventListener("click", () => {
+                isTaskMode = !isTaskMode;
+                taskModeBtn.classList.toggle("active", isTaskMode);
+                window.showToast(isTaskMode ? "Режим Агента ВКЛЮЧЕН. Попросите составить план (Roadmap)." : "Режим Агента ВЫКЛЮЧЕН");
+            });
+        }
+
+        // ЖЕЛЕЗОБЕТОННОЕ АВТО-СОХРАНЕНИЕ КЛЮЧЕЙ ПРИ ВВОДЕ
+        ["api-key", "gen-api-key", "openrouter-key"].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.addEventListener("input", (e) => {
+                    const val = e.target.value.trim();
+                    if(id === "api-key") { apiKey = val; localStorage.setItem("pa_api_key", val); }
+                    if(id === "gen-api-key") { genApiKey = val; localStorage.setItem("pa_gen_api_key", val); }
+                    if(id === "openrouter-key") { openRouterKey = val; localStorage.setItem("pa_openrouter_key", val); }
+                });
+            }
+        });
+
+        // ЗАПУСК И ОСТАНОВКА АГЕНТА ИЗ UI
+        window.startAgentExecution = function(chatId) {
+            isAgentRunning = true;
+            window.showToast("🚀 Агент приступил к выполнению плана!");
+            const chat = chats[chatId];
+            loadCurrentChat(); // Перерисовываем UI (скрыть кнопку "Старт", показать "Стоп")
+            setTimeout(() => checkAndRunNextTask(chat), 1000);
+        };
+
+        window.stopAgentExecution = function() {
+            isAgentRunning = false;
+            if(abortController) abortController.abort(); // Останавливаем текущую генерацию
+            window.showToast("🛑 Выполнение плана остановлено.", "error");
+            loadCurrentChat(); // Возвращаем кнопку "Старт"
+        };
+
+        // ФУНКЦИЯ ДВИЖКА: ШАГОВЫЙ ИСПОЛНИТЕЛЬ
+        async function checkAndRunNextTask(chat) {
+            if (!isAgentRunning || !chat || chat.messages.length === 0) return;
+            const lastMsg = chat.messages[chat.messages.length - 1];
+            
+            // Если последний ответ не от ИИ или ИИ уже написал, что все готово - выходим
+            if (lastMsg.role !== "assistant" || lastMsg.isHiddenTaskTrigger) return;
+
+            // Ищем невыполненный пункт: '- [ ]'
+            if (lastMsg.content.includes("- [ ]")) {
+                const autoPrompt = "В твоем последнем сообщении есть невыполненные пункты плана (чек-лист с `- [ ]`). ТВОЯ ЗАДАЧА СЕЙЧАС: Выполни максимально подробно ТОЛЬКО ПЕРВЫЙ невыполненный пункт из твоего списка. Дай развернутый ответ, код, анализ или факты. ПОСЛЕ ТОГО как ты напишешь свой подробный ответ, ОБЯЗАТЕЛЬНО выведи ВЕСЬ чек-лист заново в самом конце сообщения, но замени у только что выполненного пункта `- [ ]` на `- [x]`.";
+                
+                const userMsg = { role: "user", content: autoPrompt, isHiddenTaskTrigger: true };
+                chat.messages.push(userMsg);
+                appendMessageToDOM(userMsg, true, chat.messages.length - 1);
+
+                const aiMsg = { role: "assistant", content: "" };
+                chat.messages.push(aiMsg);
+                const aiContentEl = appendMessageToDOM(aiMsg, true, chat.messages.length - 1);
+
+                userInput.disabled = true;
+                if (sendBtn) sendBtn.style.display = "none";
+                if (stopBtn) stopBtn.style.display = "flex";
+                if (typingIndicator) typingIndicator.style.display = "flex";
+                chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
+
+                abortController = new AbortController();
+
+                try {
+                    let runModel = selectedModel;
+                    if (selectedModel.startsWith("char_")) runModel = customCharacters[selectedModel].baseModel;
+                    
+                    if (currentSearchMode !== "off") {
+                        await runSearchPipeline(chat, aiContentEl, aiMsg, runModel);
+                    } else {
+                        await runStreamForModel(chat, aiContentEl, aiMsg, runModel);
+                    }
+                  } catch (err) {
+                    if (err.name !== "AbortError") window.showToast("Ошибка Агента: " + err.message, "error");
+                    isAgentRunning = false; // При ошибке останавливаем цикл
+                } finally {
+                    userInput.disabled = false;
+                    if (sendBtn) sendBtn.style.display = "flex";
+                    if (stopBtn) stopBtn.style.display = "none";
+                    if (typingIndicator) typingIndicator.style.display = "none";
+                    chat.updatedAt = Date.now();
+                    saveChatsToStorage();
+
+                    // === ПЕРЕРИСОВКА ЧАТА (ОБНОВЛЕНИЕ ГАЛОЧЕК И КНОПКИ СТОП) ===
+                    loadCurrentChat();
+
+                    // РЕКУРСИЯ: Если Агент не остановлен вручную, запускаем следующий шаг
+                    if (isAgentRunning && !abortController.signal.aborted) {
+                        setTimeout(() => checkAndRunNextTask(chat), 2000);
+                    }
+                }
+            } else if (lastMsg.content.includes("- [x]") && !lastMsg.content.includes("- [ ]")) {
+                window.showToast("✅ Весь Roadmap успешно выполнен!");
+                isAgentRunning = false;
+                loadCurrentChat(); // Перерисовать, чтобы убрать кнопки Агента
+            }
+        }
+
         // ЧИНИМ КНОПКУ "НОВЫЙ ЧАТ"
         const btnNewChat = document.getElementById("btn-new-chat");
         if (btnNewChat) {
@@ -7375,6 +7714,9 @@ function subscribeToCurrentChatRealtime(chatId) {
             if (typingIndicator) typingIndicator.style.display = "none";
             chat.updatedAt = Date.now();
             saveChatsToStorage();
+            
+            // === ПЕРЕРИСОВКА ЧАТА ДЛЯ ПОЯВЛЕНИЯ КНОПОК АГЕНТА ===
+            loadCurrentChat();
           }
         })();
       };
@@ -7451,7 +7793,38 @@ function subscribeToCurrentChatRealtime(chatId) {
             }
     
             // Вставляем БЕЗ ${actions}
-            div.innerHTML = `<div class="message-content-wrapper">${avatar}<div class="message-content">${imagesHtml}<div class="text-body">${htmlContent}</div>${usageHtml}</div></div>`;
+            if (msg.isHiddenTaskTrigger) {
+                div.innerHTML = `<div class="task-trigger-msg">⚙️ Агент автоматически приступил к выполнению следующего шага чек-листа...</div>`;
+                div.style.background = "transparent";
+                div.style.border = "none";
+                div.style.boxShadow = "none";
+            } else {
+                // ДОБАВЛЯЕМ ПАНЕЛЬ УПРАВЛЕНИЯ ПЛАНОМ, ЕСЛИ ЭТО ИИ И ЕСТЬ ЧЕК-БОКСЫ
+                let agentPanelHtml = "";
+                if (msg.role === "assistant" && msg.content.includes("- [ ]") && msgIndex === chats[currentChatId].messages.length - 1) {
+                    if (typeof isAgentRunning !== 'undefined' && isAgentRunning) {
+                        agentPanelHtml = `
+                        <div class="agent-control-panel">
+                            <div style="width: 100%; font-size: 12px; color: var(--primary-color); margin-bottom: 5px;">⚡ Агент выполняет план...</div>
+                            <button class="agent-btn stop" onclick="window.stopAgentExecution()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg> Остановть Агента
+                            </button>
+                        </div>`;
+                    } else {
+                        agentPanelHtml = `
+                        <div class="agent-control-panel">
+                            <button class="agent-btn start" onclick="window.startAgentExecution('${currentChatId}')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Начать выполнение по шагам
+                            </button>
+                            <button class="agent-btn edit" onclick="window.editMessage(this)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg> Изменить план
+                            </button>
+                        </div>`;
+                    }
+                }
+
+                div.innerHTML = `<div class="message-content-wrapper">${avatar}<div class="message-content">${imagesHtml}<div class="text-body">${htmlContent}</div>${agentPanelHtml}${usageHtml}</div></div>`;
+            }
         if (msgIndex !== null) div.dataset.msgIndex = msgIndex;
         chatHistoryDOM.appendChild(div);
         return div.querySelector(".text-body");
@@ -7671,26 +8044,50 @@ function subscribeToCurrentChatRealtime(chatId) {
         chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
       }
 
-      async function runOpenRouterNonStream(model, messages, temp, abortSignal, sysInst) {
+      async function runOpenRouterNonStream(
+        model,
+        messages,
+        temp,
+        abortSignal,
+        sysInst,
+      ) {
         let formattedMessages = [];
-        if (sysInst) formattedMessages.push({ role: "system", content: sysInst });
+        if (sysInst)
+          formattedMessages.push({ role: "system", content: sysInst });
         messages.forEach((m) => {
           const textContent = typeof m.content === "string" ? m.content : "";
           formattedMessages.push({ role: m.role, content: textContent });
         });
 
-        const bodyPayload = { model: model, messages: formattedMessages, stream: false };
+        const bodyPayload = {
+          model: model,
+          messages: formattedMessages,
+          stream: false,
+        };
 
-        if (!model.includes("o1") && !model.includes("o3") && !model.includes("deepseek-r1")) {
+        if (
+          !model.includes("o1") &&
+          !model.includes("o3") &&
+          !model.includes("deepseek-r1")
+        ) {
           bodyPayload.temperature = temp;
         }
 
+        // Определяем, куда отправлять запрос и какой ключ использовать
         const isFree = model.endsWith(":free") || model.includes("/free");
-        const apiUrl = isFree ? "https://openrouter.ai/api/v1/chat/completions" : "https://api.proxyapi.ru/openrouter/v1/chat/completions";
+        const apiUrl = isFree
+          ? "https://openrouter.ai/api/v1/chat/completions"
+          : "https://api.proxyapi.ru/openrouter/v1/chat/completions";
         const authKey = isFree ? openRouterKey : apiKey;
 
-        if (isFree && !openRouterKey) throw new Error("Укажите OpenRouter ключ");
-        if (!isFree && !apiKey) throw new Error("Укажите ProxyAPI ключ");
+        if (isFree && !openRouterKey)
+          throw new Error(
+            "Укажите OpenRouter ключ в настройках (для :free моделей)",
+          );
+        if (!isFree && !apiKey)
+          throw new Error(
+            "Укажите ProxyAPI ключ в настройках (для платных моделей OpenRouter)",
+          );
 
         const res = await fetch(apiUrl, {
           method: "POST",
@@ -7706,10 +8103,11 @@ function subscribeToCurrentChatRealtime(chatId) {
 
         if (!res.ok) {
           const errorText = await res.text();
+          console.error("OpenRouter Error:", errorText);
           let errorMsg = res.status;
           try {
             const e = JSON.parse(errorText);
-            errorMsg = e.error?.message || e.detail || res.status;
+            errorMsg = e.error?.message || res.status;
           } catch (err) {}
           throw new Error(`OpenRouter Error: ${errorMsg}`);
         }
@@ -7718,34 +8116,38 @@ function subscribeToCurrentChatRealtime(chatId) {
         return data.choices?.[0]?.message?.content || "";
       }
 
-      async function runOpenAINonStream(model, messages, temp, abortSignal, sysInst) {
+      async function runOpenAINonStream(
+        model,
+        messages,
+        temp,
+        abortSignal,
+        sysInst,
+      ) {
         let formattedMessages = [];
-        const isStrict = /^(o1|o3|o4)/.test(model) || model.includes("reasoning") || model.includes("search");
-        
-        if (sysInst && !isStrict) formattedMessages.push({ role: "system", content: sysInst });
-        
+        const isStrict = model.startsWith("o") || model.includes("search");
+        if (sysInst && !isStrict)
+          formattedMessages.push({ role: "system", content: sysInst });
         messages.forEach((m, i) => {
-          let text = typeof m.content === "string" ? m.content.trim() : "";
-          if (!text) text = " ";
-          
-          if (i === 0 && sysInst && isStrict) {
-            text = `<system_instructions>\n${sysInst}\n</system_instructions>\n\n` + text;
-          }
-            
+          let text = m.content || "";
+          if (i === 0 && sysInst && isStrict)
+            text =
+              `<system_instructions>\n${sysInst}\n</system_instructions>\n\n` +
+              text;
           if (m.images && m.images.length > 0) {
             const content = [{ type: "text", text: text }];
-            m.images.forEach((img) => content.push({ type: "image_url", image_url: { url: img } }));
+            m.images.forEach((img) =>
+              content.push({ type: "image_url", image_url: { url: img } }),
+            );
             formattedMessages.push({ role: m.role, content });
           } else {
             formattedMessages.push({ role: m.role, content: text });
           }
         });
-        
         const body = { model, messages: formattedMessages, stream: false };
         if (!isStrict) body.temperature = temp;
-        
-        // ИСПРАВЛЕН БАЗОВЫЙ URL НА ВЕРНЫЙ (openai.api.proxyapi.ru)
-        const res = await fetch("https://openai.api.proxyapi.ru/v1/chat/completions", {
+        const res = await fetch(
+          "https://api.proxyapi.ru/openai/v1/chat/completions",
+          {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -7753,14 +8155,118 @@ function subscribeToCurrentChatRealtime(chatId) {
             },
             body: JSON.stringify(body),
             signal: abortSignal,
-        });
-        
+          },
+        );
         if (!res.ok) {
           const e = await res.json();
           throw new Error(`OpenAI: ${e.error?.message || res.status}`);
         }
         const data = await res.json();
         return data.choices?.[0]?.message?.content || "";
+      }
+
+      async function streamGemini(chat, domEl, msgObj, overrideModel = null) {
+        let history = [];
+        let targetModel = overrideModel || selectedModel;
+        
+        chat.messages.slice(0, -1).forEach(m => {
+          let text = typeof m.content === "string" ? m.content.trim() : "";
+          if (!text && (!m.images || m.images.length === 0)) return;
+
+          let parts = [];
+          if (text) parts.push({ text: text });
+          
+          if (m.images) {
+            m.images.forEach((base64) => {
+              const [meta, data] = base64.split(",");
+              parts.push({
+                inline_data: { mime_type: meta.split(":")[1].split(";")[0], data: data }
+              });
+            });
+          }
+          
+          if (parts.length === 0) parts.push({ text: "-" }); // Защита от пустых блоков
+          const role = m.role === "assistant" ? "model" : "user";
+          
+          if (history.length > 0 && history[history.length - 1].role === role) {
+              history[history.length - 1].parts.push(...parts);
+          } else {
+              history.push({ role, parts });
+          }
+        });
+
+        // Зашиваем системный промпт прямо в первое сообщение, обходя баги systemInstruction
+        let systemText = "";
+        if (sysPrompt && sysPrompt.trim() !== "" && !targetModel.startsWith("agent_")) {
+            systemText = `System Instructions:\n${sysPrompt.trim()}\n\n`;
+        }
+
+        if (history.length === 0) {
+            history.push({ role: "user", parts: [{ text: systemText + "Начало диалога" }] });
+        } else if (history[0].role === "model") {
+            history.unshift({ role: "user", parts: [{ text: systemText + "Начало диалога" }] });
+        } else if (systemText) {
+            if (history[0].parts[0].text) {
+                history[0].parts[0].text = systemText + history[0].parts[0].text;
+            } else {
+                history[0].parts.unshift({ text: systemText });
+            }
+        }
+
+        const body = { contents: history };
+        
+        const genConfig = {};
+        if (temperature !== null && temperature !== undefined) {
+            genConfig.temperature = Math.max(0.1, Math.min(2.0, Number(temperature)));
+        }
+        if (maxTokens) genConfig.maxOutputTokens = Number(maxTokens);
+        if (Object.keys(genConfig).length > 0) body.generationConfig = genConfig;
+
+        const res = await fetch(
+          `https://api.proxyapi.ru/google/v1beta/models/${targetModel}:streamGenerateContent?alt=sse&key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            signal: abortController.signal,
+          },
+        );
+        
+        if (!res.ok) {
+          // УМНЫЙ ФОЛЛБЕК: Если Нативный API Google отклонил запрос (ошибка 400 или 404),
+          // мгновенно перенаправляем запрос в Универсальный шлюз-адаптер ProxyAPI.
+          if (res.status === 400 || res.status === 404) {
+             console.warn(`[Fallback] Нативный API отклонил ${targetModel}. Перенаправление через адаптер...`);
+             return await streamOpenAI(chat, domEl, msgObj, "gemini/" + targetModel);
+          }
+          const e = await res.json().catch(() => ({}));
+          throw new Error(`Gemini API Error: ${e.error?.message || res.status}`);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop();
+          for (let line of lines) {
+            if (line.startsWith("data:")) {
+              const jsonStr = line.replace("data:", "").trim();
+              if (jsonStr === "[DONE]") break;
+              try {
+                const data = JSON.parse(jsonStr);
+                const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (txt) {
+                  msgObj.content += txt;
+                  window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.id + '_' + chat.messages.length, chat);
+                }
+              } catch (e) {}
+            }
+          }
+        }
       }
 
       async function runGeminiNonStream(model, messages, temp, abortSignal, sysInst) {
@@ -7827,7 +8333,6 @@ function subscribeToCurrentChatRealtime(chatId) {
         );
         
         if (!res.ok) {
-          // УМНЫЙ ФОЛЛБЕК
           if (res.status === 400 || res.status === 404) {
              console.warn(`[Fallback] Нативный API отклонил ${model}. Перенаправление через адаптер...`);
              return await runOpenAINonStream("gemini/" + model, messages, temp, abortSignal, sysInst);
@@ -7838,6 +8343,64 @@ function subscribeToCurrentChatRealtime(chatId) {
         
         const data = await res.json();
         return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      }
+
+      async function runAnthropicNonStream(
+        model,
+        messages,
+        temp,
+        abortSignal,
+        sysInst,
+      ) {
+        const history = messages.map((m) => {
+          let content = [];
+          if (m.images && m.images.length > 0) {
+            if (m.content) content.push({ type: "text", text: m.content });
+            m.images.forEach((img) => {
+              const [meta, base64] = img.split(",");
+              content.push({
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: meta.split(":")[1].split(";")[0],
+                  data: base64,
+                },
+              });
+            });
+          } else {
+            content.push({ type: "text", text: m.content || "" });
+          }
+          return {
+            role: m.role === "assistant" ? "assistant" : "user",
+            content,
+          };
+        });
+        const body = {
+          model,
+          max_tokens: maxTokens || 16000,
+          temperature: Math.min(parseFloat(temp), 1.0), // Ограничиваем макс. температуру до 1.0 для Claude
+          messages: history,
+        };
+        if (sysInst) body.system = sysInst;
+        const res = await fetch(
+          "https://api.proxyapi.ru/anthropic/v1/messages",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify(body),
+            signal: abortSignal,
+          },
+        );
+        if (!res.ok) {
+          const e = await res.json();
+          throw new Error(`Anthropic: ${e.error?.message || res.status}`);
+        }
+        const data = await res.json();
+        return data.content?.[0]?.text || "";
       }
 
       async function runGenApiNonStream(model, messages, temp, abortSignal) {
@@ -7887,38 +8450,80 @@ function subscribeToCurrentChatRealtime(chatId) {
         return data.response?.[0]?.choices?.[0]?.message?.content || "";
       }
 
-      async function callNonStream(model, history, sysInst) {
-        let config = MODELS_CONFIG.find((m) => m.id === model) || { provider: "proxy-api" };
+      async function runStreamForModel(chat, domEl, msgObj, targetModel) {
+        const config = MODELS_CONFIG.find((m) => m.id === targetModel) || {
+          provider: "proxy-api",
+        };
 
-        let actualProvider = config.provider;
-        if (actualProvider === "openrouter" && !model.endsWith(":free")) {
-            if (/gpt|claude|gemini|o1|o3|o4/i.test(model)) {
-                actualProvider = "proxy-api";
-            }
+        // 1. Проверяем OpenRouter
+        if (config.provider === "openrouter") {
+          // ИСКЛЮЧЕНИЕ ТОЛЬКО ДЛЯ GEMINI: Если выбрана платная Gemini через OpenRouter,
+          // направляем её в ProxyAPI, так как OpenRouter шлюз её отклонит (ошибка 403)
+          if (targetModel.includes("gemini") && !targetModel.endsWith(":free")) {
+              // Пропускаем дальше в логику ProxyAPI
+          } else {
+              await streamOpenRouter(chat, domEl, msgObj, targetModel);
+              return; 
+          }
         }
 
-        if (actualProvider === "gen-api") {
-          return await runGenApiNonStream(model, history, temperature, abortController.signal);
-        } else if (actualProvider === "openrouter") {
-          return await runOpenRouterNonStream(model, history, temperature, abortController.signal, sysInst);
+        // 2. Проверяем Perplexity (GenAPI)
+        if (config.provider === "gen-api") {
+          await streamGenApi(chat, domEl, msgObj, targetModel);
+          return;
         }
 
-        if (model.includes("gemini") && model.includes("preview")) {
-             let cleanModel = model.replace("google/", "");
-             if (!cleanModel.startsWith("gemini/")) cleanModel = "gemini/" + cleanModel;
-             return await runOpenAINonStream(cleanModel, history, temperature, abortController.signal, sysInst);
+        // 3. УМНЫЙ РОУТЕР ДЛЯ GOOGLE / GEMINI
+        if (targetModel.includes("gemini")) {
+          // Preview модели часто выдают 400. Надежнее отправить их в универсальный шлюз
+          if (targetModel.includes("preview")) {
+              let cleanModel = targetModel.replace("google/", "");
+              if (!cleanModel.startsWith("gemini/")) cleanModel = "gemini/" + cleanModel;
+              await streamOpenAI(chat, domEl, msgObj, cleanModel);
+          } else {
+              await streamGemini(chat, domEl, msgObj, targetModel.replace("google/", "").replace("gemini/", ""));
+          }
+          return;
         }
 
-        if (model.includes("gemini")) {
-            return await runGeminiNonStream(model.replace("google/", "").replace("gemini/", ""), history, temperature, abortController.signal, sysInst);
-        } else if (model.includes("claude")) {
-            return await runAnthropicNonStream(model.replace("anthropic/", ""), history, temperature, abortController.signal, sysInst);
+        // 4. Остальное (ProxyAPI прямые вызовы)
+        if (targetModel.startsWith("claude")) {
+          await streamAnthropic(chat, domEl, msgObj, targetModel);
         } else {
-            let cleanModel = model;
-            if (!cleanModel.includes("/") && /gpt|o1|o3|o4/i.test(cleanModel)) {
-                cleanModel = "openai/" + cleanModel;
-            }
-            return await runOpenAINonStream(cleanModel, history, temperature, abortController.signal, sysInst);
+          await streamOpenAI(chat, domEl, msgObj, targetModel);
+        }
+      }
+
+      async function callNonStream(model, history, sysInst) {
+        const config = MODELS_CONFIG.find((m) => m.id === model) || {
+          provider: "proxy-api",
+        };
+
+        if (config.provider === "gen-api") {
+          return await runGenApiNonStream(model, history, temperature, abortController.signal);
+        } 
+        
+        if (config.provider === "openrouter") {
+          if (model.includes("gemini") && !model.endsWith(":free")) {
+              // Пропускаем в логику ProxyAPI
+          } else {
+              return await runOpenRouterNonStream(model, history, temperature, abortController.signal, sysInst);
+          }
+        }
+
+        // УМНЫЙ РОУТЕР ДЛЯ GOOGLE / GEMINI
+        if (model.includes("gemini")) {
+          if (model.includes("preview")) {
+              let cleanModel = model.replace("google/", "");
+              if (!cleanModel.startsWith("gemini/")) cleanModel = "gemini/" + cleanModel;
+              return await runOpenAINonStream(cleanModel, history, temperature, abortController.signal, sysInst);
+          } else {
+              return await runGeminiNonStream(model.replace("google/", "").replace("gemini/", ""), history, temperature, abortController.signal, sysInst);
+          }
+        } else if (model.startsWith("claude")) {
+          return await runAnthropicNonStream(model, history, temperature, abortController.signal, sysInst);
+        } else {
+          return await runOpenAINonStream(model, history, temperature, abortController.signal, sysInst);
         }
       }
 
@@ -8076,53 +8681,6 @@ function subscribeToCurrentChatRealtime(chatId) {
         }
       }
 
-      async function runStreamForModel(chat, domEl, msgObj, targetModel) {
-        let config = MODELS_CONFIG.find((m) => m.id === targetModel) || { provider: "proxy-api" };
-
-        // 1. ПЕРЕХВАТ ЗАПРЕЩЕННЫХ МОДЕЛЕЙ (Фикс 403 ошибки OpenRouter)
-        // ProxyAPI запрещает слать базовые модели через свой OpenRouter-шлюз.
-        let actualProvider = config.provider;
-        if (actualProvider === "openrouter" && !targetModel.endsWith(":free")) {
-            if (/gpt|claude|gemini|o1|o3|o4/i.test(targetModel)) {
-                actualProvider = "proxy-api";
-            }
-        }
-
-        if (actualProvider === "openrouter") {
-          await streamOpenRouter(chat, domEl, msgObj, targetModel);
-          return;
-        }
-
-        if (actualProvider === "gen-api") {
-          await streamGenApi(chat, domEl, msgObj, targetModel);
-          return;
-        }
-
-        // 2. УМНАЯ МАРШРУТИЗАЦИЯ PROXY-API
-        // Экспериментальные (preview) модели Gemini часто падают (Фикс 400 ошибки). 
-        // Безопаснее отправлять их через стабильный универсальный адаптер.
-        if (targetModel.includes("gemini") && targetModel.includes("preview")) {
-             let cleanModel = targetModel.replace("google/", "");
-             if (!cleanModel.startsWith("gemini/")) cleanModel = "gemini/" + cleanModel;
-             await streamOpenAI(chat, domEl, msgObj, cleanModel);
-             return;
-        }
-
-        // Нативные вызовы для стабильных моделей
-        if (targetModel.includes("gemini")) {
-          await streamGemini(chat, domEl, msgObj, targetModel.replace("google/", "").replace("gemini/", ""));
-        } else if (targetModel.includes("claude")) {
-          await streamAnthropic(chat, domEl, msgObj, targetModel.replace("anthropic/", ""));
-        } else {
-          // OpenAI и остальные модели идут через универсальный адаптер
-          let cleanModel = targetModel;
-          if (!cleanModel.includes("/") && /gpt|o1|o3|o4/i.test(cleanModel)) {
-              cleanModel = "openai/" + cleanModel;
-          }
-          await streamOpenAI(chat, domEl, msgObj, cleanModel);
-        }
-      }
-
       async function runSearchPipeline(chat, domEl, msgObj, mainModel) {
         // 1. ВРЕМЕННОЙ КОНТЕКСТ (Чтобы ИИ знал, какой сейчас день и час)
         const now = new Date();
@@ -8241,9 +8799,16 @@ ${lastUserMsg.content}`;
 
         if (!currentChatId || !chats[currentChatId]) createNewChat();
         const chat = chats[currentChatId];
+        
+        let aiPromptText = text;
+        // Если Режим Задач включен и это первый запрос пользователя
+        if (isTaskMode && chat.messages.length === 0) {
+            aiPromptText += "\n\n*(Системно): Обязательно создай подробный пошаговый план в формате Markdown чек-листа: `- [ ] Название шага`. Разбей задачу на этапы. Сейчас ничего не выполняй, просто составь полный план.*";
+        }
+
         const userMsg = {
           role: "user",
-          content: text,
+          content: aiPromptText,
           images: [...attachedImages],
         };
         chat.messages.push(userMsg);
@@ -8253,7 +8818,9 @@ ${lastUserMsg.content}`;
           renderChatList();
         }
 
-        appendMessageToDOM(userMsg, true, chat.messages.length - 1);
+        // В UI показываем оригинальный текст юзера без системной приписки
+        const displayUserMsg = { role: "user", content: text, images: [...attachedImages] };
+        appendMessageToDOM(displayUserMsg, true, chat.messages.length - 1);
         if (chatHistoryDOM)
           chatHistoryDOM.scrollTop = chatHistoryDOM.scrollHeight;
 
@@ -8391,6 +8958,9 @@ ${lastUserMsg.content}`;
           if (chat.messages.length >= 2 && !chat.titleGenerated) {
             autoUpdateChatTitle(currentChatId);
           }
+          
+          // === ПЕРЕРИСОВКА ЧАТА ДЛЯ ПОЯВЛЕНИЯ КНОПОК АГЕНТА ===
+          loadCurrentChat();
         }
       }
 
@@ -8399,109 +8969,6 @@ ${lastUserMsg.content}`;
         stopBtn.addEventListener("click", () => {
           if (abortController) abortController.abort();
         });
-
-        async function streamGemini(chat, domEl, msgObj, overrideModel = null) {
-          let history = [];
-          let targetModel = overrideModel || selectedModel;
-          
-          chat.messages.slice(0, -1).forEach(m => {
-            let text = typeof m.content === "string" ? m.content.trim() : "";
-            if (!text && (!m.images || m.images.length === 0)) return;
-  
-            let parts = [];
-            if (text) parts.push({ text: text });
-            
-            if (m.images) {
-              m.images.forEach((base64) => {
-                const [meta, data] = base64.split(",");
-                parts.push({
-                  inline_data: { mime_type: meta.split(":")[1].split(";")[0], data: data }
-                });
-              });
-            }
-            
-            if (parts.length === 0) parts.push({ text: "-" });
-            const role = m.role === "assistant" ? "model" : "user";
-            
-            if (history.length > 0 && history[history.length - 1].role === role) {
-                history[history.length - 1].parts.push(...parts);
-            } else {
-                history.push({ role, parts });
-            }
-          });
-  
-          let systemText = "";
-          if (sysPrompt && sysPrompt.trim() !== "" && !targetModel.startsWith("agent_")) {
-              systemText = `System Instructions:\n${sysPrompt.trim()}\n\n`;
-          }
-  
-          if (history.length === 0) {
-              history.push({ role: "user", parts: [{ text: systemText + "Начало диалога" }] });
-          } else if (history[0].role === "model") {
-              history.unshift({ role: "user", parts: [{ text: systemText + "Начало диалога" }] });
-          } else if (systemText) {
-              if (history[0].parts[0].text) {
-                  history[0].parts[0].text = systemText + history[0].parts[0].text;
-              } else {
-                  history[0].parts.unshift({ text: systemText });
-              }
-          }
-  
-          const body = { contents: history };
-          
-          const genConfig = {};
-          if (temperature !== null && temperature !== undefined) {
-              genConfig.temperature = Math.max(0.1, Math.min(2.0, Number(temperature)));
-          }
-          if (maxTokens) genConfig.maxOutputTokens = Number(maxTokens);
-          if (Object.keys(genConfig).length > 0) body.generationConfig = genConfig;
-  
-          const res = await fetch(
-            `https://api.proxyapi.ru/google/v1beta/models/${targetModel}:streamGenerateContent?alt=sse&key=${apiKey}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(body),
-              signal: abortController.signal,
-            },
-          );
-          
-          if (!res.ok) {
-            // УМНЫЙ ФОЛЛБЕК: Если Нативный API Google отклонил запрос (ошибка 400 или 404),
-            // мгновенно перенаправляем запрос в Универсальный шлюз-адаптер ProxyAPI.
-            if (res.status === 400 || res.status === 404) {
-               console.warn(`[Fallback] Нативный API отклонил ${targetModel}. Перенаправление через адаптер...`);
-               return await streamOpenAI(chat, domEl, msgObj, "gemini/" + targetModel);
-            }
-            const e = await res.json().catch(() => ({}));
-            throw new Error(`Gemini API Error: ${e.error?.message || res.status}`);
-          }
-  
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = "";
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop();
-            for (let line of lines) {
-              if (line.startsWith("data:")) {
-                const jsonStr = line.replace("data:", "").trim();
-                if (jsonStr === "[DONE]") break;
-                try {
-                  const data = JSON.parse(jsonStr);
-                  const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                  if (txt) {
-                    msgObj.content += txt;
-                    window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.id + '_' + chat.messages.length, chat);
-                  }
-                } catch (e) {}
-              }
-            }
-          }
-        }
 
       // Умный автоскролл: прокручивает вниз ТОЛЬКО если пользователь уже находится внизу
 window.smartScroll = function() {
@@ -8542,7 +9009,80 @@ window.optimizedRender = function(domEl, content, msgId, chatObj) {
     });
 };
 
-async function streamOpenAI(chat, domEl, msgObj, overrideModel = null) {
+      async function streamOpenAI(chat, domEl, msgObj, overrideModel = null) {
+        const messages = [];
+        const target = overrideModel || selectedModel;
+        const isStrict = target.startsWith("o") || target.includes("search");
+        if (sysPrompt && !isStrict)
+          messages.push({ role: "system", content: sysPrompt });
+
+        chat.messages.slice(0, -1).forEach((m, i) => {
+          let text = m.content || "";
+          // ЗАЩИТА: игнорируем пустые сообщения
+          if (!text.trim() && (!m.images || m.images.length === 0)) return;
+
+          if (i === 0 && sysPrompt && isStrict)
+            text =
+              `<system_instructions>\n${sysPrompt}\n</system_instructions>\n\n` +
+              text;
+          if (m.images && m.images.length > 0) {
+            const content = [{ type: "text", text: text }];
+            m.images.forEach((img) =>
+              content.push({ type: "image_url", image_url: { url: img } }),
+            );
+            messages.push({ role: m.role, content });
+          } else {
+            messages.push({ role: m.role, content: text });
+          }
+        });
+
+        const body = { model: target, messages: messages, stream: true };
+        if (!isStrict) body.temperature = temperature;
+        if (maxTokens && !isStrict) body.max_tokens = maxTokens;
+
+        const res = await fetch(
+          "https://api.proxyapi.ru/openai/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(body),
+            signal: abortController.signal,
+          },
+        );
+        if (!res.ok) {
+          const e = await res.json();
+          throw new Error(`API Error: ${e.error?.message || res.status}`);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop();
+          for (let line of lines) {
+            if (line.startsWith("data:")) {
+              const jsonStr = line.replace("data:", "").trim();
+              if (jsonStr === "[DONE]") break;
+              try {
+                const data = JSON.parse(jsonStr);
+                const txt = data.choices?.[0]?.delta?.content;
+                if (txt) {
+                  msgObj.content += txt;
+                  // Используем оптимизированный рендер, передавая ID сообщения
+                  window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.id + '_' + chat.messages.length, chat);
+                }
+              } catch (e) {}
+            }
+          }
+        }
+      }
 
       async function streamAnthropic(
         chat,
@@ -8579,8 +9119,8 @@ async function streamOpenAI(chat, domEl, msgObj, overrideModel = null) {
 
         const body = {
           model: overrideModel || selectedModel,
-          max_tokens: maxTokens || 16000,
-          temperature: Math.min(parseFloat(temperature), 1.0), // Ограничиваем макс. температуру до 1.0 для Claude
+          max_tokens: maxTokens || 8192, // Максимум для генерации
+          temperature: Math.min(parseFloat(temperature), 1.0),
           messages: messages,
           stream: true,
         };
@@ -8633,79 +9173,112 @@ async function streamOpenAI(chat, domEl, msgObj, overrideModel = null) {
           }
         }
       }
-    }
 
-    async function streamOpenRouter(chat, domEl, msgObj, overrideModel = null) {
-      const targetModel = overrideModel || selectedModel;
-      const messages = [];
-      if (sysPrompt) messages.push({ role: "system", content: sysPrompt });
+      async function streamOpenRouter(
+        chat,
+        domEl,
+        msgObj,
+        overrideModel = null,
+      ) {
+        const model = overrideModel || selectedModel;
+        const messages = [];
+        if (sysPrompt) messages.push({ role: "system", content: sysPrompt });
 
-      chat.messages.slice(0, -1).forEach((m) => {
-        const textContent = typeof m.content === "string" ? m.content : "";
-        messages.push({ role: m.role, content: textContent });
-      });
+        chat.messages.slice(0, -1).forEach((m) => {
+          const textContent = typeof m.content === "string" ? m.content : "";
+          messages.push({ role: m.role, content: textContent });
+        });
 
-      const bodyPayload = { model: targetModel, messages: messages, stream: true };
+        const bodyPayload = {
+          model: model,
+          messages: messages,
+          stream: true,
+        };
 
-      if (!targetModel.includes("o1") && !targetModel.includes("o3") && !targetModel.includes("deepseek-r1")) {
-        bodyPayload.temperature = temperature;
-      }
+        if (
+          !model.includes("o1") &&
+          !model.includes("o3") &&
+          !model.includes("deepseek-r1")
+        ) {
+          bodyPayload.temperature = temperature;
+        }
 
-      const isFree = targetModel.endsWith(":free") || targetModel.includes("/free");
-      const apiUrl = isFree ? "https://openrouter.ai/api/v1/chat/completions" : "https://api.proxyapi.ru/openrouter/v1/chat/completions";
-      const authKey = isFree ? openRouterKey : apiKey;
+        // Определяем, куда отправлять запрос
+        const isFree = model.endsWith(":free") || model.includes("/free");
+        const apiUrl = isFree
+          ? "https://openrouter.ai/api/v1/chat/completions"
+          : "https://api.proxyapi.ru/openrouter/v1/chat/completions";
+        const authKey = isFree ? openRouterKey : apiKey;
 
-      if (isFree && !openRouterKey) throw new Error("Укажите OpenRouter ключ в настройках (для :free моделей)");
-      if (!isFree && !apiKey) throw new Error("Укажите ProxyAPI ключ в настройках");
+        if (isFree && !openRouterKey)
+          throw new Error(
+            "Укажите OpenRouter ключ в настройках (для :free моделей)",
+          );
+        if (!isFree && !apiKey)
+          throw new Error(
+            "Укажите ProxyAPI ключ в настройках (для платных моделей OpenRouter)",
+          );
 
-      const res = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authKey}`,
-          "HTTP-Referer": "https://ai-studio-ultimate.com",
-          "X-Title": "AI Studio Ultimate",
-        },
-        body: JSON.stringify(bodyPayload),
-        signal: abortController.signal,
-      });
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authKey}`,
+            "HTTP-Referer": "https://ai-studio-ultimate.com",
+            "X-Title": "AI Studio Ultimate",
+          },
+          body: JSON.stringify(bodyPayload),
+          signal: abortController.signal,
+        });
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        let errorMsg = res.status;
-        try {
-          const e = JSON.parse(errorText);
-          errorMsg = e.error?.message || e.detail || res.status;
-        } catch (err) {}
-        throw new Error(`OpenRouter Stream Error: ${errorMsg}`);
-      }
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("OpenRouter Error:", errorText);
+          let errorMsg = res.status;
+          try {
+            const e = JSON.parse(errorText);
+            errorMsg = e.error?.message || res.status;
+          } catch (err) {}
+          throw new Error(`OpenRouter Stream Error: ${errorMsg}`);
+        }
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop();
-        for (let line of lines) {
-          if (line.startsWith("data:")) {
-            const jsonStr = line.replace("data:", "").trim();
-            if (jsonStr === "[DONE]") break;
-            try {
-              const data = JSON.parse(jsonStr);
-              const txt = data.choices?.[0]?.delta?.content;
-              if (txt) {
-                msgObj.content += txt;
-                window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.id + '_' + chat.messages.length, chat);
-              }
-            } catch (e) {}
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop();
+          for (let line of lines) {
+            if (line.startsWith("data:")) {
+              const jsonStr = line.replace("data:", "").trim();
+              if (jsonStr === "[DONE]") break;
+              try {
+                const data = JSON.parse(jsonStr);
+
+                if (data.usage) {
+                  msgObj.usage = data.usage;
+                  if (data.usage.reasoning_tokens) {
+                    console.log(
+                      `<span class="inline-svg-icon" style="display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; margin-right:6px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path></svg></span> Модель использовала ${data.usage.reasoning_tokens} токенов для рассуждений`,
+                    );
+                  }
+                }
+
+                const txt = data.choices?.[0]?.delta?.content;
+                if (txt) {
+                  msgObj.content += txt;
+                  // Используем оптимизированный рендер, передавая ID сообщения
+                  window.optimizedRender(domEl, msgObj.content, 'msg_' + chat.id + '_' + chat.messages.length, chat);
+                }
+              } catch (e) {}
+            }
           }
         }
       }
-    }
 
       async function autoUpdateChatTitle(chatId) {
         const chat = chats[chatId];
