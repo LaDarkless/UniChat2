@@ -696,14 +696,16 @@
       }
 
       #editor,
-      #preview {
-        flex: 1;
-        padding: 25px;
-        overflow-y: auto;
-        width: 100%;
-        outline: none;
-        transition: font-size 0.3s;
-      }
+#preview {
+  flex: 1;
+  padding: 25px;
+  overflow-y: auto;
+  width: 100%;
+  height: 100%; /* Фиксирует "схлопывание" текстового поля на смартфонах */
+  min-height: 0; /* Обязательно для правильной работы flexbox на мобилках */
+  outline: none;
+  transition: font-size 0.3s;
+}
       #editor {
         background: transparent;
         border: none;
@@ -989,13 +991,14 @@
         border: 1px solid var(--panel-border);
       }
       .workspace.live-mode .pane {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        border: none; border-radius: 16px;
-        background: transparent;
-        box-shadow: none;
-        transition: opacity 0.25s ease;
-      }
+  display: flex !important; /* Принудительно отменяет мобильное скрытие (display: none), опираясь только на opacity */
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  border: none; border-radius: 16px;
+  background: transparent;
+  box-shadow: none;
+  transition: opacity 0.25s ease;
+}
       .workspace.live-mode .pane-header,
       .workspace.live-mode .mobile-tabs {
         display: none !important;
