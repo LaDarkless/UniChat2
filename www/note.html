@@ -83,13 +83,18 @@
         -webkit-tap-highlight-color: transparent;
       }
 
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
       body {
         background-color: var(--bg-color);
         color: var(--text-main);
         font-family: var(--font-ui);
-        height: 100vh;
-        width: 100vw;
-        overflow: hidden;
         display: flex;
         background-image:
           linear-gradient(var(--grid-color) 1px, transparent 1px),
@@ -135,6 +140,236 @@
           opacity: 0.35;
         }
       }
+
+      /* ==========================================
+         ПРЕМИАЛЬНАЯ СИСТЕМА ЖИВЫХ ТЕМ (GLASSMORPHISM DEPTH)
+         ========================================== */
+         #theme-layer {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        z-index: 200; /* ИДЕАЛЬНО: Позади панелей, но перед фоном. Просвечивает сквозь "стекло" */
+        pointer-events: none;
+        overflow: hidden;
+      }
+
+      .particle {
+        position: absolute;
+        pointer-events: none;
+        transform: scale(var(--s, 1));
+        opacity: var(--o, 0.8);
+      }
+
+      /* ТЕМА: СНЕГОПАД */
+      body.theme-snowfall { background: #070b14; }
+      .snow {
+        background: #fff;
+        border-radius: 50%;
+        width: 5px; height: 5px;
+        box-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.4);
+        filter: blur(1px);
+        animation: snow-fall linear infinite;
+      }
+      @keyframes snow-fall {
+        0% { transform: translateY(-10vh) translateX(0) scale(var(--s, 1)); opacity: 0; }
+        10% { opacity: var(--o, 0.8); }
+        90% { opacity: var(--o, 0.8); }
+        100% { transform: translateY(110vh) translateX(50px) scale(var(--s, 1)); opacity: 0; }
+      }
+
+      /* ТЕМА: ДОЖДЬ */
+      body.theme-rain { background: #0f172a; }
+      .rain-drop {
+        width: 2px; height: 30px;
+        background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(125,211,252,0.8));
+        border-radius: 2px;
+        animation: rain-fall linear infinite;
+      }
+      @keyframes rain-fall {
+        0% { transform: translateY(-20vh) rotate(10deg) scale(var(--s, 1)); opacity: 0; }
+        10% { opacity: var(--o, 0.6); }
+        80% { opacity: var(--o, 0.6); }
+        100% { transform: translateY(110vh) rotate(10deg) scale(var(--s, 1)); opacity: 0; }
+      }
+
+      /* ТЕМА: КОСМОС */
+      body.theme-space { background: #000; }
+      .star {
+        background: #fff; border-radius: 50%;
+        width: 3px; height: 3px;
+        box-shadow: 0 0 8px #fff, 0 0 15px rgba(255,255,255,0.5);
+        animation: twinkle ease-in-out infinite alternate;
+      }
+      @keyframes twinkle {
+        0% { opacity: 0.1; transform: scale(0.5); filter: blur(2px); }
+        100% { opacity: var(--o, 1); transform: scale(var(--s, 1.2)); filter: blur(0px); }
+      }
+
+      /* ТЕМА: ПОД ВОДОЙ */
+      body.theme-underwater { background: linear-gradient(to bottom, #0284c7, #020617); }
+      .bubble {
+        border: 1px solid rgba(255,255,255,0.3);
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent);
+        border-radius: 50%;
+        width: 15px; height: 15px;
+        box-shadow: inset 0 0 10px rgba(255,255,255,0.2);
+        animation: rise ease-in infinite;
+        bottom: -30px;
+      }
+      @keyframes rise {
+        0% { transform: translateY(0) scale(var(--s, 1)) translateX(0); opacity: 0; }
+        20% { opacity: var(--o, 0.8); }
+        100% { transform: translateY(-110vh) scale(calc(var(--s, 1) * 1.5)) translateX(30px); opacity: 0; }
+      }
+
+      /* ТЕМА: ПОЖАР */
+      body.theme-fire { background: linear-gradient(to top, #450a0a, #000); }
+      .ember {
+        background: #fb923c;
+        border-radius: 50%; width: 6px; height: 6px;
+        box-shadow: 0 0 15px #ea580c, 0 0 30px #f97316;
+        animation: rise-fire ease-in infinite;
+        bottom: -20px;
+      }
+      @keyframes rise-fire {
+        0% { transform: translateY(0) translateX(0) scale(var(--s, 1)); opacity: 0; }
+        20% { opacity: var(--o, 1); }
+        100% { transform: translateY(-100vh) translateX(calc(var(--s, 1) * 100px)) scale(0); opacity: 0; }
+      }
+
+      /* ТЕМА: ВЕТЕР */
+      body.theme-wind { background: #0f172a; }
+      .wind-line {
+        height: 2px; width: 150px;
+        background: linear-gradient(90deg, transparent, rgba(226, 232, 240, 0.4), transparent);
+        animation: wind-blow linear infinite;
+        filter: blur(1px);
+      }
+      @keyframes wind-blow {
+        0% { transform: translateX(-100vw) scale(var(--s, 1)); opacity: 0; }
+        50% { opacity: var(--o, 0.5); }
+        100% { transform: translateX(100vw) scale(var(--s, 1)); opacity: 0; }
+      }
+
+      /* ТЕМА: ЯПОНСКИЙ ВЕЧЕР (САКУРА 3D) */
+      body.theme-japanese { background: linear-gradient(to bottom, #3b0764, #9f1239, #000); }
+      .sakura {
+        width: 14px; height: 18px;
+        background: linear-gradient(135deg, #fbcfe8 0%, #f472b6 100%);
+        border-radius: 14px 2px 14px 2px;
+        box-shadow: 0 0 15px rgba(244, 114, 182, 0.3);
+        animation: sakura-fall linear infinite;
+      }
+      @keyframes sakura-fall {
+        0% { transform: translateY(-10vh) translateX(0) rotate3d(1, 1, 1, 0deg) scale(var(--s, 1)); opacity: 0; }
+        10% { opacity: var(--o, 0.9); }
+        90% { opacity: var(--o, 0.9); }
+        100% { transform: translateY(110vh) translateX(-150px) rotate3d(1, 2, 1, 360deg) scale(var(--s, 1)); opacity: 0; }
+      }
+
+      /* ТЕМА: НЕБО (РЕАЛИСТИЧНЫЕ ОБЛАКА И ВЕТЕРОК) */
+      body.theme-sky { 
+        background: linear-gradient(180deg, #0ea5e9 0%, #38bdf8 45%, #e0f2fe 100%); 
+      }
+      .cloud-shape {
+        position: absolute;
+        background: #fff;
+        border-radius: 100px;
+        /* Создаем объемную мягкую тень */
+        box-shadow: 0 15px 25px rgba(0,0,0,0.05), inset 0 -5px 15px rgba(0,0,0,0.05);
+        animation: cloud-float linear infinite;
+        z-index: 0;
+      }
+      /* Пушистые "шапки" облака через псевдоэлементы */
+      .cloud-shape::before {
+        content: ''; position: absolute;
+        background: #fff; border-radius: 50%;
+        width: 50%; height: 140%;
+        top: -60%; left: 15%;
+        box-shadow: inset 5px 5px 10px rgba(255,255,255,0.8);
+      }
+      .cloud-shape::after {
+        content: ''; position: absolute;
+        background: #fff; border-radius: 50%;
+        width: 65%; height: 170%;
+        top: -80%; right: 15%;
+      }
+      @keyframes cloud-float {
+        0% { transform: translateX(110vw) scale(var(--s, 1)); opacity: var(--o, 0.9); }
+        100% { transform: translateX(-50vw) scale(var(--s, 1)); opacity: var(--o, 0.9); }
+      }
+
+      /* ТЕМА: AMANE KANATA (АНГЕЛЬСКИЕ ПЕРЬЯ) */
+      body.theme-kanata { 
+        background: linear-gradient(135deg, #f0f9ff 0%, #bae6fd 50%, #fbcfe8 100%); 
+      }
+      /* Контейнер отвечает за падение вниз */
+      .feather-container {
+        position: absolute;
+        top: -10vh;
+        animation: feather-fall linear infinite;
+      }
+      /* Само перо отвечает за красивое покачивание (sway) */
+      .feather {
+        width: 40px; height: 40px;
+        animation: feather-sway ease-in-out infinite alternate;
+        filter: drop-shadow(0 5px 15px rgba(255, 255, 255, 1));
+      }
+      .feather svg {
+        width: 100%; height: 100%;
+        fill: #ffffff;
+        transform: rotate(135deg); /* Направляем перо острием вниз */
+      }
+      @keyframes feather-fall {
+        0% { top: -10vh; }
+        100% { top: 110vh; }
+      }
+      @keyframes feather-sway {
+        0% { transform: translateX(-60px) rotate(-35deg) scale(var(--s, 1)); opacity: var(--o, 0.9); }
+        100% { transform: translateX(60px) rotate(35deg) scale(var(--s, 1)); opacity: var(--o, 0.9); }
+      }
+
+      /* ТЕМА: КИБЕРПАНК (3D СЕТКА) */
+      body.theme-cyberpunk { background: #050510; }
+      .cyber-grid {
+        position: absolute; bottom: 0; left: -50%;
+        width: 200%; height: 60vh;
+        background-image: linear-gradient(rgba(236, 72, 153, 0.3) 2px, transparent 2px), linear-gradient(90deg, rgba(236, 72, 153, 0.3) 2px, transparent 2px);
+        background-size: 60px 60px;
+        transform: perspective(600px) rotateX(75deg);
+        animation: cyber-move 4s linear infinite;
+        box-shadow: 0 -30px 60px rgba(236, 72, 153, 0.3) inset;
+      }
+      @keyframes cyber-move {
+        0% { background-position: 0 0; }
+        100% { background-position: 0 60px; }
+      }
+
+      /* ТЕМА: СЕВЕРНОЕ СИЯНИЕ */
+      body.theme-aurora { background: #000; }
+      .aurora-blob {
+        position: absolute; border-radius: 50%;
+        filter: blur(120px); opacity: 0.4;
+        animation: aurora-float 20s ease-in-out infinite alternate;
+        mix-blend-mode: screen;
+      }
+      @keyframes aurora-float {
+        0% { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(10vw, 10vh) scale(1.2); }
+      }
+
+      /* ТЕМА: РЕТРО CRT */
+      body.theme-crt { background: #1e1b4b; }
+      .scanlines {
+        position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
+        background-size: 100% 4px;
+        z-index: 1000; pointer-events: none; opacity: 0.6;
+      }
+      
+      /* ТЕМА: МАТРИЦА (настройка в JS) */
+      body.theme-matrix { background: #000; }
+      /* ========================================== */
 
       /* UI Компоненты */
       .btn {
@@ -306,22 +541,53 @@
         color: var(--text-muted);
       }
 
-      .delete-btn {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #ef4444;
+      /* Улучшенные кнопки в списке заметок */
+      .note-item {
+        padding: 12px 14px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.2s;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid transparent;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .note-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .note-actions {
+        display: flex;
+        gap: 5px;
         opacity: 0;
         transition: 0.2s;
-        border: none;
-        background: none;
-        font-size: 18px;
-        cursor: pointer;
-        padding: 5px;
       }
-      .note-item:hover .delete-btn {
+      .note-item:hover .note-actions {
         opacity: 1;
+      }
+      .action-btn {
+        color: var(--text-muted);
+        border: none;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+      }
+      .action-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+      }
+      .action-btn.delete:hover {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.15);
       }
 
       /* ОСНОВНАЯ ЧАСТЬ */
@@ -713,9 +979,299 @@
           font-size: 16px;
         }
       }
+
+      /* === НАСТОЯЩИЙ ЖИВОЙ ПРОСМОТР (ОДНО ОКНО) === */
+      .workspace.live-mode {
+        display: block; /* Убираем разделение на две колонки */
+        padding: 0;
+        background: var(--panel-bg);
+        border-radius: 16px;
+        border: 1px solid var(--panel-border);
+      }
+      .workspace.live-mode .pane {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        border: none; border-radius: 16px;
+        background: transparent;
+        box-shadow: none;
+        transition: opacity 0.25s ease;
+      }
+      .workspace.live-mode .pane-header,
+      .workspace.live-mode .mobile-tabs {
+        display: none !important;
+      }
+      
+      /* Логика перекрытия (Превью лежит поверх Редактора) */
+      .workspace.live-mode .preview-pane {
+        z-index: 2;
+        background: var(--panel-bg);
+        cursor: text; /* Чтобы казалось, что это текстовое поле */
+      }
+      .workspace.live-mode .editor-pane {
+        z-index: 1;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Когда кликнули (editing) - Редактор выходит на первый план */
+      .workspace.live-mode.editing .preview-pane {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .workspace.live-mode.editing .editor-pane {
+        z-index: 3;
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      /* === УМНЫЙ AI АССИСТЕНТ (ПРЕМИУМ ДИЗАЙН) === */
+      body {
+        transition: margin-right 0.3s ease; /* Плавная анимация без рывков */
+      }
+      body.ai-open {
+        margin-right: 450px; /* Увеличили размер окна */
+      }
+      
+      .ai-sidebar {
+        position: fixed;
+        top: 0; right: 0;
+        width: 450px; /* Широкое и удобное окно */
+        height: 100vh;
+        background: rgba(12, 12, 14, 0.95);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
+        transform: translateX(100%);
+        transition: transform 0.3s ease; /* Плавный выезд */
+        z-index: 90;
+        display: flex;
+        flex-direction: column;
+        box-shadow: -20px 0 50px rgba(0,0,0,0.5);
+      }
+      body.ai-open .ai-sidebar {
+        transform: translateX(0);
+      }
+
+      /* Кастомный Dropdown для выбора модели */
+      .ai-model-dropdown { position: relative; }
+      .ai-model-btn {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #fff;
+        padding: 8px 14px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-family: var(--font-ui);
+        font-weight: 500;
+        display: flex; align-items: center; gap: 8px;
+        cursor: pointer; transition: 0.2s ease;
+      }
+      .ai-model-btn:hover { background: rgba(255,255,255,0.08); }
+      
+      .ai-model-menu {
+        position: absolute;
+        top: calc(100% + 8px); left: 0;
+        width: 260px;
+        background: #18181b;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+        opacity: 0; pointer-events: none;
+        transform: translateY(-10px);
+        transition: all 0.2s ease;
+        z-index: 100;
+        overflow: hidden;
+      }
+      .ai-model-dropdown.open .ai-model-menu {
+        opacity: 1; pointer-events: auto; transform: translateY(0);
+      }
+      
+      .ai-model-item {
+        padding: 12px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        transition: background 0.2s ease;
+      }
+      .ai-model-item:last-child { border-bottom: none; }
+      .ai-model-item:hover { background: rgba(255,255,255,0.06); }
+      .ai-model-item .m-title { display: block; color: #fff; font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+      .ai-model-item .m-desc { display: block; color: #a1a1aa; font-size: 11px; }
+
+      /* === СТИЛИ ИСТОРИИ ЧАТА === */
+      .ai-chat-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      
+      .ai-message {
+        max-width: 88%;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .ai-message.bot {
+        align-self: flex-start;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom-left-radius: 4px;
+        color: #e2e8f0;
+      }
+      .ai-message.user {
+        align-self: flex-end;
+        background: var(--accent);
+        color: #fff;
+        border-bottom-right-radius: 4px;
+        box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.25);
+      }
+
+      /* === ЗОНА ВВОДА И РЕЖИМЫ === */
+      .ai-input-area {
+        padding: 15px 20px 20px;
+        background: rgba(12, 12, 14, 0.95);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      /* Переключатель режимов (Agent, Plan, Ask) */
+      .ai-mode-selector {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+      }
+      .ai-mode-selector::-webkit-scrollbar { display: none; }
+      
+      .ai-mode-btn {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: var(--text-muted);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-family: var(--font-ui);
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+      .ai-mode-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+      }
+      .ai-mode-btn.active {
+        background: rgba(var(--accent-rgb), 0.15);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* Красивая обертка для textarea */
+      .ai-textarea-wrapper {
+        position: relative;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        display: flex;
+        align-items: flex-end;
+        transition: border-color 0.3s, box-shadow 0.3s;
+      }
+      .ai-textarea-wrapper:focus-within {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+      }
+
+      /* Само поле ввода */
+      #aiInput {
+        width: 100%;
+        background: transparent;
+        border: none;
+        color: #fff;
+        font-family: var(--font-ui);
+        font-size: 13px;
+        padding: 14px 50px 14px 16px; /* Отступ справа под кнопку */
+        resize: none;
+        outline: none;
+        min-height: 52px;
+        max-height: 150px;
+        line-height: 1.5;
+      }
+      #aiInput::placeholder {
+        color: rgba(255, 255, 255, 0.3);
+      }
+
+      /* Улучшенная кнопка отправки */
+      .ai-send-btn {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* Эффект пружинки */
+        font-size: 20px;
+      }
+      .ai-send-btn:hover {
+        background: var(--accent-hover);
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.4);
+      }
+      .ai-send-btn:active {
+        transform: translateY(0) scale(0.95);
+      }
+      .ai-send-btn:disabled {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.3);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .insert-code-btn {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        padding: 4px 8px;
+        font-size: 11px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        width: fit-content;
+      }
+
+      @media (max-width: 768px) {
+        body.ai-open { margin-right: 0; }
+        .ai-sidebar { width: 100%; }
+        .ai-sidebar-overlay {
+          display: block;
+          position: fixed;
+          top: 0; left: 0; width: 100vw; height: 100vh;
+          background: rgba(0,0,0,0.6);
+          opacity: 0; pointer-events: none; transition: 0.3s; z-index: 89;
+        }
+        body.ai-open .ai-sidebar-overlay { opacity: 1; pointer-events: all; }
+      }
     </style>
   </head>
   <body>
+    <div id="theme-layer"></div> <!-- НОВЫЙ БЛОК ДЛЯ ТЕМ -->
     <div class="glow glow-1"></div>
     <div class="glow glow-2"></div>
 
@@ -773,22 +1329,17 @@
         </div>
         <div class="toolbar-actions">
           <div class="stats" id="stats">0 слов</div>
-          <button
-            class="btn-icon"
-            title="Скачать как HTML"
-            onclick="downloadHTML()"
-          >
+          <button class="btn-icon" style="color: #a78bfa;" title="AI Assistant (Cursor Style)" onclick="toggleAIModal()">
+            <i class="bx bx-bot"></i>
+          </button>
+          <button class="btn-icon" title="Скачать как HTML" onclick="downloadHTML()">
             <i class="bx bx-code-block"></i>
           </button>
-          <button
-            class="btn-icon"
-            title="Скачать как Markdown"
-            onclick="downloadMarkdown()"
-          >
+          <button class="btn-icon" title="Скачать как Markdown" onclick="downloadMarkdown()">
             <i class="bx bx-download"></i>
           </button>
         </div>
-      </div>
+      </div> <!-- Добавлен этот закрывающий тег -->
 
       <div class="workspace" id="workspace">
         <div class="pane editor-pane">
@@ -826,8 +1377,69 @@
             Превью
           </button>
         </div>
-      </div>
-    </main>
+      </div> <!-- Это закрывает <div class="workspace" id="workspace"> -->
+
+      <!-- SMART AI SIDEBAR (CURSOR STYLE) -->
+      <div class="ai-sidebar-overlay" onclick="toggleAISidebar()"></div>
+      <aside class="ai-sidebar" id="aiSidebar">
+        
+        <div class="ai-header" style="padding: 20px; border-bottom: 1px solid var(--panel-border);">
+          <!-- Кастомный красивый Dropdown -->
+          <div class="ai-model-dropdown" id="aiModelDropdown">
+            <button class="ai-model-btn" onclick="toggleModelDropdown(event)">
+              <i class='bx bx-brain' style="color: var(--accent); font-size: 18px;"></i>
+              <span id="currentModelLabel">GPT-5.5</span>
+              <i class='bx bx-chevron-down' style="color: var(--text-muted);"></i>
+            </button>
+            <div class="ai-model-menu" id="aiModelMenu">
+              <div class="ai-model-item" onclick="selectAIModel('gpt-5.5', 'GPT-5.5')">
+                <span class="m-title">GPT-5.5</span>
+                <span class="m-desc">Флагманская модель (Максимум качества)</span>
+              </div>
+              <div class="ai-model-item" onclick="selectAIModel('gpt-5.4-mini', 'GPT-5.4-mini')">
+                <span class="m-title">GPT-5.4-mini</span>
+                <span class="m-desc">Быстрая генерация (Оптимально)</span>
+              </div>
+              <div class="ai-model-item" onclick="selectAIModel('gpt-5.4-nano', 'GPT-5.4-nano')">
+                <span class="m-title">GPT-5.4-nano</span>
+                <span class="m-desc">Легкая и дешевая модель</span>
+              </div>
+              <div class="ai-model-item" onclick="selectAIModel('openrouter/x-ai/grok-4.3', 'Grok-4.3')">
+                <span class="m-title">Grok-4.3</span>
+                <span class="m-desc">Режим X/Twitter (OpenRouter)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button class="btn-icon" style="padding: 6px;" onclick="clearAIChat()" title="Очистить чат"><i class='bx bx-trash'></i></button>
+            <button class="btn-icon" style="padding: 6px;" onclick="toggleAISidebar()"><i class='bx bx-x'></i></button>
+          </div>
+        </div>
+
+        <div class="ai-chat-area" id="aiChatHistory">
+          <div class="ai-message bot">
+            Привет! Я ваш ИИ-ассистент. Я могу анализировать текст, писать roadmap'ы и выполнять задачи прямо в редакторе.
+          </div>
+        </div>
+
+        <div class="ai-input-area">
+          <div class="ai-mode-selector">
+            <button class="ai-mode-btn active" onclick="setAIMode('agent', this)"><i class='bx bx-magic-wand'></i> Agent</button>
+            <button class="ai-mode-btn" onclick="setAIMode('plan', this)"><i class='bx bx-task'></i> Plan</button>
+            <button class="ai-mode-btn" onclick="setAIMode('ask', this)"><i class='bx bx-message-rounded'></i> Ask</button>
+          </div>
+          
+          <div class="ai-textarea-wrapper">
+            <textarea id="aiInput" placeholder="Plan, @ for context, / for commands..." onkeydown="handleAIEnter(event)"></textarea>
+            <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIChat()">
+              <i class='bx bx-up-arrow-alt'></i>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+    </main> <!-- Закрывает .main -->
 
     <!-- НАСТРОЙКИ -->
     <div
@@ -841,31 +1453,11 @@
         <div class="setting-group">
           <label>Тема (Акцентный цвет)</label>
           <div class="color-picker">
-            <div
-              class="color-dot"
-              style="background: #8b5cf6; color: #8b5cf6"
-              onclick="setTheme('#8b5cf6', '139, 92, 246')"
-            ></div>
-            <div
-              class="color-dot"
-              style="background: #3b82f6; color: #3b82f6"
-              onclick="setTheme('#3b82f6', '59, 130, 246')"
-            ></div>
-            <div
-              class="color-dot"
-              style="background: #10b981; color: #10b981"
-              onclick="setTheme('#10b981', '16, 185, 129')"
-            ></div>
-            <div
-              class="color-dot"
-              style="background: #f43f5e; color: #f43f5e"
-              onclick="setTheme('#f43f5e', '244, 63, 94')"
-            ></div>
-            <div
-              class="color-dot"
-              style="background: #f59e0b; color: #f59e0b"
-              onclick="setTheme('#f59e0b', '245, 158, 11')"
-            ></div>
+            <div class="color-dot" style="background: #8b5cf6; color: #8b5cf6" onclick="setTheme('#8b5cf6', '139, 92, 246')"></div>
+            <div class="color-dot" style="background: #3b82f6; color: #3b82f6" onclick="setTheme('#3b82f6', '59, 130, 246')"></div>
+            <div class="color-dot" style="background: #10b981; color: #10b981" onclick="setTheme('#10b981', '16, 185, 129')"></div>
+            <div class="color-dot" style="background: #f43f5e; color: #f43f5e" onclick="setTheme('#f43f5e', '244, 63, 94')"></div>
+            <div class="color-dot" style="background: #f59e0b; color: #f59e0b" onclick="setTheme('#f59e0b', '245, 158, 11')"></div>
           </div>
         </div>
 
@@ -874,14 +1466,10 @@
           <select id="fontSelect" onchange="updateSettings()">
             <option value="'Inter', sans-serif">Inter (Современный)</option>
             <option value="'Roboto', sans-serif">Roboto (Классика)</option>
-            <option value="'Montserrat', sans-serif">
-              Montserrat (Геометричный)
-            </option>
+            <option value="'Montserrat', sans-serif">Montserrat (Геометричный)</option>
             <option value="'Nunito', sans-serif">Nunito (Мягкий)</option>
             <option value="'Fira Sans', sans-serif">Fira Sans (Четкий)</option>
-            <option value="'Playfair Display', serif">
-              Playfair (Книжный, с засечками)
-            </option>
+            <option value="'Playfair Display', serif">Playfair (Книжный)</option>
           </select>
         </div>
 
@@ -894,24 +1482,64 @@
           </select>
         </div>
 
+        <div class="setting-group" style="margin-top: 20px;">
+          <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+            Живой просмотр (Единое окно)
+            <input type="checkbox" id="livePreviewToggle" onchange="updateSettings()" style="width: 18px; height: 18px;">
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label><i class='bx bx-landscape'></i> Живая анимация (Поверх сайта)</label>
+          <div class="theme-grid" id="liveThemeGrid">
+            <button class="theme-btn" onclick="setLiveTheme('default')"><i class='bx bx-grid-alt'></i> Выкл (Сетка)</button>
+            <button class="theme-btn" onclick="setLiveTheme('snowfall')"><i class='bx bx-cloud-snow'></i> Снегопад</button>
+            <button class="theme-btn" onclick="setLiveTheme('rain')"><i class='bx bx-cloud-rain'></i> Дождь</button>
+            <button class="theme-btn" onclick="setLiveTheme('space')"><i class='bx bx-planet'></i> Космос</button>
+            <button class="theme-btn" onclick="setLiveTheme('matrix')"><i class='bx bx-code-curly'></i> Матрица</button>
+            <button class="theme-btn" onclick="setLiveTheme('fire')"><i class='bx bxs-hot'></i> Пожар</button>
+            <button class="theme-btn" onclick="setLiveTheme('underwater')"><i class='bx bx-water'></i> Под водой</button>
+            <button class="theme-btn" onclick="setLiveTheme('wind')"><i class='bx bx-wind'></i> Ветер</button>
+            <button class="theme-btn" onclick="setLiveTheme('japanese')"><i class='bx bx-spa'></i> Сакура</button>
+            <button class="theme-btn" onclick="setLiveTheme('kanata')"><i class='bx bx-paper-plane'></i> Ангел</button>
+            <button class="theme-btn" onclick="setLiveTheme('cyberpunk')"><i class='bx bx-code-block'></i> Киберпанк</button>
+            <button class="theme-btn" onclick="setLiveTheme('aurora')"><i class='bx bx-radar'></i> Сияние</button>
+            <button class="theme-btn" onclick="setLiveTheme('sky')"><i class='bx bx-cloud'></i> Небо</button>
+            <button class="theme-btn" onclick="setLiveTheme('crt')"><i class='bx bx-tv'></i> CRT ЭЛТ</button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>Ключ ProxyAPI / OpenAI (для AI)</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="password" id="apiKeyInput" placeholder="sk-..." onchange="updateSettings()" style="width: 100%; padding: 10px; background: #000; border: 1px solid var(--panel-border); color: #fff; border-radius: 8px;">
+            <!-- Кнопка запроса баланса -->
+            <button class="btn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); padding: 0 15px;" onclick="checkProxyBalance()" title="Проверить баланс">
+              <i class='bx bx-wallet' style="font-size: 18px;"></i>
+            </button>
+          </div>
+          <!-- Место для вывода баланса -->
+          <div id="balanceDisplay" style="font-size: 11px; color: var(--text-muted); margin-top: 6px; min-height: 14px;">
+            Нажмите на кошелек, чтобы проверить баланс
+          </div>
+        </div>
+
+        <!-- ДОБАВЛЕН БЛОК ВЫБОРА МОДЕЛИ -->
+        <div class="setting-group">
+          <label>Модель ProxyAPI / OpenAI / OpenRouter</label>
+          <select id="aiModelSelect" onchange="updateSettings()">
+            <option value="gpt-5.5">GPT-5.5 (Максимальная)</option>
+            <option value="gpt-5.4-mini">GPT-5.4-mini (Быстрая)</option>
+            <option value="gpt-5.4-nano">GPT-5.4-nano (Легкая)</option>
+            <option value="openrouter/x-ai/grok-4.3">Grok-4.3 (Twitter/X Mode)</option>
+          </select>
+        </div>
+
         <div class="setting-group">
           <label>Размер текста (<span id="fontSizeVal">16</span>px)</label>
-          <input
-            type="range"
-            id="sizeSelect"
-            min="12"
-            max="22"
-            value="16"
-            oninput="updateSettings()"
-          />
+          <input type="range" id="sizeSelect" min="12" max="22" value="16" oninput="updateSettings()"/>
         </div>
-        <button
-          class="btn btn-primary"
-          style="width: 100%; margin-top: 10px"
-          onclick="toggleSettings()"
-        >
-          Готово
-        </button>
+        <button class="btn btn-primary" style="width: 100%; margin-top: 10px" onclick="toggleSettings()">Готово</button>
       </div>
     </div>
 
@@ -927,7 +1555,7 @@
       });
 
       // База данных
-      const defaultText = `# Добро пожаловать 🚀\n\nЭто кроссплатформенная среда. На ПК у вас разделенный экран, а на телефоне удобные вкладки внизу.\n\n### Фишки:\n- **Scroll Sync:** Прокручивайте код, и превью будет двигаться следом.\n- **Цвета:** Поменяйте цвет интерфейса в настройках.\n- **LaTeX:** $$ \\int_a^b f(x) dx $$\n\n\`\`\`javascript\nconsole.log("Полный адаптив!");\n\`\`\``;
+      const defaultText = `# Добро пожаловать 🚀...`;
 
       let notes = JSON.parse(localStorage.getItem("qn_notes")) || [
         {
@@ -938,13 +1566,6 @@
         },
       ];
       let activeId = localStorage.getItem("qn_active") || notes[0].id;
-      let settings = JSON.parse(localStorage.getItem("qn_settings")) || {
-        font: "'Inter', sans-serif",
-        codeFont: "'JetBrains Mono', monospace",
-        size: "16",
-        color: "#8b5cf6",
-        colorRgb: "139, 92, 246",
-      };
 
       const editor = document.getElementById("editor");
       const preview = document.getElementById("preview");
@@ -967,12 +1588,33 @@
           div.className = `note-item ${note.id === activeId ? "active" : ""}`;
           div.onclick = () => switchNote(note.id);
           div.innerHTML = `
+                <div class="note-info">
                     <div class="note-title-list">${note.title || "Без названия"}</div>
                     <div class="note-date">${note.date}</div>
-                    <button class="delete-btn" onclick="deleteNote(event, '${note.id}')"><i class='bx bx-trash'></i></button>
-                `;
+                </div>
+                <div class="note-actions">
+                    <button class="action-btn" title="Переименовать" onclick="renameNote(event, '${note.id}')"><i class='bx bx-edit-alt'></i></button>
+                    <button class="action-btn delete" title="Удалить" onclick="deleteNote(event, '${note.id}')"><i class='bx bx-trash'></i></button>
+                </div>
+            `;
           list.appendChild(div);
         });
+      }
+
+      function renameNote(e, id) {
+        e.stopPropagation();
+        const note = notes.find((n) => n.id === id);
+        if (!note) return;
+        
+        const newTitle = prompt("Введите новое название заметки:", note.title);
+        if (newTitle !== null && newTitle.trim() !== "") {
+          note.title = newTitle.trim();
+          if(activeId === id) {
+              titleInput.value = note.title;
+          }
+          localStorage.setItem("qn_notes", JSON.stringify(notes));
+          renderNotesList(searchInput.value);
+        }
       }
 
       function filterNotes() {
@@ -1026,6 +1668,7 @@
         }
       });
 
+      // Сохранение и рендер при наборе текста
       editor.addEventListener("input", (e) => {
         const note = notes.find((n) => n.id === activeId);
         if (note) {
@@ -1034,6 +1677,38 @@
         }
         clearTimeout(window.renderTimeout);
         window.renderTimeout = setTimeout(updatePreview, 300);
+      });
+
+      // Скрытие мобильных вкладок при редактировании текста
+      const mobileTabs = document.querySelector(".mobile-tabs");
+      editor.addEventListener("focus", () => {
+        if (window.innerWidth <= 768 && mobileTabs) {
+          mobileTabs.style.display = "none";
+        }
+      });
+      editor.addEventListener("blur", () => {
+        if (window.innerWidth <= 768 && mobileTabs) {
+          // Небольшая задержка, чтобы табы не прыгали мгновенно
+          setTimeout(() => {
+            mobileTabs.style.display = "flex";
+          }, 150);
+        }
+      });
+
+      // ЛОГИКА ЕДИНОГО ОКНА (LIVE PREVIEW) вынесена отдельно!
+      const workspace = document.getElementById("workspace");
+      
+      preview.addEventListener("click", () => {
+        if (settings.livePreview) {
+          workspace.classList.add("editing");
+          editor.focus();
+        }
+      });
+
+      editor.addEventListener("blur", () => {
+        if (settings.livePreview) {
+          setTimeout(() => workspace.classList.remove("editing"), 150);
+        }
       });
 
       // Парсер (Markdown + MathJax)
@@ -1176,14 +1851,36 @@
         applySettings();
       }
 
+      let settings = JSON.parse(localStorage.getItem("qn_settings")) || {
+        font: "'Inter', sans-serif",
+        codeFont: "'JetBrains Mono', monospace",
+        size: "16",
+        color: "#8b5cf6",
+        colorRgb: "139, 92, 246",
+        livePreview: false,
+        liveTheme: "default", // НОВЫЙ ПАРАМЕТР
+        apiKey: "",
+        aiModel: "gpt-5.5"
+      };
+
+      // Новая функция для кнопок тем
+      function setLiveTheme(theme) {
+        settings.liveTheme = theme;
+        applySettings();
+      }
+
       function updateSettings() {
         settings.font = document.getElementById("fontSelect").value;
         settings.codeFont = document.getElementById("codeFontSelect").value;
         settings.size = document.getElementById("sizeSelect").value;
+        settings.livePreview = document.getElementById("livePreviewToggle").checked;
+        // liveTheme обновляется через функцию setLiveTheme()
+        settings.apiKey = document.getElementById("apiKeyInput").value;
+        settings.aiModel = document.getElementById("aiModelSelect").value;
         applySettings();
       }
 
-      function applySettings() {
+      const originalApplySettings = function() {
         localStorage.setItem("qn_settings", JSON.stringify(settings));
         const root = document.documentElement;
         root.style.setProperty("--font-text", settings.font);
@@ -1193,17 +1890,295 @@
         root.style.setProperty("--accent", settings.color);
         root.style.setProperty("--accent-rgb", settings.colorRgb);
 
-        document.getElementById("fontSelect").value = settings.font;
-        document.getElementById("codeFontSelect").value = settings.codeFont;
-        document.getElementById("sizeSelect").value = settings.size;
-        document.getElementById("fontSizeVal").textContent = settings.size;
+        if(document.getElementById("fontSelect")) document.getElementById("fontSelect").value = settings.font;
+        if(document.getElementById("codeFontSelect")) document.getElementById("codeFontSelect").value = settings.codeFont;
+        if(document.getElementById("sizeSelect")) document.getElementById("sizeSelect").value = settings.size;
+        if(document.getElementById("livePreviewToggle")) document.getElementById("livePreviewToggle").checked = settings.livePreview;
+        
+        // Подсветка активной кнопки анимации в сетке
+        document.querySelectorAll("#liveThemeGrid .theme-btn").forEach(btn => {
+          btn.classList.remove("active");
+          if(btn.getAttribute("onclick").includes(`'${settings.liveTheme || 'default'}'`)) {
+             btn.classList.add("active");
+          }
+        });
+        
+        if(document.getElementById("apiKeyInput")) document.getElementById("apiKeyInput").value = settings.apiKey || "";
+        if(document.getElementById("aiModelSelect")) document.getElementById("aiModelSelect").value = settings.aiModel || "gpt-5.5";
 
-        // Подсветка выбранного цвета в меню
+        const ws = document.getElementById("workspace");
+        if (ws) {
+            if (settings.livePreview) ws.classList.add("live-mode");
+            else {
+                ws.classList.remove("live-mode");
+                ws.classList.remove("editing");
+            }
+        }
+
         document.querySelectorAll(".color-dot").forEach((d) => {
           if (d.style.color === settings.color) d.classList.add("active");
           else d.classList.remove("active");
         });
+
+        // Запуск движка тем
+        runLiveTheme(settings.liveTheme || "default");
+      };
+
+      let applySettings = function() {
+        originalApplySettings();
+        const modelMap = {
+          "gpt-5.5": "GPT-5.5",
+          "gpt-5.4-mini": "GPT-5.4-mini",
+          "gpt-5.4-nano": "GPT-5.4-nano",
+          "openrouter/x-ai/grok-4.3": "Grok-4.3"
+        };
+        const label = document.getElementById("currentModelLabel");
+        if (label && settings.aiModel) {
+            label.textContent = modelMap[settings.aiModel] || settings.aiModel;
+        }
+      };
+
+      // ==========================================
+      // ПРЕМИУМ ДВИЖОК ЖИВЫХ ТЕМ
+      // ==========================================
+      let themeAnimationId = null;
+
+      function runLiveTheme(theme) {
+        const layer = document.getElementById("theme-layer");
+        const body = document.body;
+        
+        layer.innerHTML = "";
+        if (themeAnimationId) {
+            cancelAnimationFrame(themeAnimationId);
+            clearInterval(themeAnimationId);
+        }
+        
+        body.className = body.className.replace(/\btheme-\S+/g, '');
+        if(theme !== 'default') body.classList.add(`theme-${theme}`);
+
+        // Продвинутый генератор частиц (с параллаксом и рандомом)
+        function createParticles(count, className, minDur, maxDur) {
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = `particle ${className}`;
+                
+                // Случайная позиция
+                p.style.left = `${Math.random() * 100}vw`;
+                if (className === 'star' || className === 'wind-line') {
+                    p.style.top = `${Math.random() * 100}vh`;
+                }
+
+                // Эффект глубины (Depth of Field): размер и прозрачность
+                const scale = Math.random() * 1.5 + 0.5; // от 0.5 до 2.0
+                const opacity = Math.random() * 0.6 + 0.2; // от 0.2 до 0.8
+                p.style.setProperty('--s', scale);
+                p.style.setProperty('--o', opacity);
+
+                // Плавность и бесконечность
+                const duration = Math.random() * (maxDur - minDur) + minDur;
+                p.style.animationDuration = `${duration}s`;
+                // Отрицательный delay, чтобы при включении экран уже был заполнен
+                p.style.animationDelay = `-${Math.random() * duration}s`; 
+                
+                layer.appendChild(p);
+            }
+        }
+
+        switch(theme) {
+            case 'snowfall': createParticles(100, 'snow', 5, 12); break;
+            case 'rain': createParticles(120, 'rain-drop', 0.5, 1.5); break;
+            case 'space': createParticles(150, 'star', 3, 6); break;
+            case 'underwater': createParticles(60, 'bubble', 6, 12); break;
+            case 'fire': createParticles(70, 'ember', 4, 8); break;
+            case 'wind': createParticles(40, 'wind-line', 3, 7); break;
+            case 'japanese': createParticles(60, 'sakura', 7, 14); break;
+            case 'cyberpunk':
+                layer.innerHTML = '<div class="cyber-grid"></div>';
+                break;
+            case 'aurora':
+                layer.innerHTML = `
+                  <div class="aurora-blob" style="width:60vw; height:60vh; background:#10b981; top:-20%; left:-10%; animation-duration: 25s;"></div>
+                  <div class="aurora-blob" style="width:70vw; height:70vh; background:#6366f1; bottom:-20%; right:-10%; animation-duration: 30s; animation-direction: reverse;"></div>
+                  <div class="aurora-blob" style="width:50vw; height:50vh; background:#a855f7; top:20%; left:30%; animation-duration: 20s;"></div>
+                `;
+                break;
+            case 'crt':
+                layer.innerHTML = '<div class="scanlines"></div>';
+                break;
+            case 'matrix':
+                initMatrix(layer);
+                break;
+
+                case 'sky':
+                // Создаем 15 красивых пушистых облаков
+                for(let i = 0; i < 15; i++){
+                    const p = document.createElement('div');
+                    p.className = 'cloud-shape';
+                    // Разные размеры облаков
+                    const width = Math.random() * 120 + 80; 
+                    const height = width * 0.35;
+                    p.style.width = `${width}px`;
+                    p.style.height = `${height}px`;
+                    // Размещаем облака по высоте
+                    p.style.top = `${Math.random() * 70}vh`;
+                    
+                    p.style.setProperty('--s', Math.random() * 1.5 + 0.5); // Эффект дали
+                    p.style.setProperty('--o', Math.random() * 0.4 + 0.5); // Прозрачность
+                    
+                    // Разная скорость ветра
+                    const duration = Math.random() * 45 + 30; 
+                    p.style.animationDuration = `${duration}s`;
+                    p.style.animationDelay = `-${Math.random() * duration}s`;
+                    layer.appendChild(p);
+                }
+                break;
+                
+            case 'kanata':
+                // Красивый высокодетализированный SVG контур ангельского пера
+                const featherSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M504.6 47.4C497.5 22.3 475.2 2.5 449.6 0 357.7-9.5 174 74.3 12 215.1c-16 13.9-16 38.3 0 52.2 40 34.6 86.8 55.4 135 62l-77.4 77.4c-12.5 12.5-12.5 32.8 0 45.3l37.5 37.5c12.5 12.5 32.8 12.5 45.3 0l77.4-77.4c6.6 48.2 27.4 95 62 135 13.9 16 38.3 16 52.2 0 140.8-162 224.6-345.7 215.1-437.6-.9-8.5-4.4-16.7-9.5-22.1z"/></svg>`;
+                
+                // Создаем 35 перьев
+                for(let i = 0; i < 35; i++) {
+                    const container = document.createElement('div');
+                    container.className = 'feather-container';
+                    container.style.left = `${Math.random() * 100}vw`;
+                    
+                    // Скорость падения вниз
+                    const fallDuration = Math.random() * 10 + 8; 
+                    container.style.animationDuration = `${fallDuration}s`;
+                    container.style.animationDelay = `-${Math.random() * fallDuration}s`;
+
+                    const feather = document.createElement('div');
+                    feather.className = 'feather';
+                    feather.innerHTML = featherSVG;
+                    feather.style.setProperty('--s', Math.random() * 0.8 + 0.4);
+                    feather.style.setProperty('--o', Math.random() * 0.5 + 0.5);
+                    
+                    // Скорость покачивания (ветерка) для каждого пера отдельно
+                    const swayDuration = Math.random() * 2.5 + 2.5;
+                    feather.style.animationDuration = `${swayDuration}s`;
+                    feather.style.animationDelay = `-${Math.random() * swayDuration}s`;
+
+                    container.appendChild(feather);
+                    layer.appendChild(container);
+                }
+                break;
+        }
       }
+
+      function initMatrix(layer) {
+        const canvas = document.createElement('canvas');
+        canvas.style.display = 'block';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.opacity = '0.35'; // СИЛЬНО приглушаем яркость холста
+        layer.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*'.split('');
+        const fontSize = 12; // Более мелкий, элегантный шрифт
+        const columns = width / fontSize;
+        const drops = [];
+        for (let x = 0; x < columns; x++) drops[x] = 1;
+
+        function draw() {
+            // Мягкое затухание (0.1 вместо 0.05 не дает накапливаться белизне)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Мягкий изумрудный цвет вместо кислотно-зеленого
+            ctx.fillStyle = '#10b981'; 
+            ctx.font = fontSize + 'px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars[Math.floor(Math.random() * chars.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+            themeAnimationId = requestAnimationFrame(draw);
+        }
+        draw();
+        
+        window.addEventListener('resize', () => {
+            if(settings.liveTheme === 'matrix') {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+        });
+      }
+
+      // ==========================================
+      // ПРОВЕРКА БАЛАНСА PROXYAPI
+      // ==========================================
+      async function checkProxyBalance() {
+        const display = document.getElementById("balanceDisplay");
+        const key = document.getElementById("apiKeyInput").value.trim();
+
+        if (!key) {
+          display.innerHTML = "<span style='color: #ef4444;'>Сначала введите API ключ!</span>";
+          return;
+        }
+
+        display.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Соединение с сервером...";
+
+        try {
+          const response = await fetch("https://api.proxyapi.ru/proxyapi/balance", {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${key}`
+            }
+          });
+
+          if (!response.ok) {
+            if (response.status === 401) throw new Error("Ключ недействителен.");
+            if (response.status === 403) throw new Error("Нет доступа! Поставьте галочку 'Запрос баланса' в настройках ключа на сайте.");
+            throw new Error(`Ошибка сервера ${response.status}`);
+          }
+
+          const data = await response.json();
+          
+          // Парсим ответ согласно документации (с лимитом и без)
+          let resultHtml = `<span style="color: #10b981; font-weight: 600;">Доступно: ${data.balance.toFixed(2)} ₽</span>`;
+          
+          if (data.budget) {
+            resultHtml += ` <span style="opacity: 0.7;">(Лимит: ${data.budget.limit.toFixed(2)} ₽, Потрачено: ${data.budget.used.toFixed(2)} ₽)</span>`;
+          }
+
+          display.innerHTML = resultHtml;
+
+        } catch (error) {
+          display.innerHTML = `<span style="color: #f43f5e;"><i class='bx bx-error-circle'></i> ${error.message}</span>`;
+        }
+      }
+
+      function changeModelFromSidebar(val) {
+        settings.aiModel = val;
+        applySettings(); // Сохраняем в localStorage и обновляем везде
+      }
+
+      // ПРИМЕНЯЕМ НАСТРОЙКИ И ЗАГРУЖАЕМ ЗАМЕТКИ ПРИ ЗАГРУЗКЕ САЙТА
+      document.addEventListener("DOMContentLoaded", () => {
+        applySettings();
+        
+        // Отрисовываем весь список заметок слева
+        renderNotesList(); 
+        
+        // Защита от сбоя: если активной заметки нет, выбираем первую
+        if (!notes.find(n => n.id === activeId) && notes.length > 0) {
+           activeId = notes[0].id;
+        }
+        
+        // Загружаем контент выбранной заметки в редактор
+        if (notes.length > 0) {
+           switchNote(activeId); 
+        } else {
+           createNewNote();
+        }
+      });
 
       // Поддержка Tab
       editor.addEventListener("keydown", function (e) {
@@ -1218,14 +2193,368 @@
         }
       });
 
-      // Инициализация
-      window.onload = () => {
+      // ==========================================
+      // ЛОГИКА ПРЕМИУМ ВЫПАДАЮЩЕГО МЕНЮ ИИ
+      // ==========================================
+      function toggleModelDropdown(e) {
+        e.stopPropagation();
+        document.getElementById("aiModelDropdown").classList.toggle("open");
+      }
+
+      // Закрываем меню при клике в любое место
+      document.addEventListener("click", (e) => {
+        const dropdown = document.getElementById("aiModelDropdown");
+        if (dropdown && !dropdown.contains(e.target)) {
+          dropdown.classList.remove("open");
+        }
+      });
+
+      function selectAIModel(modelValue, modelLabel) {
+        // Обновляем визуальный лейбл в кнопке
+        document.getElementById("currentModelLabel").textContent = modelLabel;
+        
+        // Закрываем меню
+        document.getElementById("aiModelDropdown").classList.remove("open");
+        
+        // Сохраняем в настройки
+        settings.aiModel = modelValue;
+        
+        // Синхронизируем со скрытым select'ом в основных настройках (чтобы все совпадало)
+        const mainSelect = document.getElementById("aiModelSelect");
+        if(mainSelect) mainSelect.value = modelValue;
+        
         applySettings();
-        renderNotesList();
-        switchNote(activeId);
-      };
+      }
+
+      // ==========================================
+      // SMART AI (AUTO-AGENT) С СОХРАНЕНИЕМ ЧАТА И ПРОГРЕССА
+      // ==========================================
+
+      let currentAIMode = "agent"; // agent, plan, ask
+      // 1. При загрузке достаем историю из памяти
+      let aiChatHistory = JSON.parse(localStorage.getItem("qn_ai_chat")) || [];
+
+      // 2. Функция сохранения в память
+      function saveAIChat() {
+        localStorage.setItem("qn_ai_chat", JSON.stringify(aiChatHistory));
+      }
+
+      // 3. Функция отрисовки чата при открытии страницы
+      function renderSavedChat() {
+        const chatArea = document.getElementById("aiChatHistory");
+        chatArea.innerHTML = "";
+        
+        if (aiChatHistory.length === 0) {
+          chatArea.innerHTML = `
+            <div class="ai-message bot">
+              Привет! Я ваш ИИ-ассистент. Я могу анализировать текст, писать roadmap'ы и выполнять задачи прямо в редакторе.
+            </div>
+          `;
+          return;
+        }
+
+        aiChatHistory.forEach((msg, index) => {
+          // В базе ИИ зовется "assistant", а в UI класс называется "bot"
+          const uiRole = msg.role === "assistant" ? "bot" : "user";
+          renderMessageUI(uiRole, msg.content, index);
+        });
+      }
+
+      function toggleAISidebar() {
+        document.body.classList.toggle("ai-open");
+        if (document.body.classList.contains("ai-open")) {
+          document.getElementById("aiInput").focus();
+        }
+      }
+
+      function toggleAIModal() {
+        toggleAISidebar();
+      }
+
+      function setAIMode(mode, element) {
+        currentAIMode = mode;
+        document.querySelectorAll('.ai-mode-btn').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+        
+        const input = document.getElementById("aiInput");
+        if (mode === "plan") input.placeholder = "Опишите задачу (я составлю roadmap и смогу его выполнить)...";
+        else if (mode === "ask") input.placeholder = "Задайте вопрос по тексту...";
+        else input.placeholder = "Дайте команду (например: сократи текст)...";
+      }
+
+      function handleAIEnter(e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendAIChat();
+        }
+      }
+
+      function clearAIChat() {
+        aiChatHistory = [];
+        saveAIChat(); // Сохраняем пустой массив
+        renderSavedChat(); // Перерисовываем UI
+      }
+
+      // 4. Единая функция добавления нового сообщения (записывает в массив и сохраняет)
+      function addNewMessage(role, content) {
+        const dbRole = role === "bot" ? "assistant" : "user";
+        aiChatHistory.push({ role: dbRole, content: content });
+        saveAIChat();
+        const index = aiChatHistory.length - 1;
+        renderMessageUI(role, content, index);
+      }
+
+      // 5. Чистая отрисовка UI (используется и для новых, и для старых сообщений)
+      function renderMessageUI(role, content, arrayIndex) {
+        const chatArea = document.getElementById("aiChatHistory");
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `ai-message ${role}`;
+        msgDiv.setAttribute("data-raw", content);
+        
+        if (role === "bot") {
+          const contentDiv = document.createElement("div");
+          contentDiv.className = "bot-markdown-content";
+          contentDiv.innerHTML = marked.parse(content);
+          msgDiv.appendChild(contentDiv);
+
+          // Кнопка вставки кода
+          if ((currentAIMode === "agent" || currentAIMode === "ask") && !content.includes("- [ ]")) {
+            const insertBtn = document.createElement("button");
+            insertBtn.className = "insert-code-btn";
+            insertBtn.innerHTML = "<i class='bx bx-layer-plus'></i> Вставить в редактор";
+            insertBtn.onclick = () => {
+              editor.value = editor.value + "\n\n" + content;
+              editor.dispatchEvent(new Event("input"));
+              insertBtn.innerHTML = "<i class='bx bx-check'></i> Вставлено!";
+            };
+            msgDiv.appendChild(insertBtn);
+          }
+
+          // Кнопка Roadmap (продолжение работы)
+          if (content.includes("- [ ]")) {
+            const execBtn = document.createElement("button");
+            execBtn.className = "insert-code-btn";
+            execBtn.style.background = "rgba(139, 92, 246, 0.2)";
+            execBtn.style.color = "#c4b5fd";
+            execBtn.style.borderColor = "var(--accent)";
+            execBtn.style.width = "100%";
+            execBtn.style.justifyContent = "center";
+            execBtn.style.marginTop = "10px";
+            // Текст изменен, так как кнопка теперь универсальная
+            execBtn.innerHTML = "<i class='bx bx-play-circle'></i> ПРОДОЛЖИТЬ АВТО-ВЫПОЛНЕНИЕ";
+            
+            // Передаем arrayIndex, чтобы знать, какой элемент массива обновлять
+            execBtn.onclick = () => executePlanSequentially(msgDiv, execBtn, arrayIndex);
+            msgDiv.appendChild(execBtn);
+          }
+        } else {
+          msgDiv.textContent = content;
+        }
+
+        chatArea.appendChild(msgDiv);
+        chatArea.scrollTop = chatArea.scrollHeight;
+        return msgDiv; // Возвращаем DOM-элемент, чтобы можно было к нему обращаться
+      }
+
+      // Единая функция для вызовов ИИ (Нативные эндпоинты ProxyAPI)
+      async function callProxyAPI(messages) {
+        if (!settings.apiKey) {
+          toggleSettings();
+          throw new Error("Укажите API-ключ в настройках!");
+        }
+
+        let rawModel = settings.aiModel || "gpt-5.5";
+        
+        let apiUrl = "https://api.proxyapi.ru/openai/v1/chat/completions";
+        let modelForApi = rawModel;
+
+        if (rawModel.startsWith("openrouter/")) {
+          apiUrl = "https://api.proxyapi.ru/openrouter/v1/chat/completions";
+          modelForApi = rawModel.replace("openrouter/", ""); 
+        } 
+        else if (rawModel.startsWith("openai/")) {
+          modelForApi = rawModel.replace("openai/", "");
+        }
+
+        const requestBody = {
+          model: modelForApi,
+          messages: messages,
+          temperature: 0.7
+        };
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${settings.apiKey}`
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error("ProxyAPI Error Details:", errorData);
+          
+          if (response.status === 401) throw new Error("Неверный API ключ (Ошибка 401)");
+          if (response.status === 402) throw new Error("Ошибка 402: Закончились средства! Пополните счет.");
+          if (response.status === 400) throw new Error(`Ошибка 400: ${errorData.error?.message || "Проверьте название модели"}`);
+          throw new Error(`Ошибка сервера: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+
+        return data.choices[0].message.content.trim();
+      }
+
+      // Основная отправка запроса в чат
+      async function sendAIChat() {
+        const input = document.getElementById("aiInput");
+        const userText = input.value.trim();
+        if (!userText) return;
+
+        const sendBtn = document.getElementById("aiSendBtn");
+        input.value = "";
+        input.disabled = true;
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i>";
+
+        // Добавляем сообщение пользователя в память и интерфейс
+        addNewMessage("user", userText);
+
+        let systemPrompt = "Ты ИИ-ассистент.";
+        if (currentAIMode === "plan") {
+          systemPrompt = "Ты Senior Менеджер. Составь подробный Roadmap (структурированный план) по запросу. ВСЕГДА используй markdown-задачи в формате `- [ ] Задача`. Дроби на мелкие шаги.";
+        } else if (currentAIMode === "agent") {
+          systemPrompt = "Ты ИИ-писатель. Выполни команду. Пиши готовый markdown-текст, без воды, чтобы его можно было сразу вставить в документ.";
+        }
+
+        // Собираем контекст для ИИ (включая всю прошлую историю, кроме последней фразы)
+        const apiMessages = [{ role: "system", content: systemPrompt }];
+        
+        for (let i = 0; i < aiChatHistory.length - 1; i++) {
+           apiMessages.push(aiChatHistory[i]);
+        }
+        
+        // К последнему сообщению прикрепляем текст редактора
+        apiMessages.push({ 
+           role: "user", 
+           content: `Текущий документ:\n${editor.value.trim()}\n\nЗапрос: ${userText}` 
+        });
+
+        try {
+          let aiResult = await callProxyAPI(apiMessages);
+          if (currentAIMode === "agent") {
+             aiResult = aiResult.replace(/^```markdown\n?/gi, '').replace(/```$/gi, '').trim();
+          }
+          
+          // Сохраняем ответ бота
+          addNewMessage("bot", aiResult);
+
+        } catch (error) {
+          // Системные ошибки не сохраняем в историю чата, просто выводим
+          renderMessageUI("bot", "❌ " + error.message, -1);
+        } finally {
+          input.disabled = false;
+          sendBtn.disabled = false;
+          sendBtn.innerHTML = "<i class='bx bx-up-arrow-alt'></i>";
+          input.focus();
+        }
+      }
+
+      // ========================================================
+      // АВТО-АГЕНТ: ПОШАГОВОЕ ВЫПОЛНЕНИЕ ROADMAP С СОХРАНЕНИЕМ
+      // ========================================================
+      async function executePlanSequentially(msgDiv, btn, arrayIndex) {
+        btn.style.display = "none";
+        
+        const stopBtn = document.createElement("button");
+        stopBtn.className = "insert-code-btn";
+        stopBtn.style.background = "rgba(239, 68, 68, 0.15)";
+        stopBtn.style.color = "#ef4444";
+        stopBtn.style.borderColor = "#ef4444";
+        stopBtn.style.width = "100%";
+        stopBtn.style.justifyContent = "center";
+        stopBtn.innerHTML = "<i class='bx bx-stop-circle'></i> ОСТАНОВИТЬ АГЕНТА";
+        
+        let isStopped = false;
+        stopBtn.onclick = () => { isStopped = true; stopBtn.remove(); btn.style.display="flex"; };
+        msgDiv.appendChild(stopBtn);
+
+        let rawText = msgDiv.getAttribute("data-raw");
+        
+        // Регулярка ищет ТОЛЬКО невыполненные задачи: "- [ ] Текст задачи"
+        const taskRegex = /^[ \t]*-[ \t]+\[ \][ \t]+(.+)$/gm;
+        let tasks = [];
+        let match;
+        while ((match = taskRegex.exec(rawText)) !== null) {
+            tasks.push(match[1].trim());
+        }
+
+        if (tasks.length === 0) {
+            renderMessageUI("bot", "Все задачи уже выполнены или план пуст!", -1);
+            stopBtn.remove();
+            return;
+        }
+
+        renderMessageUI("bot", `🚀 Запускаю Авто-Агента. Осталось задач: **${tasks.length}**. Начинаю выполнение...`, -1);
+
+        for (let i = 0; i < tasks.length; i++) {
+            if (isStopped) {
+                renderMessageUI("bot", "🛑 Выполнение прервано. Вы сможете продолжить с этого же места позже.", -1);
+                break;
+            }
+
+            const currentTask = tasks[i];
+            const statusMsg = renderMessageUI("bot", `⏳ **Шаг ${i+1}/${tasks.length}:** Выполняю _"${currentTask}"_...`, -1);
+
+            const messages = [
+              { role: "system", content: "Ты ИИ-агент, работающий над большим документом. Выполни один конкретный шаг. Выдай ТОЛЬКО итоговый текст в формате Markdown. Пиши максимально развернуто и глубоко. Без вступлений." },
+              { role: "user", content: `Текущее содержимое документа:\n"""\n${editor.value}\n"""\n\nТвоя задача сейчас выполнить ЭТОТ пункт плана:\n${currentTask}` }
+            ];
+
+            try {
+                let resultText = await callProxyAPI(messages);
+                resultText = resultText.replace(/^```markdown\n?/gi, '').replace(/```$/gi, '').trim();
+
+                if (isStopped) break;
+
+                // Вставляем результат в редактор
+                editor.value += `\n\n### ${currentTask}\n\n${resultText}`;
+                editor.dispatchEvent(new Event("input")); // Обновляем превью
+
+                // Отмечаем задачу галочкой в тексте чата
+                rawText = rawText.replace(`- [ ] ${currentTask}`, `- [x] ${currentTask}`);
+                msgDiv.setAttribute("data-raw", rawText);
+                msgDiv.querySelector('.bot-markdown-content').innerHTML = marked.parse(rawText);
+
+                // 🔥 СОХРАНЯЕМ ИЗМЕНЕННЫЙ ПЛАН В ПАМЯТЬ БРАУЗЕРА
+                if (arrayIndex >= 0) {
+                   aiChatHistory[arrayIndex].content = rawText;
+                   saveAIChat();
+                }
+
+                statusMsg.innerHTML = `<i class='bx bx-check' style='color:#10b981'></i> Шаг завершен.`;
+
+            } catch (error) {
+                renderMessageUI("bot", `❌ Ошибка на шаге "${currentTask}": ${error.message}. Агент остановлен. Вы можете нажать "Продолжить", когда решите проблему.`, -1);
+                isStopped = true;
+                break;
+            }
+
+            await new Promise(r => setTimeout(r, 1500));
+        }
+
+        if (!isStopped) {
+            renderMessageUI("bot", "✅ **ROADMAP ПОЛНОСТЬЮ ЗАВЕРШЕН!** Весь материал добавлен в ваш документ.", -1);
+        }
+        stopBtn.remove();
+        if (isStopped) btn.style.display = "flex"; // Возвращаем кнопку Play, если остановили
+      }
+
+      // Вызываем отрисовку чата сразу при загрузке скрипта
+      renderSavedChat();
     </script>
-  </body>
   <!-- ========================================== -->
   <!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
   <!-- ========================================== -->
