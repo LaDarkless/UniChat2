@@ -31,30 +31,6 @@
             perspective: 1000px; /* Для 3D эффекта */
         }
 
-        /* Контейнер-телефон */
-        .device-screen {
-            position: relative;
-            width: 100%;
-            max-width: 430px;
-            height: 100vh;
-            max-height: 932px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            background: #000;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
-            transform-style: preserve-3d;
-        }
-
-        @media (min-width: 600px) {
-            .device-screen {
-                height: 85vh;
-                border-radius: 40px;
-                border: 8px solid #1a1a1a;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 0 0 2px #333;
-            }
-        }
-
         /* ОБОИ И ТЕМЫ */
         .wallpaper {
             position: absolute;
@@ -143,9 +119,62 @@
         .brightness-slider { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 5px; background: rgba(255,255,255,0.3); outline: none; }
         .brightness-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: white; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
 
-        /* РАБОЧИЙ СТОЛ И СЕТКА */
-        .apps-container { flex-grow: 1; display: flex; flex-direction: column; position: relative; z-index: 10; }
-        .apps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 15px; padding: 20px; align-content: start; }
+        /* Контейнер-ОС */
+.device-screen {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+    transform-style: preserve-3d;
+    transition: all 0.3s ease;
+}
+
+/* Адаптация под планшеты и ПК (стиль iPad / macOS) */
+@media (min-width: 768px) {
+    :root {
+        --icon-size: 75px; /* Увеличиваем иконки на ПК */
+    }
+    .device-screen {
+        max-width: 1200px;
+        height: 90vh;
+        max-height: 800px;
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+    }
+}
+
+/* РАБОЧИЙ СТОЛ И СЕТКА */
+.apps-container { flex-grow: 1; display: flex; flex-direction: column; position: relative; z-index: 10; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.apps-container::-webkit-scrollbar { display: none; }
+
+.apps-grid { 
+    display: grid; 
+    /* Умная адаптивная сетка: сама решает, сколько колонок вместить */
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); 
+    gap: 25px 15px; 
+    padding: 30px 20px; 
+    align-content: start; 
+    justify-items: center;
+}
+
+@media (min-width: 768px) {
+    .apps-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 40px 20px; padding: 40px; }
+}
+
+/* Стили для Drag & Drop */
+.app-link.dragging {
+    opacity: 0.4;
+    transform: scale(1.1);
+    z-index: 100;
+}
+.app-link.over {
+    transform: scale(0.95);
+}
 
         /* ВИДЖЕТ */
         .widget {
@@ -402,101 +431,99 @@
 
         <!-- Контейнер приложений -->
         <div class="apps-container">
-            <div class="apps-grid">
-                
+            <div class="apps-grid" id="appsGrid">
+    
                 <!-- Виджет -->
-                <div class="widget">
+                <div class="widget" style="grid-column: 1 / -1; width: 100%;">
                     <h2 id="greetText">Привет!</h2>
                     <p id="weatherText">Добро пожаловать в UniOS.</p>
                 </div>
 
                 <!-- Иконки -->
-                <div class="app-link" onmousedown="startTouch('music.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('music.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="music.html">
                     <div class="app-icon" style="background: linear-gradient(135deg, #2a1f3b, #2c1a3b);"><img src="https://cdn-icons-png.flaticon.com/512/2995/2995101.png" alt="Music"></div>
                     <span class="app-name">Music</span>
                 </div>
 
-                <div class="app-link" onclick="openApp('gallary.html')">
-                    <div class="app-icon" style="background: linear-gradient(135deg, #202020, #535255);"><img src="https://i.imgur.com/lecBWUY.png" alt="gallary"></div>
+                <div class="app-link" draggable="true" data-app="gallary.html">
+                    <div class="app-icon" style="background: linear-gradient(135deg, #202020, #535255);"><img src="https://i.imgur.com/y0KSO6o.png" alt="gallary"></div>
                     <span class="app-name">Gallary</span>
                 </div>
 
                 <!-- ДОБАВЛЕНО: VIDEO -->
-                <div class="app-link" onmousedown="startTouch('video.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('video.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="video.html">
                     <div class="app-icon" style="background: linear-gradient(135deg, #313435, #212831);"><img src="https://i.imgur.com/49xujFD.png" alt="Video"></div>
                     <span class="app-name">Video</span>
                 </div>
                 <!-- ДОБАВЛЕНО: ROLEPLAY -->
-                <div class="app-link" onmousedown="startTouch('roleplay.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('roleplay.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="roleplay.html">
                     <div class="app-icon" style="background: #ffffff;"><img src="https://i.imgur.com/fV31ULs.png" alt="Roleplay"></div>
                     <span class="app-name">Roleplay</span>
                 </div>
 
-                <div class="app-link" onmousedown="startTouch('docai.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('docai.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="docai.html">
                     <div class="app-icon" style="background: linear-gradient(135deg, #214874, #1d3353);"><img src="https://i.imgur.com/aL3ohto.png" alt="docai.html"></div>
                     <span class="app-name">WordAI</span>
                     <div class="badge">3</div>
                 </div>
 
-                <div class="app-link" onmousedown="startTouch('message.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('message.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="message.html">
                     <div class="app-icon" style="background: linear-gradient(135deg, #000000, #071815);"><img src="https://i.imgur.com/FMB6egQ.png" alt="message.html"></div>
                     <span class="app-name">Messanger</span>
-                    <div class="badge">3</div>
+                    <div class="badge">2</div>
                 </div>
 
-                <div class="app-link" onmousedown="startTouch('docsint.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('docsint.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="docsint.html">
                     <div class="app-icon" style="background: linear-gradient(135deg, #214874, #1d3353);"><img src="https://i.imgur.com/0foXhiu.png" alt="docai.html"></div>
                     <span class="app-name">WordAI-beta</span>
                     <div class="badge">3</div>
                 </div>
 
-                <div class="app-link" onmousedown="startTouch('imgenerate.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('imgenerate.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="imgenerate.html">
                     <div class="app-icon" style="background: linear-gradient(135deg, #214874, #1d3353);"><img src="https://i.imgur.com/LqBHnxz.png" alt="imgenerate.html"></div>
                     <span class="app-name">IMG</span>
                     <div class="badge">2</div>
                 </div>
 
-                <div class="app-link" onmousedown="startTouch('game.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('game.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="game.html">
                     <div class="app-icon" style="background: linear-gradient(135deg, #fceabb, #f8b500);"><img src="https://i.imgur.com/4Uk0ui7.png" alt="2048"></div>
                     <span class="app-name">Tetris</span>
                     <div class="badge">3</div>
                 </div>
 
-                <div class="app-link" onmousedown="startTouch('amefly.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('amefly.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="amefly.html">
                     <div class="app-icon" style="background: linear-gradient(135deg, #0f0e0c, #0e0d0b);"><img src="https://i.imgur.com/gm4JVRe.png" alt="amefly"></div>
                     <span class="app-name">Block Blast</span>
                 </div>
 
-                <div class="app-link" onmousedown="startTouch('browser.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('browser.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="browser.html">
                     <div class="app-icon" style="background: #ffffff;"><img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX"></div>
                     <span class="app-name">Browser</span>
                 </div>
                 
-                <div class="app-link" onmousedown="startTouch('information.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('information.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="information.html">
                     <div class="app-icon system" style="background: #444;"><img src="https://i.imgur.com/tpFK0jG.png" alt="Info"></div>
                     <span class="app-name">About</span>
                 </div>
 
                 <!-- ДОБАВЛЕНО: ANSWER -->
-                <div class="app-link" onmousedown="startTouch('answer.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('answer.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="answer.html">
                     <div class="app-icon system" style="background: #444;"><img src="https://i.imgur.com/YuKDHK7.png" alt="Q&A"></div>
                     <span class="app-name">Q&A</span>
                     <div class="badge" style="background: #34c759;">1</div>
                 </div>
 
-                <div class="app-link" onmousedown="startTouch('paint.html', event)" onmouseup="endTouch()" ontouchstart="startTouch('paint.html', event)" ontouchend="endTouch()">
+                <div class="app-link" draggable="true" data-app="paint.html">
                     <div class="app-icon system" style="background: #444;"><img src="https://i.imgur.com/YEP4VPq.png" alt="Paint"></div>
                     <span class="app-name">Paint</span>
                 </div>
 
-                <!-- ПРИЛОЖЕНИЕ НАСТРОЙКИ -->
-                <div class="app-link" onmousedown="startTouch('settings', event)" onmouseup="endTouch()" ontouchstart="startTouch('settings', event)" ontouchend="endTouch()" onclick="openSettings()">
+                <div class="app-link" draggable="true" onclick="openSettings()">
                     <div class="app-icon system" style="background: #8e8e93;">
                         <img src="https://i.imgur.com/GBoIt5y.png" alt="Settings" style="width: 70%; height: 70%;">
                     </div>
                     <span class="app-name">Settings</span>
                 </div>
-
             </div>
             
             <!-- Кнопка Поиска -->
@@ -564,44 +591,102 @@
             document.getElementById('transitionOverlay').classList.add('active');
             setTimeout(() => window.location.href = url, 400); 
         }
+// --- ЛОГИКА DRAG & DROP И КЛИКОВ ПО ПРИЛОЖЕНИЯМ ---
+const appsGrid = document.getElementById('appsGrid');
+let dragSource = null;
+let clickTimer = null;
+let isDragging = false;
 
-        // HAPTIC TOUCH (ДОЛГОЕ НАЖАТИЕ)
-        let touchTimer;
-        let isLongPress = false;
-
-        function startTouch(url, e) {
-            isLongPress = false;
-            // Устанавливаем таймер: если держим 600мс — это долгое нажатие
-            touchTimer = setTimeout(() => {
-                isLongPress = true;
+// Инициализация событий для всех иконок
+function initAppIcons() {
+    const apps = document.querySelectorAll('.app-link[draggable="true"]');
+    
+    apps.forEach(app => {
+        // Логика клика / долгого нажатия (Умный Haptic Touch)
+        app.addEventListener('pointerdown', (e) => {
+            isDragging = false;
+            clickTimer = setTimeout(() => {
                 showContextMenu(e);
-                vibrate([30, 50, 30]); // Сильная вибрация
+                vibrate([30, 50, 30]);
             }, 600);
-        }
+        });
 
-        function endTouch() {
-            clearTimeout(touchTimer);
-            if (!isLongPress) {
-                // Если отпустили быстро - открываем приложение
-                // Чтобы получить URL, мы достанем его из контекста. В реале лучше передавать.
-                // В данном коде я привязал openApp к клику дока.
-                // Для иконок с Haptic Touch:
-                if(event.currentTarget.getAttribute('onmousedown').includes('music')) openApp('music.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('gallary')) openApp('gallary.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('video')) openApp('video.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('game')) openApp('game.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('browser')) openApp('browser.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('amefly')) openApp('amefly.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('roleplay')) openApp('roleplay.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('img')) openApp('imgenerate.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('message')) openApp('message.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('information')) openApp('information.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('answer')) openApp('answer.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('paint')) openApp('paint.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('docai')) openApp('docai.html');
-                if(event.currentTarget.getAttribute('onmousedown').includes('docsint')) openApp('docsint.html');
+        app.addEventListener('pointerup', (e) => {
+            clearTimeout(clickTimer);
+            if (!isDragging && !document.getElementById('contextOverlay').style.opacity.includes('1')) {
+                const url = app.getAttribute('data-app');
+                if (url) openApp(url);
             }
-        }
+        });
+
+        app.addEventListener('pointermove', () => {
+            clearTimeout(clickTimer); // Отменяем контекстное меню, если палец поехал
+        });
+
+        // HTML5 Drag & Drop Логика
+        app.addEventListener('dragstart', (e) => {
+            clearTimeout(clickTimer);
+            isDragging = true;
+            dragSource = app;
+            e.dataTransfer.effectAllowed = 'move';
+            
+            // Задержка для красивой анимации отрыва
+            setTimeout(() => app.classList.add('dragging'), 0);
+            vibrate(15);
+        });
+
+        app.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Необходимо для разрешения drop
+            e.dataTransfer.dropEffect = 'move';
+            
+            const target = e.target.closest('.app-link');
+            if (target && target !== dragSource) {
+                target.classList.add('over');
+            }
+        });
+
+        app.addEventListener('dragleave', (e) => {
+            const target = e.target.closest('.app-link');
+            if (target) target.classList.remove('over');
+        });
+
+        app.addEventListener('drop', (e) => {
+            e.stopPropagation();
+            const target = e.target.closest('.app-link');
+            
+            if (dragSource !== target && target) {
+                // Логика перестановки элементов в DOM
+                const allApps = [...appsGrid.querySelectorAll('.app-link')];
+                const sourceIndex = allApps.indexOf(dragSource);
+                const targetIndex = allApps.indexOf(target);
+
+                if (sourceIndex < targetIndex) {
+                    target.parentNode.insertBefore(dragSource, target.nextSibling);
+                } else {
+                    target.parentNode.insertBefore(dragSource, target);
+                }
+                vibrate(20);
+                saveGridOrder(); // Опционально: сохранение позиции
+            }
+            if (target) target.classList.remove('over');
+        });
+
+        app.addEventListener('dragend', () => {
+            dragSource.classList.remove('dragging');
+            document.querySelectorAll('.app-link').forEach(el => el.classList.remove('over'));
+            isDragging = false;
+        });
+    });
+}
+
+// Сохранение порядка иконок в localStorage
+function saveGridOrder() {
+    const apps = [...appsGrid.querySelectorAll('.app-link')].map(app => app.getAttribute('data-app') || 'settings');
+    localStorage.setItem('unios_grid', JSON.stringify(apps));
+}
+
+// Запуск инициализации после загрузки
+initAppIcons();
 
         function showContextMenu(e) {
             const overlay = document.getElementById('contextOverlay');

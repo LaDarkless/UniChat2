@@ -1100,6 +1100,98 @@
       .ai-model-item .m-title { display: block; color: #fff; font-size: 13px; font-weight: 600; margin-bottom: 3px; }
       .ai-model-item .m-desc { display: block; color: #a1a1aa; font-size: 11px; }
 
+      /* === ВЫПАДАЮЩЕЕ МЕНЮ ДЛЯ @ ЗАМЕТОК === */
+      .ai-mention-dropdown {
+        position: absolute;
+        bottom: calc(100% + 5px); /* Появляется над полем ввода */
+        left: 20px;
+        background: #18181b;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+        max-height: 200px;
+        width: calc(100% - 40px);
+        overflow-y: auto;
+        z-index: 100;
+        display: none;
+        flex-direction: column;
+      }
+      .ai-mention-dropdown.show {
+        display: flex;
+      }
+      .mention-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        color: #e2e8f0;
+        font-size: 13px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s;
+      }
+      .mention-item:last-child {
+        border-bottom: none;
+      }
+      .mention-item:hover {
+        background: rgba(var(--accent-rgb), 0.2);
+        color: #fff;
+      }
+
+      /* === СТИЛИ ДЛЯ БЛОКА РАЗМЫШЛЕНИЙ (THINKING) === */
+      .ai-thinking-box {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: all 0.3s;
+      }
+      .ai-thinking-header {
+        padding: 8px 12px;
+        font-size: 12px;
+        color: #a1a1aa;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        user-select: none;
+      }
+      .ai-thinking-header:hover {
+        color: #e2e8f0;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .ai-thinking-header i {
+        transition: transform 0.2s;
+      }
+      .ai-thinking-box.open .ai-thinking-header i.bx-chevron-right {
+        transform: rotate(90deg);
+      }
+      .ai-thinking-content {
+        padding: 0 12px 12px 12px;
+        font-size: 12px;
+        color: #94a3b8;
+        font-style: italic;
+        line-height: 1.5;
+        display: none;
+        border-top: 1px dashed rgba(255, 255, 255, 0.05);
+        margin-top: 5px;
+        padding-top: 10px;
+        white-space: pre-wrap;
+      }
+      .ai-thinking-box.open .ai-thinking-content {
+        display: block;
+      }
+      .think-pulse {
+        display: inline-block;
+        animation: pulse 1.5s infinite;
+      }
+      @keyframes pulse {
+        0% { opacity: 0.4; }
+        50% { opacity: 1; }
+        100% { opacity: 0.4; }
+      }
+
       /* === СТИЛИ ИСТОРИИ ЧАТА === */
       .ai-chat-area {
         flex: 1;
@@ -1271,6 +1363,208 @@
         }
         body.ai-open .ai-sidebar-overlay { opacity: 1; pointer-events: all; }
       }
+
+      /* === КОНТЕКСТНОЕ МЕНЮ СООБЩЕНИЙ ЧАТА === */
+      .chat-context-menu {
+        position: fixed;
+        background: rgba(15, 15, 17, 0.95);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        z-index: 1000000;
+        opacity: 0;
+        pointer-events: none;
+        transform: scale(0.95) translateY(10px);
+        transform-origin: top left;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+      }
+      .chat-context-menu.show {
+        opacity: 1;
+        pointer-events: auto;
+        transform: scale(1) translateY(0);
+      }
+      .chat-context-btn {
+        background: transparent;
+        border: none;
+        color: #e2e8f0;
+        padding: 10px 16px;
+        text-align: left;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: var(--font-ui);
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: background 0.2s;
+        white-space: nowrap;
+      }
+      .chat-context-btn i {
+        font-size: 16px;
+      }
+      .chat-context-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+      .chat-context-btn.delete {
+        color: #ef4444;
+      }
+      .chat-context-btn.delete:hover {
+        background: rgba(239, 68, 68, 0.15);
+      }
+      /* Плавное удаление сообщения */
+      .ai-message {
+        transition: opacity 0.3s, transform 0.3s, margin 0.3s, padding 0.3s;
+      }
+
+      /* ==========================================
+         DIFF PREVIEW (Стиль Cursor IDE)
+         ========================================== */
+         .diff-preview-box {
+        background: #0d1117;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        margin-top: 15px;
+        overflow: hidden;
+        font-family: var(--font-code);
+        font-size: 13px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      }
+      .diff-header {
+        background: #161b22;
+        padding: 8px 14px;
+        display: flex;
+        justify-content: space-between;
+        color: #8b949e;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        font-family: var(--font-ui);
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .diff-content {
+        padding: 10px 0;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .diff-line {
+        padding: 2px 14px;
+        line-height: 1.5;
+        position: relative;
+      }
+      .diff-line.removed {
+        color: #ff7b72;
+        background: rgba(248, 81, 73, 0.1);
+      }
+      .diff-line.added {
+        color: #3fb950;
+        background: rgba(46, 160, 67, 0.15);
+      }
+      .diff-line.context {
+        color: #8b949e;
+      }
+      .diff-actions {
+        display: flex;
+        gap: 8px;
+        padding: 12px 14px;
+        background: #161b22;
+        border-top: 1px solid rgba(255,255,255,0.05);
+        flex-wrap: wrap;
+      }
+      .diff-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #c9d1d9;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-family: var(--font-ui);
+        transition: 0.2s;
+      }
+      .diff-btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+      .diff-btn.accept { background: rgba(46, 160, 67, 0.1); color: #3fb950; border-color: rgba(46, 160, 67, 0.4); }
+      .diff-btn.accept:hover { background: rgba(46, 160, 67, 0.2); }
+      .diff-btn.reject { color: #ff7b72; }
+      .diff-btn.reject:hover { background: rgba(248, 81, 73, 0.15); border-color: rgba(248, 81, 73, 0.4); }
+
+      /* ==========================================
+         INLINE DIFF PREVIEW (PRO ДИЗАЙН И АДАПТИВНОСТЬ)
+         ========================================== */
+         .workspace-diff-overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--bg-color);
+        z-index: 200; display: flex; flex-direction: column;
+        transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        opacity: 0; pointer-events: none;
+      }
+      .workspace-diff-overlay.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+      
+      .wd-header {
+        padding: 15px 20px; background: rgba(0, 0, 0, 0.6); border-bottom: 1px solid var(--panel-border);
+        display: flex; justify-content: space-between; align-items: center;
+      }
+      .wd-content {
+        flex: 1; overflow-y: auto; padding: 15px; font-family: var(--font-code); 
+        font-size: 13px; line-height: 1.6; color: #cbd5e1;
+      }
+      /* На ПК делаем отступы побольше для читаемости */
+      @media (min-width: 768px) { .wd-content { padding: 25px 40px; font-size: 14px; } }
+
+      .wd-unchanged {
+        white-space: pre-wrap; opacity: 0.5; padding: 5px 0; color: var(--text-muted);
+      }
+      .wd-inline-patch {
+        margin: 15px 0; border: 1px solid var(--panel-border); border-radius: 8px;
+        background: #0d1117; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        transition: opacity 0.3s, filter 0.3s;
+      }
+      .wd-patch-actions {
+        background: rgba(255, 255, 255, 0.02); padding: 8px 15px; display: flex; gap: 8px;
+        border-bottom: 1px solid var(--panel-border); justify-content: flex-end;
+      }
+      .wd-patch-btn {
+        background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);
+        padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: var(--font-ui);
+        display: flex; align-items: center; gap: 6px; transition: 0.2s;
+      }
+      .wd-patch-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+      .wd-patch-btn.active { background: rgba(46, 160, 67, 0.15); color: #3fb950; border-color: rgba(46, 160, 67, 0.4); }
+      .wd-patch-btn.excluded { background: rgba(248, 81, 73, 0.15); color: #ff7b72; border-color: rgba(248, 81, 73, 0.4); }
+      
+      .wd-line { display: flex; padding: 2px 10px; }
+      .wd-line.removed { background: rgba(248,81,73,0.1); color: #ff7b72; }
+      .wd-line.added { background: rgba(46,160,67,0.15); color: #3fb950; }
+      .wd-prefix { width: 25px; user-select: none; opacity: 0.5; font-weight: 600; flex-shrink: 0; }
+      .wd-text { white-space: pre-wrap; word-break: break-word; flex: 1; }
+      
+      .wd-textarea {
+        width: 100%; min-height: 120px; background: rgba(46, 160, 67, 0.05); color: #3fb950;
+        border: none; padding: 15px; font-family: var(--font-code); font-size: inherit;
+        resize: vertical; outline: none; line-height: 1.6;
+      }
+
+      .wd-footer {
+        padding: 15px 20px; background: rgba(0, 0, 0, 0.6); border-top: 1px solid var(--panel-border); 
+        display: flex; justify-content: flex-end; gap: 10px;
+      }
+
+      /* Адаптив для кнопок на телефонах */
+      @media (max-width: 480px) {
+        .wd-patch-actions { flex-direction: column; padding: 10px; }
+        .wd-patch-btn { width: 100%; justify-content: center; padding: 10px; }
+        .wd-footer { flex-direction: column; }
+        .wd-footer .btn { width: 100%; justify-content: center; padding: 12px; }
+      }
     </style>
   </head>
   <body>
@@ -1386,35 +1680,69 @@
       <div class="ai-sidebar-overlay" onclick="toggleAISidebar()"></div>
       <aside class="ai-sidebar" id="aiSidebar">
         
-        <div class="ai-header" style="padding: 20px; border-bottom: 1px solid var(--panel-border);">
-          <!-- Кастомный красивый Dropdown -->
-          <div class="ai-model-dropdown" id="aiModelDropdown">
-            <button class="ai-model-btn" onclick="toggleModelDropdown(event)">
-              <i class='bx bx-brain' style="color: var(--accent); font-size: 18px;"></i>
-              <span id="currentModelLabel">GPT-5.5</span>
-              <i class='bx bx-chevron-down' style="color: var(--text-muted);"></i>
-            </button>
-            <div class="ai-model-menu" id="aiModelMenu">
-              <div class="ai-model-item" onclick="selectAIModel('gpt-5.5', 'GPT-5.5')">
-                <span class="m-title">GPT-5.5</span>
-                <span class="m-desc">Флагманская модель (Максимум качества)</span>
+        <div class="ai-header" style="padding: 20px; border-bottom: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+          
+          <div style="display: flex; gap: 8px; flex: 1;">
+            <!-- Кастомный красивый Dropdown (Модель) -->
+            <div class="ai-model-dropdown" id="aiModelDropdown">
+              <button class="ai-model-btn" onclick="toggleModelDropdown(event)">
+                <i class='bx bx-brain' style="color: var(--accent); font-size: 18px;"></i>
+                <span id="currentModelLabel">GPT-5.5</span>
+                <i class='bx bx-chevron-down' style="color: var(--text-muted);"></i>
+              </button>
+              <div class="ai-model-menu" id="aiModelMenu">
+                <div class="ai-model-item" onclick="selectAIModel('gpt-5.5', 'GPT-5.5')">
+                  <span class="m-title">GPT-5.5</span>
+                  <span class="m-desc">Флагманская модель (Максимум качества)</span>
+                </div>
+                <div class="ai-model-item" onclick="selectAIModel('gpt-5.4-mini', 'GPT-5.4-mini')">
+                  <span class="m-title">GPT-5.4-mini</span>
+                  <span class="m-desc">Быстрая генерация (Оптимально)</span>
+                </div>
+                <div class="ai-model-item" onclick="selectAIModel('gpt-5.4-nano', 'GPT-5.4-nano')">
+                  <span class="m-title">GPT-5.4-nano</span>
+                  <span class="m-desc">Легкая и дешевая модель</span>
+                </div>
+                <div class="ai-model-item" onclick="selectAIModel('openrouter/x-ai/grok-4.3', 'Grok-4.3')">
+                  <span class="m-title">Grok-4.3</span>
+                  <span class="m-desc">Режим X/Twitter (OpenRouter)</span>
+                </div>
               </div>
-              <div class="ai-model-item" onclick="selectAIModel('gpt-5.4-mini', 'GPT-5.4-mini')">
-                <span class="m-title">GPT-5.4-mini</span>
-                <span class="m-desc">Быстрая генерация (Оптимально)</span>
-              </div>
-              <div class="ai-model-item" onclick="selectAIModel('gpt-5.4-nano', 'GPT-5.4-nano')">
-                <span class="m-title">GPT-5.4-nano</span>
-                <span class="m-desc">Легкая и дешевая модель</span>
-              </div>
-              <div class="ai-model-item" onclick="selectAIModel('openrouter/x-ai/grok-4.3', 'Grok-4.3')">
-                <span class="m-title">Grok-4.3</span>
-                <span class="m-desc">Режим X/Twitter (OpenRouter)</span>
+            </div>
+
+            <!-- ВТОРОЙ DROPDOWN: Thinking Mode -->
+            <div class="ai-model-dropdown" id="aiThinkingDropdown">
+              <button class="ai-model-btn" onclick="toggleThinkingDropdown(event)" style="border-color: rgba(16, 185, 129, 0.3);">
+                <i class='bx bx-bulb' style="color: #10b981; font-size: 18px;"></i>
+                <span id="currentThinkingLabel">Off</span>
+                <i class='bx bx-chevron-down' style="color: var(--text-muted);"></i>
+              </button>
+              <div class="ai-model-menu" id="aiThinkingMenu" style="width: 220px;">
+                <div class="ai-model-item" data-mode="off" onclick="selectThinkingMode('off', 'Off')">
+                  <span class="m-title">Отключено (None)</span>
+                  <span class="m-desc">Быстрый ответ (GPT) / Базовый (Grok)</span>
+                </div>
+                <div class="ai-model-item" data-mode="low" onclick="selectThinkingMode('low', 'Low')">
+                  <span class="m-title">Низкий (Low)</span>
+                  <span class="m-desc">Базовое обдумывание</span>
+                </div>
+                <div class="ai-model-item" data-mode="medium" onclick="selectThinkingMode('medium', 'Medium')">
+                  <span class="m-title">Средний (Medium)</span>
+                  <span class="m-desc">Глубокий анализ</span>
+                </div>
+                <div class="ai-model-item" data-mode="high" onclick="selectThinkingMode('high', 'High')">
+                  <span class="m-title">Высокий (High)</span>
+                  <span class="m-desc">Максимальная логика (Долго)</span>
+                </div>
+                <div class="ai-model-item" data-mode="xhigh" onclick="selectThinkingMode('xhigh', 'Extreme')">
+                  <span class="m-title">Экстрим (XHigh)</span>
+                  <span class="m-desc">Сложные задачи (Для GPT-5)</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="controls">
+          <div class="controls" style="display: flex; gap: 4px;">
             <button class="btn-icon" style="padding: 6px;" onclick="clearAIChat()" title="Очистить чат"><i class='bx bx-trash'></i></button>
             <button class="btn-icon" style="padding: 6px;" onclick="toggleAISidebar()"><i class='bx bx-x'></i></button>
           </div>
@@ -1426,13 +1754,16 @@
           </div>
         </div>
 
-        <div class="ai-input-area">
+        <div class="ai-input-area" style="position: relative;"> <!-- Добавили relative -->
           <div class="ai-mode-selector">
             <button class="ai-mode-btn active" onclick="setAIMode('agent', this)"><i class='bx bx-magic-wand'></i> Agent</button>
             <button class="ai-mode-btn" onclick="setAIMode('plan', this)"><i class='bx bx-task'></i> Plan</button>
             <button class="ai-mode-btn" onclick="setAIMode('ask', this)"><i class='bx bx-message-rounded'></i> Ask</button>
           </div>
           
+          <!-- ВЫПАДАЮЩИЙ СПИСОК @ -->
+          <div class="ai-mention-dropdown" id="aiMentionDropdown"></div>
+
           <div class="ai-textarea-wrapper">
             <textarea id="aiInput" placeholder="Plan, @ for context, / for commands..." onkeydown="handleAIEnter(event)"></textarea>
             <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIChat()">
@@ -2201,33 +2532,79 @@
       // ==========================================
       function toggleModelDropdown(e) {
         e.stopPropagation();
+        document.getElementById("aiThinkingDropdown").classList.remove("open"); // Закрываем соседнее
         document.getElementById("aiModelDropdown").classList.toggle("open");
+      }
+
+      function toggleThinkingDropdown(e) {
+        e.stopPropagation();
+        document.getElementById("aiModelDropdown").classList.remove("open"); // Закрываем соседнее
+        document.getElementById("aiThinkingDropdown").classList.toggle("open");
       }
 
       // Закрываем меню при клике в любое место
       document.addEventListener("click", (e) => {
-        const dropdown = document.getElementById("aiModelDropdown");
-        if (dropdown && !dropdown.contains(e.target)) {
-          dropdown.classList.remove("open");
-        }
+        const mDropdown = document.getElementById("aiModelDropdown");
+        const tDropdown = document.getElementById("aiThinkingDropdown");
+        if (mDropdown && !mDropdown.contains(e.target)) mDropdown.classList.remove("open");
+        if (tDropdown && !tDropdown.contains(e.target)) tDropdown.classList.remove("open");
       });
 
+      // ==========================================
+      // ДИНАМИЧЕСКОЕ МЕНЮ РАЗМЫШЛЕНИЙ
+      // ==========================================
+      function updateThinkingMenu(model) {
+        if (!model) return;
+        const isGrok = model.includes("grok");
+        const items = document.querySelectorAll('#aiThinkingMenu .ai-model-item');
+
+        items.forEach(item => {
+            const mode = item.getAttribute('data-mode');
+            if (mode === "off") {
+                // Если это Grok, скрываем пункт "Off". Для остальных показываем.
+                item.style.display = isGrok ? "none" : "block";
+            }
+        });
+
+        // Если выбрана модель Grok, а размышления были отключены - принудительно ставим Low
+        if (isGrok && (settings.thinking === "off" || !settings.thinking)) {
+            selectThinkingMode("low", "Low");
+        }
+      }
+
+      function selectThinkingMode(val, label) {
+        document.getElementById("currentThinkingLabel").textContent = label;
+        document.getElementById("aiThinkingDropdown").classList.remove("open");
+        settings.thinking = val;
+        localStorage.setItem("qn_settings", JSON.stringify(settings));
+      }
+
       function selectAIModel(modelValue, modelLabel) {
-        // Обновляем визуальный лейбл в кнопке
         document.getElementById("currentModelLabel").textContent = modelLabel;
-        
-        // Закрываем меню
         document.getElementById("aiModelDropdown").classList.remove("open");
-        
-        // Сохраняем в настройки
         settings.aiModel = modelValue;
-        
-        // Синхронизируем со скрытым select'ом в основных настройках (чтобы все совпадало)
         const mainSelect = document.getElementById("aiModelSelect");
         if(mainSelect) mainSelect.value = modelValue;
         
-        applySettings();
+        localStorage.setItem("qn_settings", JSON.stringify(settings));
+        
+        // ОБНОВЛЯЕМ МЕНЮ МЫШЛЕНИЯ ПРИ СМЕНЕ МОДЕЛИ
+        updateThinkingMenu(modelValue);
       }
+
+      // Подгружаем настройки при инициализации
+      window.addEventListener('DOMContentLoaded', () => {
+         if (!settings.thinking) settings.thinking = "off";
+         const tLabels = { "off": "Off", "low": "Low", "mid": "Medium", "medium": "Medium", "high": "High", "xhigh": "Extreme" };
+         
+         // ОБНОВЛЯЕМ МЕНЮ МЫШЛЕНИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+         updateThinkingMenu(settings.aiModel);
+
+         const labelEl = document.getElementById("currentThinkingLabel");
+         if (labelEl && tLabels[settings.thinking]) {
+             labelEl.textContent = tLabels[settings.thinking];
+         }
+      });
 
       // ==========================================
       // SMART AI (AUTO-AGENT) С СОХРАНЕНИЕМ ЧАТА И ПРОГРЕССА
@@ -2257,9 +2634,16 @@
         }
 
         aiChatHistory.forEach((msg, index) => {
-          // В базе ИИ зовется "assistant", а в UI класс называется "bot"
           const uiRole = msg.role === "assistant" ? "bot" : "user";
-          renderMessageUI(uiRole, msg.content, index);
+          const msgDiv = renderMessageUI(uiRole, msg.content, index);
+          
+          // Если это бот и у него сохранены мысли, отрисовываем их
+          if (uiRole === "bot" && msg.reasoning) {
+              updateMessageUI(msgDiv, msg.content, msg.reasoning, index);
+              // Убираем анимацию пульса у старых (сохраненных) сообщений
+              const pulse = msgDiv.querySelector('.think-pulse');
+              if (pulse) pulse.remove();
+          }
         });
       }
 
@@ -2298,16 +2682,73 @@
         renderSavedChat(); // Перерисовываем UI
       }
 
+      // ==========================================
+      // ЛОГИКА УПОМИНАНИЙ (МЕНЮ @)
+      // ==========================================
+      const aiInputEl = document.getElementById("aiInput");
+      const mentionDropdown = document.getElementById("aiMentionDropdown");
+
+      aiInputEl.addEventListener("input", function (e) {
+        const val = this.value;
+        const cursorPos = this.selectionStart;
+        
+        // Берем текст от начала до курсора
+        const textBeforeCursor = val.substring(0, cursorPos);
+        // Ищем слово, начинающееся с @ (без пробелов) прямо перед курсором
+        const match = textBeforeCursor.match(/@(\S*)$/);
+        
+        if (match) {
+          const searchTerm = match[1].toLowerCase();
+          
+          // Фильтруем заметки по введенному тексту
+          const matchedNotes = notes.filter(n => n.title.toLowerCase().includes(searchTerm));
+          
+          if (matchedNotes.length > 0) {
+            mentionDropdown.innerHTML = "";
+            matchedNotes.forEach(note => {
+              const div = document.createElement("div");
+              div.className = "mention-item";
+              div.innerHTML = `<i class='bx bx-file'></i> ${note.title}`;
+              
+              // Клик по заметке в меню
+              div.onclick = (event) => {
+                event.preventDefault();
+                const beforeAt = textBeforeCursor.substring(0, match.index);
+                const afterCursor = val.substring(cursorPos);
+                
+                // Вставляем название заметки в кавычках (например: @"Название")
+                this.value = beforeAt + '@"' + note.title + '" ' + afterCursor;
+                mentionDropdown.classList.remove("show");
+                this.focus();
+              };
+              mentionDropdown.appendChild(div);
+            });
+            mentionDropdown.classList.add("show");
+          } else {
+            mentionDropdown.classList.remove("show");
+          }
+        } else {
+          mentionDropdown.classList.remove("show");
+        }
+      });
+
+      // Закрываем меню при клике вне его
+      document.addEventListener("click", (e) => {
+        if (mentionDropdown && !mentionDropdown.contains(e.target) && e.target !== aiInputEl) {
+          mentionDropdown.classList.remove("show");
+        }
+      });
+
       // 4. Единая функция добавления нового сообщения (записывает в массив и сохраняет)
       function addNewMessage(role, content) {
         const dbRole = role === "bot" ? "assistant" : "user";
         aiChatHistory.push({ role: dbRole, content: content });
         saveAIChat();
         const index = aiChatHistory.length - 1;
-        renderMessageUI(role, content, index);
+        return renderMessageUI(role, content, index);
       }
 
-      // 5. Чистая отрисовка UI (используется и для новых, и для старых сообщений)
+      // 5. Чистая отрисовка UI (Подготовлено под Стриминг)
       function renderMessageUI(role, content, arrayIndex) {
         const chatArea = document.getElementById("aiChatHistory");
         const msgDiv = document.createElement("div");
@@ -2315,59 +2756,96 @@
         msgDiv.setAttribute("data-raw", content);
         
         if (role === "bot") {
-          const contentDiv = document.createElement("div");
-          contentDiv.className = "bot-markdown-content";
-          contentDiv.innerHTML = marked.parse(content);
-          msgDiv.appendChild(contentDiv);
-
-          // Кнопка вставки кода
-          if ((currentAIMode === "agent" || currentAIMode === "ask") && !content.includes("- [ ]")) {
-            const insertBtn = document.createElement("button");
-            insertBtn.className = "insert-code-btn";
-            insertBtn.innerHTML = "<i class='bx bx-layer-plus'></i> Вставить в редактор";
-            insertBtn.onclick = () => {
-              editor.value = editor.value + "\n\n" + content;
-              editor.dispatchEvent(new Event("input"));
-              insertBtn.innerHTML = "<i class='bx bx-check'></i> Вставлено!";
-            };
-            msgDiv.appendChild(insertBtn);
-          }
-
-          // Кнопка Roadmap (продолжение работы)
-          if (content.includes("- [ ]")) {
-            const execBtn = document.createElement("button");
-            execBtn.className = "insert-code-btn";
-            execBtn.style.background = "rgba(139, 92, 246, 0.2)";
-            execBtn.style.color = "#c4b5fd";
-            execBtn.style.borderColor = "var(--accent)";
-            execBtn.style.width = "100%";
-            execBtn.style.justifyContent = "center";
-            execBtn.style.marginTop = "10px";
-            // Текст изменен, так как кнопка теперь универсальная
-            execBtn.innerHTML = "<i class='bx bx-play-circle'></i> ПРОДОЛЖИТЬ АВТО-ВЫПОЛНЕНИЕ";
-            
-            // Передаем arrayIndex, чтобы знать, какой элемент массива обновлять
-            execBtn.onclick = () => executePlanSequentially(msgDiv, execBtn, arrayIndex);
-            msgDiv.appendChild(execBtn);
-          }
+          // Создаем структуру для мыслей, текста и кнопок
+          msgDiv.innerHTML = `
+            <div class="ai-thinking-container"></div>
+            <div class="bot-markdown-content"></div>
+            <div class="bot-actions-container"></div>
+          `;
+          updateMessageUI(msgDiv, content, "", arrayIndex);
         } else {
           msgDiv.textContent = content;
         }
 
         chatArea.appendChild(msgDiv);
         chatArea.scrollTop = chatArea.scrollHeight;
-        return msgDiv; // Возвращаем DOM-элемент, чтобы можно было к нему обращаться
+        return msgDiv; 
       }
 
-      // Единая функция для вызовов ИИ (Нативные эндпоинты ProxyAPI)
-      async function callProxyAPI(messages) {
+      // 6. Функция динамического обновления сообщения (ДЛЯ СТРИМИНГА)
+      function updateMessageUI(msgDiv, content, reasoning, arrayIndex) {
+        msgDiv.setAttribute("data-raw", content);
+        
+        // 1. Обновляем блок мыслей (Thinking)
+        const thinkContainer = msgDiv.querySelector('.ai-thinking-container');
+        if (reasoning && reasoning.trim() !== "") {
+            // Ищем по наличию класса, а не по пустой строке
+            if (!thinkContainer.querySelector('.ai-thinking-box')) {
+                thinkContainer.innerHTML = `
+                  <div class="ai-thinking-box">
+                    <div class="ai-thinking-header" onclick="this.parentElement.classList.toggle('open')">
+                      <i class='bx bx-chevron-right'></i> 
+                      <span>Размышления <i class="bx bxs-circle think-pulse" style="font-size: 6px; margin-left: 4px; color: #10b981;"></i></span>
+                    </div>
+                    <div class="ai-thinking-content"></div>
+                  </div>
+                `;
+            }
+            thinkContainer.querySelector('.ai-thinking-content').textContent = reasoning;
+        }
+
+        // 2. Обновляем основной текст
+        const safeContent = content || ""; // ЗАЩИТА ОТ ПУСТОТЫ
+        const contentDiv = msgDiv.querySelector('.bot-markdown-content');
+        contentDiv.innerHTML = safeContent ? marked.parse(safeContent) : "<i class='bx bx-loader-alt bx-spin' style='color: var(--accent);'></i> Печатает...";
+
+        // 3. Обновляем кнопки (Появляются только когда есть готовый текст)
+        const actionsContainer = msgDiv.querySelector('.bot-actions-container');
+        actionsContainer.innerHTML = ""; 
+
+        if (safeContent) {
+            // Кнопка вставки
+            if ((currentAIMode === "agent" || currentAIMode === "ask") && !safeContent.includes("- [ ]")) {
+              const insertBtn = document.createElement("button");
+              insertBtn.className = "insert-code-btn";
+              insertBtn.innerHTML = "<i class='bx bx-layer-plus'></i> Вставить в редактор";
+              insertBtn.onclick = () => {
+                editor.value = editor.value + "\n\n" + content;
+                editor.dispatchEvent(new Event("input"));
+                insertBtn.innerHTML = "<i class='bx bx-check'></i> Вставлено!";
+              };
+              actionsContainer.appendChild(insertBtn);
+            }
+
+            // Кнопка Roadmap
+            if (content.includes("- [ ]")) {
+              const execBtn = document.createElement("button");
+              execBtn.className = "insert-code-btn";
+              execBtn.style.background = "rgba(139, 92, 246, 0.2)";
+              execBtn.style.color = "#c4b5fd";
+              execBtn.style.borderColor = "var(--accent)";
+              execBtn.style.width = "100%";
+              execBtn.style.justifyContent = "center";
+              execBtn.style.marginTop = "10px";
+              execBtn.innerHTML = "<i class='bx bx-play-circle'></i> ПРОДОЛЖИТЬ АВТО-ВЫПОЛНЕНИЕ";
+              execBtn.onclick = () => executePlanSequentially(msgDiv, execBtn, arrayIndex);
+              actionsContainer.appendChild(execBtn);
+            }
+        }
+        
+        // Автоскролл вниз при потоковом тексте
+        const chatArea = document.getElementById("aiChatHistory");
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }
+
+      // Единая потоковая функция для вызовов ИИ
+      async function callProxyAPIStream(messages, onUpdateCallback) {
         if (!settings.apiKey) {
           toggleSettings();
           throw new Error("Укажите API-ключ в настройках!");
         }
 
         let rawModel = settings.aiModel || "gpt-5.5";
-        
         let apiUrl = "https://api.proxyapi.ru/openai/v1/chat/completions";
         let modelForApi = rawModel;
 
@@ -2379,11 +2857,28 @@
           modelForApi = rawModel.replace("openai/", "");
         }
 
+        const currentTemp = (rawModel === "gpt-5.5") ? 1 : 1;
+
         const requestBody = {
           model: modelForApi,
           messages: messages,
-          temperature: 0.7
+          temperature: currentTemp,
+          stream: true
         };
+
+        // ==========================================
+        // ЕДИНЫЙ СТАНДАРТ ПАРАМЕТРОВ РАЗМЫШЛЕНИЯ
+        // ==========================================
+        let effort = settings.thinking || "off";
+        if (effort === "mid") effort = "medium";
+        
+        // Понижаем xhigh до high, так как большинство API-шлюзов еще не знают xhigh
+        if (effort === "xhigh") effort = "high"; 
+
+        if (effort !== "off") {
+            // И OpenAI, и OpenRouter (Grok) принимают этот параметр в корне
+            requestBody.reasoning_effort = effort;
+        }
 
         const response = await fetch(apiUrl, {
           method: "POST",
@@ -2395,22 +2890,377 @@
         });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error("ProxyAPI Error Details:", errorData);
-          
-          if (response.status === 401) throw new Error("Неверный API ключ (Ошибка 401)");
-          if (response.status === 402) throw new Error("Ошибка 402: Закончились средства! Пополните счет.");
-          if (response.status === 400) throw new Error(`Ошибка 400: ${errorData.error?.message || "Проверьте название модели"}`);
-          throw new Error(`Ошибка сервера: ${response.status}`);
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error?.message || `Ошибка сервера: ${response.status}`);
         }
 
-        const data = await response.json();
-        if (data.error) throw new Error(data.error.message);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        
+        let rawContent = "";
+        let reasoningContent = "";
 
-        return data.choices[0].message.content.trim();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.trim().startsWith("data: ")) {
+              const dataStr = line.replace("data: ", "").trim();
+              if (dataStr === "[DONE]") continue;
+              
+              try {
+                const parsed = JSON.parse(dataStr);
+                const delta = parsed.choices[0].delta;
+
+                // Ловим размышления из разных стандартов API
+                if (delta.reasoning_content) reasoningContent += delta.reasoning_content;
+                if (delta.reasoning) reasoningContent += delta.reasoning; // Стандарт OpenRouter
+                if (delta.content) rawContent += delta.content;
+
+                let displayReasoning = reasoningContent;
+                let displayContent = rawContent;
+
+                // Непробиваемый парсер тегов <think> (для DeepSeek)
+                const thinkStart = rawContent.indexOf("<think>");
+                const thinkEnd = rawContent.indexOf("</think>");
+
+                if (thinkStart !== -1) {
+                    if (thinkEnd !== -1) {
+                        // Мысли закончились
+                        displayReasoning += rawContent.substring(thinkStart + 7, thinkEnd);
+                        displayContent = rawContent.substring(0, thinkStart) + rawContent.substring(thinkEnd + 8);
+                    } else {
+                        // Все еще думает
+                        displayReasoning += rawContent.substring(thinkStart + 7);
+                        displayContent = rawContent.substring(0, thinkStart);
+                    }
+                }
+
+                if (onUpdateCallback) onUpdateCallback(displayContent.trimStart(), displayReasoning.trim());
+
+              } catch (e) {
+                // Игнорируем битые чанки
+              }
+            }
+          }
+        }
+        
+        let finalContent = rawContent;
+        let finalReasoning = reasoningContent;
+
+        // Финальная зачистка тегов перед сохранением
+        const thinkStart = rawContent.indexOf("<think>");
+        const thinkEnd = rawContent.indexOf("</think>");
+        if (thinkStart !== -1) {
+            if (thinkEnd !== -1) {
+                finalReasoning += rawContent.substring(thinkStart + 7, thinkEnd);
+                finalContent = rawContent.substring(0, thinkStart) + rawContent.substring(thinkEnd + 8);
+            } else {
+                finalReasoning += rawContent.substring(thinkStart + 7);
+                finalContent = rawContent.substring(0, thinkStart);
+            }
+        }
+
+        return { content: finalContent.trim(), reasoning: finalReasoning.trim() };
       }
 
-      // Основная отправка запроса в чат
+      // ==========================================
+      // ЛОГИКА ИНТЕРАКТИВНОГО DIFF PREVIEW И ОТКАТА (UNDO)
+      // ==========================================
+      window.noteUndoHistory = {};
+
+      // 1. Кнопка вызова Diff в чате (без эмодзи)
+      window.renderDiffUI = function(actionData, msgDiv) {
+        if (!actionData.actions || !Array.isArray(actionData.actions)) return;
+
+        const actionsContainer = msgDiv.querySelector('.bot-actions-container');
+        
+        actionsContainer.innerHTML = `
+          <div style="background: rgba(var(--accent-rgb), 0.1); border: 1px solid rgba(var(--accent-rgb), 0.3); border-radius: 8px; padding: 12px; margin-top: 10px;">
+            <div style="font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; color: var(--text-main);">
+              <i class='bx bx-git-pull-request'></i> Изменения кода готовы
+            </div>
+            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="openInteractiveDiff('${encodeURIComponent(JSON.stringify(actionData))}')">
+              <i class='bx bx-edit-alt'></i> Открыть в редакторе
+            </button>
+          </div>
+        `;
+
+        openInteractiveDiff(encodeURIComponent(JSON.stringify(actionData)));
+      };
+
+      // 2. Открытие единого окна просмотра изменений
+      window.openInteractiveDiff = function(encodedData) {
+        const actionData = JSON.parse(decodeURIComponent(encodedData));
+        const targetId = actionData.actions[0]?.noteId || activeId;
+        const note = notes.find(n => n.id === targetId) || notes.find(n => n.id === activeId);
+        
+        let overlay = document.getElementById('interactiveDiffOverlay');
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.id = 'interactiveDiffOverlay';
+          overlay.className = 'workspace-diff-overlay';
+          document.getElementById('workspace').appendChild(overlay);
+        }
+
+        let resultHTML = "";
+
+        if (actionData.actions[0].type === "UPDATE_NOTE") {
+            resultHTML = `
+              <div class="wd-inline-patch" id="patch_container_update">
+                 <div class="wd-patch-actions">
+                    <button class="wd-patch-btn" id="btn_edit_update" onclick="togglePatchEdit('update')"><i class='bx bx-edit'></i> Редактировать</button>
+                    <button class="wd-patch-btn" id="btn_exclude_update" onclick="togglePatchExclude('update')"><i class='bx bx-block'></i> Не применять</button>
+                 </div>
+                 <div class="wd-patch-view" id="patch_view_update">
+                    <div class="wd-line removed"><span class="wd-prefix">-</span><span class="wd-text">${(note ? note.content : "").replace(/</g, "&lt;")}</span></div>
+                    <div class="wd-line added"><span class="wd-prefix">+</span><span class="wd-text">${actionData.actions[0].content.replace(/</g, "&lt;")}</span></div>
+                 </div>
+                 <div class="wd-patch-edit" id="patch_edit_update" style="display:none;">
+                    <textarea id="patch_textarea_update" class="wd-textarea" spellcheck="false">${actionData.actions[0].content}</textarea>
+                 </div>
+              </div>
+            `;
+        } else {
+            let tempContent = note.content;
+            let blocks = [];
+
+            actionData.actions.forEach((action, actionIndex) => {
+                if (action.type !== "PATCH_NOTE" || !action.patches) return;
+                action.patches.forEach((patch, patchIndex) => {
+                    let index = tempContent.indexOf(patch.find);
+                    let matchedText = patch.find;
+                    
+                    if (index === -1) {
+                        const escapedFind = patch.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const flexibleRegexStr = escapedFind.trim().replace(/\s+/g, '\\s+');
+                        if (flexibleRegexStr) {
+                            const match = tempContent.match(new RegExp(flexibleRegexStr));
+                            if (match) { index = match.index; matchedText = match[0]; }
+                        }
+                    }
+
+                    if (index !== -1) {
+                        blocks.push({ actionIndex, patchIndex, index, find: matchedText, replace: patch.replace });
+                        tempContent = tempContent.substring(0, index) + "\0".repeat(matchedText.length) + tempContent.substring(index + matchedText.length);
+                    }
+                });
+            });
+
+            blocks.sort((a, b) => a.index - b.index);
+
+            let lastIdx = 0;
+            blocks.forEach(b => {
+                const unchanged = note.content.substring(lastIdx, b.index);
+                if (unchanged) resultHTML += `<div class="wd-unchanged">${unchanged.replace(/</g, "&lt;")}</div>`;
+
+                const patchId = `${b.actionIndex}_${b.patchIndex}`;
+                let diffHTML = `<div class="wd-inline-patch" data-action="${b.actionIndex}" data-patch="${b.patchIndex}" id="patch_container_${patchId}">`;
+                
+                diffHTML += `
+                  <div class="wd-patch-actions">
+                     <button class="wd-patch-btn" id="btn_edit_${patchId}" onclick="togglePatchEdit('${patchId}')"><i class='bx bx-edit'></i> Редактировать</button>
+                     <button class="wd-patch-btn" id="btn_exclude_${patchId}" onclick="togglePatchExclude('${patchId}')"><i class='bx bx-block'></i> Не применять</button>
+                  </div>
+                  <div class="wd-patch-view" id="patch_view_${patchId}">
+                `;
+
+                b.find.split('\n').forEach(l => {
+                    diffHTML += `<div class="wd-line removed"><span class="wd-prefix">-</span><span class="wd-text">${l.replace(/</g, "&lt;")}</span></div>`;
+                });
+                (b.replace || "").split('\n').forEach(l => {
+                    diffHTML += `<div class="wd-line added"><span class="wd-prefix">+</span><span class="wd-text">${l.replace(/</g, "&lt;")}</span></div>`;
+                });
+
+                diffHTML += `</div>`;
+                diffHTML += `
+                  <div class="wd-patch-edit" id="patch_edit_${patchId}" style="display:none;">
+                     <textarea id="patch_textarea_${patchId}" class="wd-textarea" spellcheck="false">${b.replace || ""}</textarea>
+                  </div>
+                </div>`;
+
+                resultHTML += diffHTML;
+                lastIdx = b.index + b.find.length;
+            });
+
+            const remaining = note.content.substring(lastIdx);
+            if (remaining) resultHTML += `<div class="wd-unchanged">${remaining.replace(/</g, "&lt;")}</div>`;
+        }
+
+        overlay.innerHTML = `
+          <div class="wd-header">
+            <div style="font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+              <i class='bx bx-git-compare'></i> Просмотр изменений
+            </div>
+            <button class="btn-icon" onclick="document.getElementById('interactiveDiffOverlay').classList.remove('show')"><i class='bx bx-x'></i></button>
+          </div>
+          <div class="wd-content">${resultHTML}</div>
+          <div class="wd-footer">
+            <button class="btn" style="background: rgba(255,255,255,0.05);" onclick="document.getElementById('interactiveDiffOverlay').classList.remove('show')">Отмена</button>
+            <button class="btn btn-primary" style="background: #3fb950; color: #fff;" onclick="applyInteractiveDiff('${encodedData}')"><i class='bx bx-check-double'></i> Применить выбранное</button>
+          </div>
+        `;
+
+        setTimeout(() => overlay.classList.add('show'), 10);
+      };
+
+      window.togglePatchEdit = function(id) {
+          const view = document.getElementById(`patch_view_${id}`);
+          const edit = document.getElementById(`patch_edit_${id}`);
+          const btn = document.getElementById(`btn_edit_${id}`);
+          if (view.style.display === "none") {
+              view.style.display = "block"; edit.style.display = "none"; btn.classList.remove("active");
+          } else {
+              view.style.display = "none"; edit.style.display = "block"; btn.classList.add("active");
+          }
+      };
+
+      window.togglePatchExclude = function(id) {
+          const container = document.getElementById(`patch_container_${id}`);
+          const btn = document.getElementById(`btn_exclude_${id}`);
+          if (container.dataset.excluded === "true") {
+              container.dataset.excluded = "false"; container.style.opacity = "1"; container.style.filter = "grayscale(0%)";
+              btn.classList.remove("excluded"); btn.innerHTML = "<i class='bx bx-block'></i> Не применять";
+          } else {
+              container.dataset.excluded = "true"; container.style.opacity = "0.5"; container.style.filter = "grayscale(100%)";
+              btn.classList.add("excluded"); btn.innerHTML = "<i class='bx bx-undo'></i> Вернуть изменения";
+          }
+      };
+
+      // 3. Сборка и отправка на сохранение
+      window.applyInteractiveDiff = function(encodedData) {
+        const actionData = JSON.parse(decodeURIComponent(encodedData));
+        
+        actionData.actions.forEach((action, actionIndex) => {
+          if (action.type === "PATCH_NOTE" && action.patches) {
+            const newPatches = [];
+            action.patches.forEach((patch, patchIndex) => {
+              const id = `${actionIndex}_${patchIndex}`;
+              const container = document.getElementById(`patch_container_${id}`);
+              
+              if (container && container.dataset.excluded !== "true") {
+                const textarea = document.getElementById(`patch_textarea_${id}`);
+                if (textarea) patch.replace = textarea.value;
+                newPatches.push(patch);
+              }
+            });
+            action.patches = newPatches;
+          } 
+          else if (action.type === "UPDATE_NOTE") {
+             const container = document.getElementById(`patch_container_update`);
+             if (container && container.dataset.excluded === "true") {
+                 action.type = "IGNORE"; 
+             } else {
+                 const textarea = document.getElementById(`patch_textarea_update`);
+                 if (textarea) action.content = textarea.value;
+             }
+          }
+        });
+
+        actionData.actions = actionData.actions.filter(a => a.type !== "IGNORE" && !(a.type === "PATCH_NOTE" && a.patches.length === 0));
+
+        document.getElementById('interactiveDiffOverlay').classList.remove('show');
+
+        if (actionData.actions.length > 0) {
+            applyAIDiff(null, encodeURIComponent(JSON.stringify(actionData)));
+        }
+      };
+
+      // 4. Физическое применение
+      window.applyAIDiff = function(btnElement, encodedActionString) {
+        const actionData = JSON.parse(decodeURIComponent(encodedActionString));
+        const actionsToProcess = actionData.actions ? actionData.actions : [actionData];
+
+        actionsToProcess.forEach(action => {
+            const targetId = action.noteId || activeId;
+            const note = notes.find(n => n.id === targetId) || notes.find(n => n.id === activeId);
+            
+            if (!note && action.type !== "CREATE_NOTE") return;
+
+            if (action.type === "PATCH_NOTE" || action.type === "UPDATE_NOTE") {
+                if (!window.noteUndoHistory[targetId]) window.noteUndoHistory[targetId] = [];
+                window.noteUndoHistory[targetId].push(note.content);
+            }
+
+            if (action.type === "PATCH_NOTE") {
+              let notFoundCount = 0;
+              action.patches.forEach(patch => {
+                if (patch.find && typeof patch.find === 'string') {
+                  if (note.content.includes(patch.find)) {
+                    note.content = note.content.replace(patch.find, patch.replace || "");
+                  } else {
+                    const escapedFind = patch.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const flexibleRegexStr = escapedFind.trim().replace(/\s+/g, '\\s+');
+                    if (flexibleRegexStr) {
+                      const regex = new RegExp(flexibleRegexStr);
+                      const match = note.content.match(regex);
+                      if (match) {
+                        note.content = note.content.replace(match[0], patch.replace || "");
+                      } else {
+                        notFoundCount++;
+                      }
+                    } else {
+                      notFoundCount++;
+                    }
+                  }
+                }
+              });
+              
+              if (notFoundCount > 0) {
+                  alert(`[Внимание] Агент не смог найти ${notFoundCount} участков текста. Возможно, файл был изменен вручную.`);
+              }
+            } 
+            else if (action.type === "UPDATE_NOTE") {
+              note.content = action.content;
+              if (action.title) note.title = action.title;
+            }
+            else if (action.type === "CREATE_NOTE") {
+              const newNote = { id: Date.now().toString(), title: action.title || "Новая", content: action.content || "# ", date: new Date().toLocaleDateString() };
+              notes.push(newNote); switchNote(newNote.id);
+            }
+            else if (action.type === "DELETE_NOTE") {
+              if (notes.length > 1) { notes = notes.filter(n => n.id !== targetId); if (activeId === targetId) switchNote(notes[0].id); }
+            }
+            else if (action.type === "SWITCH_NOTE") {
+              switchNote(targetId);
+            }
+
+            if (note && activeId === note.id && (action.type === "PATCH_NOTE" || action.type === "UPDATE_NOTE")) {
+               editor.value = note.content;
+               editor.dispatchEvent(new Event("input"));
+            }
+        });
+
+        localStorage.setItem("qn_notes", JSON.stringify(notes));
+        renderNotesList(searchInput.value);
+      };
+
+      // 5. Откат
+      window.undoAIDiff = function(noteId) {
+        const targetId = noteId || activeId;
+        if (window.noteUndoHistory[targetId] && window.noteUndoHistory[targetId].length > 0) {
+            const previousContent = window.noteUndoHistory[targetId].pop();
+            const note = notes.find(n => n.id === targetId);
+            if (note) {
+                note.content = previousContent;
+                if (activeId === note.id) {
+                     editor.value = note.content;
+                     editor.dispatchEvent(new Event("input"));
+                }
+                localStorage.setItem("qn_notes", JSON.stringify(notes));
+            }
+        } else {
+            alert("[Информация] Нет истории для отката этого файла.");
+        }
+      };
+
+      // ========================================================
+      // ПОТОКОВАЯ ОТПРАВКА ЗАПРОСА В ЧАТ
+      // ========================================================
       async function sendAIChat() {
         const input = document.getElementById("aiInput");
         const userText = input.value.trim();
@@ -2421,42 +3271,114 @@
         input.disabled = true;
         sendBtn.disabled = true;
         sendBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i>";
+        
+        // Удаляем класс у выпадающего списка напрямую, так как hideMentions не существует
+        document.getElementById("aiMentionDropdown").classList.remove("show");
 
-        // Добавляем сообщение пользователя в память и интерфейс
         addNewMessage("user", userText);
 
-        let systemPrompt = "Ты ИИ-ассистент.";
-        if (currentAIMode === "plan") {
-          systemPrompt = "Ты Senior Менеджер. Составь подробный Roadmap (структурированный план) по запросу. ВСЕГДА используй markdown-задачи в формате `- [ ] Задача`. Дроби на мелкие шаги.";
-        } else if (currentAIMode === "agent") {
-          systemPrompt = "Ты ИИ-писатель. Выполни команду. Пиши готовый markdown-текст, без воды, чтобы его можно было сразу вставить в документ.";
+        let systemPrompt = "";
+        let currentDocumentContext = "";
+        // Получаем базу данных для режимов Agent и Plan
+        const workspaceDB = notes.map(n => ({ id: n.id, title: n.title, content: n.content }));
+
+        // Извлекаем упомянутые заметки из текста (ищем всё, что в формате @"Название")
+        // ПРИВОДИМ К НИЖНЕМУ РЕГИСТРУ И УБИРАЕМ ПРОБЕЛЫ по краям для надежного поиска
+        const mentionedTitles = [...userText.matchAll(/@"([^"]+)"/g)].map(m => m[1].toLowerCase().trim());
+        const mentionedNotesContext = notes
+          .filter(n => mentionedTitles.includes(n.title.toLowerCase().trim()))
+          .map(n => `\n--- ПРИКРЕПЛЕННАЯ ЗАМЕТКА: ${n.title} ---\n${n.content}\n`)
+          .join("");
+
+          if (currentAIMode === "agent") {
+          systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. У тебя есть ПОЛНЫЙ доступ к коду и текстам пользователя.
+Пользователь будет давать абстрактные задачи ("Исправь баг", "Адаптируй под мобилки", "Добавь анимацию").
+ТВОЯ ЗАДАЧА — самостоятельно найти проблему в коде и применить нужные патчи.
+
+КАК ТЫ МЫСЛИШЬ И ДЕЙСТВУЕШЬ:
+1. Внимательно изучи предоставленный код (активную заметку и те, что упомянуты через @).
+2. Пойми, что именно вызывает ошибку или требует адаптации.
+3. Выбери метод:
+   - ПРИОРИТЕТ: Используй "PATCH_NOTE" для точечной замены.
+   - ОЧЕНЬ ВАЖНО: В поле "find" НИКОГДА не пиши одно-два слова! Ты обязан скопировать ЦЕЛУЮ СТРОКУ ИЛИ ДВЕ (вместе с нужным словом), чтобы редактор мог безошибочно найти это место в большом тексте. 
+   - В поле "replace" пиши эту же строку, но уже с твоими исправлениями. Чтобы удалить строку — оставь "replace" пустым.
+   - ИСКЛЮЧЕНИЕ: Используй "UPDATE_NOTE", только если файл нужно переписать на 80-100%.
+4. ТЫ ОБЯЗАН ОТВЕЧАТЬ СТРОГО В ФОРМАТЕ JSON. Любые мысли и рассуждения помещай только в поле "reply"!
+
+Формат JSON:
+{
+  "actions": [
+    { "type": "PATCH_NOTE", "noteId": "ID_из_БД", "patches": [ { "find": "точный оригинальный кусок кода", "replace": "новый исправленный код" } ] },
+    { "type": "UPDATE_NOTE", "noteId": "...", "title": "...", "content": "Полностью новый текст" }
+  ],
+  "reply": "Кратко и профессионально объясни пользователю, в чем была проблема и что конкретно ты исправил."
+}`;
+          currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${mentionedNotesContext ? "\nОБРАТИ ОСОБОЕ ВНИМАНИЕ НА УПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
+        }
+        else if (currentAIMode === "plan") {
+          systemPrompt = `Ты Senior Менеджер. У тебя есть ПОЛНЫЙ доступ ко всем заметкам пользователя для контекста и глубокого анализа. 
+Твоя цель — составить подробный Roadmap по запросу. ВСЕГДА используй markdown-задачи в формате \`- [ ] Задача\`. Дроби на мелкие выполнимые шаги.`;
+          currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${mentionedNotesContext ? "\nОБРАТИ ОСОБОЕ ВНИМАНИЕ НА УПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
+        } 
+        else if (currentAIMode === "ask") {
+          systemPrompt = `Ты ИИ-ассистент. Твоя область видимости СТРОГО ОГРАНИЧЕНА текущей открытой заметкой и теми заметками, которые пользователь явно прикрепил через @. 
+У тебя НЕТ доступа к другим заметкам. Твоя задача — помочь с текущим текстом (отредактировать, дополнить, ответить на вопросы по нему). Отвечай обычным текстом или Markdown (никакого JSON).`;
+          currentDocumentContext = `ТЕКУЩИЙ ДОКУМЕНТ:\n"""\n${editor.value.trim()}\n"""\n${mentionedNotesContext ? "\nДОПОЛНИТЕЛЬНЫЕ ПРИКРЕПЛЕННЫЕ МАТЕРИАЛЫ ОТ ПОЛЬЗОВАТЕЛЯ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
         }
 
-        // Собираем контекст для ИИ (включая всю прошлую историю, кроме последней фразы)
         const apiMessages = [{ role: "system", content: systemPrompt }];
-        
-        for (let i = 0; i < aiChatHistory.length - 1; i++) {
-           apiMessages.push(aiChatHistory[i]);
-        }
-        
-        // К последнему сообщению прикрепляем текст редактора
-        apiMessages.push({ 
-           role: "user", 
-           content: `Текущий документ:\n${editor.value.trim()}\n\nЗапрос: ${userText}` 
-        });
+        for (let i = 0; i < aiChatHistory.length - 1; i++) apiMessages.push(aiChatHistory[i]);
+        apiMessages.push({ role: "user", content: currentDocumentContext });
+
+        // Создаем ПУСТОЙ пузырь ИИ для начала стриминга
+        const msgDiv = renderMessageUI("bot", "", -1);
 
         try {
-          let aiResult = await callProxyAPI(apiMessages);
+          // Вызываем стриминг с коллбеком для обновления UI
+          const result = await callProxyAPIStream(apiMessages, (text, reasoning) => {
+             if (currentAIMode === "agent") {
+              updateMessageUI(msgDiv, "<i class='bx bx-bot' style='color: var(--accent);'></i> Агент анализирует базу данных и формирует действия...", reasoning, -1);
+             } else {
+                 updateMessageUI(msgDiv, text, reasoning, -1);
+             }
+          });
+
+          let finalContent = result.content;
+
+          // Если это агент, рендерим DIFF PREVIEW
           if (currentAIMode === "agent") {
-             aiResult = aiResult.replace(/^```markdown\n?/gi, '').replace(/```$/gi, '').trim();
+            const cleanJson = finalContent.replace(/```json/gi, '').replace(/```/gi, '').trim();
+            try {
+              const actionData = JSON.parse(cleanJson);
+              // Выводим текстовый ответ ИИ
+              finalContent = actionData.reply || "Предлагаю следующие изменения в коде:";
+              
+              // Ждем миллисекунду, чтобы `updateMessageUI` обновил HTML, а затем рисуем Diff
+              setTimeout(() => {
+                 renderDiffUI(actionData, msgDiv);
+              }, 50);
+
+            } catch (e) {
+              finalContent = `<i class='bx bx-error-circle' style='color: #ef4444;'></i> Ошибка Агента: Формат ответа нарушен.\n${finalContent}`;
+            }
           }
-          
-          // Сохраняем ответ бота
-          addNewMessage("bot", aiResult);
+
+          // Убираем мигающую точку у мыслей по завершению
+          const pulse = msgDiv.querySelector('.think-pulse');
+          if (pulse) pulse.remove();
+
+          // Финальное сохранение ВМЕСТЕ С МЫСЛЯМИ
+          updateMessageUI(msgDiv, finalContent, result.reasoning, aiChatHistory.length);
+          aiChatHistory.push({ role: "assistant", content: finalContent, reasoning: result.reasoning });
+          saveAIChat();
 
         } catch (error) {
-          // Системные ошибки не сохраняем в историю чата, просто выводим
-          renderMessageUI("bot", "❌ " + error.message, -1);
+          const errMsg = "<i class='bx bx-error-circle' style='color: #ef4444;'></i> " + error.message;
+          updateMessageUI(msgDiv, errMsg, "", -1);
+          
+          // ТЕПЕРЬ ОШИБКИ ТОЖЕ СОХРАНЯЮТСЯ В ИСТОРИЮ (чат больше не пропадает после F5)
+          aiChatHistory.push({ role: "assistant", content: errMsg });
+          saveAIChat();
         } finally {
           input.disabled = false;
           sendBtn.disabled = false;
@@ -2466,7 +3388,7 @@
       }
 
       // ========================================================
-      // АВТО-АГЕНТ: ПОШАГОВОЕ ВЫПОЛНЕНИЕ ROADMAP С СОХРАНЕНИЕМ
+      // АВТО-АГЕНТ: ПОТОКОВОЕ ВЫПОЛНЕНИЕ ROADMAP
       // ========================================================
       async function executePlanSequentially(msgDiv, btn, arrayIndex) {
         btn.style.display = "none";
@@ -2485,8 +3407,6 @@
         msgDiv.appendChild(stopBtn);
 
         let rawText = msgDiv.getAttribute("data-raw");
-        
-        // Регулярка ищет ТОЛЬКО невыполненные задачи: "- [ ] Текст задачи"
         const taskRegex = /^[ \t]*-[ \t]+\[ \][ \t]+(.+)$/gm;
         let tasks = [];
         let match;
@@ -2495,21 +3415,21 @@
         }
 
         if (tasks.length === 0) {
-            renderMessageUI("bot", "Все задачи уже выполнены или план пуст!", -1);
+            addNewMessage("bot", "Все задачи уже выполнены или план пуст!");
             stopBtn.remove();
             return;
         }
 
-        renderMessageUI("bot", `🚀 Запускаю Авто-Агента. Осталось задач: **${tasks.length}**. Начинаю выполнение...`, -1);
+        addNewMessage("bot", `<i class='bx bx-rocket' style='color: var(--accent);'></i> Запускаю Авто-Агента. Осталось задач: **${tasks.length}**. Начинаю выполнение...`);
 
         for (let i = 0; i < tasks.length; i++) {
-            if (isStopped) {
-                renderMessageUI("bot", "🛑 Выполнение прервано. Вы сможете продолжить с этого же места позже.", -1);
-                break;
-            }
+            if (isStopped) break;
 
             const currentTask = tasks[i];
-            const statusMsg = renderMessageUI("bot", `⏳ **Шаг ${i+1}/${tasks.length}:** Выполняю _"${currentTask}"_...`, -1);
+            
+            // Создаем статус-пузырь для конкретной задачи
+            const statusMsgDiv = renderMessageUI("bot", "", -1);
+            updateMessageUI(statusMsgDiv, `<i class='bx bx-loader-alt bx-spin' style='color: #f59e0b;'></i> Выполняю _"${currentTask}"_...\n\n---\n*Генерация контента...*\n\n${text}`, reasoning, -1);
 
             const messages = [
               { role: "system", content: "Ты ИИ-агент, работающий над большим документом. Выполни один конкретный шаг. Выдай ТОЛЬКО итоговый текст в формате Markdown. Пиши максимально развернуто и глубоко. Без вступлений." },
@@ -2517,42 +3437,49 @@
             ];
 
             try {
-                let resultText = await callProxyAPI(messages);
-                resultText = resultText.replace(/^```markdown\n?/gi, '').replace(/```$/gi, '').trim();
+                // Стримим выполнение конкретной задачи
+                const result = await callProxyAPIStream(messages, (text, reasoning) => {
+                    updateMessageUI(statusMsgDiv, `⏳ Выполняю _"${currentTask}"_...\n\n---\n*Генерация контента...*\n\n${text}`, reasoning, -1);
+                });
+
+                let resultText = result.content.replace(/^```markdown\n?/gi, '').replace(/```$/gi, '').trim();
 
                 if (isStopped) break;
 
                 // Вставляем результат в редактор
                 editor.value += `\n\n### ${currentTask}\n\n${resultText}`;
-                editor.dispatchEvent(new Event("input")); // Обновляем превью
+                editor.dispatchEvent(new Event("input")); 
 
-                // Отмечаем задачу галочкой в тексте чата
+                // Обновляем галочку в плане
                 rawText = rawText.replace(`- [ ] ${currentTask}`, `- [x] ${currentTask}`);
                 msgDiv.setAttribute("data-raw", rawText);
                 msgDiv.querySelector('.bot-markdown-content').innerHTML = marked.parse(rawText);
 
-                // 🔥 СОХРАНЯЕМ ИЗМЕНЕННЫЙ ПЛАН В ПАМЯТЬ БРАУЗЕРА
                 if (arrayIndex >= 0) {
                    aiChatHistory[arrayIndex].content = rawText;
                    saveAIChat();
                 }
 
-                statusMsg.innerHTML = `<i class='bx bx-check' style='color:#10b981'></i> Шаг завершен.`;
+                // Успешный результат
+                updateMessageUI(statusMsgDiv, `<i class='bx bx-check-circle' style='color: #10b981;'></i> Шаг завершен: _"${currentTask}"_`, result.reasoning, aiChatHistory.length);
+                aiChatHistory.push({ role: "assistant", content: `<i class='bx bx-check-circle' style='color: #10b981;'></i> Шаг завершен: _"${currentTask}"_` });
+                saveAIChat();
 
             } catch (error) {
-                renderMessageUI("bot", `❌ Ошибка на шаге "${currentTask}": ${error.message}. Агент остановлен. Вы можете нажать "Продолжить", когда решите проблему.`, -1);
+              updateMessageUI(statusMsgDiv, `<i class='bx bx-x-circle' style='color: #ef4444;'></i> Ошибка на шаге "${currentTask}": ${error.message}. Агент остановлен.`, "", -1);
                 isStopped = true;
                 break;
             }
 
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(r => setTimeout(r, 1000));
         }
 
         if (!isStopped) {
-            renderMessageUI("bot", "✅ **ROADMAP ПОЛНОСТЬЮ ЗАВЕРШЕН!** Весь материал добавлен в ваш документ.", -1);
+          addNewMessage("bot", "<i class='bx bx-check-double' style='color: #10b981;'></i> **ROADMAP ПОЛНОСТЬЮ ЗАВЕРШЕН!** Весь материал добавлен в ваш документ.");
+        } else {
+            btn.style.display = "flex";
         }
         stopBtn.remove();
-        if (isStopped) btn.style.display = "flex"; // Возвращаем кнопку Play, если остановили
       }
 
       // Вызываем отрисовку чата сразу при загрузке скрипта
@@ -3075,5 +4002,156 @@
     });
   </script>
   <!-- ========================================== -->
+
+  <!-- ========================================== -->
+  <!-- КОНТЕКСТНОЕ МЕНЮ ЧАТА ИИ                   -->
+  <!-- ========================================== -->
+  <div class="chat-context-menu" id="chatContextMenu">
+    <button class="chat-context-btn" onclick="handleChatCopy()">
+      <i class='bx bx-copy'></i> Копировать текст
+    </button>
+    <button class="chat-context-btn delete" onclick="handleChatDelete()">
+      <i class='bx bx-trash'></i> Удалить сообщение
+    </button>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // === ЛОГИКА КОНТЕКСТНОГО МЕНЮ СООБЩЕНИЙ ===
+      const chatArea = document.getElementById('aiChatHistory');
+      const contextMenu = document.getElementById('chatContextMenu');
+      let targetMessageNode = null;
+      let longPressTimer;
+      let isLongPress = false;
+
+      // Функция показа меню
+      function showChatContextMenu(x, y, node) {
+        targetMessageNode = node;
+        
+        // Временно показываем меню где-то за экраном, чтобы узнать его размеры
+        contextMenu.style.visibility = 'hidden';
+        contextMenu.classList.add('show');
+        
+        const menuRect = contextMenu.getBoundingClientRect();
+        
+        // Корректировка, чтобы меню не уходило за края экрана
+        let posX = x;
+        let posY = y;
+        
+        if (posX + menuRect.width > window.innerWidth) {
+            posX = window.innerWidth - menuRect.width - 10;
+        }
+        if (posY + menuRect.height > window.innerHeight) {
+            posY = window.innerHeight - menuRect.height - 10;
+        }
+
+        contextMenu.style.left = `${posX}px`;
+        contextMenu.style.top = `${posY}px`;
+        contextMenu.style.visibility = 'visible';
+      }
+
+      function hideChatContextMenu() {
+        contextMenu.classList.remove('show');
+        targetMessageNode = null;
+      }
+
+      // 1. ПК: Правая кнопка мыши
+      chatArea.addEventListener('contextmenu', (e) => {
+        const msgNode = e.target.closest('.ai-message');
+        if (msgNode) {
+          e.preventDefault();
+          showChatContextMenu(e.clientX, e.clientY, msgNode);
+        }
+      });
+
+      // 2. СМАРТФОНЫ: Долгое нажатие (1 секунда)
+      chatArea.addEventListener('touchstart', (e) => {
+        const msgNode = e.target.closest('.ai-message');
+        if (!msgNode) return;
+        
+        isLongPress = false;
+        longPressTimer = setTimeout(() => {
+          isLongPress = true;
+          // Используем координаты первого пальца
+          const touch = e.touches[0];
+          showChatContextMenu(touch.clientX, touch.clientY, msgNode);
+          
+          // Легкая вибрация при срабатывании меню (если поддерживается телефоном)
+          if (navigator.vibrate) navigator.vibrate(50);
+        }, 1000); // 1000 мс = 1 секунда
+      }, { passive: true });
+
+      // Если палец двинулся (скролл) - отменяем долгое нажатие
+      chatArea.addEventListener('touchmove', () => {
+        clearTimeout(longPressTimer);
+      }, { passive: true });
+
+      // Когда палец отпущен
+      chatArea.addEventListener('touchend', (e) => {
+        clearTimeout(longPressTimer);
+        // Если это был долгий клик, предотвращаем обычный клик, чтобы не сработало ничего лишнего
+        if (isLongPress && e.cancelable) {
+          e.preventDefault();
+        }
+      });
+
+      // 3. Закрытие меню при клике вне него
+      document.addEventListener('click', (e) => {
+        if (!contextMenu.contains(e.target)) {
+          hideChatContextMenu();
+        }
+      });
+
+      // Глобальные функции для кнопок меню
+      window.handleChatCopy = function() {
+        if (!targetMessageNode) return;
+        
+        // В вашем коде data-raw содержит оригинальный текст
+        const rawText = targetMessageNode.getAttribute('data-raw');
+        if (rawText) {
+          navigator.clipboard.writeText(rawText).then(() => {
+             // Визуальная отдача (временно меняем текст кнопки)
+             const copyBtn = contextMenu.querySelector('.chat-context-btn:first-child');
+             const originalHTML = copyBtn.innerHTML;
+             copyBtn.innerHTML = "<i class='bx bx-check'></i> Скопировано!";
+             copyBtn.style.color = "#10b981";
+             setTimeout(() => {
+                 hideChatContextMenu();
+                 copyBtn.innerHTML = originalHTML;
+                 copyBtn.style.color = "#e2e8f0";
+             }, 800);
+          });
+        }
+      };
+
+      window.handleChatDelete = function() {
+        if (!targetMessageNode) return;
+
+        const nodeToRemove = targetMessageNode; // ЗАПОМИНАЕМ ЭЛЕМЕНТ
+
+        const allMessages = Array.from(chatArea.querySelectorAll('.ai-message'));
+        const index = allMessages.indexOf(nodeToRemove);
+
+        if (index > -1) {
+          if (typeof aiChatHistory !== 'undefined' && typeof saveAIChat === 'function') {
+            aiChatHistory.splice(index, 1);
+            saveAIChat();
+          }
+        }
+
+        nodeToRemove.style.opacity = '0';
+        nodeToRemove.style.transform = 'scale(0.8)';
+        nodeToRemove.style.marginBottom = `-${nodeToRemove.offsetHeight}px`;
+        nodeToRemove.style.padding = '0';
+        
+        setTimeout(() => {
+          if (nodeToRemove) nodeToRemove.remove(); // УДАЛЯЕМ СОХРАНЕННЫЙ ЭЛЕМЕНТ
+        }, 300);
+
+        hideChatContextMenu(); // Эта функция обнулит targetMessageNode, но нам это уже не помешает
+      };
+    });
+  </script>
+
   </body>
 </html>
