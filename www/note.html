@@ -3736,17 +3736,19 @@
 
       // 1. Кнопка вызова Diff в чате (без эмодзи)
       window.renderDiffUI = function(actionData, msgDiv) {
-        // ИСПРАВЛЕНО: Проверяем, что массив не пустой!
         if (!actionData.actions || !Array.isArray(actionData.actions) || actionData.actions.length === 0) return;
 
         const actionsContainer = msgDiv.querySelector('.bot-actions-container');
+        
+        // ФИКС: Экранируем одинарные кавычки, чтобы кнопка не ломалась от кода ИИ
+        const safeEncodedData = encodeURIComponent(JSON.stringify(actionData)).replace(/'/g, "\\'");
         
         actionsContainer.innerHTML = `
           <div style="background: rgba(var(--accent-rgb), 0.1); border: 1px solid rgba(var(--accent-rgb), 0.3); border-radius: 8px; padding: 12px; margin-top: 10px;">
             <div style="font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; color: var(--text-main);">
               <i class='bx bx-git-pull-request'></i> Изменения кода готовы
             </div>
-            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="openInteractiveDiff('${encodeURIComponent(JSON.stringify(actionData))}')">
+            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="openInteractiveDiff('${safeEncodedData}')">
               <i class='bx bx-edit-alt'></i> Открыть в редакторе
             </button>
           </div>
@@ -3897,6 +3899,9 @@
            resultHTML = `<div style="padding: 20px; color: #f43f5e; text-align: center;"><i class='bx bx-error'></i> Агент не смог сформировать корректный патч. Попробуйте перефразировать запрос.</div>`;
         }
 
+        // ФИКС 1: Экранируем кавычки для главной кнопки применения!
+        const safeEncodedData = encodedData.replace(/'/g, "\\'");
+
         overlay.innerHTML = `
           <div class="wd-header">
             <div style="font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
@@ -3907,9 +3912,15 @@
           <div class="wd-content">${resultHTML}</div>
           <div class="wd-footer">
             <button class="btn" style="background: rgba(255,255,255,0.05);" onclick="document.getElementById('interactiveDiffOverlay').classList.remove('show')">Отмена</button>
-            <button class="btn btn-primary" style="background: #3fb950; color: #fff;" onclick="applyInteractiveDiff('${encodedData}')"><i class='bx bx-check-double'></i> Применить выбранное</button>
+            <button class="btn btn-primary" style="background: #3fb950; color: #fff;" onclick="applyInteractiveDiff('${safeEncodedData}')"><i class='bx bx-check-double'></i> Применить выбранное</button>
           </div>
         `;
+
+        // ФИКС 2: Автоматически закрываем боковое окно ИИ на смартфонах, 
+        // чтобы окно изменений вышло на первый план и не пряталось под чатом
+        if (window.innerWidth <= 768) {
+          document.body.classList.remove("ai-open");
+        }
 
         setTimeout(() => overlay.classList.add('show'), 10);
       };
