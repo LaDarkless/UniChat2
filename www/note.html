@@ -541,55 +541,6 @@
         color: var(--text-muted);
       }
 
-      /* Улучшенные кнопки в списке заметок */
-      .note-item {
-        padding: 12px 14px;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 10px;
-        cursor: pointer;
-        transition: 0.2s;
-        position: relative;
-        overflow: hidden;
-        border: 1px solid transparent;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .note-info {
-        flex: 1;
-        min-width: 0;
-      }
-      .note-actions {
-        display: flex;
-        gap: 5px;
-        opacity: 0;
-        transition: 0.2s;
-      }
-      .note-item:hover .note-actions {
-        opacity: 1;
-      }
-      .action-btn {
-        color: var(--text-muted);
-        border: none;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 6px;
-        font-size: 16px;
-        cursor: pointer;
-        padding: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: 0.2s;
-      }
-      .action-btn:hover {
-        background: rgba(255, 255, 255, 0.15);
-        color: #fff;
-      }
-      .action-btn.delete:hover {
-        color: #ef4444;
-        background: rgba(239, 68, 68, 0.15);
-      }
-
       /* ОСНОВНАЯ ЧАСТЬ */
       .main {
         flex: 1;
@@ -723,6 +674,19 @@
         word-wrap: break-word;
         scroll-behavior: smooth;
       }
+
+      /* === СТИЛИ ВЕБ-ЭКРАНА (IFRAME) === */
+      #htmlPreviewFrame {
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: #ffffff; /* Белый фон, т.к. сайты обычно пишутся под белый */
+        display: none;
+        border-radius: 0 0 16px 16px;
+      }
+      /* Когда включен режим Сайта */
+      .show-web-mode #preview { display: none !important; }
+      .show-web-mode #htmlPreviewFrame { display: block !important; }
 
       /* MARKDOWN СТИЛИ */
       #preview h1,
@@ -1745,7 +1709,216 @@
         .wd-footer .btn { width: 100%; justify-content: center; padding: 12px; }
       }
       
+      /* === ЗАПРЕТ ВЫДЕЛЕНИЯ ТЕКСТА === */
+      .note-title-list, .brand, .pane-header, .ai-message {
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      /* === ЛОГИКА КНОПОК В СПИСКЕ ЗАМЕТОК (ИЗБРАННОЕ И ДОЛГИЙ ТАП) === */
+      .note-item {
+        padding: 12px 14px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.2s;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid transparent;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .note-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .note-actions {
+        display: flex;
+        gap: 5px;
+        opacity: 0;
+        transform: translateX(10px);
+        transition: all 0.2s ease;
+        pointer-events: none;
+      }
+      /* На ПК показываем при наведении */
+      @media (hover: hover) {
+        .note-item:hover .note-actions {
+          opacity: 1;
+          transform: translateX(0);
+          pointer-events: auto;
+        }
+      }
+      /* На телефонах показываем по классу (от долгого тапа) */
+      .note-item.show-actions .note-actions {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+      }
+
+      /* Звездочка избранного */
+      .fav-icon {
+        color: #f59e0b;
+        font-size: 14px;
+        display: none;
+      }
+      .note-item.is-fav .fav-icon {
+        display: block;
+      }
+
+      /* === ОБНОВЛЕННЫЕ СТИЛИ ЭЛЕМЕНТА ЗАМЕТКИ === */
+      .note-item {
+        padding: 12px 14px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.2s;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid transparent;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        user-select: none; /* Запрет выделения при долгом тапе */
+        -webkit-user-select: none;
+      }
+      .note-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .note-item.active {
+        background: rgba(var(--accent-rgb), 0.15);
+        border-color: rgba(var(--accent-rgb), 0.4);
+      }
+      .note-item.active::before {
+        content: "";
+        position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+        background: var(--accent);
+      }
+      .note-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+      .fav-icon { color: #f59e0b; font-size: 14px; display: none; }
+      .note-item.is-fav .fav-icon { display: block; }
+      
+      /* === КОНТЕКСТНОЕ МЕНЮ ЗАМЕТОК === */
+      .note-context-menu {
+        position: fixed;
+        background: rgba(15, 15, 17, 0.95);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        z-index: 1000000;
+        opacity: 0;
+        pointer-events: none;
+        transform: scale(0.95) translateY(10px);
+        transform-origin: top left;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+        min-width: 180px;
+      }
+      .note-context-menu.show {
+        opacity: 1; pointer-events: auto; transform: scale(1) translateY(0);
+      }
+
+      /* === ПАНЕЛЬ ПРИКРЕПЛЕННЫХ ЗАМЕТОК ДЛЯ ИИ === */
+      .ai-mentions-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 0 0 8px 0;
+      }
+      .ai-mentions-bar:empty { display: none; }
+      .mention-pill {
+        background: rgba(var(--accent-rgb), 0.15);
+        border: 1px solid rgba(var(--accent-rgb), 0.3);
+        color: #fff;
+        font-size: 11px;
+        padding: 4px 8px 4px 10px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--font-ui);
+      }
+      .mention-pill i.bx-file { color: var(--accent); }
+      .mention-pill button {
+        background: transparent; border: none; color: #a1a1aa;
+        cursor: pointer; display: flex; align-items: center; font-size: 14px;
+        transition: 0.2s; padding: 2px; border-radius: 50%;
+      }
+      .mention-pill button:hover { color: #ef4444; background: rgba(239, 68, 68, 0.2); }
+
+      /* === MARKDOWN ДЛЯ СООБЩЕНИЙ ПОЛЬЗОВАТЕЛЯ === */
+      .ai-message.user {
+        align-self: flex-end;
+        background: var(--accent);
+        color: #fff;
+        border-bottom-right-radius: 4px;
+        box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.25);
+      }
+      .ai-message.user p { margin: 0 0 8px 0; }
+      .ai-message.user p:last-child { margin: 0; }
+      .ai-message.user pre {
+        background: rgba(0,0,0,0.3) !important;
+        border: none; margin: 8px 0; padding: 10px;
+      }
+      .ai-message.user code { color: #fff; background: rgba(0,0,0,0.2); }
+
+      /* === ОКНО ВЫДЕЛЕНИЯ ТЕКСТА === */
+      .selectable-text-content {
+        user-select: text !important;
+        -webkit-user-select: text !important;
+        background: #0d1117;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid var(--panel-border);
+        color: #e2e8f0;
+        font-size: 13px;
+        line-height: 1.6;
+        max-height: 60vh;
+        overflow-y: auto;
+        font-family: var(--font-text);
+      }
+      .selectable-text-content pre { background: #000 !important; }
+      
+      /* === СТИЛИ ДЛЯ IDE ВМЕСТО TEXTAREA === */
+      .CodeMirror {
+        width: 100%;
+        height: 100% !important;
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 15px;
+        background: transparent !important; /* Убираем фон, чтобы сливался с твоим приложением */
+        border-radius: 8px;
+        padding-top: 10px;
+      }
+      /* Кастомизация скроллбара внутри IDE */
+      .CodeMirror-vscrollbar::-webkit-scrollbar { width: 8px; }
+      .CodeMirror-vscrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+      /* Линия активной строки */
+      .CodeMirror-activeline-background { background: rgba(255, 255, 255, 0.05) !important; }
+      /* Прячем старую текстарею */
+      #editor { display: none; }
+      
     </style>
+
+    <!-- ================= IDE (CodeMirror) ================= -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/markdown/markdown.min.js"></script>
+  <!-- ==================================================== -->
+</head>
   </head>
   <body>
     <div id="theme-layer"></div> <!-- НОВЫЙ БЛОК ДЛЯ ТЕМ -->
@@ -1806,6 +1979,17 @@
         </div>
         <div class="toolbar-actions">
           <div class="stats" id="stats">0 слов</div>
+          
+          <!-- КНОПКА ПЕРЕКЛЮЧЕНИЯ IDE -->
+          <button class="btn-icon" id="ideToggleBtn" title="Режим IDE (Код)" onclick="toggleIdeMode()">
+            <i class="bx bx-code-curly"></i>
+          </button>
+          
+          <!-- НОВАЯ КНОПКА: ЗАПУСК ВЕБ-КОДА -->
+          <button class="btn-icon" id="webPreviewBtn" title="Запустить код как Сайт" onclick="toggleWebPreview()">
+            <i class="bx bx-play-circle" style="color: #3b82f6;"></i>
+          </button>
+
           <button class="btn-icon" style="color: #a78bfa;" title="AI Assistant (Cursor Style)" onclick="toggleAIModal()">
             <i class="bx bx-bot"></i>
           </button>
@@ -1875,12 +2059,15 @@
             </div>
           </div>
         </div>
-        <div class="pane preview-pane">
+        <div class="pane preview-pane" id="previewPane">
           <div class="pane-header">
             <span><i class="bx bx-show"></i> Preview</span>
             <span id="renderStatus" style="color: #10b981">Rendered</span>
           </div>
+          <!-- Обычный Markdown -->
           <div id="preview"></div>
+          <!-- Экран для запуска Сайтов (Скрыт по умолчанию) -->
+          <iframe id="htmlPreviewFrame" sandbox="allow-scripts allow-modals allow-popups allow-forms"></iframe>
         </div>
 
         <!-- Вкладки для мобильных -->
@@ -1989,6 +2176,9 @@
           
           <!-- ВЫПАДАЮЩИЙ СПИСОК @ -->
           <div class="ai-mention-dropdown" id="aiMentionDropdown"></div>
+
+          <!-- ПАНЕЛЬ ПРИКРЕПЛЕННЫХ ЗАМЕТОК (@) -->
+          <div class="ai-mentions-bar" id="aiMentionsBar"></div>
 
           <!-- ПРЕВЬЮ ВЫДЕЛЕННОГО ТЕКСТА -->
           <div class="ai-selection-preview" id="aiSelectionPreview">
@@ -2141,65 +2331,198 @@
       const titleInput = document.getElementById("noteTitle");
       const searchInput = document.getElementById("searchInput");
 
-      // Рендер списка
+      // Глобальный Set для хранения ID прикрепленных к ИИ заметок
+      window.aiAttachedNotes = new Set();
+
+      // === ИНИЦИАЛИЗАЦИЯ IDE И СТАНДАРТНОГО РЕДАКТОРА ===
+      let ideEditor; 
+      let isIdeMode = false; // По умолчанию IDE выключен
+
+      function getSyntaxMode(filename) {
+        if (!filename) return "markdown";
+        const name = filename.toLowerCase();
+        if (name.endsWith('.js') || name.endsWith('.json')) return "javascript";
+        if (name.endsWith('.html')) return "htmlmixed";
+        if (name.endsWith('.css')) return "css";
+        if (name.endsWith('.xml')) return "xml";
+        return "markdown";
+      }
+
+      // === НОВАЯ ЛОГИКА: ВЕБ ПРЕВЬЮ ===
+      let isWebPreview = false;
+
+      function toggleWebPreview() {
+        isWebPreview = !isWebPreview;
+        const pane = document.getElementById('previewPane');
+        const btn = document.getElementById('webPreviewBtn');
+        const status = document.getElementById('renderStatus');
+
+        if (isWebPreview) {
+            // Включаем режим браузера
+            pane.classList.add('show-web-mode');
+            btn.innerHTML = '<i class="bx bx-stop-circle" style="color: #ef4444;"></i>'; // Красная кнопка стоп
+            btn.title = "Остановить сайт";
+            status.textContent = "Live Server 🟢";
+            status.style.color = "#3b82f6";
+            updateWebFrame(); // Запускаем код
+        } else {
+            // Возвращаем Markdown
+            pane.classList.remove('show-web-mode');
+            btn.innerHTML = '<i class="bx bx-play-circle" style="color: #3b82f6;"></i>'; // Синяя кнопка плей
+            btn.title = "Запустить код как Сайт";
+            updatePreview(); // Рендерим Markdown
+        }
+      }
+
+      function updateWebFrame() {
+        if (!isWebPreview) return;
+        const iframe = document.getElementById('htmlPreviewFrame');
+        // Берем текст либо из IDE, либо из обычной текстареи
+        const currentCode = isIdeMode ? ideEditor.getValue() : editor.value;
+        // Вставляем код напрямую в iframe
+        iframe.srcdoc = currentCode;
+      }
+
+      // Единая функция сохранения и рендера превью (Обновлена!)
+      function saveAndRender(textValue) {
+        if (!activeId) return;
+        const note = notes.find((n) => n.id === activeId);
+        if (note) {
+            note.content = textValue;
+            localStorage.setItem("qn_notes", JSON.stringify(notes));
+        }
+        
+        clearTimeout(window.renderTimeout);
+        window.renderTimeout = setTimeout(() => {
+            // УМНАЯ ПРОВЕРКА: Что рендерить?
+            if (isWebPreview) {
+                updateWebFrame(); // Если включен Live Server - рендерим сайт
+            } else {
+                if (typeof updatePreview === "function") updatePreview(); // Иначе Markdown
+            }
+        }, 300);
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+          // 1. Инициализируем CodeMirror поверх textarea
+          ideEditor = CodeMirror.fromTextArea(editor, {
+              mode: "markdown",
+              theme: "dracula",
+              lineNumbers: true,
+              lineWrapping: true,
+              styleActiveLine: true,
+              matchBrackets: true,
+              indentUnit: 4
+          });
+
+          // 2. Скрываем IDE при загрузке (оставляем стандартный текстовый редактор)
+          const cmWrapper = ideEditor.getWrapperElement();
+          cmWrapper.style.display = "none";
+          editor.style.display = "block"; // Возвращаем видимость оригинальному textarea
+
+          // 3. Слушатель для IDE (когда режим кода включен)
+          ideEditor.on("change", () => {
+              if (isIdeMode) saveAndRender(ideEditor.getValue());
+          });
+
+          // 4. Слушатель для оригинальной Textarea (когда режим кода выключен)
+          editor.addEventListener("input", (e) => {
+              if (!isIdeMode) saveAndRender(e.target.value);
+          });
+      });
+
+      // Функция переключения режимов
+      function toggleIdeMode() {
+          isIdeMode = !isIdeMode;
+          const cmWrapper = ideEditor.getWrapperElement();
+          const toolbarWrapper = document.querySelector('.editor-toolbar-wrapper');
+          const toggleBtn = document.getElementById('ideToggleBtn');
+
+          if (isIdeMode) {
+              // ВКЛЮЧАЕМ IDE
+              cmWrapper.style.display = "block";
+              editor.style.display = "none"; // Прячем textarea
+              if (toolbarWrapper) toolbarWrapper.style.display = "none"; // Прячем панель инструментов Notion
+              toggleBtn.style.color = "#10b981"; // Зеленая иконка
+              toggleBtn.style.background = "rgba(16, 185, 129, 0.15)";
+              ideEditor.setValue(editor.value); // Переносим текст из обычной заметки в IDE
+              setTimeout(() => ideEditor.refresh(), 10);
+          } else {
+              // ВЫКЛЮЧАЕМ IDE (Обычный Markdown)
+              cmWrapper.style.display = "none";
+              editor.style.display = "block"; // Показываем textarea
+              if (toolbarWrapper) toolbarWrapper.style.display = "flex"; // Показываем панель
+              toggleBtn.style.color = ""; // Сброс цвета
+              toggleBtn.style.background = "transparent";
+              editor.value = ideEditor.getValue(); // Переносим текст обратно из IDE в заметку
+          }
+      }
+      // ==========================================
+
+      // Рендер списка (убрали старые кнопки, оставили только клик)
       function renderNotesList(filterText = "") {
         const list = document.getElementById("notesList");
         list.innerHTML = "";
 
         const filtered = notes
-          .filter((n) =>
-            n.title.toLowerCase().includes(filterText.toLowerCase()),
-          )
-          .sort((a, b) => b.id - a.id);
+          .filter((n) => n.title.toLowerCase().includes(filterText.toLowerCase()))
+          .sort((a, b) => {
+            // Сначала Избранные, затем новые
+            if (a.isFavorite && !b.isFavorite) return -1;
+            if (!a.isFavorite && b.isFavorite) return 1;
+            return b.id - a.id;
+          });
 
         filtered.forEach((note) => {
           const div = document.createElement("div");
-          div.className = `note-item ${note.id === activeId ? "active" : ""}`;
-          div.onclick = () => switchNote(note.id);
+          div.className = `note-item ${note.id === activeId ? "active" : ""} ${note.isFavorite ? "is-fav" : ""}`;
+          div.setAttribute("data-id", note.id); // Для контекстного меню
+          
+          div.onclick = () => switchNote(note.id); // Просто переключение
+
           div.innerHTML = `
                 <div class="note-info">
-                    <div class="note-title-list">${note.title || "Без названия"}</div>
-                    <div class="note-date">${note.date}</div>
-                </div>
-                <div class="note-actions">
-                    <button class="action-btn" title="Переименовать" onclick="renameNote(event, '${note.id}')"><i class='bx bx-edit-alt'></i></button>
-                    <button class="action-btn delete" title="Удалить" onclick="deleteNote(event, '${note.id}')"><i class='bx bx-trash'></i></button>
+                    <i class='bx bxs-star fav-icon'></i>
+                    <div style="min-width:0;">
+                       <div class="note-title-list">${note.title || "Без названия"}</div>
+                       <div class="note-date">${note.date}</div>
+                    </div>
                 </div>
             `;
           list.appendChild(div);
         });
       }
 
-      function renameNote(e, id) {
-        e.stopPropagation();
-        const note = notes.find((n) => n.id === id);
-        if (!note) return;
-        
-        const newTitle = prompt("Введите новое название заметки:", note.title);
-        if (newTitle !== null && newTitle.trim() !== "") {
-          note.title = newTitle.trim();
-          if(activeId === id) {
-              titleInput.value = note.title;
-          }
-          localStorage.setItem("qn_notes", JSON.stringify(notes));
-          renderNotesList(searchInput.value);
-        }
-      }
-
+      // Базовые функции (остаются без изменений)
       function filterNotes() {
         renderNotesList(searchInput.value);
       }
 
       function switchNote(id) {
+        // ЕСЛИ БЫЛ ВКЛЮЧЕН ВЕБ-РЕЖИМ - ВЫКЛЮЧАЕМ ЕГО ПРИ СМЕНЕ ЗАМЕТКИ
+        if (isWebPreview) toggleWebPreview();
+        
         activeId = id;
         const note = notes.find((n) => n.id === id);
         if (note) {
           titleInput.value = note.title;
-          editor.value = note.content;
+          
+          // Синхронизируем текст в оба поля
+          editor.value = note.content || "";
+          
+          if (ideEditor) {
+              ideEditor.setValue(note.content || ""); 
+              ideEditor.setOption("mode", getSyntaxMode(note.title));
+              ideEditor.clearHistory(); 
+              if (isIdeMode) {
+                 setTimeout(() => ideEditor.refresh(), 10);
+              }
+          }
+          
           renderNotesList(searchInput.value);
           localStorage.setItem("qn_active", activeId);
-          updatePreview();
-          if (window.innerWidth <= 768) toggleSidebar(); // Закрываем меню на мобильном при выборе
+          if (typeof updatePreview === "function") updatePreview();
+          if (window.innerWidth <= 768 && typeof toggleSidebar === "function") toggleSidebar(); 
         }
       }
 
@@ -2216,15 +2539,188 @@
         switchNote(newNote.id);
       }
 
-      function deleteNote(e, id) {
-        e.stopPropagation();
-        if (notes.length === 1) return alert("Нельзя удалить последнюю!");
+      // ==========================================
+      // НОВАЯ ЛОГИКА: КОНТЕКСТНОЕ МЕНЮ ЗАМЕТОК
+      // ==========================================
+      let targetNoteIdForMenu = null;
+      let noteLongPressTimer;
+      let isNoteLongPress = false;
+
+      function showNoteContextMenu(x, y, noteId) {
+        targetNoteIdForMenu = noteId;
+        const note = notes.find(n => n.id === noteId);
+        const menuEl = document.getElementById('noteContextMenu'); // Получаем элемент ТОЛЬКО в момент вызова
+        if (!menuEl) return;
+        
+        // Меняем текст кнопки Избранного
+        const favBtn = document.getElementById('contextFavBtn');
+        if (favBtn) {
+            if (note && note.isFavorite) {
+                favBtn.innerHTML = "<i class='bx bxs-star' style='color:#f59e0b;'></i> Убрать из избранного";
+            } else {
+                favBtn.innerHTML = "<i class='bx bx-star'></i> В избранное";
+            }
+        }
+
+        menuEl.style.visibility = 'hidden';
+        menuEl.classList.add('show');
+        
+        const menuRect = menuEl.getBoundingClientRect();
+        let posX = x, posY = y;
+        
+        if (posX + menuRect.width > window.innerWidth) posX = window.innerWidth - menuRect.width - 10;
+        if (posY + menuRect.height > window.innerHeight) posY = window.innerHeight - menuRect.height - 10;
+
+        menuEl.style.left = `${posX}px`;
+        menuEl.style.top = `${posY}px`;
+        menuEl.style.visibility = 'visible';
+      }
+
+      function hideNoteContextMenu() {
+        const menuEl = document.getElementById('noteContextMenu');
+        if (menuEl) menuEl.classList.remove('show');
+        targetNoteIdForMenu = null;
+      }
+
+      const notesListEl = document.getElementById('notesList');
+
+      // Вызов правой кнопкой мыши (ПК)
+      if (notesListEl) {
+        notesListEl.addEventListener('contextmenu', (e) => {
+          const item = e.target.closest('.note-item');
+          if (item) {
+            e.preventDefault();
+            showNoteContextMenu(e.clientX, e.clientY, item.getAttribute('data-id'));
+          }
+        });
+
+        // Вызов долгим тапом (Смартфоны)
+        notesListEl.addEventListener('touchstart', (e) => {
+          const item = e.target.closest('.note-item');
+          if (!item) return;
+          
+          isNoteLongPress = false;
+          noteLongPressTimer = setTimeout(() => {
+            isNoteLongPress = true;
+            const touch = e.touches[0];
+            showNoteContextMenu(touch.clientX, touch.clientY, item.getAttribute('data-id'));
+            if (navigator.vibrate) navigator.vibrate(50);
+          }, 600);
+        }, { passive: true });
+
+        notesListEl.addEventListener('touchmove', () => clearTimeout(noteLongPressTimer), { passive: true });
+        notesListEl.addEventListener('touchend', (e) => {
+          clearTimeout(noteLongPressTimer);
+          if (isNoteLongPress && e.cancelable) e.preventDefault(); // Блокируем обычный клик, если было меню
+        });
+      }
+
+      // Закрываем меню при клике в пустоту (Динамическая проверка)
+      document.addEventListener('click', (e) => {
+        const menuEl = document.getElementById('noteContextMenu');
+        if (menuEl && !menuEl.contains(e.target)) hideNoteContextMenu();
+      });
+
+      // --- ДЕЙСТВИЯ ИЗ МЕНЮ ---
+
+      window.handleNoteFavorite = function() {
+        if (!targetNoteIdForMenu) return;
+        const note = notes.find((n) => n.id === targetNoteIdForMenu);
+        if (note) {
+          note.isFavorite = !note.isFavorite;
+          localStorage.setItem("qn_notes", JSON.stringify(notes));
+          renderNotesList(searchInput.value);
+        }
+        hideNoteContextMenu();
+      };
+
+      window.handleNoteRename = function() {
+        if (!targetNoteIdForMenu) return;
+        const note = notes.find((n) => n.id === targetNoteIdForMenu);
+        if (!note) return;
+        const newTitle = prompt("Введите новое название заметки:", note.title);
+        if (newTitle !== null && newTitle.trim() !== "") {
+          note.title = newTitle.trim();
+          if(activeId === note.id) {
+              titleInput.value = note.title;
+              // Динамически меняем синтаксис IDE прямо во время работы
+              if (ideEditor) ideEditor.setOption("mode", getSyntaxMode(note.title));
+          }
+          localStorage.setItem("qn_notes", JSON.stringify(notes));
+          renderNotesList(searchInput.value);
+          updateAttachedNotesUI();
+        }
+        hideNoteContextMenu();
+      };
+
+      window.handleNoteDelete = function() {
+        if (!targetNoteIdForMenu) return;
+        if (notes.length === 1) {
+            alert("Нельзя удалить последнюю!");
+            hideNoteContextMenu();
+            return;
+        }
         if (confirm("Удалить заметку?")) {
-          notes = notes.filter((n) => n.id !== id);
-          if (activeId === id) switchNote(notes[0].id);
+          notes = notes.filter((n) => n.id !== targetNoteIdForMenu);
+          window.aiAttachedNotes.delete(targetNoteIdForMenu); // Удаляем из ИИ контекста
+          updateAttachedNotesUI();
+          
+          if (activeId === targetNoteIdForMenu) switchNote(notes[0].id);
           else renderNotesList(searchInput.value);
+          
           localStorage.setItem("qn_notes", JSON.stringify(notes));
         }
+        hideNoteContextMenu();
+      };
+
+      // --- ЛОГИКА УПОМИНАНИЙ ДЛЯ ИИ ---
+      
+      window.handleNoteMention = function() {
+        if (!targetNoteIdForMenu) return;
+        
+        // Добавляем ID заметки в список для ИИ
+        window.aiAttachedNotes.add(targetNoteIdForMenu);
+        updateAttachedNotesUI();
+        hideNoteContextMenu();
+        
+        // Открываем панель ИИ, если она закрыта
+        if (!document.body.classList.contains("ai-open")) {
+            toggleAISidebar();
+        }
+        
+        // Автоматически включаем Агента
+        const agentBtn = document.querySelector('.ai-mode-btn[onclick*="agent"]');
+        if (agentBtn) setAIMode('agent', agentBtn);
+        
+        // Ставим фокус на поле ввода чата
+        document.getElementById('aiInput').focus();
+      };
+
+      // Удалить заметку из прикрепленных
+      window.removeAttachedNote = function(id) {
+        window.aiAttachedNotes.delete(id);
+        updateAttachedNotesUI();
+      };
+
+      // Отрисовка плашек прикрепленных заметок над полем ввода
+      function updateAttachedNotesUI() {
+        const bar = document.getElementById('aiMentionsBar');
+        if (!bar) return; // Защита, если HTML элемент еще не добавлен
+        
+        bar.innerHTML = "";
+        
+        window.aiAttachedNotes.forEach(id => {
+            const note = notes.find(n => n.id === id);
+            if (note) {
+                const pill = document.createElement('div');
+                pill.className = 'mention-pill';
+                pill.innerHTML = `
+                  <i class='bx bx-file'></i> ${note.title}
+                  <button onclick="removeAttachedNote('${id}')" title="Убрать"><i class='bx bx-x'></i></button>
+                `;
+                bar.appendChild(pill);
+            }
+        });
       }
 
       // Сохранение ввода
@@ -2235,17 +2731,6 @@
           renderNotesList(searchInput.value);
           localStorage.setItem("qn_notes", JSON.stringify(notes));
         }
-      });
-
-      // Сохранение и рендер при наборе текста
-      editor.addEventListener("input", (e) => {
-        const note = notes.find((n) => n.id === activeId);
-        if (note) {
-          note.content = e.target.value;
-          localStorage.setItem("qn_notes", JSON.stringify(notes));
-        }
-        clearTimeout(window.renderTimeout);
-        window.renderTimeout = setTimeout(updatePreview, 300);
       });
 
       // Скрытие мобильных вкладок при редактировании текста
@@ -2944,10 +3429,12 @@
       }
 
       function handleAIEnter(e) {
-        if (e.key === "Enter" && !e.shiftKey) {
+        // ИСПРАВЛЕНИЕ: Отправка только по Ctrl+Enter или Cmd+Enter (Mac)
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
           sendAIChat();
         }
+        // Если нажат просто Enter — произойдет стандартный перенос строки в textarea
       }
 
       function clearAIChat() {
@@ -3022,7 +3509,7 @@
         return renderMessageUI(role, content, index);
       }
 
-      // 5. Чистая отрисовка UI (Подготовлено под Стриминг)
+      // 5. Чистая отрисовка UI
       function renderMessageUI(role, content, arrayIndex) {
         const chatArea = document.getElementById("aiChatHistory");
         const msgDiv = document.createElement("div");
@@ -3030,7 +3517,6 @@
         msgDiv.setAttribute("data-raw", content);
         
         if (role === "bot") {
-          // Создаем структуру для мыслей, текста и кнопок
           msgDiv.innerHTML = `
             <div class="ai-thinking-container"></div>
             <div class="bot-markdown-content"></div>
@@ -3038,7 +3524,8 @@
           `;
           updateMessageUI(msgDiv, content, "", arrayIndex);
         } else {
-          msgDiv.textContent = content;
+          // ИСПРАВЛЕНИЕ: Теперь сообщения пользователя рендерятся через Markdown
+          msgDiv.innerHTML = marked.parse(content);
         }
 
         chatArea.appendChild(msgDiv);
@@ -3272,12 +3759,8 @@
       window.openInteractiveDiff = function(encodedData) {
         const actionData = JSON.parse(decodeURIComponent(encodedData));
         
-        // ИСПРАВЛЕНО: Глобальная защита от краша
         if (!actionData.actions || actionData.actions.length === 0) return;
 
-        const targetId = actionData.actions[0]?.noteId || activeId;
-        const note = notes.find(n => n.id === targetId) || notes.find(n => n.id === activeId);
-        
         let overlay = document.getElementById('interactiveDiffOverlay');
         if (!overlay) {
           overlay = document.createElement('div');
@@ -3288,28 +3771,51 @@
 
         let resultHTML = "";
 
-        if (actionData.actions[0].type === "UPDATE_NOTE") {
-            resultHTML = `
-              <div class="wd-inline-patch" id="patch_container_update">
-                 <div class="wd-patch-actions">
-                    <button class="wd-patch-btn" id="btn_edit_update" onclick="togglePatchEdit('update')"><i class='bx bx-edit'></i> Редактировать</button>
-                    <button class="wd-patch-btn" id="btn_exclude_update" onclick="togglePatchExclude('update')"><i class='bx bx-block'></i> Не применять</button>
-                 </div>
-                 <div class="wd-patch-view" id="patch_view_update">
-                    <div class="wd-line removed"><span class="wd-prefix">-</span><span class="wd-text">${(note ? note.content : "").replace(/</g, "&lt;")}</span></div>
-                    <div class="wd-line added"><span class="wd-prefix">+</span><span class="wd-text">${actionData.actions[0].content.replace(/</g, "&lt;")}</span></div>
-                 </div>
-                 <div class="wd-patch-edit" id="patch_edit_update" style="display:none;">
-                    <textarea id="patch_textarea_update" class="wd-textarea" spellcheck="false">${actionData.actions[0].content}</textarea>
-                 </div>
-              </div>
-            `;
-        } else {
-            let tempContent = note.content;
-            let blocks = [];
+        // Перебираем все предложенные ИИ действия
+        actionData.actions.forEach((action, actionIndex) => {
+            const targetId = action.noteId || activeId;
+            const note = notes.find(n => n.id === targetId) || notes.find(n => n.id === activeId);
 
-            actionData.actions.forEach((action, actionIndex) => {
-                if (action.type !== "PATCH_NOTE" || !action.patches) return;
+            // 1. ЕСЛИ ИИ ХОЧЕТ СОЗДАТЬ НОВУЮ ЗАМЕТКУ
+            if (action.type === "CREATE_NOTE") {
+                resultHTML += `
+                  <div class="wd-inline-patch" style="border-color: #3b82f6;">
+                     <div class="wd-patch-actions" style="background: rgba(59, 130, 246, 0.1); justify-content: flex-start;">
+                        <span style="color: #60a5fa; font-weight: 600; font-family: var(--font-ui); font-size: 13px;">
+                           <i class='bx bx-file-blank'></i> Будет создана заметка: "${action.title || 'Новая заметка'}"
+                        </span>
+                     </div>
+                     <div class="wd-patch-view">
+                        <div class="wd-line added"><span class="wd-prefix">+</span><span class="wd-text">${(action.content || "").replace(/</g, "&lt;")}</span></div>
+                     </div>
+                  </div>
+                `;
+            } 
+            
+            // 2. ЕСЛИ ИИ ПОЛНОСТЬЮ ПЕРЕПИСЫВАЕТ ЗАМЕТКУ
+            else if (action.type === "UPDATE_NOTE") {
+                resultHTML += `
+                  <div class="wd-inline-patch" id="patch_container_update_${actionIndex}">
+                     <div class="wd-patch-actions">
+                        <button class="wd-patch-btn" id="btn_edit_update_${actionIndex}" onclick="togglePatchEdit('update_${actionIndex}')"><i class='bx bx-edit'></i> Редактировать</button>
+                        <button class="wd-patch-btn" id="btn_exclude_update_${actionIndex}" onclick="togglePatchExclude('update_${actionIndex}')"><i class='bx bx-block'></i> Не применять</button>
+                     </div>
+                     <div class="wd-patch-view" id="patch_view_update_${actionIndex}">
+                        <div class="wd-line removed"><span class="wd-prefix">-</span><span class="wd-text">${(note ? note.content : "").replace(/</g, "&lt;")}</span></div>
+                        <div class="wd-line added"><span class="wd-prefix">+</span><span class="wd-text">${(action.content || "").replace(/</g, "&lt;")}</span></div>
+                     </div>
+                     <div class="wd-patch-edit" id="patch_edit_update_${actionIndex}" style="display:none;">
+                        <textarea id="patch_textarea_update_${actionIndex}" class="wd-textarea" spellcheck="false">${action.content || ""}</textarea>
+                     </div>
+                  </div>
+                `;
+            } 
+            
+            // 3. ЕСЛИ ИИ МЕНЯЕТ КУСОЧКИ ТЕКСТА (PATCH)
+            else if (action.type === "PATCH_NOTE" && action.patches && note) {
+                let tempContent = note.content;
+                let blocks = [];
+
                 action.patches.forEach((patch, patchIndex) => {
                     let index = tempContent.indexOf(patch.find);
                     let matchedText = patch.find;
@@ -3328,46 +3834,51 @@
                         tempContent = tempContent.substring(0, index) + "\0".repeat(matchedText.length) + tempContent.substring(index + matchedText.length);
                     }
                 });
-            });
 
-            blocks.sort((a, b) => a.index - b.index);
+                blocks.sort((a, b) => a.index - b.index);
 
-            let lastIdx = 0;
-            blocks.forEach(b => {
-                const unchanged = note.content.substring(lastIdx, b.index);
-                if (unchanged) resultHTML += `<div class="wd-unchanged">${unchanged.replace(/</g, "&lt;")}</div>`;
+                let lastIdx = 0;
+                blocks.forEach(b => {
+                    const unchanged = note.content.substring(lastIdx, b.index);
+                    if (unchanged) resultHTML += `<div class="wd-unchanged">${unchanged.replace(/</g, "&lt;")}</div>`;
 
-                const patchId = `${b.actionIndex}_${b.patchIndex}`;
-                let diffHTML = `<div class="wd-inline-patch" data-action="${b.actionIndex}" data-patch="${b.patchIndex}" id="patch_container_${patchId}">`;
-                
-                diffHTML += `
-                  <div class="wd-patch-actions">
-                     <button class="wd-patch-btn" id="btn_edit_${patchId}" onclick="togglePatchEdit('${patchId}')"><i class='bx bx-edit'></i> Редактировать</button>
-                     <button class="wd-patch-btn" id="btn_exclude_${patchId}" onclick="togglePatchExclude('${patchId}')"><i class='bx bx-block'></i> Не применять</button>
-                  </div>
-                  <div class="wd-patch-view" id="patch_view_${patchId}">
-                `;
+                    const patchId = `${b.actionIndex}_${b.patchIndex}`;
+                    let diffHTML = `<div class="wd-inline-patch" data-action="${b.actionIndex}" data-patch="${b.patchIndex}" id="patch_container_${patchId}">`;
+                    
+                    diffHTML += `
+                      <div class="wd-patch-actions">
+                         <button class="wd-patch-btn" id="btn_edit_${patchId}" onclick="togglePatchEdit('${patchId}')"><i class='bx bx-edit'></i> Редактировать</button>
+                         <button class="wd-patch-btn" id="btn_exclude_${patchId}" onclick="togglePatchExclude('${patchId}')"><i class='bx bx-block'></i> Не применять</button>
+                      </div>
+                      <div class="wd-patch-view" id="patch_view_${patchId}">
+                    `;
 
-                b.find.split('\n').forEach(l => {
-                    diffHTML += `<div class="wd-line removed"><span class="wd-prefix">-</span><span class="wd-text">${l.replace(/</g, "&lt;")}</span></div>`;
+                    b.find.split('\n').forEach(l => {
+                        diffHTML += `<div class="wd-line removed"><span class="wd-prefix">-</span><span class="wd-text">${l.replace(/</g, "&lt;")}</span></div>`;
+                    });
+                    (b.replace || "").split('\n').forEach(l => {
+                        diffHTML += `<div class="wd-line added"><span class="wd-prefix">+</span><span class="wd-text">${l.replace(/</g, "&lt;")}</span></div>`;
+                    });
+
+                    diffHTML += `</div>`;
+                    diffHTML += `
+                      <div class="wd-patch-edit" id="patch_edit_${patchId}" style="display:none;">
+                         <textarea id="patch_textarea_${patchId}" class="wd-textarea" spellcheck="false">${b.replace || ""}</textarea>
+                      </div>
+                    </div>`;
+
+                    resultHTML += diffHTML;
+                    lastIdx = b.index + b.find.length;
                 });
-                (b.replace || "").split('\n').forEach(l => {
-                    diffHTML += `<div class="wd-line added"><span class="wd-prefix">+</span><span class="wd-text">${l.replace(/</g, "&lt;")}</span></div>`;
-                });
 
-                diffHTML += `</div>`;
-                diffHTML += `
-                  <div class="wd-patch-edit" id="patch_edit_${patchId}" style="display:none;">
-                     <textarea id="patch_textarea_${patchId}" class="wd-textarea" spellcheck="false">${b.replace || ""}</textarea>
-                  </div>
-                </div>`;
+                const remaining = note.content.substring(lastIdx);
+                if (remaining) resultHTML += `<div class="wd-unchanged">${remaining.replace(/</g, "&lt;")}</div>`;
+            }
+        });
 
-                resultHTML += diffHTML;
-                lastIdx = b.index + b.find.length;
-            });
-
-            const remaining = note.content.substring(lastIdx);
-            if (remaining) resultHTML += `<div class="wd-unchanged">${remaining.replace(/</g, "&lt;")}</div>`;
+        // Если ИИ не вернул понятных данных (пусто)
+        if (!resultHTML.trim()) {
+           resultHTML = `<div style="padding: 20px; color: #f43f5e; text-align: center;"><i class='bx bx-error'></i> Агент не смог сформировать корректный патч. Попробуйте перефразировать запрос.</div>`;
         }
 
         overlay.innerHTML = `
@@ -3561,12 +4072,19 @@
         // Получаем базу данных для режимов Agent и Plan
         const workspaceDB = notes.map(n => ({ id: n.id, title: n.title, content: n.content }));
 
-        // Извлекаем упомянутые заметки из текста (ищем всё, что в формате @"Название")
-        // ПРИВОДИМ К НИЖНЕМУ РЕГИСТРУ И УБИРАЕМ ПРОБЕЛЫ по краям для надежного поиска
+        // 1. Ищем текстовые упоминания @"Название"
         const mentionedTitles = [...userText.matchAll(/@"([^"]+)"/g)].map(m => m[1].toLowerCase().trim());
-        const mentionedNotesContext = notes
-          .filter(n => mentionedTitles.includes(n.title.toLowerCase().trim()))
-          .map(n => `\n--- ПРИКРЕПЛЕННАЯ ЗАМЕТКА: ${n.title} ---\n${n.content}\n`)
+        const textMentionedNotes = notes.filter(n => mentionedTitles.includes(n.title.toLowerCase().trim()));
+        
+        // 2. Берем заметки, прикрепленные через UI (Set window.aiAttachedNotes)
+        const uiAttachedNotes = notes.filter(n => window.aiAttachedNotes.has(n.id));
+        
+        // 3. Объединяем их без дубликатов
+        const allContextNotes = [...new Set([...textMentionedNotes, ...uiAttachedNotes])];
+        
+        // 4. Формируем контекст с ID (Чтобы Агент мог манипулировать ими)
+        const mentionedNotesContext = allContextNotes
+          .map(n => `\n--- ПРИКРЕПЛЕННАЯ ЗАМЕТКА ---\nID ФАЙЛА: ${n.id}\nНАЗВАНИЕ: ${n.title}\nСОДЕРЖИМОЕ:\n${n.content}\n--------------------------\n`)
           .join("");
 
         // === НОВАЯ ЛОГИКА: ЗАХВАТ ВЫДЕЛЕННОГО ТЕКСТА ===
@@ -3597,12 +4115,13 @@
 Формат JSON:
 {
   "actions": [
-    { "type": "PATCH_NOTE", "noteId": "ID_из_БД", "patches": [ { "find": "точный оригинальный кусок кода", "replace": "новый исправленный код" } ] },
-    { "type": "UPDATE_NOTE", "noteId": "...", "title": "...", "content": "Полностью новый текст" }
+    { "type": "PATCH_NOTE", "noteId": "ID_текущей_заметки", "patches": [ { "find": "точный кусок кода", "replace": "новый код" } ] },
+    { "type": "UPDATE_NOTE", "noteId": "...", "title": "...", "content": "Полностью новый текст" },
+    { "type": "CREATE_NOTE", "title": "Название новой заметки", "content": "Текст новой заметки" }
   ],
-  "reply": "Кратко и профессионально объясни пользователю, в чем была проблема и что конкретно ты исправил."
+  "reply": "Кратко объясни пользователю, что ты сделал."
 }`;
-          currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nОБРАТИ ОСОБОЕ ВНИМАНИЕ НА УПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
+currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА (В ФОКУСЕ) ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ЯВНО ПРИКРЕПИЛ ЭТИ ФАЙЛЫ ДЛЯ ИЗМЕНЕНИЙ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
         }
         else if (currentAIMode === "plan") {
           systemPrompt = `Ты Senior Менеджер. У тебя есть ПОЛНЫЙ доступ ко всем заметкам пользователя для контекста и глубокого анализа. 
@@ -4433,12 +4952,46 @@
   <!-- КОНТЕКСТНОЕ МЕНЮ ЧАТА ИИ                   -->
   <!-- ========================================== -->
   <div class="chat-context-menu" id="chatContextMenu">
+    <!-- НОВАЯ КНОПКА -->
+    <button class="chat-context-btn" onclick="handleChatSelectText()">
+      <i class='bx bx-text'></i> Выбрать текст
+    </button>
     <button class="chat-context-btn" onclick="handleChatCopy()">
-      <i class='bx bx-copy'></i> Копировать текст
+      <i class='bx bx-copy'></i> Скопировать всё
     </button>
     <button class="chat-context-btn delete" onclick="handleChatDelete()">
       <i class='bx bx-trash'></i> Удалить сообщение
     </button>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- КОНТЕКСТНОЕ МЕНЮ СПИСКА ЗАМЕТОК            -->
+  <!-- ========================================== -->
+  <div class="note-context-menu" id="noteContextMenu">
+    <button class="chat-context-btn" onclick="handleNoteMention()">
+      <i class='bx bx-bot' style="color: #a78bfa;"></i> Упомянуть для ИИ
+    </button>
+    <button class="chat-context-btn" onclick="handleNoteRename()">
+      <i class='bx bx-edit-alt'></i> Переименовать
+    </button>
+    <button class="chat-context-btn" onclick="handleNoteFavorite()" id="contextFavBtn">
+      <i class='bx bx-star'></i> В избранное
+    </button>
+    <button class="chat-context-btn delete" onclick="handleNoteDelete()">
+      <i class='bx bx-trash'></i> Удалить
+    </button>
+  </div>
+
+  <!-- МОДАЛКА ДЛЯ ВЫДЕЛЕНИЯ ТЕКСТА -->
+  <div class="modal-overlay" id="textSelectModal" onclick="if (event.target === this) document.getElementById('textSelectModal').classList.remove('active');">
+    <div class="modal" style="max-width: 600px;">
+      <h2 style="font-size: 16px; margin-bottom: 15px; display: flex; justify-content: space-between;">
+        <span><i class='bx bx-text'></i> Выделение текста</span>
+        <button class="btn-icon" style="padding: 0;" onclick="document.getElementById('textSelectModal').classList.remove('active')"><i class='bx bx-x'></i></button>
+      </h2>
+      <!-- Здесь текст МОЖНО выделять -->
+      <div class="selectable-text-content" id="textSelectContent"></div>
+    </div>
   </div>
 
   <script>
@@ -4527,6 +5080,20 @@
           hideChatContextMenu();
         }
       });
+
+      window.handleChatSelectText = function() {
+        if (!targetMessageNode) return;
+        
+        const rawText = targetMessageNode.getAttribute('data-raw');
+        const modal = document.getElementById('textSelectModal');
+        const contentBox = document.getElementById('textSelectContent');
+        
+        // Рендерим текст как Markdown, чтобы его было удобно читать и выделять
+        contentBox.innerHTML = marked.parse(rawText);
+        modal.classList.add('active');
+        
+        hideChatContextMenu();
+      };
 
       // Глобальные функции для кнопок меню
       window.handleChatCopy = function() {
