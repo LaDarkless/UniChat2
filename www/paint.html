@@ -348,10 +348,16 @@
             setupWorkspaceSize() {
                 // Устанавливаем физический размер холстов, опираясь на пропорции экрана
                 const rect = this.container.getBoundingClientRect();
-                const aspect = rect.height / rect.width;
+                
+                // ФИКС: Защита от нулевых размеров при загрузке в скрытом iframe
+                const cWidth = rect.width > 0 ? rect.width : window.innerWidth;
+                const cHeight = rect.height > 0 ? rect.height : window.innerHeight;
+                
+                const aspect = cHeight / cWidth;
                 
                 this.baseWidth = 1200; 
-                this.baseHeight = 1200 * aspect;
+                // ФИКС: Запрещаем холсту быть меньше 100px в высоту
+                this.baseHeight = Math.max(1200 * aspect, 100);
 
                 this.workspace.style.width = `${this.baseWidth}px`;
                 this.workspace.style.height = `${this.baseHeight}px`;
@@ -753,7 +759,12 @@ this.activeLayer.ctx.drawImage(compCanvas, 0, 0, this.baseWidth, this.baseHeight
                 // Сохраняем состояние только активного слоя для экономии памяти
                 if (!this.activeLayer) return;
                 
-                const imgData = this.activeLayer.ctx.getImageData(0, 0, this.activeLayer.canvas.width, this.activeLayer.canvas.height);
+                // ФИКС: Блокируем создание снимка, если холст имеет размер 0
+                const w = this.activeLayer.canvas.width;
+                const h = this.activeLayer.canvas.height;
+                if (w === 0 || h === 0) return;
+                
+                const imgData = this.activeLayer.ctx.getImageData(0, 0, w, h);
                 
                 this.history.push({
                     layerId: this.activeLayer.id,

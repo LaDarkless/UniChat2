@@ -673,14 +673,25 @@
         line-height: 1.8;
         word-wrap: break-word;
         scroll-behavior: smooth;
+        
+        /* ФИКС: Жестко запираем любой вставленный код внутри этого окна */
+        position: relative;
+        overflow-x: hidden;
+      }
+      
+      /* Запрещаем вставленным элементам ломать ширину панелей */
+      #preview * {
+        max-width: 100%;
       }
 
       /* === СТИЛИ ВЕБ-ЭКРАНА (IFRAME) === */
       #htmlPreviewFrame {
         width: 100%;
         height: 100%;
+        flex: 1; /* ФИКС: Заставляет iframe заполнять всё доступное пространство */
+        min-height: 0; /* ФИКС: Предотвращает баги высоты во flex-контейнерах */
         border: none;
-        background: #ffffff; /* Белый фон, т.к. сайты обычно пишутся под белый */
+        background: #ffffff;
         display: none;
         border-radius: 0 0 16px 16px;
       }
@@ -2105,20 +2116,28 @@
               </button>
               <div class="ai-model-menu" id="aiModelMenu">
                 <div class="ai-model-item" onclick="selectAIModel('gpt-5.5', 'GPT-5.5')">
-                  <span class="m-title">GPT-5.5</span>
-                  <span class="m-desc">Флагманская модель (Максимум качества)</span>
+                  <span class="m-title">GPT-5.5</span><span class="m-desc">Флагман OpenAI</span>
                 </div>
                 <div class="ai-model-item" onclick="selectAIModel('gpt-5.4-mini', 'GPT-5.4-mini')">
-                  <span class="m-title">GPT-5.4-mini</span>
-                  <span class="m-desc">Быстрая генерация (Оптимально)</span>
+                  <span class="m-title">GPT-5.4-mini</span><span class="m-desc">Быстрая генерация (Оптимально)</span>
                 </div>
                 <div class="ai-model-item" onclick="selectAIModel('gpt-5.4-nano', 'GPT-5.4-nano')">
-                  <span class="m-title">GPT-5.4-nano</span>
-                  <span class="m-desc">Легкая и дешевая модель</span>
+                  <span class="m-title">GPT-5.4-nano</span><span class="m-desc">Легкая и дешевая модель</span>
+                </div>
+                <div class="ai-model-item" onclick="selectAIModel('claude-opus-4-7', 'Claude Opus 4.7')">
+                  <span class="m-title">Claude Opus 4.7</span><span class="m-desc">Мощная аналитика (Anthropic)</span>
+                </div>
+                <div class="ai-model-item" onclick="selectAIModel('claude-sonnet-4-6', 'Claude Sonnet 4.6')">
+                  <span class="m-title">Claude Sonnet 4.6</span><span class="m-desc">Код и логика (Anthropic)</span>
+                </div>
+                <div class="ai-model-item" onclick="selectAIModel('claude-haiku-4-5', 'Claude Haiku 4.5')">
+                  <span class="m-title">Claude Haiku 4.5</span><span class="m-desc">Молниеносная скорость</span>
+                </div>
+                <div class="ai-model-item" onclick="selectAIModel('gemini-3.1-pro-preview', 'Gemini 3.1 Pro')">
+                  <span class="m-title">Gemini 3.1 Pro</span><span class="m-desc">Модель Google с рассуждением</span>
                 </div>
                 <div class="ai-model-item" onclick="selectAIModel('openrouter/x-ai/grok-4.3', 'Grok-4.3')">
-                  <span class="m-title">Grok-4.3</span>
-                  <span class="m-desc">Режим X/Twitter (OpenRouter)</span>
+                  <span class="m-title">Grok-4.3</span><span class="m-desc">Без цензуры (X/Twitter)</span>
                 </div>
               </div>
             </div>
@@ -2168,6 +2187,14 @@
         </div>
 
         <div class="ai-input-area" style="position: relative;"> <!-- Добавили relative -->
+          
+          <!-- ПЛАВАЮЩАЯ КНОПКА СТОП (Появляется при генерации) -->
+          <div id="aiStopContainer" style="display: none; position: absolute; top: -45px; left: 50%; transform: translateX(-50%); z-index: 10;">
+             <button class="btn" style="background: rgba(15,15,17,0.9); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; font-size: 12px; padding: 6px 16px; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(10px);" onclick="window.abortAIGeneration()">
+                <i class='bx bx-stop-circle' style="color: #ef4444; font-size: 16px;"></i> Остановить генерацию
+             </button>
+          </div>
+
           <div class="ai-mode-selector">
             <button class="ai-mode-btn active" onclick="setAIMode('agent', this)"><i class='bx bx-magic-wand'></i> Agent</button>
             <button class="ai-mode-btn" onclick="setAIMode('plan', this)"><i class='bx bx-task'></i> Plan</button>
@@ -2287,10 +2314,14 @@
         <div class="setting-group">
           <label>Модель ProxyAPI / OpenAI / OpenRouter</label>
           <select id="aiModelSelect" onchange="updateSettings()">
-            <option value="gpt-5.5">GPT-5.5 (Максимальная)</option>
-            <option value="gpt-5.4-mini">GPT-5.4-mini (Быстрая)</option>
-            <option value="gpt-5.4-nano">GPT-5.4-nano (Легкая)</option>
-            <option value="openrouter/x-ai/grok-4.3">Grok-4.3 (Twitter/X Mode)</option>
+            <option value="gpt-5.5">GPT-5.5</option>
+            <option value="gpt-5.4-mini">GPT-5.4-mini</option>
+            <option value="gpt-5.4-nano">GPT-5.4-nano</option>
+            <option value="claude-opus-4-7">Claude Opus 4.7</option>
+            <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+            <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
+            <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
+            <option value="openrouter/x-ai/grok-4.3">Grok-4.3</option>
           </select>
         </div>
 
@@ -2356,31 +2387,71 @@
         const pane = document.getElementById('previewPane');
         const btn = document.getElementById('webPreviewBtn');
         const status = document.getElementById('renderStatus');
+        const ws = document.getElementById('workspace'); // Получаем рабочую область
 
         if (isWebPreview) {
-            // Включаем режим браузера
             pane.classList.add('show-web-mode');
-            btn.innerHTML = '<i class="bx bx-stop-circle" style="color: #ef4444;"></i>'; // Красная кнопка стоп
+            btn.innerHTML = '<i class="bx bx-stop-circle" style="color: #ef4444;"></i>'; 
             btn.title = "Остановить сайт";
             status.textContent = "Live Server 🟢";
             status.style.color = "#3b82f6";
-            updateWebFrame(); // Запускаем код
+            
+            // ФИКС ДЛЯ ЕДИНОГО ОКНА: Принудительно выходим из режима редактирования, 
+            // чтобы прозрачность превью стала 1, и сайт вышел на передний план.
+            if (ws.classList.contains('live-mode')) {
+                ws.classList.remove('editing');
+            }
+            
+            updateWebFrame(); 
         } else {
-            // Возвращаем Markdown
             pane.classList.remove('show-web-mode');
-            btn.innerHTML = '<i class="bx bx-play-circle" style="color: #3b82f6;"></i>'; // Синяя кнопка плей
+            btn.innerHTML = '<i class="bx bx-play-circle" style="color: #3b82f6;"></i>'; 
             btn.title = "Запустить код как Сайт";
-            updatePreview(); // Рендерим Markdown
+            
+            // Возвращаем окно кода на передний план при остановке сайта
+            if (ws.classList.contains('live-mode')) {
+                ws.classList.add('editing');
+            }
+
+            const oldIframe = document.getElementById('htmlPreviewFrame');
+            if (oldIframe) {
+                const blankIframe = document.createElement('iframe');
+                blankIframe.id = 'htmlPreviewFrame';
+                blankIframe.sandbox = 'allow-scripts allow-modals allow-popups allow-forms allow-downloads';
+                blankIframe.srcdoc = ''; // Очищаем память
+                pane.replaceChild(blankIframe, oldIframe);
+            }
+
+            saveAndRender(isIdeMode ? ideEditor.getValue() : editor.value); 
         }
       }
 
       function updateWebFrame() {
         if (!isWebPreview) return;
-        const iframe = document.getElementById('htmlPreviewFrame');
-        // Берем текст либо из IDE, либо из обычной текстареи
-        const currentCode = isIdeMode ? ideEditor.getValue() : editor.value;
-        // Вставляем код напрямую в iframe
-        iframe.srcdoc = currentCode;
+        
+        try {
+            const container = document.getElementById('previewPane');
+            const oldIframe = document.getElementById('htmlPreviewFrame');
+            const currentCode = isIdeMode ? ideEditor.getValue() : editor.value;
+            
+            const newIframe = document.createElement('iframe');
+            newIframe.id = 'htmlPreviewFrame';
+            
+            // Строгая изоляция: скрипты работают, но доступа к родителю (localhost) нет
+            newIframe.sandbox = 'allow-scripts allow-modals allow-popups allow-forms allow-downloads';
+            
+            // Загружаем код напрямую в iframe (Мгновенно, без утечек памяти)
+            newIframe.srcdoc = currentCode;
+            
+            // Пересоздаем элемент, чтобы 100% убить старые циклы (setInterval) из предыдущего кода
+            if (oldIframe) {
+                container.replaceChild(newIframe, oldIframe);
+            } else {
+                container.appendChild(newIframe);
+            }
+        } catch (error) {
+            console.error("Ошибка запуска Web Preview:", error);
+        }
       }
 
       // Единая функция сохранения и рендера превью (Обновлена!)
@@ -2393,14 +2464,29 @@
         }
         
         clearTimeout(window.renderTimeout);
+        
+        // ФИКС 4: Если сайт запущен, ждем 1 сек после печати кода, чтобы браузер не виснул
+        const delay = isWebPreview ? 1000 : 300;
+        
         window.renderTimeout = setTimeout(() => {
-            // УМНАЯ ПРОВЕРКА: Что рендерить?
             if (isWebPreview) {
-                updateWebFrame(); // Если включен Live Server - рендерим сайт
+                updateWebFrame(); 
             } else {
-                if (typeof updatePreview === "function") updatePreview(); // Иначе Markdown
+                if (isIdeMode) {
+                    const previewBox = document.getElementById("preview");
+                    previewBox.innerHTML = `
+                      <div style="display:flex; height:100%; align-items:center; justify-content:center; color:#94a3b8; font-family:var(--font-ui); text-align:center; flex-direction:column; gap:15px; padding: 20px;">
+                          <i class='bx bx-code-block' style='font-size: 50px; color: #3b82f6; opacity: 0.8;'></i>
+                          <p style="margin:0; font-size: 15px; line-height: 1.5;">Режим IDE активен.<br>Нажмите на кнопку <b style="color:#3b82f6;"><i class='bx bx-play-circle'></i> Запустить</b> в тулбаре вверху,<br>чтобы безопасно отрендерить результат.</p>
+                      </div>`;
+                    const status = document.getElementById("renderStatus");
+                    status.textContent = "Ожидание запуска";
+                    status.style.color = "#94a3b8";
+                } else {
+                    if (typeof updatePreview === "function") updatePreview();
+                }
             }
-        }, 300);
+        }, delay);
       }
 
       document.addEventListener("DOMContentLoaded", () => {
@@ -2424,6 +2510,13 @@
           ideEditor.on("change", () => {
               if (isIdeMode) saveAndRender(ideEditor.getValue());
           });
+          
+          // Отслеживаем выделение текста внутри IDE
+          ideEditor.on("cursorActivity", () => {
+              if (document.body.classList.contains("ai-open")) {
+                  updateSelectionUI();
+              }
+          });
 
           // 4. Слушатель для оригинальной Textarea (когда режим кода выключен)
           editor.addEventListener("input", (e) => {
@@ -2439,22 +2532,34 @@
           const toggleBtn = document.getElementById('ideToggleBtn');
 
           if (isIdeMode) {
-              // ВКЛЮЧАЕМ IDE
               cmWrapper.style.display = "block";
-              editor.style.display = "none"; // Прячем textarea
-              if (toolbarWrapper) toolbarWrapper.style.display = "none"; // Прячем панель инструментов Notion
-              toggleBtn.style.color = "#10b981"; // Зеленая иконка
+              editor.style.display = "none"; 
+              if (toolbarWrapper) toolbarWrapper.style.display = "none"; 
+              toggleBtn.style.color = "#10b981"; 
               toggleBtn.style.background = "rgba(16, 185, 129, 0.15)";
-              ideEditor.setValue(editor.value); // Переносим текст из обычной заметки в IDE
+              
+              // ФИКС 3: setValue сам вызывает обновление. Вызываем вручную только если текст не менялся.
+              const currentVal = editor.value;
+              if (ideEditor.getValue() !== currentVal) {
+                  ideEditor.setValue(currentVal); 
+              } else {
+                  saveAndRender(currentVal);
+              }
               setTimeout(() => ideEditor.refresh(), 10);
           } else {
-              // ВЫКЛЮЧАЕМ IDE (Обычный Markdown)
               cmWrapper.style.display = "none";
-              editor.style.display = "block"; // Показываем textarea
-              if (toolbarWrapper) toolbarWrapper.style.display = "flex"; // Показываем панель
-              toggleBtn.style.color = ""; // Сброс цвета
+              editor.style.display = "block"; 
+              if (toolbarWrapper) toolbarWrapper.style.display = "flex"; 
+              toggleBtn.style.color = ""; 
               toggleBtn.style.background = "transparent";
-              editor.value = ideEditor.getValue(); // Переносим текст обратно из IDE в заметку
+              
+              const currentVal = ideEditor.getValue();
+              if (editor.value !== currentVal) {
+                  editor.value = currentVal;
+                  editor.dispatchEvent(new Event("input")); // Безопасный вызов
+              } else {
+                  saveAndRender(currentVal);
+              }
           }
       }
       // ==========================================
@@ -2521,7 +2626,10 @@
           
           renderNotesList(searchInput.value);
           localStorage.setItem("qn_active", activeId);
-          if (typeof updatePreview === "function") updatePreview();
+          
+          // ФИКС: Заменили прямой updatePreview() на умную функцию
+          saveAndRender(note.content || "");
+          
           if (window.innerWidth <= 768 && typeof toggleSidebar === "function") toggleSidebar(); 
         }
       }
@@ -2772,6 +2880,21 @@
         status.style.color = "#f59e0b";
 
         let text = editor.value;
+
+        // --- ФИКС: АБСОЛЮТНАЯ ЗАЩИТА ИНТЕРФЕЙСА ОТ ВЗЛОМА CSS/HTML ---
+        // Если код похож на сайт или содержит стили, мы блокируем его рендер в Markdown
+        // и превращаем в безопасный визуальный блок с подсветкой синтаксиса.
+        const lowerText = text.trim().toLowerCase();
+        if (lowerText.startsWith("<!doctype html>") || lowerText.startsWith("<html")) {
+            // Если вставлен целый сайт, оборачиваем его целиком
+            text = "```html\n" + text + "\n```";
+        } else {
+            // Точечно обезвреживаем опасные теги стилей и скриптов
+            text = text.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gi, (match) => "```css\n" + match + "\n```");
+            text = text.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gi, (match) => "```javascript\n" + match + "\n```");
+        }
+        // -------------------------------------------------------------
+
         const mBlocks = [],
           mInline = [];
         text = text.replace(/\$\$([\s\S]+?)\$\$/g, (m) => {
@@ -2984,6 +3107,10 @@
           "gpt-5.5": "GPT-5.5",
           "gpt-5.4-mini": "GPT-5.4-mini",
           "gpt-5.4-nano": "GPT-5.4-nano",
+          "claude-opus-4-7": "Claude Opus 4.7",
+          "claude-sonnet-4-6": "Claude Sonnet 4.6",
+          "claude-haiku-4-5": "Claude Haiku 4.5",
+          "gemini-3.1-pro-preview": "Gemini 3.1 Pro",
           "openrouter/x-ai/grok-4.3": "Grok-4.3"
         };
         const label = document.getElementById("currentModelLabel");
@@ -3371,16 +3498,24 @@
       // ЛОГИКА ОТОБРАЖЕНИЯ ВЫДЕЛЕННОГО ТЕКСТА (UI)
       // ==========================================
       function updateSelectionUI() {
-        const start = editor.selectionStart;
-        const end = editor.selectionEnd;
+        let selectedText = "";
+
+        // Умная проверка: откуда брать выделение (из IDE или из обычного текстовика)
+        if (isIdeMode && typeof ideEditor !== 'undefined') {
+            selectedText = ideEditor.getSelection();
+        } else {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            selectedText = start !== end ? editor.value.substring(start, end) : "";
+        }
+
         const previewBox = document.getElementById("aiSelectionPreview");
         const previewText = document.getElementById("aiSelectionText");
         const aiInput = document.getElementById("aiInput");
 
-        if (start !== end) {
+        if (selectedText) {
           // Если текст выделен
-          let text = editor.value.substring(start, end);
-          previewText.textContent = '"' + text.replace(/\n/g, " ") + '"'; // Убираем переносы строк для красоты
+          previewText.textContent = '"' + selectedText.replace(/\n/g, " ") + '"'; // Убираем переносы строк
           previewBox.classList.add("show");
           aiInput.placeholder = "Спросите что-то о выделенном тексте...";
         } else {
@@ -3392,7 +3527,14 @@
       }
 
       function clearSelectionContext() {
-        editor.selectionStart = editor.selectionEnd; // Снимаем выделение в редакторе
+        if (isIdeMode && typeof ideEditor !== 'undefined') {
+            // Снимаем выделение в IDE, ставя курсор в конец выделенного куска
+            const cursor = ideEditor.getCursor("to");
+            ideEditor.setSelection(cursor, cursor);
+        } else {
+            editor.selectionStart = editor.selectionEnd; // Снимаем выделение в обычном редакторе
+        }
+        
         updateSelectionUI(); // Обновляем UI
         document.getElementById("aiInput").focus();
       }
@@ -3432,6 +3574,8 @@
         // ИСПРАВЛЕНИЕ: Отправка только по Ctrl+Enter или Cmd+Enter (Mac)
         if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
+          // ЗАЩИТА: Блокируем отправку, если ИИ уже генерирует ответ
+          if (window.currentAIController) return;
           sendAIChat();
         }
         // Если нажат просто Enter — произойдет стандартный перенос строки в textarea
@@ -3477,8 +3621,16 @@
                 const beforeAt = textBeforeCursor.substring(0, match.index);
                 const afterCursor = val.substring(cursorPos);
                 
-                // Вставляем название заметки в кавычках (например: @"Название")
-                this.value = beforeAt + '@"' + note.title + '" ' + afterCursor;
+                // 1. Убираем напечатанное @название из поля ввода
+                this.value = beforeAt + afterCursor;
+                
+                // 2. Добавляем ID заметки в список прикрепленных 
+                // (Объект Set автоматически предотвращает дублирование)
+                window.aiAttachedNotes.add(note.id);
+                
+                // 3. Отрисовываем красивую плашку-значок над полем
+                updateAttachedNotesUI();
+
                 mentionDropdown.classList.remove("show");
                 this.focus();
               };
@@ -3594,136 +3746,234 @@
             }
         }
         
-        // Автоскролл вниз при потоковом тексте
+        // УМНЫЙ АВТОСКРОЛЛ: Проверяем, находится ли скролл внизу (запас 100px)
         const chatArea = document.getElementById("aiChatHistory");
-        chatArea.scrollTop = chatArea.scrollHeight;
+        const isScrolledToBottom = chatArea.scrollHeight - chatArea.clientHeight <= chatArea.scrollTop + 100;
+        
+        // Если пользователь скроллит вверх читая старые сообщения — не мешаем ему
+        if (isScrolledToBottom) {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
       }
 
-      // Единая потоковая функция для вызовов ИИ
-      async function callProxyAPIStream(messages, onUpdateCallback) {
+      // Единая потоковая функция для вызовов ИИ с умным роутером API
+      async function callProxyAPIStream(messages, onUpdateCallback, abortSignal) {
         if (!settings.apiKey) {
           toggleSettings();
           throw new Error("Укажите API-ключ в настройках!");
         }
 
         let rawModel = settings.aiModel || "gpt-5.5";
-        let apiUrl = "https://api.proxyapi.ru/openai/v1/chat/completions";
-        let modelForApi = rawModel;
-
-        if (rawModel.startsWith("openrouter/")) {
-          apiUrl = "https://api.proxyapi.ru/openrouter/v1/chat/completions";
-          modelForApi = rawModel.replace("openrouter/", ""); 
-        } 
-        else if (rawModel.startsWith("openai/")) {
-          modelForApi = rawModel.replace("openai/", "");
-        }
-
-        const currentTemp = (rawModel === "gpt-5.5") ? 1 : 1;
-
-        const requestBody = {
-          model: modelForApi,
-          messages: messages,
-          temperature: currentTemp,
-          stream: true
-        };
-
-        // ==========================================
-        // ЕДИНЫЙ СТАНДАРТ ПАРАМЕТРОВ РАЗМЫШЛЕНИЯ
-        // ==========================================
         let effort = settings.thinking || "off";
         if (effort === "mid") effort = "medium";
-        
-        // Понижаем xhigh до high, так как большинство API-шлюзов еще не знают xhigh
-        if (effort === "xhigh") effort = "high"; 
+        if (effort === "xhigh") effort = "high";
 
-        if (effort !== "off") {
-            // И OpenAI, и OpenRouter (Grok) принимают этот параметр в корне
-            requestBody.reasoning_effort = effort;
-        }
+        let finalContent = "";
+        let finalReasoning = "";
 
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${settings.apiKey}`
-          },
-          body: JSON.stringify(requestBody)
-        });
+        const processDelta = (textDelta, reasoningDelta) => {
+            if (textDelta) finalContent += textDelta;
+            if (reasoningDelta) finalReasoning += reasoningDelta;
 
-        if (!response.ok) {
-          const err = await response.json().catch(() => ({}));
-          throw new Error(err.error?.message || `Ошибка сервера: ${response.status}`);
-        }
+            let displayReasoning = finalReasoning;
+            let displayContent = finalContent;
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        
-        let rawContent = "";
-        let reasoningContent = "";
+            const thinkStart = finalContent.indexOf("<think>");
+            const thinkEnd = finalContent.indexOf("</think>");
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
+            if (thinkStart !== -1) {
+                if (thinkEnd !== -1) {
+                    displayReasoning += finalContent.substring(thinkStart + 7, thinkEnd);
+                    displayContent = finalContent.substring(0, thinkStart) + finalContent.substring(thinkEnd + 8);
+                } else {
+                    displayReasoning += finalContent.substring(thinkStart + 7);
+                    displayContent = finalContent.substring(0, thinkStart);
+                }
+            }
 
-          for (const line of lines) {
-            if (line.trim().startsWith("data: ")) {
-              const dataStr = line.replace("data: ", "").trim();
-              if (dataStr === "[DONE]") continue;
-              
-              try {
-                const parsed = JSON.parse(dataStr);
-                const delta = parsed.choices[0].delta;
+            if (onUpdateCallback) onUpdateCallback(displayContent.trimStart(), displayReasoning.trim());
+        };
 
-                // Ловим размышления из разных стандартов API
-                if (delta.reasoning_content) reasoningContent += delta.reasoning_content;
-                if (delta.reasoning) reasoningContent += delta.reasoning; // Стандарт OpenRouter
-                if (delta.content) rawContent += delta.content;
+        try {
+            // ========================================================
+            // 1. ЛОГИКА ДЛЯ ANTHROPIC (CLAUDE)
+            // ========================================================
+            if (rawModel.includes("claude")) {
+                let systemPrompt = "";
+                const anthropicMessages = messages.filter(m => {
+                    if (m.role === "system") { systemPrompt = m.content; return false; }
+                    return true;
+                }).map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }));
 
-                let displayReasoning = reasoningContent;
-                let displayContent = rawContent;
-
-                // Непробиваемый парсер тегов <think> (для DeepSeek)
-                const thinkStart = rawContent.indexOf("<think>");
-                const thinkEnd = rawContent.indexOf("</think>");
-
-                if (thinkStart !== -1) {
-                    if (thinkEnd !== -1) {
-                        // Мысли закончились
-                        displayReasoning += rawContent.substring(thinkStart + 7, thinkEnd);
-                        displayContent = rawContent.substring(0, thinkStart) + rawContent.substring(thinkEnd + 8);
-                    } else {
-                        // Все еще думает
-                        displayReasoning += rawContent.substring(thinkStart + 7);
-                        displayContent = rawContent.substring(0, thinkStart);
-                    }
+                const isSonnet = rawModel.includes("sonnet");
+                const body = {
+                    model: rawModel,
+                    max_tokens: isSonnet ? 8192 : 4096,
+                    temperature: 1.0,
+                    messages: anthropicMessages,
+                    stream: true
+                };
+                
+                if (systemPrompt) body.system = systemPrompt;
+                if (effort !== "off") {
+                    if (isSonnet) body.thinking = { type: "enabled", budget_tokens: 4096 };
+                    else body.system = (body.system || "") + "\n\nПеред ответом обязательно подробно распиши ход своих мыслей, поместив их внутрь тегов <think>...</think>.";
                 }
 
-                if (onUpdateCallback) onUpdateCallback(displayContent.trimStart(), displayReasoning.trim());
+                const res = await fetch("https://api.proxyapi.ru/anthropic/v1/messages", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-api-key": settings.apiKey, "anthropic-version": "2023-06-01" },
+                    body: JSON.stringify(body),
+                    signal: abortSignal // ДОБАВЛЕНО
+                });
 
-              } catch (e) {
-                // Игнорируем битые чанки
-              }
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(`Anthropic API Error: ${errData.error?.message || res.status}`);
+                }
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop();
+                    for (let line of lines) {
+                        if (line.startsWith("data:")) {
+                            const jsonStr = line.replace("data:", "").trim();
+                            if (jsonStr === "[DONE]") continue;
+                            try {
+                                const data = JSON.parse(jsonStr);
+                                if (data.type === "content_block_delta") {
+                                    if (data.delta?.type === "thinking_delta") processDelta("", data.delta.thinking);
+                                    else if (data.delta?.type === "text_delta") processDelta(data.delta.text, "");
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
             }
-          }
+            // ========================================================
+            // 2. ЛОГИКА ДЛЯ GOOGLE (GEMINI)
+            // ========================================================
+            else if (rawModel.includes("gemini")) {
+                let history = [];
+                let systemText = "";
+
+                messages.forEach(m => {
+                    if (m.role === "system") { systemText = `System Instructions:\n${m.content}\n\n`; return; }
+                    const role = m.role === "assistant" ? "model" : "user";
+                    const parts = [{ text: m.content || "-" }];
+                    if (history.length > 0 && history[history.length - 1].role === role) history[history.length - 1].parts.push(...parts);
+                    else history.push({ role, parts });
+                });
+
+                if (history.length === 0) history.push({ role: "user", parts: [{ text: systemText + "Начало диалога" }] });
+                else if (history[0].role === "model") history.unshift({ role: "user", parts: [{ text: systemText + "Начало диалога" }] });
+                else if (systemText) history[0].parts[0].text = systemText + history[0].parts[0].text;
+
+                const body = { contents: history };
+                if (effort !== "off") body.generationConfig = { thinkingConfig: { thinkingLevel: effort.toUpperCase() } };
+
+                const cleanModel = rawModel.replace("google/", "").replace("gemini/", "");
+                const res = await fetch(`https://api.proxyapi.ru/google/v1beta/models/${cleanModel}:streamGenerateContent?alt=sse&key=${settings.apiKey}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
+                    signal: abortSignal // ДОБАВЛЕНО
+                });
+
+                if (!res.ok) throw new Error(`Gemini Error: ${res.status}`);
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop();
+                    for (let line of lines) {
+                        if (line.startsWith("data:")) {
+                            const jsonStr = line.replace("data:", "").trim();
+                            if (jsonStr === "[DONE]") continue;
+                            try {
+                                const data = JSON.parse(jsonStr);
+                                const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                                if (txt) processDelta(txt, "");
+                            } catch (e) {}
+                        }
+                    }
+                }
+            }
+            // ========================================================
+            // 3. ЛОГИКА ДЛЯ OPENAI И OPENROUTER (СТАНДАРТ)
+            // ========================================================
+            else {
+                let apiUrl = "https://api.proxyapi.ru/openai/v1/chat/completions";
+                let modelForApi = rawModel;
+                if (rawModel.startsWith("openrouter/")) { apiUrl = "https://api.proxyapi.ru/openrouter/v1/chat/completions"; modelForApi = rawModel.replace("openrouter/", ""); }
+                else if (rawModel.startsWith("openai/")) { modelForApi = rawModel.replace("openai/", ""); }
+
+                const requestBody = { model: modelForApi, messages: messages, temperature: 1.0, stream: true };
+                if (effort !== "off") requestBody.reasoning_effort = effort;
+
+                const res = await fetch(apiUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${settings.apiKey}` },
+                    body: JSON.stringify(requestBody),
+                    signal: abortSignal // ДОБАВЛЕНО
+                });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(`OpenAI/OpenRouter Error: ${err.error?.message || res.status}`);
+                }
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split("\n");
+                    for (const line of lines) {
+                        if (line.trim().startsWith("data: ")) {
+                            const dataStr = line.replace("data: ", "").trim();
+                            if (dataStr === "[DONE]") continue;
+                            try {
+                                const parsed = JSON.parse(dataStr);
+                                const delta = parsed.choices[0].delta;
+                                processDelta(delta.content || "", delta.reasoning_content || delta.reasoning || "");
+                            } catch (e) {}
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            // ФИКС: Если ошибка произошла из-за отмены пользователем, просто глотаем её и идем дальше
+            if (error.name !== "AbortError") {
+                throw error;
+            }
         }
-        
-        let finalContent = rawContent;
-        let finalReasoning = reasoningContent;
 
-        // Финальная зачистка тегов перед сохранением
-        const thinkStart = rawContent.indexOf("<think>");
-        const thinkEnd = rawContent.indexOf("</think>");
-        if (thinkStart !== -1) {
-            if (thinkEnd !== -1) {
-                finalReasoning += rawContent.substring(thinkStart + 7, thinkEnd);
-                finalContent = rawContent.substring(0, thinkStart) + rawContent.substring(thinkEnd + 8);
-            } else {
-                finalReasoning += rawContent.substring(thinkStart + 7);
-                finalContent = rawContent.substring(0, thinkStart);
-            }
+        // Завершающая чистка тегов <think> и добавление метки остановки
+        const finalThinkStart = finalContent.indexOf("<think>");
+        const finalThinkEnd = finalContent.indexOf("</think>");
+        if (finalThinkStart !== -1 && finalThinkEnd !== -1) {
+            finalReasoning += finalContent.substring(finalThinkStart + 7, finalThinkEnd);
+            finalContent = finalContent.substring(0, finalThinkStart) + finalContent.substring(finalThinkEnd + 8);
+        }
+
+        if (abortSignal && abortSignal.aborted) {
+            finalContent += "\n\n*[Остановлено пользователем]*";
         }
 
         return { content: finalContent.trim(), reasoning: finalReasoning.trim() };
@@ -3781,18 +4031,32 @@
             // 1. ЕСЛИ ИИ ХОЧЕТ СОЗДАТЬ НОВУЮ ЗАМЕТКУ
             if (action.type === "CREATE_NOTE") {
                 resultHTML += `
-                  <div class="wd-inline-patch" style="border-color: #3b82f6;">
-                     <div class="wd-patch-actions" style="background: rgba(59, 130, 246, 0.1); justify-content: flex-start;">
+                  <div class="wd-inline-patch" style="border-color: #3b82f6;" id="patch_container_create_${actionIndex}">
+                     <div class="wd-patch-actions" style="background: rgba(59, 130, 246, 0.1); justify-content: space-between;">
                         <span style="color: #60a5fa; font-weight: 600; font-family: var(--font-ui); font-size: 13px;">
                            <i class='bx bx-file-blank'></i> Будет создана заметка: "${action.title || 'Новая заметка'}"
                         </span>
+                        <button class="wd-patch-btn" id="btn_exclude_create_${actionIndex}" onclick="togglePatchExclude('create_${actionIndex}')"><i class='bx bx-block'></i> Отменить</button>
                      </div>
                      <div class="wd-patch-view">
                         <div class="wd-line added"><span class="wd-prefix">+</span><span class="wd-text">${(action.content || "").replace(/</g, "&lt;")}</span></div>
                      </div>
                   </div>
                 `;
-            } 
+            }
+            // 1.5 ЕСЛИ ИИ ХОЧЕТ УДАЛИТЬ ЗАМЕТКУ
+            else if (action.type === "DELETE_NOTE") {
+                resultHTML += `
+                  <div class="wd-inline-patch" style="border-color: #ef4444;" id="patch_container_delete_${actionIndex}">
+                     <div class="wd-patch-actions" style="background: rgba(239, 68, 68, 0.1); justify-content: space-between;">
+                        <span style="color: #f87171; font-weight: 600; font-family: var(--font-ui); font-size: 13px;">
+                           <i class='bx bx-trash'></i> Будет удалена заметка: "${note ? note.title : 'Неизвестно'}"
+                        </span>
+                        <button class="wd-patch-btn" id="btn_exclude_delete_${actionIndex}" onclick="togglePatchExclude('delete_${actionIndex}')"><i class='bx bx-block'></i> Отменить удаление</button>
+                     </div>
+                  </div>
+                `;
+            }
             
             // 2. ЕСЛИ ИИ ПОЛНОСТЬЮ ПЕРЕПИСЫВАЕТ ЗАМЕТКУ
             else if (action.type === "UPDATE_NOTE") {
@@ -3825,6 +4089,14 @@
                     
                     patch.find = cleanFind;
                     patch.replace = cleanReplace;
+
+                    // --- ФИКС ДЛЯ ПУСТЫХ ЗАМЕТОК ---
+                    if (tempContent.trim() === "") {
+                        // Если текста нет, считаем, что нашли совпадение в самом начале
+                        blocks.push({ actionIndex, patchIndex, index: 0, find: "", replace: cleanReplace });
+                        return; // Переходим к следующему патчу
+                    }
+                    // --------------------------------
 
                     let index = tempContent.indexOf(cleanFind);
                     let matchedText = cleanFind;
@@ -3968,13 +4240,22 @@
             action.patches = newPatches;
           } 
           else if (action.type === "UPDATE_NOTE") {
-             const container = document.getElementById(`patch_container_update`);
+             const container = document.getElementById(`patch_container_update_${actionIndex}`);
              if (container && container.dataset.excluded === "true") {
                  action.type = "IGNORE"; 
              } else {
-                 const textarea = document.getElementById(`patch_textarea_update`);
+                 const textarea = document.getElementById(`patch_textarea_update_${actionIndex}`);
                  if (textarea) action.content = textarea.value;
              }
+          }
+          // ФИКС: Обрабатываем отмену удаления и создания
+          else if (action.type === "DELETE_NOTE") {
+             const container = document.getElementById(`patch_container_delete_${actionIndex}`);
+             if (container && container.dataset.excluded === "true") action.type = "IGNORE";
+          }
+          else if (action.type === "CREATE_NOTE") {
+             const container = document.getElementById(`patch_container_create_${actionIndex}`);
+             if (container && container.dataset.excluded === "true") action.type = "IGNORE";
           }
         });
 
@@ -4006,14 +4287,20 @@
             if (action.type === "PATCH_NOTE") {
               let notFoundCount = 0;
               action.patches.forEach(patch => {
-                if (patch.find && typeof patch.find === 'string') {
+                // ФИКС: Заменили проверку "patch.find" на "!== undefined", чтобы разрешить пустую строку
+                if (patch.find !== undefined && typeof patch.find === 'string') {
                   // Синхронизируем нормализацию с Diff Viewer'ом
                   let normalizedNoteContent = note.content.replace(/\r\n/g, '\n');
-                  let searchString = patch.find; // Уже очищен в applyInteractiveDiff
+                  let searchString = patch.find; 
                   
-                  if (normalizedNoteContent.includes(searchString)) {
-                    note.content = normalizedNoteContent.replace(searchString, patch.replace || "");
+                  // --- ФИКС ДЛЯ ПУСТЫХ ЗАМЕТОК ---
+                  if (normalizedNoteContent.trim() === "") {
+                      note.content = patch.replace || ""; // Просто вставляем новый код
                   } 
+                  // --------------------------------
+                  else if (normalizedNoteContent.includes(searchString)) {
+                    note.content = normalizedNoteContent.replace(searchString, patch.replace || "");
+                  }
                   else if (normalizedNoteContent.includes(searchString.trim())) {
                     note.content = normalizedNoteContent.replace(searchString.trim(), (patch.replace || "").trim());
                   } 
@@ -4098,16 +4385,36 @@
       // ========================================================
       // ПОТОКОВАЯ ОТПРАВКА ЗАПРОСА В ЧАТ
       // ========================================================
+      
+      // Глобальный контроллер для остановки
+      window.currentAIController = null;
+      window.abortAIGeneration = function() {
+          if (window.currentAIController) {
+              window.currentAIController.abort();
+              window.currentAIController = null;
+          }
+      };
+
       async function sendAIChat() {
+        if (window.currentAIController) return; // Двойная защита от спама кликами
+
         const input = document.getElementById("aiInput");
         const userText = input.value.trim();
         if (!userText) return;
 
+        // Создаем новый контроллер для этого запроса
+        window.currentAIController = new AbortController();
+        const signal = window.currentAIController.signal;
+
         const sendBtn = document.getElementById("aiSendBtn");
+        const stopContainer = document.getElementById("aiStopContainer");
+
         input.value = "";
         input.disabled = true;
-        sendBtn.disabled = true;
-        sendBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i>";
+        
+        // Прячем кнопку отправки и показываем красивую плавающую кнопку "Стоп"
+        sendBtn.style.display = "none";
+        stopContainer.style.display = "flex";
         
         // Удаляем класс у выпадающего списка напрямую, так как hideMentions не существует
         document.getElementById("aiMentionDropdown").classList.remove("show");
@@ -4134,10 +4441,15 @@
           .map(n => `\n--- ПРИКРЕПЛЕННАЯ ЗАМЕТКА ---\nID ФАЙЛА: ${n.id}\nНАЗВАНИЕ: ${n.title}\nСОДЕРЖИМОЕ:\n${n.content}\n--------------------------\n`)
           .join("");
 
-        // === НОВАЯ ЛОГИКА: ЗАХВАТ ВЫДЕЛЕННОГО ТЕКСТА ===
-        const startPos = editor.selectionStart;
-        const endPos = editor.selectionEnd;
-        const selectedText = startPos !== endPos ? editor.value.substring(startPos, endPos) : "";
+        // === НОВАЯ ЛОГИКА: ЗАХВАТ ВЫДЕЛЕННОГО ТЕКСТА (Поддержка IDE и Обычного редактора) ===
+        let selectedText = "";
+        if (isIdeMode && typeof ideEditor !== 'undefined') {
+            selectedText = ideEditor.getSelection();
+        } else {
+            const startPos = editor.selectionStart;
+            const endPos = editor.selectionEnd;
+            selectedText = startPos !== endPos ? editor.value.substring(startPos, endPos) : "";
+        }
         
         let selectionContext = "";
         if (selectedText) {
@@ -4145,26 +4457,24 @@
         }
 
         if (currentAIMode === "agent") {
-          systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. У тебя есть доступ к коду пользователя. Твоя цель — самостоятельно находить проблему и применять ТОЧЕЧНЫЕ изменения (патчи).
+          systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. У тебя есть доступ к базе данных пользователя. Твоя цель — управлять файлами и кодом по запросу пользователя.
 
-АБСОЛЮТНЫЕ ПРАВИЛА (ОБЯЗАТЕЛЬНО К ИСПОЛНЕНИЮ):
-1. ИСПОЛЬЗУЙ ИСКЛЮЧИТЕЛЬНО ТИП "PATCH_NOTE" ДЛЯ ЛЮБЫХ ИЗМЕНЕНИЙ! Никогда не переписывай файл целиком через UPDATE_NOTE, иначе система рухнет.
-2. В поле "find" (PATCH_NOTE) передавай от 2 до 7 строк ОРИГИНАЛЬНОГО КОДА, включая абсолютно все оригинальные пробелы и отступы. Текст должен совпадать 1 в 1, чтобы парсер его нашел.
-3. В поле "replace" пиши исправленный вариант этих же строк. Если нужно добавить новый код, найди строку-якорь, скопируй её в "find" и вставь в "replace" вместе с новым кодом.
-4. Отвечай СТРОГО чистым JSON без маркдауна (без \`\`\`json).
+АБСОЛЮТНЫЕ ПРАВИЛА:
+1. Для редактирования части текста используй "PATCH_NOTE". В "find" передавай точный кусок оригинального текста (от 2 до 7 строк, включая все отступы). В "replace" пиши исправленный вариант.
+2. Для создания нового файла используй "CREATE_NOTE" с полями "title" и "content".
+3. Для удаления файла используй "DELETE_NOTE" с полем "noteId".
+4. Для полной перезаписи (если файл нужно переписать с нуля) используй "UPDATE_NOTE".
+5. Отвечай СТРОГО чистым JSON без маркдауна (без \`\`\`json).
 
 СТРОГИЙ Формат JSON:
 {
   "actions": [
-    { 
-      "type": "PATCH_NOTE", 
-      "noteId": "ID_заметки", 
-      "patches": [ 
-        { "find": "    старая строка 1\\n    старая строка 2", "replace": "    новая строка 1\\n    дополнительная строка\\n    новая строка 2" } 
-      ] 
-    }
+    { "type": "PATCH_NOTE", "noteId": "ID", "patches": [ { "find": "старое", "replace": "новое" } ] },
+    { "type": "CREATE_NOTE", "title": "Название", "content": "Текст файла" },
+    { "type": "DELETE_NOTE", "noteId": "ID" },
+    { "type": "UPDATE_NOTE", "noteId": "ID", "content": "Новый текст целиком" }
   ],
-  "reply": "Что именно было изменено (коротко)."
+  "reply": "Отчет о том, что было сделано."
 }`;
 currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА (В ФОКУСЕ) ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ЭТИ ФАЙЛЫ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
         }
@@ -4187,42 +4497,38 @@ currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}
         const msgDiv = renderMessageUI("bot", "", -1);
 
         try {
-          // Вызываем стриминг с коллбеком для обновления UI
+          // Вызываем стриминг с коллбеком для обновления UI и ПЕРЕДАЕМ SIGNAL
           const result = await callProxyAPIStream(apiMessages, (text, reasoning) => {
              if (currentAIMode === "agent") {
               updateMessageUI(msgDiv, "<i class='bx bx-bot' style='color: var(--accent);'></i> Агент анализирует базу данных и формирует действия...", reasoning, -1);
              } else {
                  updateMessageUI(msgDiv, text, reasoning, -1);
              }
-          });
+          }, signal); // <- ПЕРЕДАЛИ SIGNAL СЮДА!
 
           let finalContent = result.content;
 
-          // Если это агент, рендерим DIFF PREVIEW
           if (currentAIMode === "agent") {
             const cleanJson = finalContent.replace(/```json/gi, '').replace(/```/gi, '').trim();
             try {
               const actionData = JSON.parse(cleanJson);
-              // Выводим текстовый ответ ИИ
               finalContent = actionData.reply || "Предлагаю следующие изменения в коде:";
-              
-              // ИСПРАВЛЕНО: Вызываем рендер окна изменения кода, ТОЛЬКО если ИИ реально предложил изменения
               if (actionData.actions && Array.isArray(actionData.actions) && actionData.actions.length > 0) {
-                  setTimeout(() => {
-                     renderDiffUI(actionData, msgDiv);
-                  }, 50);
+                  setTimeout(() => { renderDiffUI(actionData, msgDiv); }, 50);
               }
-
             } catch (e) {
-              finalContent = `<i class='bx bx-error-circle' style='color: #ef4444;'></i> Ошибка Агента: Формат ответа нарушен.\n${finalContent}`;
+              // Если JSON сломался из-за ручной остановки, не ругаемся ошибкой
+              if (signal.aborted) {
+                  finalContent = "Остановлено во время генерации плана действий.";
+              } else {
+                  finalContent = `<i class='bx bx-error-circle' style='color: #ef4444;'></i> Ошибка Агента: Формат ответа нарушен.\n${finalContent}`;
+              }
             }
           }
 
-          // Убираем мигающую точку у мыслей по завершению
           const pulse = msgDiv.querySelector('.think-pulse');
           if (pulse) pulse.remove();
 
-          // Финальное сохранение ВМЕСТЕ С МЫСЛЯМИ
           updateMessageUI(msgDiv, finalContent, result.reasoning, aiChatHistory.length);
           aiChatHistory.push({ role: "assistant", content: finalContent, reasoning: result.reasoning });
           saveAIChat();
@@ -4231,13 +4537,15 @@ currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}
           const errMsg = "<i class='bx bx-error-circle' style='color: #ef4444;'></i> " + error.message;
           updateMessageUI(msgDiv, errMsg, "", -1);
           
-          // ТЕПЕРЬ ОШИБКИ ТОЖЕ СОХРАНЯЮТСЯ В ИСТОРИЮ (чат больше не пропадает после F5)
           aiChatHistory.push({ role: "assistant", content: errMsg });
           saveAIChat();
         } finally {
+          // ВОЗВРАЩАЕМ UI В ИСХОДНОЕ СОСТОЯНИЕ
           input.disabled = false;
-          sendBtn.disabled = false;
-          sendBtn.innerHTML = "<i class='bx bx-up-arrow-alt'></i>";
+          sendBtn.style.display = "flex"; // Возвращаем синюю стрелочку
+          stopContainer.style.display = "none"; // Прячем кнопку Стоп
+          
+          window.currentAIController = null;
           input.focus();
         }
       }
@@ -4258,7 +4566,14 @@ currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}
         stopBtn.innerHTML = "<i class='bx bx-stop-circle'></i> ОСТАНОВИТЬ АГЕНТА";
         
         let isStopped = false;
-        stopBtn.onclick = () => { isStopped = true; stopBtn.remove(); btn.style.display="flex"; };
+        let agentController = null; // ДОБАВЛЕНО: контроллер для Агента
+
+        stopBtn.onclick = () => { 
+            isStopped = true; 
+            if (agentController) agentController.abort(); // МГНОВЕННАЯ ОСТАНОВКА СЕТИ
+            stopBtn.remove(); 
+            btn.style.display="flex"; 
+        };
         msgDiv.appendChild(stopBtn);
 
         let rawText = msgDiv.getAttribute("data-raw");
@@ -4293,9 +4608,10 @@ currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}
 
             try {
                 // Стримим выполнение конкретной задачи
+                agentController = new AbortController(); // Создаем контроллер для текущего шага
                 const result = await callProxyAPIStream(messages, (text, reasoning) => {
                     updateMessageUI(statusMsgDiv, `⏳ Выполняю _"${currentTask}"_...\n\n---\n*Генерация контента...*\n\n${text}`, reasoning, -1);
-                });
+                }, agentController.signal); // Передаем сигнал
 
                 let resultText = result.content.replace(/^```markdown\n?/gi, '').replace(/```$/gi, '').trim();
 
