@@ -936,6 +936,132 @@
         box-shadow: 0 0 10px currentColor;
       }
 
+      /* ==========================================
+         NOTION STYLE TOOLBAR & BOTTOM SHEETS
+         ========================================== */
+         .editor-toolbar-wrapper {
+        background: #18181b;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        z-index: 50;
+        flex-shrink: 0; /* Чтобы тулбар не сжимался */
+      }
+      
+      .editor-toolbar {
+        display: flex;
+        overflow-x: auto;
+        padding: 8px 12px;
+        gap: 12px;
+        align-items: center;
+        scrollbar-width: none;
+      }
+      .editor-toolbar::-webkit-scrollbar { display: none; }
+      
+      .toolbar-btn {
+        background: transparent;
+        border: none;
+        color: #a1a1aa;
+        font-size: 22px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+        padding: 6px;
+        border-radius: 8px;
+        flex-shrink: 0;
+        font-family: var(--font-ui);
+      }
+      .toolbar-btn:hover, .toolbar-btn:active, .toolbar-btn.active {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      
+      /* Кнопка Aa */
+      .btn-aa {
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: -0.5px;
+      }
+
+      /* Всплывающее меню (Bottom Sheet) */
+      .format-sheet {
+        position: absolute;
+        bottom: 100%;
+        left: 0;
+        width: 100%;
+        background: #18181b;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 16px 20px;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -15px 40px rgba(0,0,0,0.6);
+        transform: translateY(110%);
+        opacity: 0;
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+        pointer-events: none;
+        z-index: 40;
+        max-height: 50vh;
+        overflow-y: auto;
+      }
+      .format-sheet.show {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+      
+      .sheet-title {
+        font-size: 13px;
+        color: #71717a;
+        margin-bottom: 16px;
+        font-weight: 500;
+      }
+      
+      .sheet-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        row-gap: 8px;
+        column-gap: 16px;
+      }
+      
+      .sheet-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: transparent;
+        color: #e2e8f0;
+        cursor: pointer;
+        font-size: 15px;
+        transition: background 0.2s;
+        user-select: none;
+      }
+      .sheet-item:hover, .sheet-item:active {
+        background: rgba(255,255,255,0.08);
+      }
+      
+      .n-icon {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #a1a1aa;
+        font-size: 20px;
+        font-family: 'Times New Roman', serif;
+        font-weight: 600;
+      }
+      .n-icon sub {
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 500;
+        margin-left: 2px;
+        margin-bottom: -4px;
+      }
+      /* Конец вставки стилей */
+
       /* МЕДИА ЗАПРОСЫ (АДАПТИВ) */
       @media (max-width: 768px) {
         .sidebar {
@@ -1225,6 +1351,58 @@
       }
 
       /* === ЗОНА ВВОДА И РЕЖИМЫ === */
+      
+      /* ПЛАШКА ВЫДЕЛЕННОГО ТЕКСТА */
+      .ai-selection-preview {
+        background: rgba(var(--accent-rgb), 0.1);
+        border: 1px solid rgba(var(--accent-rgb), 0.3);
+        border-radius: 10px;
+        padding: 8px 12px;
+        margin-bottom: 4px;
+        display: none;
+        flex-direction: column;
+        gap: 4px;
+        animation: fadeIn 0.2s ease;
+      }
+      .ai-selection-preview.show {
+        display: flex;
+      }
+      .selection-header {
+        font-size: 11px;
+        color: var(--accent);
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .selection-header button {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        transition: 0.2s;
+      }
+      .selection-header button:hover {
+        color: #ef4444;
+      }
+      .selection-text {
+        font-size: 12px;
+        color: #e2e8f0;
+        font-style: italic;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
       .ai-input-area {
         padding: 15px 20px 20px;
         background: rgba(12, 12, 14, 0.95);
@@ -1496,6 +1674,7 @@
       .diff-btn.accept:hover { background: rgba(46, 160, 67, 0.2); }
       .diff-btn.reject { color: #ff7b72; }
       .diff-btn.reject:hover { background: rgba(248, 81, 73, 0.15); border-color: rgba(248, 81, 73, 0.4); }
+      
 
       /* ==========================================
          INLINE DIFF PREVIEW (PRO ДИЗАЙН И АДАПТИВНОСТЬ)
@@ -1565,6 +1744,7 @@
         .wd-footer { flex-direction: column; }
         .wd-footer .btn { width: 100%; justify-content: center; padding: 12px; }
       }
+      
     </style>
   </head>
   <body>
@@ -1648,6 +1828,52 @@
             spellcheck="false"
             placeholder="Пишите здесь..."
           ></textarea>
+          
+          <!-- ПАНЕЛЬ ФОРМАТИРОВАНИЯ КАК НА СКРИНШОТАХ -->
+          <div class="editor-toolbar-wrapper">
+            
+            <!-- МЕНЮ "TURN INTO" (Картинка 2) -->
+            <div class="format-sheet" id="turnIntoSheet">
+              <div class="sheet-title">Turn into</div>
+              <div class="sheet-grid">
+                <div class="sheet-item" onclick="insertMD('text')"><div class="n-icon">T</div> Text</div>
+                <div class="sheet-item" onclick="insertMD('h1')"><div class="n-icon">H<sub>1</sub></div> Heading 1</div>
+                <div class="sheet-item" onclick="insertMD('h2')"><div class="n-icon">H<sub>2</sub></div> Heading 2</div>
+                <div class="sheet-item" onclick="insertMD('h3')"><div class="n-icon">H<sub>3</sub></div> Heading 3</div>
+                <div class="sheet-item" onclick="insertMD('h4')"><div class="n-icon">H<sub>4</sub></div> Heading 4</div>
+                <div class="sheet-item" onclick="createNewNote(); toggleSheet('');"><div class="n-icon"><i class='bx bx-file-blank'></i></div> Page</div>
+                <div class="sheet-item" onclick="insertMD('bullet')"><div class="n-icon"><i class='bx bx-list-ul'></i></div> Bulleted list</div>
+                <div class="sheet-item" onclick="insertMD('number')"><div class="n-icon"><i class='bx bx-list-ol'></i></div> Numbered list</div>
+                <div class="sheet-item" onclick="insertMD('todo')"><div class="n-icon"><i class='bx bx-check-square'></i></div> To-do list</div>
+                <div class="sheet-item" onclick="insertMD('toggle')"><div class="n-icon"><i class='bx bx-caret-right'></i></div> Toggle list</div>
+              </div>
+            </div>
+
+            <!-- МЕНЮ СТИЛЕЙ ТЕКСТА (Картинка 1) -->
+            <div class="format-sheet" id="formatTextSheet">
+              <div class="sheet-title">Text Style</div>
+              <div class="sheet-grid">
+                <div class="sheet-item" onclick="insertMD('bold')"><div class="n-icon"><i class='bx bx-bold'></i></div> Bold</div>
+                <div class="sheet-item" onclick="insertMD('italic')"><div class="n-icon"><i class='bx bx-italic'></i></div> Italic</div>
+                <div class="sheet-item" onclick="insertMD('strike')"><div class="n-icon"><i class='bx bx-strikethrough'></i></div> Strikethrough</div>
+                <div class="sheet-item" onclick="insertMD('code')"><div class="n-icon"><i class='bx bx-code'></i></div> Code</div>
+                <div class="sheet-item" onclick="insertMD('link')"><div class="n-icon"><i class='bx bx-link'></i></div> Link</div>
+                <div class="sheet-item" onclick="insertMD('math')"><div class="n-icon"><i class='bx bx-math'></i></div> Equation</div>
+              </div>
+            </div>
+
+            <!-- СКРОЛЛИРУЕМАЯ ПОЛОСКА С ИКОНКАМИ -->
+            <div class="editor-toolbar">
+              <!-- Иконка с волшебной палочкой (Открывает Turn into) -->
+              <button class="toolbar-btn" onclick="toggleSheet('turnIntoSheet')"><i class='bx bx-magic-wand'></i></button>
+              <button class="toolbar-btn" onclick="toggleSheet('turnIntoSheet')"><i class='bx bx-plus'></i></button>
+              <button class="toolbar-btn btn-aa" onclick="toggleSheet('formatTextSheet')">Aa</button>
+              <button class="toolbar-btn" onclick="insertMD('todo')"><i class='bx bx-check-square'></i></button>
+              <button class="toolbar-btn" onclick="document.execCommand('undo')"><i class='bx bx-undo'></i></button>
+              <button class="toolbar-btn" onclick="insertMD('mention')"><i class='bx bx-at'></i></button>
+              <button class="toolbar-btn" onclick="editor.blur(); toggleSheet('');"><i class='bx bx-x-circle'></i></button>
+            </div>
+          </div>
         </div>
         <div class="pane preview-pane">
           <div class="pane-header">
@@ -1763,6 +1989,15 @@
           
           <!-- ВЫПАДАЮЩИЙ СПИСОК @ -->
           <div class="ai-mention-dropdown" id="aiMentionDropdown"></div>
+
+          <!-- ПРЕВЬЮ ВЫДЕЛЕННОГО ТЕКСТА -->
+          <div class="ai-selection-preview" id="aiSelectionPreview">
+            <div class="selection-header">
+              <span style="display: flex; align-items: center; gap: 4px;"><i class='bx bx-text'></i> Контекст</span>
+              <button onclick="clearSelectionContext()" title="Убрать выделение"><i class='bx bx-x'></i></button>
+            </div>
+            <div class="selection-text" id="aiSelectionText"></div>
+          </div>
 
           <div class="ai-textarea-wrapper">
             <textarea id="aiInput" placeholder="Plan, @ for context, / for commands..." onkeydown="handleAIEnter(event)"></textarea>
@@ -2647,12 +2882,51 @@
         });
       }
 
+      // ==========================================
+      // ЛОГИКА ОТОБРАЖЕНИЯ ВЫДЕЛЕННОГО ТЕКСТА (UI)
+      // ==========================================
+      function updateSelectionUI() {
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        const previewBox = document.getElementById("aiSelectionPreview");
+        const previewText = document.getElementById("aiSelectionText");
+        const aiInput = document.getElementById("aiInput");
+
+        if (start !== end) {
+          // Если текст выделен
+          let text = editor.value.substring(start, end);
+          previewText.textContent = '"' + text.replace(/\n/g, " ") + '"'; // Убираем переносы строк для красоты
+          previewBox.classList.add("show");
+          aiInput.placeholder = "Спросите что-то о выделенном тексте...";
+        } else {
+          // Если выделения нет
+          previewBox.classList.remove("show");
+          const activeBtn = document.querySelector('.ai-mode-btn.active');
+          if (activeBtn) setAIMode(currentAIMode, activeBtn); // Возвращаем обычный плейсхолдер
+        }
+      }
+
+      function clearSelectionContext() {
+        editor.selectionStart = editor.selectionEnd; // Снимаем выделение в редакторе
+        updateSelectionUI(); // Обновляем UI
+        document.getElementById("aiInput").focus();
+      }
+
       function toggleAISidebar() {
         document.body.classList.toggle("ai-open");
         if (document.body.classList.contains("ai-open")) {
+          updateSelectionUI(); // Проверяем выделение при открытии
           document.getElementById("aiInput").focus();
         }
       }
+
+      // Отслеживаем выделение текста в реальном времени
+      document.addEventListener("selectionchange", () => {
+        // Обновляем плашку только если панель ИИ сейчас открыта
+        if (document.body.classList.contains("ai-open")) {
+          updateSelectionUI();
+        }
+      });
 
       function toggleAIModal() {
         toggleAISidebar();
@@ -2975,7 +3249,8 @@
 
       // 1. Кнопка вызова Diff в чате (без эмодзи)
       window.renderDiffUI = function(actionData, msgDiv) {
-        if (!actionData.actions || !Array.isArray(actionData.actions)) return;
+        // ИСПРАВЛЕНО: Проверяем, что массив не пустой!
+        if (!actionData.actions || !Array.isArray(actionData.actions) || actionData.actions.length === 0) return;
 
         const actionsContainer = msgDiv.querySelector('.bot-actions-container');
         
@@ -2996,6 +3271,10 @@
       // 2. Открытие единого окна просмотра изменений
       window.openInteractiveDiff = function(encodedData) {
         const actionData = JSON.parse(decodeURIComponent(encodedData));
+        
+        // ИСПРАВЛЕНО: Глобальная защита от краша
+        if (!actionData.actions || actionData.actions.length === 0) return;
+
         const targetId = actionData.actions[0]?.noteId || activeId;
         const note = notes.find(n => n.id === targetId) || notes.find(n => n.id === activeId);
         
@@ -3290,7 +3569,17 @@
           .map(n => `\n--- ПРИКРЕПЛЕННАЯ ЗАМЕТКА: ${n.title} ---\n${n.content}\n`)
           .join("");
 
-          if (currentAIMode === "agent") {
+        // === НОВАЯ ЛОГИКА: ЗАХВАТ ВЫДЕЛЕННОГО ТЕКСТА ===
+        const startPos = editor.selectionStart;
+        const endPos = editor.selectionEnd;
+        const selectedText = startPos !== endPos ? editor.value.substring(startPos, endPos) : "";
+        
+        let selectionContext = "";
+        if (selectedText) {
+            selectionContext = `\n\n[КРИТИЧЕСКИ ВАЖНО] ПОЛЬЗОВАТЕЛЬ ВЫДЕЛИЛ ЭТОТ ФРАГМЕНТ ТЕКСТА:\n"""\n${selectedText}\n"""\nТвоя главная задача сейчас — ответить на запрос, опираясь ИМЕННО на этот фрагмент. Объясни его, перепиши или ответь на вопрос, касающийся конкретно этого куска. Остальной текст документа дан только для понимания контекста.\n\n`;
+        }
+
+        if (currentAIMode === "agent") {
           systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. У тебя есть ПОЛНЫЙ доступ к коду и текстам пользователя.
 Пользователь будет давать абстрактные задачи ("Исправь баг", "Адаптируй под мобилки", "Добавь анимацию").
 ТВОЯ ЗАДАЧА — самостоятельно найти проблему в коде и применить нужные патчи.
@@ -3313,17 +3602,17 @@
   ],
   "reply": "Кратко и профессионально объясни пользователю, в чем была проблема и что конкретно ты исправил."
 }`;
-          currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${mentionedNotesContext ? "\nОБРАТИ ОСОБОЕ ВНИМАНИЕ НА УПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
+          currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nОБРАТИ ОСОБОЕ ВНИМАНИЕ НА УПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
         }
         else if (currentAIMode === "plan") {
           systemPrompt = `Ты Senior Менеджер. У тебя есть ПОЛНЫЙ доступ ко всем заметкам пользователя для контекста и глубокого анализа. 
 Твоя цель — составить подробный Roadmap по запросу. ВСЕГДА используй markdown-задачи в формате \`- [ ] Задача\`. Дроби на мелкие выполнимые шаги.`;
-          currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${mentionedNotesContext ? "\nОБРАТИ ОСОБОЕ ВНИМАНИЕ НА УПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
+          currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nОБРАТИ ОСОБОЕ ВНИМАНИЕ НА УПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
         } 
         else if (currentAIMode === "ask") {
           systemPrompt = `Ты ИИ-ассистент. Твоя область видимости СТРОГО ОГРАНИЧЕНА текущей открытой заметкой и теми заметками, которые пользователь явно прикрепил через @. 
 У тебя НЕТ доступа к другим заметкам. Твоя задача — помочь с текущим текстом (отредактировать, дополнить, ответить на вопросы по нему). Отвечай обычным текстом или Markdown (никакого JSON).`;
-          currentDocumentContext = `ТЕКУЩИЙ ДОКУМЕНТ:\n"""\n${editor.value.trim()}\n"""\n${mentionedNotesContext ? "\nДОПОЛНИТЕЛЬНЫЕ ПРИКРЕПЛЕННЫЕ МАТЕРИАЛЫ ОТ ПОЛЬЗОВАТЕЛЯ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
+          currentDocumentContext = `ТЕКУЩИЙ ДОКУМЕНТ:\n"""\n${editor.value.trim()}\n"""\n${selectionContext}${mentionedNotesContext ? "\nДОПОЛНИТЕЛЬНЫЕ ПРИКРЕПЛЕННЫЕ МАТЕРИАЛЫ ОТ ПОЛЬЗОВАТЕЛЯ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
         }
 
         const apiMessages = [{ role: "system", content: systemPrompt }];
@@ -3353,10 +3642,12 @@
               // Выводим текстовый ответ ИИ
               finalContent = actionData.reply || "Предлагаю следующие изменения в коде:";
               
-              // Ждем миллисекунду, чтобы `updateMessageUI` обновил HTML, а затем рисуем Diff
-              setTimeout(() => {
-                 renderDiffUI(actionData, msgDiv);
-              }, 50);
+              // ИСПРАВЛЕНО: Вызываем рендер окна изменения кода, ТОЛЬКО если ИИ реально предложил изменения
+              if (actionData.actions && Array.isArray(actionData.actions) && actionData.actions.length > 0) {
+                  setTimeout(() => {
+                     renderDiffUI(actionData, msgDiv);
+                  }, 50);
+              }
 
             } catch (e) {
               finalContent = `<i class='bx bx-error-circle' style='color: #ef4444;'></i> Ошибка Агента: Формат ответа нарушен.\n${finalContent}`;
@@ -3484,6 +3775,141 @@
 
       // Вызываем отрисовку чата сразу при загрузке скрипта
       renderSavedChat();
+
+      // ==========================================
+      // ЛОГИКА ТУЛБАРА И МАРКДАУН ВСТАВОК
+      // ==========================================
+      
+      // Открытие/Закрытие менюшек
+      function toggleSheet(sheetId) {
+        document.querySelectorAll('.format-sheet').forEach(sheet => {
+          if (sheet.id === sheetId) {
+            sheet.classList.toggle('show');
+          } else {
+            sheet.classList.remove('show');
+          }
+        });
+      }
+
+      // Закрываем меню при клике на сам текст редактора
+      editor.addEventListener('click', () => toggleSheet(''));
+
+      // ==========================================
+      // УМНАЯ ЛОГИКА ТУЛБАРА (SMART TOGGLES)
+      // ==========================================
+      
+      const toolbarWrapper = document.querySelector('.editor-toolbar-wrapper');
+      
+      // ИСПРАВЛЕНИЕ МИГАНИЯ: Запрещаем скрытие клавиатуры при тапе по кнопкам
+      if (toolbarWrapper) {
+        toolbarWrapper.addEventListener('pointerdown', (e) => {
+          // Если мы касаемся кнопки или элемента выпадающего меню - блокируем потерю фокуса
+          if (e.target.closest('.toolbar-btn') || e.target.closest('.sheet-item')) {
+            e.preventDefault(); 
+          }
+        });
+      }
+
+      function toggleSheet(sheetId) {
+        document.querySelectorAll('.format-sheet').forEach(sheet => {
+          if (sheet.id === sheetId) {
+            sheet.classList.toggle('show');
+          } else {
+            sheet.classList.remove('show');
+          }
+        });
+      }
+
+      // Если кликаем по самому тексту - менюшки закрываются
+      editor.addEventListener('click', () => toggleSheet(''));
+
+      window.insertMD = function(type) {
+        // Удерживаем фокус, чтобы клавиатура точно не исчезла
+        editor.focus(); 
+        
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        const text = editor.value;
+
+        const formats = {
+          'h1': { p: '# ', block: true },
+          'h2': { p: '## ', block: true },
+          'h3': { p: '### ', block: true },
+          'h4': { p: '#### ', block: true },
+          'bullet': { p: '- ', block: true },
+          'number': { p: '1. ', block: true },
+          'todo': { p: '- [ ] ', block: true },
+          'quote': { p: '> ', block: true },
+          'toggle': { p: '<details><summary>Toggle</summary>\n\n', s: '\n\n</details>', block: true },
+          'bold': { p: '**', s: '**' },
+          'italic': { p: '*', s: '*' },
+          'strike': { p: '~~', s: '~~' },
+          'code': { p: '`', s: '`' },
+          'math': { p: '$$', s: '$$' },
+          'link': { p: '[', s: '](url)' },
+          'mention': { p: '@', s: '' }
+        };
+
+        if (type === 'text') {
+          const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+          const lineEnd = text.indexOf('\n', start) === -1 ? text.length : text.indexOf('\n', start);
+          const lineText = text.substring(lineStart, lineEnd);
+          const cleanLine = lineText.replace(/^(#+\s|- \[[ x]\] |- \s|\d+\.\s|>\s)/, '');
+          
+          editor.value = text.substring(0, lineStart) + cleanLine + text.substring(lineEnd);
+          editor.selectionStart = editor.selectionEnd = lineStart + cleanLine.length;
+          toggleSheet('');
+          editor.dispatchEvent(new Event("input"));
+          return;
+        }
+
+        const format = formats[type];
+        if (!format) return;
+
+        // 1. БЛОЧНЫЕ (Заголовки, списки)
+        if (format.block) {
+          const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+          const lineEnd = text.indexOf('\n', start) === -1 ? text.length : text.indexOf('\n', start);
+          const lineText = text.substring(lineStart, lineEnd);
+          const cleanLine = lineText.replace(/^(#+\s|- \[[ x]\] |- \s|\d+\.\s|>\s)/, '');
+
+          if (lineText.startsWith(format.p)) {
+            editor.value = text.substring(0, lineStart) + cleanLine + text.substring(lineEnd);
+            editor.selectionStart = editor.selectionEnd = lineStart + cleanLine.length;
+          } else {
+            editor.value = text.substring(0, lineStart) + format.p + cleanLine + text.substring(lineEnd);
+            editor.selectionStart = editor.selectionEnd = lineStart + format.p.length + cleanLine.length;
+          }
+          toggleSheet('');
+
+        // 2. СТРОЧНЫЕ (Жирный, Курсив и т.д.)
+        } else {
+          const prefix = format.p;
+          const suffix = format.s;
+          const selectedText = text.substring(start, end);
+
+          if (selectedText) {
+            editor.value = text.substring(0, start) + prefix + selectedText + suffix + text.substring(end);
+            editor.selectionStart = start + prefix.length;
+            editor.selectionEnd = start + prefix.length + selectedText.length;
+            toggleSheet('');
+          } else {
+            const nextChars = text.substring(end, end + suffix.length);
+            
+            if (nextChars === suffix && suffix !== '') {
+               editor.selectionStart = editor.selectionEnd = end + suffix.length;
+               toggleSheet('');
+            } else {
+               editor.value = text.substring(0, start) + prefix + suffix + text.substring(end);
+               editor.selectionStart = editor.selectionEnd = start + prefix.length;
+               toggleSheet('');
+            }
+          }
+        }
+
+        // Принудительно обновляем превью после изменения
+        editor.dispatchEvent(new Event("input"));
+      };
     </script>
   <!-- ========================================== -->
   <!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
