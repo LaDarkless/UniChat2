@@ -3813,24 +3813,40 @@
             
             // 3. ЕСЛИ ИИ МЕНЯЕТ КУСОЧКИ ТЕКСТА (PATCH)
             else if (action.type === "PATCH_NOTE" && action.patches && note) {
-                let tempContent = note.content;
+                let tempContent = note.content.replace(/\r\n/g, '\n'); // Нормализуем переносы
                 let blocks = [];
 
                 action.patches.forEach((patch, patchIndex) => {
-                    let index = tempContent.indexOf(patch.find);
-                    let matchedText = patch.find;
+                    // Очистка от маркдаун-тегов, которые ИИ мог засунуть внутрь find/replace
+                    let cleanFind = (patch.find || "").replace(/\r\n/g, '\n').replace(/^```[a-z]*\n/i, '').replace(/\n```$/, '');
+                    let cleanReplace = (patch.replace || "").replace(/\r\n/g, '\n').replace(/^```[a-z]*\n/i, '').replace(/\n```$/, '');
+                    
+                    patch.find = cleanFind;
+                    patch.replace = cleanReplace;
+
+                    let index = tempContent.indexOf(cleanFind);
+                    let matchedText = cleanFind;
                     
                     if (index === -1) {
-                        const escapedFind = patch.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                        const flexibleRegexStr = escapedFind.trim().replace(/\s+/g, '\\s+');
-                        if (flexibleRegexStr) {
-                            const match = tempContent.match(new RegExp(flexibleRegexStr));
-                            if (match) { index = match.index; matchedText = match[0]; }
+                        // Попытка 1: Ищем без учета пробелов по краям
+                        let trimmedFind = cleanFind.trim();
+                        index = tempContent.indexOf(trimmedFind);
+                        
+                        if (index !== -1) {
+                            matchedText = trimmedFind;
+                        } else {
+                            // Попытка 2: Регулярное выражение (игнорирует разное кол-во пробелов/табов внутри)
+                            const escapedFind = cleanFind.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const flexibleRegexStr = escapedFind.trim().replace(/\s+/g, '\\s+');
+                            if (flexibleRegexStr) {
+                                const match = tempContent.match(new RegExp(flexibleRegexStr));
+                                if (match) { index = match.index; matchedText = match[0]; }
+                            }
                         }
                     }
 
                     if (index !== -1) {
-                        blocks.push({ actionIndex, patchIndex, index, find: matchedText, replace: patch.replace });
+                        blocks.push({ actionIndex, patchIndex, index, find: matchedText, replace: cleanReplace });
                         tempContent = tempContent.substring(0, index) + "\0".repeat(matchedText.length) + tempContent.substring(index + matchedText.length);
                     }
                 });
@@ -3980,16 +3996,24 @@
               let notFoundCount = 0;
               action.patches.forEach(patch => {
                 if (patch.find && typeof patch.find === 'string') {
-                  if (note.content.includes(patch.find)) {
-                    note.content = note.content.replace(patch.find, patch.replace || "");
-                  } else {
-                    const escapedFind = patch.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                  // Синхронизируем нормализацию с Diff Viewer'ом
+                  let normalizedNoteContent = note.content.replace(/\r\n/g, '\n');
+                  let searchString = patch.find; // Уже очищен в applyInteractiveDiff
+                  
+                  if (normalizedNoteContent.includes(searchString)) {
+                    note.content = normalizedNoteContent.replace(searchString, patch.replace || "");
+                  } 
+                  else if (normalizedNoteContent.includes(searchString.trim())) {
+                    note.content = normalizedNoteContent.replace(searchString.trim(), (patch.replace || "").trim());
+                  } 
+                  else {
+                    const escapedFind = searchString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const flexibleRegexStr = escapedFind.trim().replace(/\s+/g, '\\s+');
                     if (flexibleRegexStr) {
                       const regex = new RegExp(flexibleRegexStr);
-                      const match = note.content.match(regex);
+                      const match = normalizedNoteContent.match(regex);
                       if (match) {
-                        note.content = note.content.replace(match[0], patch.replace || "");
+                        note.content = normalizedNoteContent.replace(match[0], patch.replace || "");
                       } else {
                         notFoundCount++;
                       }
@@ -4019,9 +4043,16 @@
               switchNote(targetId);
             }
 
+            // ОБНОВЛЕННЫЙ БЛОК СИНХРОНИЗАЦИИ
             if (note && activeId === note.id && (action.type === "PATCH_NOTE" || action.type === "UPDATE_NOTE")) {
                editor.value = note.content;
                editor.dispatchEvent(new Event("input"));
+               
+               // Принудительно обновляем IDE, если оно включено
+               if (typeof ideEditor !== 'undefined' && isIdeMode) {
+                   ideEditor.setValue(note.content);
+                   setTimeout(() => ideEditor.refresh(), 10);
+               }
             }
         });
 
@@ -4040,6 +4071,11 @@
                 if (activeId === note.id) {
                      editor.value = note.content;
                      editor.dispatchEvent(new Event("input"));
+                     
+                     // Синхронизация отката с IDE
+                     if (typeof ideEditor !== 'undefined' && isIdeMode) {
+                         ideEditor.setValue(note.content);
+                     }
                 }
                 localStorage.setItem("qn_notes", JSON.stringify(notes));
             }
@@ -4098,30 +4134,28 @@
         }
 
         if (currentAIMode === "agent") {
-          systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. У тебя есть ПОЛНЫЙ доступ к коду и текстам пользователя.
-Пользователь будет давать абстрактные задачи ("Исправь баг", "Адаптируй под мобилки", "Добавь анимацию").
-ТВОЯ ЗАДАЧА — самостоятельно найти проблему в коде и применить нужные патчи.
+          systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. У тебя есть доступ к коду пользователя. Твоя цель — самостоятельно находить проблему и применять ТОЧЕЧНЫЕ изменения (патчи).
 
-КАК ТЫ МЫСЛИШЬ И ДЕЙСТВУЕШЬ:
-1. Внимательно изучи предоставленный код (активную заметку и те, что упомянуты через @).
-2. Пойми, что именно вызывает ошибку или требует адаптации.
-3. Выбери метод:
-   - ПРИОРИТЕТ: Используй "PATCH_NOTE" для точечной замены.
-   - ОЧЕНЬ ВАЖНО: В поле "find" НИКОГДА не пиши одно-два слова! Ты обязан скопировать ЦЕЛУЮ СТРОКУ ИЛИ ДВЕ (вместе с нужным словом), чтобы редактор мог безошибочно найти это место в большом тексте. 
-   - В поле "replace" пиши эту же строку, но уже с твоими исправлениями. Чтобы удалить строку — оставь "replace" пустым.
-   - ИСКЛЮЧЕНИЕ: Используй "UPDATE_NOTE", только если файл нужно переписать на 80-100%.
-4. ТЫ ОБЯЗАН ОТВЕЧАТЬ СТРОГО В ФОРМАТЕ JSON. Любые мысли и рассуждения помещай только в поле "reply"!
+АБСОЛЮТНЫЕ ПРАВИЛА (ОБЯЗАТЕЛЬНО К ИСПОЛНЕНИЮ):
+1. ИСПОЛЬЗУЙ ИСКЛЮЧИТЕЛЬНО ТИП "PATCH_NOTE" ДЛЯ ЛЮБЫХ ИЗМЕНЕНИЙ! Никогда не переписывай файл целиком через UPDATE_NOTE, иначе система рухнет.
+2. В поле "find" (PATCH_NOTE) передавай от 2 до 7 строк ОРИГИНАЛЬНОГО КОДА, включая абсолютно все оригинальные пробелы и отступы. Текст должен совпадать 1 в 1, чтобы парсер его нашел.
+3. В поле "replace" пиши исправленный вариант этих же строк. Если нужно добавить новый код, найди строку-якорь, скопируй её в "find" и вставь в "replace" вместе с новым кодом.
+4. Отвечай СТРОГО чистым JSON без маркдауна (без \`\`\`json).
 
-Формат JSON:
+СТРОГИЙ Формат JSON:
 {
   "actions": [
-    { "type": "PATCH_NOTE", "noteId": "ID_текущей_заметки", "patches": [ { "find": "точный кусок кода", "replace": "новый код" } ] },
-    { "type": "UPDATE_NOTE", "noteId": "...", "title": "...", "content": "Полностью новый текст" },
-    { "type": "CREATE_NOTE", "title": "Название новой заметки", "content": "Текст новой заметки" }
+    { 
+      "type": "PATCH_NOTE", 
+      "noteId": "ID_заметки", 
+      "patches": [ 
+        { "find": "    старая строка 1\\n    старая строка 2", "replace": "    новая строка 1\\n    дополнительная строка\\n    новая строка 2" } 
+      ] 
+    }
   ],
-  "reply": "Кратко объясни пользователю, что ты сделал."
+  "reply": "Что именно было изменено (коротко)."
 }`;
-currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА (В ФОКУСЕ) ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ЯВНО ПРИКРЕПИЛ ЭТИ ФАЙЛЫ ДЛЯ ИЗМЕНЕНИЙ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
+currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА (В ФОКУСЕ) ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ЭТИ ФАЙЛЫ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
         }
         else if (currentAIMode === "plan") {
           systemPrompt = `Ты Senior Менеджер. У тебя есть ПОЛНЫЙ доступ ко всем заметкам пользователя для контекста и глубокого анализа. 
