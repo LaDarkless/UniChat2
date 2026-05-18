@@ -29,7 +29,8 @@
     />
 
     <!-- Парсеры -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Удаляем старую ссылку и ставим зафиксированную версию -->
+<script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
 
     <!-- MathJax (LaTeX) -->
@@ -1924,12 +1925,13 @@
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/selection/active-line.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/matchbrackets.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/markdown/markdown.min.js"></script>
   <!-- ==================================================== -->
-</head>
   </head>
   <body>
     <div id="theme-layer"></div> <!-- НОВЫЙ БЛОК ДЛЯ ТЕМ -->
@@ -2115,6 +2117,11 @@
                 <i class='bx bx-chevron-down' style="color: var(--text-muted);"></i>
               </button>
               <div class="ai-model-menu" id="aiModelMenu">
+                <!-- НОВЫЙ ЛОКАЛЬНЫЙ ПУНКТ -->
+                <div class="ai-model-item" style="background: rgba(16, 185, 129, 0.1); border-bottom: 1px solid rgba(16,185,129,0.3);" onclick="selectAIModel('local-deepseek-r1', 'DeepSeek-R1 Local')">
+                  <span class="m-title" style="color: #10b981;"><i class='bx bx-laptop'></i> DeepSeek-R1 (Локально)</span>
+                  <span class="m-desc">Работает прямо в браузере, бесплатно</span>
+                </div>
                 <div class="ai-model-item" onclick="selectAIModel('gpt-5.5', 'GPT-5.5')">
                   <span class="m-title">GPT-5.5</span><span class="m-desc">Флагман OpenAI</span>
                 </div>
@@ -2240,6 +2247,11 @@
           <label>Тема (Акцентный цвет)</label>
           <div class="color-picker">
             <div class="color-dot" style="background: #8b5cf6; color: #8b5cf6" onclick="setTheme('#8b5cf6', '139, 92, 246')"></div>
+            <div class="color-dot" style="background: #8b5cf6; color: #8b5cf6" onclick="setTheme(event, '#8b5cf6', '139, 92, 246')"></div>
+<div class="color-dot" style="background: #3b82f6; color: #3b82f6" onclick="setTheme(event, '#3b82f6', '59, 130, 246')"></div>
+<div class="color-dot" style="background: #10b981; color: #10b981" onclick="setTheme(event, '#10b981', '16, 185, 129')"></div>
+<div class="color-dot" style="background: #f43f5e; color: #f43f5e" onclick="setTheme(event, '#f43f5e', '244, 63, 94')"></div>
+<div class="color-dot" style="background: #f59e0b; color: #f59e0b" onclick="setTheme(event, '#f59e0b', '245, 158, 11')"></div>
             <div class="color-dot" style="background: #3b82f6; color: #3b82f6" onclick="setTheme('#3b82f6', '59, 130, 246')"></div>
             <div class="color-dot" style="background: #10b981; color: #10b981" onclick="setTheme('#10b981', '16, 185, 129')"></div>
             <div class="color-dot" style="background: #f43f5e; color: #f43f5e" onclick="setTheme('#f43f5e', '244, 63, 94')"></div>
@@ -2314,6 +2326,7 @@
         <div class="setting-group">
           <label>Модель ProxyAPI / OpenAI / OpenRouter</label>
           <select id="aiModelSelect" onchange="updateSettings()">
+            <option value="local-deepseek-r1" style="color: #10b981;">DeepSeek-R1 (Локальная, Бесплатно)</option>
             <option value="gpt-5.5">GPT-5.5</option>
             <option value="gpt-5.4-mini">GPT-5.4-mini</option>
             <option value="gpt-5.4-nano">GPT-5.4-nano</option>
@@ -2636,7 +2649,7 @@
 
       function createNewNote() {
         const newNote = {
-          id: Date.now().toString(),
+          id: Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9),
           title: "Новая заметка",
           content: "# ",
           date: new Date().toLocaleDateString(),
@@ -3018,15 +3031,16 @@
         document.getElementById("settingsModal").classList.toggle("active");
       }
 
-      function setTheme(hex, rgb) {
-        settings.color = hex;
-        settings.colorRgb = rgb;
-        document
-          .querySelectorAll(".color-dot")
-          .forEach((d) => d.classList.remove("active"));
-        event.target.classList.add("active");
-        applySettings();
-      }
+      // Добавлен параметр 'e'
+function setTheme(e, hex, rgb) {
+  settings.color = hex;
+  settings.colorRgb = rgb;
+  document
+    .querySelectorAll(".color-dot")
+    .forEach((d) => d.classList.remove("active"));
+  e.target.classList.add("active"); // Теперь это работает безопасно на 100%
+  applySettings();
+}
 
       let settings = JSON.parse(localStorage.getItem("qn_settings")) || {
         font: "'Inter', sans-serif",
@@ -3104,6 +3118,7 @@
       let applySettings = function() {
         originalApplySettings();
         const modelMap = {
+          "local-deepseek-r1": "DeepSeek-R1 Local", // Добавили маппинг
           "gpt-5.5": "GPT-5.5",
           "gpt-5.4-mini": "GPT-5.4-mini",
           "gpt-5.4-nano": "GPT-5.4-nano",
@@ -3707,8 +3722,8 @@
             thinkContainer.querySelector('.ai-thinking-content').textContent = reasoning;
         }
 
-        // 2. Обновляем основной текст
-        const safeContent = content || ""; // ЗАЩИТА ОТ ПУСТОТЫ
+        // 2. Обновляем основной текст (скрываем технический тег запроса)
+const safeContent = (content || "").replace(/<read_note>.*?<\/read_note>/gi, '');
         const contentDiv = msgDiv.querySelector('.bot-markdown-content');
         contentDiv.innerHTML = safeContent ? marked.parse(safeContent) : "<i class='bx bx-loader-alt bx-spin' style='color: var(--accent);'></i> Печатает...";
 
@@ -3717,8 +3732,8 @@
         actionsContainer.innerHTML = ""; 
 
         if (safeContent) {
-            // Кнопка вставки
-            if ((currentAIMode === "agent" || currentAIMode === "ask") && !safeContent.includes("- [ ]")) {
+            // Кнопка вставки (ТОЛЬКО для режима Ask, Агенту она не нужна, у него свой Diff Viewer)
+if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
               const insertBtn = document.createElement("button");
               insertBtn.className = "insert-code-btn";
               insertBtn.innerHTML = "<i class='bx bx-layer-plus'></i> Вставить в редактор";
@@ -3756,17 +3771,117 @@
         }
       }
 
-      // Единая потоковая функция для вызовов ИИ с умным роутером API
-      async function callProxyAPIStream(messages, onUpdateCallback, abortSignal) {
-        if (!settings.apiKey) {
-          toggleSettings();
-          throw new Error("Укажите API-ключ в настройках!");
-        }
+      // Глобальные переменные для локальной модели
+      window.localAIEngine = null;
+      window.isLocalModelLoading = false; // Флаг загрузки
 
+      // ========================================================
+      // НОВАЯ ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ МОДЕЛИ ПО КЛИКУ НА КНОПКУ
+      // ========================================================
+      window.initLocalModel = async function(btn) {
+          if (window.isLocalModelLoading) return; // Защита от двойного клика
+          window.isLocalModelLoading = true;
+
+          // Блокируем чат, чтобы пользователь не спамил запросами
+          const chatInput = document.getElementById("aiInput");
+          const chatSendBtn = document.getElementById("aiSendBtn");
+          if (chatInput) chatInput.disabled = true;
+          if (chatSendBtn) chatSendBtn.disabled = true;
+
+          btn.disabled = true;
+          btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Подключение к серверам CDN...";
+          const progressDiv = document.getElementById("localModelProgress");
+          
+          try {
+              let webllm;
+              const cdns = [
+                  "https://esm.run/@mlc-ai/web-llm", 
+                  "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm/+esm",
+                  "https://esm.sh/@mlc-ai/web-llm"
+              ];
+              
+              for (let url of cdns) {
+                  try { 
+                      webllm = await import(url); 
+                      if (webllm && webllm.CreateMLCEngine) break; 
+                  } catch(e) { }
+              }
+              
+              if(!webllm || !webllm.CreateMLCEngine) {
+                  throw new Error("Не удалось загрузить ядро WebLLM. Проверьте интернет.");
+              }
+
+              // Ищем драйвер от оригинальной Qwen2.5
+              let dsModel = webllm.prebuiltAppConfig.model_list.find(m => m.model_id === "Qwen2.5-1.5B-Instruct-q4f16_1-MLC");
+              
+              if (dsModel) {
+                  dsModel = JSON.parse(JSON.stringify(dsModel));
+                  dsModel.model = "https://huggingface.co/mlc-ai/DeepSeek-R1-Distill-Qwen-1.5B-q4f16_1-MLC";
+                  dsModel.model_id = "DeepSeek-R1-Distill-Qwen-1.5B-q4f16_1-MLC";
+                  
+                  // РАЗБЛОКИРУЕМ КОНТЕКСТ ДО 32 768 ТОКЕНОВ
+                  if (!dsModel.overrides) dsModel.overrides = {};
+                  dsModel.overrides.context_window_size = 32768; 
+              } else {
+                  dsModel = {
+                      model: "https://huggingface.co/mlc-ai/DeepSeek-R1-Distill-Qwen-1.5B-q4f16_1-MLC",
+                      model_id: "DeepSeek-R1-Distill-Qwen-1.5B-q4f16_1-MLC",
+                      model_lib_url: "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_8/Qwen2-1.5B-Instruct-q4f16_1_cs1k-webgpu.wasm",
+                      vram_required_MB: 2048,
+                      low_resource_required: false,
+                      overrides: { context_window_size: 32768 } // РАЗБЛОКИРУЕМ КОНТЕКСТ
+                  };
+              }
+
+              const customAppConfig = {
+                  model_list: [ ...webllm.prebuiltAppConfig.model_list, dsModel ]
+              };
+
+              btn.innerHTML = "<i class='bx bx-cloud-download bx-fade-down'></i> Скачивание весов ИИ...";
+              
+              window.localAIEngine = await webllm.CreateMLCEngine(
+                  "DeepSeek-R1-Distill-Qwen-1.5B-q4f16_1-MLC",
+                  {
+                      appConfig: customAppConfig,
+                      initProgressCallback: (progress) => {
+                          let statusTxt = progress.text;
+                          // Объясняем пользователю "зависание" в конце
+                          if (progress.progress >= 0.85 && progress.progress < 1) {
+                              statusTxt += "<br><br><span style='color:#f59e0b;'><i class='bx bx-cog bx-spin'></i> Компиляция шейдеров для видеокарты... (Может занять минуту, не закрывайте вкладку)</span>";
+                          }
+                          progressDiv.innerHTML = `Загрузка в память: <b>${Math.round(progress.progress * 100)}%</b><br><span style="color:var(--text-muted); font-size:11px;">${statusTxt}</span>`;
+                      }
+                  }
+              );
+              
+              btn.innerHTML = "<i class='bx bx-check'></i> WebGPU Движок Активен!";
+              btn.classList.replace("btn-primary", "btn");
+              btn.style.background = "rgba(16, 185, 129, 0.2)";
+              btn.style.color = "#10b981";
+              progressDiv.innerHTML = "<b>Отлично!</b> Модель загружена в видеопамять.<br>Пожалуйста, напишите свой запрос в чат еще раз.";
+              
+          } catch (err) {
+              btn.disabled = false;
+              btn.innerHTML = "<i class='bx bx-refresh'></i> Ошибка, повторить попытку";
+              progressDiv.innerHTML = `<span style="color: #ef4444;"><i class='bx bx-error'></i> ${err.message}</span>`;
+          } finally {
+              // В любом случае (успех или ошибка) разблокируем чат
+              window.isLocalModelLoading = false;
+              if (chatInput) chatInput.disabled = false;
+              if (chatSendBtn) chatSendBtn.disabled = false;
+          }
+      };
+
+      async function callProxyAPIStream(messages, onUpdateCallback, abortSignal) {
         let rawModel = settings.aiModel || "gpt-5.5";
         let effort = settings.thinking || "off";
         if (effort === "mid") effort = "medium";
         if (effort === "xhigh") effort = "high";
+
+        if (rawModel !== "local-deepseek-r1" && !settings.apiKey) {
+          toggleSettings();
+          throw new Error("Укажите API-ключ в настройках!");
+        }
 
         let finalContent = "";
         let finalReasoning = "";
@@ -3796,9 +3911,62 @@
 
         try {
             // ========================================================
+            // 0. ЛОГИКА ДЛЯ ЛОКАЛЬНОЙ МОДЕЛИ (DEEPSEEK В БРАУЗЕРЕ)
+            // ========================================================
+            if (rawModel === "local-deepseek-r1") {
+                if (!navigator.gpu) {
+                    throw new Error("WebGPU не поддерживается. Откройте сайт в Chrome/Edge/Brave на ПК или Android.");
+                }
+
+                // ЕСЛИ ДВИЖОК НЕ ЗАГРУЖЕН — ВЫВОДИМ ПОЛЬЗОВАТЕЛЮ КРАСИВУЮ КНОПКУ И ПРЕРЫВАЕМ ГЕНЕРАЦИЮ
+                if (!window.localAIEngine) {
+                    if (window.isLocalModelLoading) {
+                        return {
+                            content: `⏳ **Пожалуйста, подождите!**\nИдёт скачивание и инициализация модели (посмотрите на проценты на плашке выше). Дождитесь 100% перед отправкой новых сообщений.`,
+                            reasoning: ""
+                        };
+                    }
+
+                    return {
+                        content: `**Локальная модель не загружена в память!**\n\nDeepSeek-R1 (1.5B) работает прямо в браузере с использованием вашей видеокарты. Это абсолютно бесплатно, а данные не покидают устройство.\n\n*Вес модели: ~1.2 ГБ (скачивается в кэш браузера только при первом запуске).* \n\n<button class="btn btn-primary" onclick="window.initLocalModel(this)" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 14px;"><i class='bx bx-cloud-download'></i> Скачать и запустить WebGPU</button>\n\n<div id="localModelProgress" style="margin-top: 12px; font-size: 13px; color: #10b981; line-height: 1.4;"></div>`,
+                        reasoning: ""
+                    };
+                }
+
+                // Если движок уже загружен - продолжаем нормальную генерацию
+                const localMessages = messages.map(m => ({
+                    role: m.role === "bot" ? "assistant" : m.role,
+                    content: m.content
+                }));
+
+                const request = {
+                    messages: localMessages,
+                    temperature: 0.6,
+                    stream: true
+                };
+
+                try {
+                    const asyncChunkGenerator = await window.localAIEngine.chat.completions.create(request);
+                    
+                    for await (const chunk of asyncChunkGenerator) {
+                        if (abortSignal && abortSignal.aborted) {
+                            window.localAIEngine.interruptGenerate();
+                            break;
+                        }
+                        const deltaContent = chunk.choices[0]?.delta?.content || "";
+                        processDelta(deltaContent, "");
+                    }
+                } catch (err) {
+                    throw new Error("Ошибка генерации WebGPU: " + err.message);
+                }
+                
+                // Выход из функции, чтобы не запустить ветки других API
+                return { content: finalContent.trim(), reasoning: finalReasoning.trim() };
+            }
+            // ========================================================
             // 1. ЛОГИКА ДЛЯ ANTHROPIC (CLAUDE)
             // ========================================================
-            if (rawModel.includes("claude")) {
+            else if (rawModel.includes("claude")) {
                 let systemPrompt = "";
                 const anthropicMessages = messages.filter(m => {
                     if (m.role === "system") { systemPrompt = m.content; return false; }
@@ -3824,7 +3992,7 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json", "x-api-key": settings.apiKey, "anthropic-version": "2023-06-01" },
                     body: JSON.stringify(body),
-                    signal: abortSignal // ДОБАВЛЕНО
+                    signal: abortSignal
                 });
 
                 if (!res.ok) {
@@ -3884,7 +4052,7 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(body),
-                    signal: abortSignal // ДОБАВЛЕНО
+                    signal: abortSignal
                 });
 
                 if (!res.ok) throw new Error(`Gemini Error: ${res.status}`);
@@ -3928,7 +4096,7 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${settings.apiKey}` },
                     body: JSON.stringify(requestBody),
-                    signal: abortSignal // ДОБАВЛЕНО
+                    signal: abortSignal
                 });
 
                 if (!res.ok) {
@@ -3958,7 +4126,6 @@
                 }
             }
         } catch (error) {
-            // ФИКС: Если ошибка произошла из-за отмены пользователем, просто глотаем её и идем дальше
             if (error.name !== "AbortError") {
                 throw error;
             }
@@ -4046,6 +4213,7 @@
             }
             // 1.5 ЕСЛИ ИИ ХОЧЕТ УДАЛИТЬ ЗАМЕТКУ
             else if (action.type === "DELETE_NOTE") {
+                // ... (старый код DELETE_NOTE)
                 resultHTML += `
                   <div class="wd-inline-patch" style="border-color: #ef4444;" id="patch_container_delete_${actionIndex}">
                      <div class="wd-patch-actions" style="background: rgba(239, 68, 68, 0.1); justify-content: space-between;">
@@ -4053,6 +4221,33 @@
                            <i class='bx bx-trash'></i> Будет удалена заметка: "${note ? note.title : 'Неизвестно'}"
                         </span>
                         <button class="wd-patch-btn" id="btn_exclude_delete_${actionIndex}" onclick="togglePatchExclude('delete_${actionIndex}')"><i class='bx bx-block'></i> Отменить удаление</button>
+                     </div>
+                  </div>
+                `;
+            }
+            // 1.6 ЕСЛИ ИИ ХОЧЕТ УДАЛИТЬ ВООБЩЕ ВСЁ
+            else if (action.type === "DELETE_ALL_NOTES") {
+                resultHTML += `
+                  <div class="wd-inline-patch" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.05);" id="patch_container_delete_all_${actionIndex}">
+                     <div class="wd-patch-actions" style="background: rgba(239, 68, 68, 0.15); justify-content: space-between;">
+                        <span style="color: #ef4444; font-weight: 700; font-family: var(--font-ui); font-size: 13px; text-transform: uppercase;">
+                           <i class='bx bx-bomb bx-flashing'></i> ВНИМАНИЕ: БУДУТ УДАЛЕНЫ ВСЕ ЗАМЕТКИ БЕЗ ВОЗМОЖНОСТИ ВОССТАНОВЛЕНИЯ!
+                        </span>
+                        <button class="wd-patch-btn" id="btn_exclude_delete_all_${actionIndex}" onclick="togglePatchExclude('delete_all_${actionIndex}')"><i class='bx bx-block'></i> Отменить</button>
+                     </div>
+                  </div>
+                `;
+            }
+
+            // 1.8 ЕСЛИ ИИ ХОЧЕТ ПЕРЕИМЕНОВАТЬ ЗАМЕТКУ
+            else if (action.type === "RENAME_NOTE") {
+                resultHTML += `
+                  <div class="wd-inline-patch" style="border-color: #a855f7;" id="patch_container_rename_${actionIndex}">
+                     <div class="wd-patch-actions" style="background: rgba(168, 85, 247, 0.1); justify-content: space-between;">
+                        <span style="color: #c084fc; font-weight: 600; font-family: var(--font-ui); font-size: 13px;">
+                           <i class='bx bx-rename'></i> Переименование файла: "${action.oldTitle}" ➔ "${action.newTitle}"
+                        </span>
+                        <button class="wd-patch-btn" id="btn_exclude_rename_${actionIndex}" onclick="togglePatchExclude('rename_${actionIndex}')"><i class='bx bx-block'></i> Отменить</button>
                      </div>
                   </div>
                 `;
@@ -4248,9 +4443,18 @@
                  if (textarea) action.content = textarea.value;
              }
           }
+
+          else if (action.type === "RENAME_NOTE") {
+             const container = document.getElementById(`patch_container_rename_${actionIndex}`);
+             if (container && container.dataset.excluded === "true") action.type = "IGNORE";
+          }
           // ФИКС: Обрабатываем отмену удаления и создания
           else if (action.type === "DELETE_NOTE") {
              const container = document.getElementById(`patch_container_delete_${actionIndex}`);
+             if (container && container.dataset.excluded === "true") action.type = "IGNORE";
+          }
+          else if (action.type === "DELETE_ALL_NOTES") {
+             const container = document.getElementById(`patch_container_delete_all_${actionIndex}`);
              if (container && container.dataset.excluded === "true") action.type = "IGNORE";
           }
           else if (action.type === "CREATE_NOTE") {
@@ -4287,24 +4491,17 @@
             if (action.type === "PATCH_NOTE") {
               let notFoundCount = 0;
               action.patches.forEach(patch => {
-                // ФИКС: Заменили проверку "patch.find" на "!== undefined", чтобы разрешить пустую строку
                 if (patch.find !== undefined && typeof patch.find === 'string') {
-                  // Синхронизируем нормализацию с Diff Viewer'ом
                   let normalizedNoteContent = note.content.replace(/\r\n/g, '\n');
                   let searchString = patch.find; 
                   
-                  // --- ФИКС ДЛЯ ПУСТЫХ ЗАМЕТОК ---
                   if (normalizedNoteContent.trim() === "") {
-                      note.content = patch.replace || ""; // Просто вставляем новый код
-                  } 
-                  // --------------------------------
-                  else if (normalizedNoteContent.includes(searchString)) {
+                      note.content = patch.replace || ""; 
+                  } else if (normalizedNoteContent.includes(searchString)) {
                     note.content = normalizedNoteContent.replace(searchString, patch.replace || "");
-                  }
-                  else if (normalizedNoteContent.includes(searchString.trim())) {
+                  } else if (normalizedNoteContent.includes(searchString.trim())) {
                     note.content = normalizedNoteContent.replace(searchString.trim(), (patch.replace || "").trim());
-                  } 
-                  else {
+                  } else {
                     const escapedFind = searchString.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const flexibleRegexStr = escapedFind.trim().replace(/\s+/g, '\\s+');
                     if (flexibleRegexStr) {
@@ -4322,34 +4519,72 @@
                 }
               });
               
-              if (notFoundCount > 0) {
-                  alert(`[Внимание] Агент не смог найти ${notFoundCount} участков текста. Возможно, файл был изменен вручную.`);
-              }
+              if (notFoundCount > 0) alert(`[Внимание] Агент не смог найти ${notFoundCount} участков текста. Возможно, файл был изменен вручную.`);
             } 
             else if (action.type === "UPDATE_NOTE") {
               note.content = action.content;
               if (action.title) note.title = action.title;
             }
+            // ИСПРАВЛЕНИЕ: НОВАЯ ЛОГИКА ДЛЯ RENAME
+            else if (action.type === "RENAME_NOTE") {
+              note.title = action.newTitle;
+            }
             else if (action.type === "CREATE_NOTE") {
-              const newNote = { id: Date.now().toString(), title: action.title || "Новая", content: action.content || "# ", date: new Date().toLocaleDateString() };
-              notes.push(newNote); switchNote(newNote.id);
+              const uniqueId = Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9);
+              const newNote = { 
+                  id: uniqueId, 
+                  title: action.title || "Новая заметка", 
+                  content: action.content || "# ", 
+                  date: new Date().toLocaleDateString() 
+              };
+              notes.push(newNote); 
+              switchNote(newNote.id);
             }
             else if (action.type === "DELETE_NOTE") {
-              if (notes.length > 1) { notes = notes.filter(n => n.id !== targetId); if (activeId === targetId) switchNote(notes[0].id); }
+              if (notes.length > 1) { 
+                  notes = notes.filter(n => n.id !== targetId); 
+                  if (activeId === targetId) switchNote(notes[0].id); 
+              }
+            }
+            else if (action.type === "DELETE_ALL_NOTES") {
+              // Создаем одну новую чистую заметку, чтобы не сломать UI
+              const uniqueId = Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9);
+              notes = [{ 
+                  id: uniqueId, 
+                  title: "Новая заметка", 
+                  content: "# ", 
+                  date: new Date().toLocaleDateString() 
+              }];
+              // Очищаем прикрепленные контексты ИИ
+              if (window.aiAttachedNotes) window.aiAttachedNotes.clear();
+              if (typeof updateAttachedNotesUI === "function") updateAttachedNotesUI();
+              
+              switchNote(uniqueId);
             }
             else if (action.type === "SWITCH_NOTE") {
               switchNote(targetId);
             }
 
-            // ОБНОВЛЕННЫЙ БЛОК СИНХРОНИЗАЦИИ
-            if (note && activeId === note.id && (action.type === "PATCH_NOTE" || action.type === "UPDATE_NOTE")) {
-               editor.value = note.content;
-               editor.dispatchEvent(new Event("input"));
-               
-               // Принудительно обновляем IDE, если оно включено
-               if (typeof ideEditor !== 'undefined' && isIdeMode) {
-                   ideEditor.setValue(note.content);
-                   setTimeout(() => ideEditor.refresh(), 10);
+            // ИСПРАВЛЕНИЕ: ТОТАЛЬНАЯ СИНХРОНИЗАЦИЯ UI, ЕСЛИ ИЗМЕНЕН АКТИВНЫЙ ФАЙЛ
+            if (note && activeId === note.id) {
+               // 1. Обновляем поле с названием, если оно поменялось
+               const titleInput = document.getElementById("noteTitle");
+               if (titleInput && titleInput.value !== note.title) {
+                   titleInput.value = note.title;
+                   // 2. Если переименовали файл с кодом (например, в .js) — сразу перекрашиваем IDE!
+                   if (typeof ideEditor !== 'undefined' && isIdeMode) {
+                       ideEditor.setOption("mode", getSyntaxMode(note.title));
+                   }
+               }
+
+               // 3. Обновляем текстовое поле редактора
+               if (action.type === "PATCH_NOTE" || action.type === "UPDATE_NOTE") {
+                   editor.value = note.content;
+                   editor.dispatchEvent(new Event("input"));
+                   if (typeof ideEditor !== 'undefined' && isIdeMode) {
+                       ideEditor.setValue(note.content);
+                       setTimeout(() => ideEditor.refresh(), 10);
+                   }
                }
             }
         });
@@ -4395,134 +4630,394 @@
           }
       };
 
-      async function sendAIChat() {
-        if (window.currentAIController) return; // Двойная защита от спама кликами
+      // Функция обработки разрешения/запрета на чтение
+      window.handleReadPermission = function(noteId, isAllowed, btnElement) {
+        // Убираем блок с кнопками из интерфейса
+        const box = btnElement.closest('.read-request-box');
+        if (box) box.remove();
+
+        const note = notes.find(n => n.id === noteId);
+        if (!note) return;
 
         const input = document.getElementById("aiInput");
-        const userText = input.value.trim();
-        if (!userText) return;
+        
+        // Формируем системный ответ в поле ввода
+        if (isAllowed) {
+            input.value = `[СИСТЕМА] Выдан доступ к чтению файла "${note.title}".\n\nСОДЕРЖИМОЕ ФАЙЛА:\n"""\n${note.content}\n"""\n\nПродолжай выполнение изначальной задачи с учетом этих данных.`;
+        } else {
+            input.value = `[СИСТЕМА] ДОСТУП К ФАЙЛУ "${note.title}" ЗАПРЕЩЕН. Продолжай работу без этого файла (опирайся на то, что уже знаешь, или предложи альтернативное решение).`;
+        }
+        
+        // Автоматически отправляем ответ Ассистенту
+        sendAIChat(); 
+      };
 
-        // Создаем новый контроллер для этого запроса
-        window.currentAIController = new AbortController();
-        const signal = window.currentAIController.signal;
+      // === СИСТЕМНЫЕ ФУНКЦИИ ПЕРЕХВАТА ФАЙЛОВ ===
+      window.removeSystemRequestedNoteUI = function(btn) {
+        const li = btn.closest('li');
+        const ul = li.closest('ul');
+        li.style.opacity = '0';
+        li.style.transform = 'translateX(10px)';
+        setTimeout(() => {
+            li.remove();
+            if (ul.children.length === 0) {
+                const denyBtn = ul.closest('.read-request-box').querySelector('button.btn:not(.btn-primary)');
+                if (denyBtn) denyBtn.click();
+            }
+        }, 200);
+      };
 
+      window.handleSystemReadPermission = function(btnElement, isAllowed) {
+        const box = btnElement.closest('.read-request-box');
+        if (!box) return;
+
+        let idsArray = [];
+        if (isAllowed) {
+            const lis = box.querySelectorAll('li[data-req-id]');
+            lis.forEach(li => idsArray.push(li.getAttribute('data-req-id')));
+        }
+
+        box.remove();
+        
+        if (isAllowed && idsArray.length > 0) {
+            idsArray.forEach(id => window.aiAttachedNotes.add(id));
+            updateAttachedNotesUI(); 
+            addNewMessage("bot", `<i class='bx bx-check-circle' style='color:#10b981;'></i> Файлы добавлены в контекст. Запускаю ИИ...`);
+        } else {
+            addNewMessage("bot", `<i class='bx bx-block' style='color:#ef4444;'></i> Доступ к файлам отменен. Продолжаю работу...`);
+        }
+        
+        // Запускаем ИИ в режиме "Продолжения" (без повторного создания сообщений пользователя)
+        sendAIChat(true); 
+      };
+
+      // === НОВАЯ СИСТЕМА ПАРСИНГА XML-ТЕГОВ ===
+      // ИИ больше не должен ориентироваться по строкам. Передаем чистый код.
+      window.formatNoteWithLines = function(content) {
+          return content || "";
+      };
+
+      // Парсер XML-ответов от ИИ
+      window.parseAIResponseToActions = function(finalContent) {
+          let actionData = { actions: [], reply: finalContent };
+
+          // 1. Roadmap (План задач)
+          const roadmapMatch = finalContent.match(/<roadmap>([\s\S]*?)<\/roadmap>/i);
+          if (roadmapMatch) {
+              const tasks = [];
+              roadmapMatch[1].split('\n').forEach(line => {
+                  const taskMatch = line.match(/- \[[ x]\] (.+)/);
+                  if (taskMatch) tasks.push(taskMatch[1].trim());
+              });
+              if (tasks.length > 0) {
+                  actionData.actions.push({ type: "ROADMAP", tasks });
+                  actionData.reply = actionData.reply.replace(roadmapMatch[0], '').trim() + '\n\n' + roadmapMatch[1].trim();
+              }
+          }
+
+          // 2. Create Note (Создать)
+          const createRegex = /<create\s+title="([^"]+)">([\s\S]*?)<\/create>/gi;
+          let match;
+          while ((match = createRegex.exec(finalContent)) !== null) {
+              let content = match[2].trim().replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '');
+              actionData.actions.push({ type: "CREATE_NOTE", title: match[1], content: content });
+              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-file-blank' style='color:#3b82f6'></i> **Создан файл:** ${match[1]}\n`);
+          }
+
+          // 3. Update Note (Полная перезапись файла)
+          const updateRegex = /<update\s+id="([^"]+)">([\s\S]*?)<\/update>/gi;
+          while ((match = updateRegex.exec(finalContent)) !== null) {
+              let content = match[2].trim().replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '');
+              actionData.actions.push({ type: "UPDATE_NOTE", noteId: match[1], content: content });
+              const note = notes.find(n => n.id === match[1]);
+              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-refresh' style='color:#f59e0b'></i> **Перезаписан файл:** ${note ? note.title : match[1]}\n`);
+          }
+
+          // 4. Rename Note (Переименовать файл) - ИСПРАВЛЕНО: ТЕПЕРЬ ЭТО ОТДЕЛЬНЫЙ ТИП ДЕЙСТВИЯ
+          const renameRegex = /<rename\s+id="([^"]+)"\s+title="([^"]+)"\s*\/?>/gi;
+          while ((match = renameRegex.exec(finalContent)) !== null) {
+              const note = notes.find(n => n.id === match[1]);
+              actionData.actions.push({ type: "RENAME_NOTE", noteId: match[1], oldTitle: note ? note.title : match[1], newTitle: match[2] });
+              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-rename' style='color:#a855f7'></i> **Переименован файл:** ${note ? note.title : match[1]} ➔ ${match[2]}\n`);
+          }
+
+          // 5. Delete Note (Удалить)
+          const deleteRegex = /<delete\s+id="([^"]+)"\s*\/?>/gi;
+          while ((match = deleteRegex.exec(finalContent)) !== null) {
+              actionData.actions.push({ type: "DELETE_NOTE", noteId: match[1] });
+              const note = notes.find(n => n.id === match[1]);
+              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-trash' style='color:#ef4444'></i> **Удален файл:** ${note ? note.title : match[1]}\n`);
+          }
+
+          // 5.5 Удалить ВСЕ заметки (Системная команда)
+          const deleteAllRegex = /<delete_all\s*\/?>/gi;
+          if (deleteAllRegex.test(finalContent)) {
+              actionData.actions.push({ type: "DELETE_ALL_NOTES" });
+              actionData.reply = actionData.reply.replace(deleteAllRegex, `\n> <i class='bx bx-bomb' style='color:#ef4444'></i> **КРИТИЧЕСКОЕ ДЕЙСТВИЕ:** Запрошено удаление ВСЕХ файлов!\n`);
+          }
+
+          // 6. Edit Note (СИСТЕМНЫЙ ПОИСК И ЗАМЕНА БЕЗ НОМЕРОВ СТРОК)
+          const editRegex = /<edit\s+id="([^"]+)">([\s\S]*?)<\/edit>/gi;
+          while ((match = editRegex.exec(finalContent)) !== null) {
+              const noteId = match[1];
+              const patchesContent = match[2];
+              const note = notes.find(n => n.id === noteId);
+              
+              if (!note) continue;
+              
+              const patches = [];
+              // Ищем блоки <find> и <replace>
+              const replaceRegex = /<find>([\s\S]*?)<\/find>\s*<replace>([\s\S]*?)<\/replace>/gi;
+              let repMatch;
+              while ((repMatch = replaceRegex.exec(patchesContent)) !== null) {
+                  let oldCode = repMatch[1].replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '').trim();
+                  let newCode = repMatch[2].replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '').trim();
+                  
+                  if (oldCode) {
+                      patches.push({ find: oldCode, replace: newCode });
+                  }
+              }
+
+              if (patches.length > 0) {
+                  actionData.actions.push({ type: "PATCH_NOTE", noteId: noteId, patches: patches });
+                  actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-git-commit' style='color:#10b981'></i> **Точечная правка (Drift):** ${note.title}\n`);
+              }
+          }
+
+          actionData.reply = actionData.reply.trim() || "Анализ завершен. Действия сформированы.";
+          return actionData;
+      };
+
+      async function sendAIChat(isSystemContinue = false) {
+        if (window.currentAIController) return;
+
+        const input = document.getElementById("aiInput");
         const sendBtn = document.getElementById("aiSendBtn");
         const stopContainer = document.getElementById("aiStopContainer");
 
-        input.value = "";
-        input.disabled = true;
-        
-        // Прячем кнопку отправки и показываем красивую плавающую кнопку "Стоп"
-        sendBtn.style.display = "none";
-        stopContainer.style.display = "flex";
-        
-        // Удаляем класс у выпадающего списка напрямую, так как hideMentions не существует
-        document.getElementById("aiMentionDropdown").classList.remove("show");
+        let userText = input.value.trim();
 
-        addNewMessage("user", userText);
+        if (!isSystemContinue) {
+            if (!userText) return;
+            input.value = "";
+            input.disabled = true;
+            sendBtn.style.display = "none";
+            stopContainer.style.display = "flex";
+            document.getElementById("aiMentionDropdown").classList.remove("show");
+
+            addNewMessage("user", userText);
+
+            // === СИСТЕМНЫЙ ПЕРЕХВАТ: УДАЛЕНИЕ ВСЕХ ЗАМЕТОК БЕЗ ИИ ===
+            // Проверяем слэш-команды или явный текст
+            const isDeleteAllIntent = /^\/(delete_all|clear)|^(удали|удалить|очисти|очистить)\s+(все|всё)\s+(заметки|файлы|базу)/i.test(userText);
+            
+            if (isDeleteAllIntent) {
+                // Создаем сообщение от Системы
+                const msgDiv = renderMessageUI("bot", "<i class='bx bx-cog bx-spin' style='color: #a78bfa;'></i> Системный перехват...", -1);
+                
+                setTimeout(() => {
+                    // Генерируем "фейковый" ответ ИИ для нашего движка Diff
+                    const actionData = {
+                        reply: "> <i class='bx bx-shield-quarter' style='color:#a78bfa'></i> **Система:** Распознана команда очистки. Вызов окна подтверждения...",
+                        actions: [{ type: "DELETE_ALL_NOTES" }]
+                    };
+                    
+                    const finalMsg = "Системная команда распознана. Ожидание подтверждения...";
+                    updateMessageUI(msgDiv, finalMsg, "", aiChatHistory.length);
+                    aiChatHistory.push({ role: "assistant", content: finalMsg });
+                    saveAIChat();
+                    
+                    // Вызываем стандартное окно изменений (Diff)
+                    window.renderDiffUI(actionData, msgDiv);
+                    
+                    // Возвращаем интерфейс в рабочее состояние
+                    input.disabled = false;
+                    sendBtn.style.display = "flex";
+                    stopContainer.style.display = "none";
+                    input.focus();
+                }, 400);
+                
+                return; // ПРЕРЫВАЕМ ФУНКЦИЮ! Запрос к серверу ИИ НЕ ОТПРАВЛЯЕТСЯ.
+            }
+            // ========================================================
+
+            let systemRequestedIds = [];
+            const lowerText = userText.toLowerCase();
+
+            const wantsAllNotes = /(прочитай|изучи|проанализируй|сводку|расскажи|найди|обзор|проверь|что в).*?(все|мои|остальные|другие)\s*(заметки|записи|файлы|документы)/i.test(lowerText) || 
+                                  /(все|мои|остальные|другие)\s*(заметки|записи|файлы|документы).*?(прочитай|изучи|проанализируй|сводку|расскажи|найди|обзор|проверь)/i.test(lowerText);
+            
+            if (wantsAllNotes) {
+                notes.forEach(n => {
+                    if (n.id !== activeId && !window.aiAttachedNotes.has(n.id)) systemRequestedIds.push(n.id);
+                });
+            } else {
+                notes.forEach(n => {
+                    if (n.id !== activeId && !window.aiAttachedNotes.has(n.id) && n.title.trim().length > 2) {
+                        const titleStr = n.title.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(`(^|\\s|[.,!?"'])` + titleStr + `($|\\s|[.,!?"'])`, 'i');
+                        if (regex.test(lowerText)) systemRequestedIds.push(n.id);
+                    }
+                });
+            }
+
+            systemRequestedIds = [...new Set(systemRequestedIds)];
+
+            if (systemRequestedIds.length > 0) {
+                const msgDiv = renderMessageUI("bot", "Анализ системы...", -1);
+                const reqNotes = systemRequestedIds.map(id => notes.find(n => n.id === id));
+                
+                const titlesHtml = reqNotes.map(n => `
+                  <li data-req-id="${n.id}" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); margin-bottom: 4px; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: #e2e8f0; font-size: 13px;"><i class='bx bx-file' style="color: #3b82f6;"></i> ${n.title}</span>
+                    <button onclick="window.removeSystemRequestedNoteUI(this)" title="Исключить файл" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
+                      <i class='bx bx-x'></i>
+                    </button>
+                  </li>
+                `).join('');
+
+                const pulse = msgDiv.querySelector('.think-pulse');
+                if (pulse) pulse.remove();
+
+                const sysMessage = `<i class='bx bx-radar' style='color:#3b82f6;'></i> **Системный Анализатор:** Для выполнения вашей задачи требуются дополнительные файлы.`;
+                updateMessageUI(msgDiv, sysMessage, "", aiChatHistory.length);
+                
+                const actionsContainer = msgDiv.querySelector('.bot-actions-container');
+                actionsContainer.innerHTML = `
+                  <div class="read-request-box" style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 12px; margin-top: 10px;">
+                    <div style="font-weight: 600; margin-bottom: 8px; color: #3b82f6; display: flex; align-items: center; gap: 6px;">
+                      <i class='bx bx-shield-quarter'></i> Доступ к файлам
+                    </div>
+                    <div style="font-size: 13px; margin-bottom: 12px; color: #cbd5e1;">Разрешить добавить в контекст эти заметки?</div>
+                    <ul style="margin-bottom: 12px; padding: 0; list-style-type: none;">
+                      ${titlesHtml}
+                    </ul>
+                    <div style="display: flex; gap: 8px;">
+                      <button class="btn btn-primary" style="flex: 1; background: #3b82f6; color: #fff; justify-content: center;" onclick="window.handleSystemReadPermission(this, true)"><i class='bx bx-check'></i> Разрешить</button>
+                      <button class="btn" style="flex: 1; background: rgba(239, 68, 68, 0.2); color: #ef4444; justify-content: center;" onclick="window.handleSystemReadPermission(this, false)">Отказать</button>
+                    </div>
+                  </div>
+                `;
+
+                aiChatHistory.push({ role: "assistant", content: sysMessage });
+                saveAIChat();
+
+                input.disabled = false;
+                sendBtn.style.display = "flex";
+                stopContainer.style.display = "none";
+                window.currentAIController = null;
+                input.focus();
+                return; 
+            }
+        } else {
+            input.disabled = true;
+            sendBtn.style.display = "none";
+            stopContainer.style.display = "flex";
+            const lastUserMsg = [...aiChatHistory].reverse().find(m => m.role === "user");
+            userText = lastUserMsg ? lastUserMsg.content : "Продолжай";
+        }
+
+        window.currentAIController = new AbortController();
+        const signal = window.currentAIController.signal;
 
         let systemPrompt = "";
         let currentDocumentContext = "";
-        // Получаем базу данных для режимов Agent и Plan
-        const workspaceDB = notes.map(n => ({ id: n.id, title: n.title, content: n.content }));
-
-        // 1. Ищем текстовые упоминания @"Название"
+        
         const mentionedTitles = [...userText.matchAll(/@"([^"]+)"/g)].map(m => m[1].toLowerCase().trim());
         const textMentionedNotes = notes.filter(n => mentionedTitles.includes(n.title.toLowerCase().trim()));
-        
-        // 2. Берем заметки, прикрепленные через UI (Set window.aiAttachedNotes)
         const uiAttachedNotes = notes.filter(n => window.aiAttachedNotes.has(n.id));
-        
-        // 3. Объединяем их без дубликатов
         const allContextNotes = [...new Set([...textMentionedNotes, ...uiAttachedNotes])];
         
-        // 4. Формируем контекст с ID (Чтобы Агент мог манипулировать ими)
+        const notesDirectory = notes.map(n => ({ id: n.id, title: n.title }));
+        const allowedNotesToRead = new Set([...allContextNotes]);
+        const activeNote = notes.find(n => n.id === activeId);
+        if (activeNote) allowedNotesToRead.add(activeNote);
+        
+        // ПРОПУСКАЕМ ЗАМЕТКИ ЧЕРЕЗ НУМЕРАЦИЮ СТРОК
+        const workspaceDB = Array.from(allowedNotesToRead).map(n => ({ id: n.id, title: n.title, content: window.formatNoteWithLines(n.content) }));
+        
+        const textAccessRule = `\n\n[ПРАВА ДОСТУПА] Оглавление базы: ${JSON.stringify(notesDirectory)}. Если нужно содержимое других файлов, попроси пользователя прикрепить их через @.`;
+
         const mentionedNotesContext = allContextNotes
-          .map(n => `\n--- ПРИКРЕПЛЕННАЯ ЗАМЕТКА ---\nID ФАЙЛА: ${n.id}\nНАЗВАНИЕ: ${n.title}\nСОДЕРЖИМОЕ:\n${n.content}\n--------------------------\n`)
+          .map(n => `\n--- ПРИКРЕПЛЕННАЯ ЗАМЕТКА ---\nID: ${n.id}\nНАЗВАНИЕ: ${n.title}\nСОДЕРЖИМОЕ:\n${window.formatNoteWithLines(n.content)}\n--------------------------\n`)
           .join("");
 
-        // === НОВАЯ ЛОГИКА: ЗАХВАТ ВЫДЕЛЕННОГО ТЕКСТА (Поддержка IDE и Обычного редактора) ===
         let selectedText = "";
-        if (isIdeMode && typeof ideEditor !== 'undefined') {
-            selectedText = ideEditor.getSelection();
-        } else {
+        if (isIdeMode && typeof ideEditor !== 'undefined') selectedText = ideEditor.getSelection();
+        else {
             const startPos = editor.selectionStart;
             const endPos = editor.selectionEnd;
             selectedText = startPos !== endPos ? editor.value.substring(startPos, endPos) : "";
         }
         
-        let selectionContext = "";
-        if (selectedText) {
-            selectionContext = `\n\n[КРИТИЧЕСКИ ВАЖНО] ПОЛЬЗОВАТЕЛЬ ВЫДЕЛИЛ ЭТОТ ФРАГМЕНТ ТЕКСТА:\n"""\n${selectedText}\n"""\nТвоя главная задача сейчас — ответить на запрос, опираясь ИМЕННО на этот фрагмент. Объясни его, перепиши или ответь на вопрос, касающийся конкретно этого куска. Остальной текст документа дан только для понимания контекста.\n\n`;
-        }
+        let selectionContext = selectedText ? `\n\n[ВЫДЕЛЕННЫЙ ТЕКСТ]:\n"""\n${selectedText}\n"""\nОпирайся именно на этот фрагмент.\n\n` : "";
 
         if (currentAIMode === "agent") {
-          systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. У тебя есть доступ к базе данных пользователя. Твоя цель — управлять файлами и кодом по запросу пользователя.
+          systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. Твоя задача — писать код и управлять файлами.
 
-АБСОЛЮТНЫЕ ПРАВИЛА:
-1. Для редактирования части текста используй "PATCH_NOTE". В "find" передавай точный кусок оригинального текста (от 2 до 7 строк, включая все отступы). В "replace" пиши исправленный вариант.
-2. Для создания нового файла используй "CREATE_NOTE" с полями "title" и "content".
-3. Для удаления файла используй "DELETE_NOTE" с полем "noteId".
-4. Для полной перезаписи (если файл нужно переписать с нуля) используй "UPDATE_NOTE".
-5. Отвечай СТРОГО чистым JSON без маркдауна (без \`\`\`json).
+АБСОЛЮТНЫЕ ПРАВИЛА (ИСПОЛЬЗУЙ ТОЛЬКО ЭТИ XML-ТЕГИ, НИКАКОГО JSON):
+1. Изменить часть кода (Системный Поиск и Замена):
+<edit id="ID_ФАЙЛА">
+  <find>точный кусок старого кода, который нужно заменить (без сокращений)</find>
+  <replace>весь новый код для этого участка</replace>
+</edit>
 
-СТРОГИЙ Формат JSON:
-{
-  "actions": [
-    { "type": "PATCH_NOTE", "noteId": "ID", "patches": [ { "find": "старое", "replace": "новое" } ] },
-    { "type": "CREATE_NOTE", "title": "Название", "content": "Текст файла" },
-    { "type": "DELETE_NOTE", "noteId": "ID" },
-    { "type": "UPDATE_NOTE", "noteId": "ID", "content": "Новый текст целиком" }
-  ],
-  "reply": "Отчет о том, что было сделано."
-}`;
-currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА (В ФОКУСЕ) ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ЭТИ ФАЙЛЫ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
+2. Перезаписать весь файл (надежнее для больших правок): <update id="ID_ФАЙЛА">весь код</update>
+3. Создать файл: <create title="Имя">код</create>
+4. Удалить: <delete id="ID_ФАЙЛА" />
+5. План задач: <roadmap>- [ ] Шаг 1\n- [ ] Шаг 2</roadmap>
+6. АБСОЛЮТНО ВСЕГДА вноси изменения точечно. Никогда не переписывай файл полностью, если только тебя не попросил об этом пользователь. Иначе ты тратишь слишком много денег за токены.
+
+ОБЯЗАТЕЛЬНО используй точные ID файлов из оглавления:
+${JSON.stringify(notesDirectory)}` + textAccessRule;
+          
+          currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ФАЙЛЫ:\n" + mentionedNotesContext : ""}\nЗапрос: ${userText}`;
         }
         else if (currentAIMode === "plan") {
-          systemPrompt = `Ты Senior Менеджер. У тебя есть ПОЛНЫЙ доступ ко всем заметкам пользователя для контекста и глубокого анализа. 
-Твоя цель — составить подробный Roadmap по запросу. ВСЕГДА используй markdown-задачи в формате \`- [ ] Задача\`. Дроби на мелкие выполнимые шаги.`;
-          currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nОБРАТИ ОСОБОЕ ВНИМАНИЕ НА УПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
+          systemPrompt = `Ты Senior Менеджер. Составь подробный Roadmap. ВСЕГДА используй markdown-задачи в формате \`- [ ] Задача\`.` + textAccessRule;
+          currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nУПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}\nЗапрос: ${userText}`;
         } 
         else if (currentAIMode === "ask") {
-          systemPrompt = `Ты ИИ-ассистент. Твоя область видимости СТРОГО ОГРАНИЧЕНА текущей открытой заметкой и теми заметками, которые пользователь явно прикрепил через @. 
-У тебя НЕТ доступа к другим заметкам. Твоя задача — помочь с текущим текстом (отредактировать, дополнить, ответить на вопросы по нему). Отвечай обычным текстом или Markdown (никакого JSON).`;
-          currentDocumentContext = `ТЕКУЩИЙ ДОКУМЕНТ:\n"""\n${editor.value.trim()}\n"""\n${selectionContext}${mentionedNotesContext ? "\nДОПОЛНИТЕЛЬНЫЕ ПРИКРЕПЛЕННЫЕ МАТЕРИАЛЫ ОТ ПОЛЬЗОВАТЕЛЯ:\n" + mentionedNotesContext : ""}\nЗапрос пользователя: ${userText}`;
+          systemPrompt = `Ты ИИ-ассистент.` + textAccessRule;
+          currentDocumentContext = `РАЗРЕШЕННЫЕ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\nТЕКУЩИЙ ДОКУМЕНТ:\n"""\n${window.formatNoteWithLines(editor.value.trim())}\n"""\n${selectionContext}${mentionedNotesContext ? "\nДОП. МАТЕРИАЛЫ:\n" + mentionedNotesContext : ""}\nЗапрос: ${userText}`;
         }
 
         const apiMessages = [{ role: "system", content: systemPrompt }];
         for (let i = 0; i < aiChatHistory.length - 1; i++) apiMessages.push(aiChatHistory[i]);
         apiMessages.push({ role: "user", content: currentDocumentContext });
 
-        // Создаем ПУСТОЙ пузырь ИИ для начала стриминга
         const msgDiv = renderMessageUI("bot", "", -1);
 
         try {
-          // Вызываем стриминг с коллбеком для обновления UI и ПЕРЕДАЕМ SIGNAL
           const result = await callProxyAPIStream(apiMessages, (text, reasoning) => {
              if (currentAIMode === "agent") {
               updateMessageUI(msgDiv, "<i class='bx bx-bot' style='color: var(--accent);'></i> Агент анализирует базу данных и формирует действия...", reasoning, -1);
              } else {
                  updateMessageUI(msgDiv, text, reasoning, -1);
              }
-          }, signal); // <- ПЕРЕДАЛИ SIGNAL СЮДА!
+          }, signal);
 
           let finalContent = result.content;
 
+          // НОВЫЙ ВЫЗОВ ПАРСЕРА
           if (currentAIMode === "agent") {
-            const cleanJson = finalContent.replace(/```json/gi, '').replace(/```/gi, '').trim();
             try {
-              const actionData = JSON.parse(cleanJson);
-              finalContent = actionData.reply || "Предлагаю следующие изменения в коде:";
-              if (actionData.actions && Array.isArray(actionData.actions) && actionData.actions.length > 0) {
-                  setTimeout(() => { renderDiffUI(actionData, msgDiv); }, 50);
+              let actionData = window.parseAIResponseToActions(finalContent);
+              finalContent = actionData.reply;
+
+              const roadmapAction = actionData.actions ? actionData.actions.find(a => a.type === "ROADMAP") : null;
+              if (roadmapAction && roadmapAction.tasks && Array.isArray(roadmapAction.tasks)) {
+                  actionData.actions = actionData.actions.filter(a => a.type !== "ROADMAP");
+              }
+
+              if (actionData.actions && actionData.actions.length > 0) {
+                  setTimeout(() => { window.renderDiffUI(actionData, msgDiv); }, 50);
+              } else if (!roadmapAction) {
+                  finalContent = "<i class='bx bx-info-circle' style='color:#3b82f6'></i> Агент не сформировал действий для файлов.\n\n" + finalContent;
               }
             } catch (e) {
-              // Если JSON сломался из-за ручной остановки, не ругаемся ошибкой
-              if (signal.aborted) {
-                  finalContent = "Остановлено во время генерации плана действий.";
-              } else {
-                  finalContent = `<i class='bx bx-error-circle' style='color: #ef4444;'></i> Ошибка Агента: Формат ответа нарушен.\n${finalContent}`;
-              }
+              if (signal && signal.aborted) finalContent = "Остановлено пользователем.";
+              else finalContent = `<i class='bx bx-error-circle' style='color: #ef4444;'></i> Системная ошибка обработки.\n\nОтвет: ${finalContent}`;
             }
           }
 
@@ -4540,11 +5035,9 @@ currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}
           aiChatHistory.push({ role: "assistant", content: errMsg });
           saveAIChat();
         } finally {
-          // ВОЗВРАЩАЕМ UI В ИСХОДНОЕ СОСТОЯНИЕ
           input.disabled = false;
-          sendBtn.style.display = "flex"; // Возвращаем синюю стрелочку
-          stopContainer.style.display = "none"; // Прячем кнопку Стоп
-          
+          sendBtn.style.display = "flex";
+          stopContainer.style.display = "none";
           window.currentAIController = null;
           input.focus();
         }
@@ -4566,11 +5059,11 @@ currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}
         stopBtn.innerHTML = "<i class='bx bx-stop-circle'></i> ОСТАНОВИТЬ АГЕНТА";
         
         let isStopped = false;
-        let agentController = null; // ДОБАВЛЕНО: контроллер для Агента
+        let agentController = null;
 
         stopBtn.onclick = () => { 
             isStopped = true; 
-            if (agentController) agentController.abort(); // МГНОВЕННАЯ ОСТАНОВКА СЕТИ
+            if (agentController) agentController.abort(); 
             stopBtn.remove(); 
             btn.style.display="flex"; 
         };
@@ -4590,36 +5083,64 @@ currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}
             return;
         }
 
-        addNewMessage("bot", `<i class='bx bx-rocket' style='color: var(--accent);'></i> Запускаю Авто-Агента. Осталось задач: **${tasks.length}**. Начинаю выполнение...`);
+        addNewMessage("bot", `<i class='bx bx-rocket' style='color: var(--accent);'></i> Запускаю Авто-Агента. Осталось задач: **${tasks.length}**. Начинаю пошаговое выполнение...`);
 
         for (let i = 0; i < tasks.length; i++) {
             if (isStopped) break;
 
             const currentTask = tasks[i];
             
-            // Создаем статус-пузырь для конкретной задачи
             const statusMsgDiv = renderMessageUI("bot", "", -1);
-            updateMessageUI(statusMsgDiv, `<i class='bx bx-loader-alt bx-spin' style='color: #f59e0b;'></i> Выполняю _"${currentTask}"_...\n\n---\n*Генерация контента...*\n\n${text}`, reasoning, -1);
+            updateMessageUI(statusMsgDiv, `<i class='bx bx-loader-alt bx-spin' style='color: #f59e0b;'></i> Выполняю _"${currentTask}"_...`, "", -1);
+
+            // Собираем актуальный контекст
+            const notesDirectory = notes.map(n => ({ id: n.id, title: n.title }));
+            const allowedNotesToRead = new Set([activeId, ...window.aiAttachedNotes]);
+            const workspaceDB = Array.from(allowedNotesToRead).map(id => notes.find(n=>n.id===id)).filter(Boolean).map(n => ({ id: n.id, title: n.title, content: window.formatNoteWithLines(n.content) }));
+
+            // СИСТЕМНЫЙ ПРОМПТ ДЛЯ КАЖДОГО ШАГА ROADMAP
+            const stepSystemPrompt = `Ты Автономный IDE-Агент. Выполни СТРОГО ОДИН шаг из плана.
+ВНИМАНИЕ: Ты ОБЯЗАН внести изменения в код, используя XML-теги.
+
+ПРАВИЛА ИСПОЛЬЗОВАНИЯ ТЕГОВ:
+1. Точечная правка (Укажи старый код и новый):
+<edit id="ID_ФАЙЛА">
+  <find>точный старый код</find>
+  <replace>новый код</replace>
+</edit>
+2. Перезаписать весь файл целиком: <update id="ID_ФАЙЛА">весь код</update>
+3. Создать новый файл: <create title="Имя">код</create>
+
+ОБЯЗАТЕЛЬНО используй точные ID файлов из оглавления: ${JSON.stringify(notesDirectory)}`;
 
             const messages = [
-              { role: "system", content: "Ты ИИ-агент, работающий над большим документом. Выполни один конкретный шаг. Выдай ТОЛЬКО итоговый текст в формате Markdown. Пиши максимально развернуто и глубоко. Без вступлений." },
-              { role: "user", content: `Текущее содержимое документа:\n"""\n${editor.value}\n"""\n\nТвоя задача сейчас выполнить ЭТОТ пункт плана:\n${currentTask}` }
+              { role: "system", content: stepSystemPrompt },
+              { role: "user", content: `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\n\nТВОЯ ЗАДАЧА НА ЭТОТ ШАГ:\n"${currentTask}"\n\nВыполни этот шаг и выдай XML-теги.` }
             ];
 
             try {
-                // Стримим выполнение конкретной задачи
-                agentController = new AbortController(); // Создаем контроллер для текущего шага
+                agentController = new AbortController();
                 const result = await callProxyAPIStream(messages, (text, reasoning) => {
-                    updateMessageUI(statusMsgDiv, `⏳ Выполняю _"${currentTask}"_...\n\n---\n*Генерация контента...*\n\n${text}`, reasoning, -1);
-                }, agentController.signal); // Передаем сигнал
-
-                let resultText = result.content.replace(/^```markdown\n?/gi, '').replace(/```$/gi, '').trim();
+                    updateMessageUI(statusMsgDiv, `⏳ Выполняю _"${currentTask}"_...\n\n*Пишу код и файлы...*`, reasoning, -1);
+                }, agentController.signal);
 
                 if (isStopped) break;
 
-                // Вставляем результат в редактор
-                editor.value += `\n\n### ${currentTask}\n\n${resultText}`;
-                editor.dispatchEvent(new Event("input")); 
+                // НОВЫЙ ВЫЗОВ ПАРСЕРА
+                let actionData = window.parseAIResponseToActions(result.content);
+
+                // Запасной план (Фолбэк), вдруг ИИ все же выдал старый JSON формат
+                if (actionData.actions.length === 0) {
+                    const jsonMatch = result.content.match(/\{[\s\S]*"actions"[\s\S]*\}/);
+                    if (jsonMatch) {
+                        try { actionData = JSON.parse(jsonMatch[0]); } catch(e){}
+                    }
+                }
+
+                // === АВТОМАТИЧЕСКИ ПРИМЕНЯЕМ ДЕЙСТВИЯ К БАЗЕ ЗАМЕТОК ===
+                if (actionData.actions && Array.isArray(actionData.actions) && actionData.actions.length > 0) {
+                    window.applyAIDiff(null, encodeURIComponent(JSON.stringify(actionData)));
+                }
 
                 // Обновляем галочку в плане
                 rawText = rawText.replace(`- [ ] ${currentTask}`, `- [x] ${currentTask}`);
@@ -4631,22 +5152,24 @@ currentDocumentContext = `БАЗА ДАННЫХ:\n${JSON.stringify(workspaceDB)}
                    saveAIChat();
                 }
 
-                // Успешный результат
-                updateMessageUI(statusMsgDiv, `<i class='bx bx-check-circle' style='color: #10b981;'></i> Шаг завершен: _"${currentTask}"_`, result.reasoning, aiChatHistory.length);
-                aiChatHistory.push({ role: "assistant", content: `<i class='bx bx-check-circle' style='color: #10b981;'></i> Шаг завершен: _"${currentTask}"_` });
+                updateMessageUI(statusMsgDiv, `<i class='bx bx-check-circle' style='color: #10b981;'></i> Шаг завершен: _"${currentTask}"_\n\n> ${actionData.reply || "Действия применены."}`, result.reasoning, aiChatHistory.length);
+                aiChatHistory.push({ role: "assistant", content: `<i class='bx bx-check-circle' style='color: #10b981;'></i> Шаг завершен: _"${currentTask}"_\n\n> ${actionData.reply || "Действия применены."}` });
                 saveAIChat();
 
             } catch (error) {
               updateMessageUI(statusMsgDiv, `<i class='bx bx-x-circle' style='color: #ef4444;'></i> Ошибка на шаге "${currentTask}": ${error.message}. Агент остановлен.`, "", -1);
-                isStopped = true;
-                break;
+              aiChatHistory.push({ role: "assistant", content: `<i class='bx bx-x-circle' style='color: #ef4444;'></i> Ошибка: ${error.message}` });
+              saveAIChat();
+              isStopped = true;
+              break;
             }
 
+            // Небольшая пауза между шагами, чтобы UI успевал обновиться
             await new Promise(r => setTimeout(r, 1000));
         }
 
         if (!isStopped) {
-          addNewMessage("bot", "<i class='bx bx-check-double' style='color: #10b981;'></i> **ROADMAP ПОЛНОСТЬЮ ЗАВЕРШЕН!** Весь материал добавлен в ваш документ.");
+          addNewMessage("bot", "<i class='bx bx-check-double' style='color: #10b981;'></i> **ROADMAP ПОЛНОСТЬЮ ЗАВЕРШЕН!** Все файлы и изменения применены.");
         } else {
             btn.style.display = "flex";
         }
