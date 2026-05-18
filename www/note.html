@@ -1917,6 +1917,75 @@
       /* Прячем старую текстарею */
       #editor { display: none; }
       
+      /* СТИЛИ КОНСОЛИ РАЗРАБОТЧИКА */
+      .web-console {
+        display: none;
+        flex-direction: column;
+        height: 30%; /* Занимает 30% снизу при открытии */
+        background: #0d1117;
+        border-top: 1px solid var(--panel-border);
+        border-radius: 0 0 16px 16px;
+        font-family: var(--font-code);
+      }
+      .web-console.show {
+        display: flex;
+      }
+      .web-console-header {
+        background: #161b22;
+        padding: 5px 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: var(--text-muted);
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+      }
+      .web-console-logs {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .console-line {
+        font-size: 13px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border-bottom: 1px solid rgba(255,255,255,0.02);
+        word-wrap: break-word;
+        white-space: pre-wrap;
+      }
+      .console-line.error { color: #f87171; background: rgba(248, 113, 114, 0.1); border-left: 3px solid #ef4444; }
+      .console-line.warn { color: #fbbf24; background: rgba(251, 191, 36, 0.1); border-left: 3px solid #f59e0b; }
+      .console-line.info { color: #60a5fa; }
+      
+      .console-ask-ai-btn {
+        background: rgba(139, 92, 246, 0.2);
+        color: #c4b5fd;
+        border: 1px solid var(--accent);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-family: var(--font-ui);
+        cursor: pointer;
+        margin-left: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: 0.2s;
+      }
+      .console-ask-ai-btn:hover {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      /* Адаптив высоты iframe при открытой консоли */
+      .show-web-mode.console-open #htmlPreviewFrame {
+        height: 70%;
+        border-radius: 0;
+      }
+
     </style>
 
     <!-- ================= IDE (CodeMirror) ================= -->
@@ -2002,6 +2071,11 @@
           <button class="btn-icon" id="webPreviewBtn" title="Запустить код как Сайт" onclick="toggleWebPreview()">
             <i class="bx bx-play-circle" style="color: #3b82f6;"></i>
           </button>
+          
+          <!-- КНОПКА ТЕРМИНАЛА (КОНСОЛИ) -->
+          <button class="btn-icon" id="consoleToggleBtn" title="Консоль разработчика (Сайт)" onclick="toggleWebConsole()" style="display: none;">
+            <i class="bx bx-terminal"></i>
+          </button>
 
           <button class="btn-icon" style="color: #a78bfa;" title="AI Assistant (Cursor Style)" onclick="toggleAIModal()">
             <i class="bx bx-bot"></i>
@@ -2080,7 +2154,16 @@
           <!-- Обычный Markdown -->
           <div id="preview"></div>
           <!-- Экран для запуска Сайтов (Скрыт по умолчанию) -->
-          <iframe id="htmlPreviewFrame" sandbox="allow-scripts allow-modals allow-popups allow-forms"></iframe>
+          <iframe id="htmlPreviewFrame"></iframe>
+          
+          <!-- КОНСОЛЬ РАЗРАБОТЧИКА -->
+          <div id="webConsoleContainer" class="web-console">
+             <div class="web-console-header">
+                <span><i class='bx bx-terminal'></i> Терминал</span>
+                <button class="btn-icon" style="padding: 2px; font-size: 16px;" onclick="clearWebConsole()"><i class='bx bx-trash'></i></button>
+             </div>
+             <div id="webConsoleLogs" class="web-console-logs"></div>
+          </div>
         </div>
 
         <!-- Вкладки для мобильных -->
@@ -2206,6 +2289,8 @@
             <button class="ai-mode-btn active" onclick="setAIMode('agent', this)"><i class='bx bx-magic-wand'></i> Agent</button>
             <button class="ai-mode-btn" onclick="setAIMode('plan', this)"><i class='bx bx-task'></i> Plan</button>
             <button class="ai-mode-btn" onclick="setAIMode('ask', this)"><i class='bx bx-message-rounded'></i> Ask</button>
+            <!-- НОВАЯ КНОПКА СЛЕЖКИ ЗА САЙТОМ -->
+            <button class="ai-mode-btn" id="attachSiteBtn" onclick="toggleSiteContext()"><i class='bx bx-window-open'></i> + Экран сайта</button>
           </div>
           
           <!-- ВЫПАДАЮЩИЙ СПИСОК @ -->
@@ -2392,25 +2477,69 @@
         return "markdown";
       }
 
-      // === НОВАЯ ЛОГИКА: ВЕБ ПРЕВЬЮ ===
+      // === НОВАЯ ЛОГИКА: ВЕБ ПРЕВЬЮ И КОНСОЛЬ ===
       let isWebPreview = false;
+      let isWebConsoleOpen = false;
+      window.siteConsoleLogs = []; // Хранилище логов для ИИ
+
+      function toggleWebConsole() {
+        isWebConsoleOpen = !isWebConsoleOpen;
+        const consoleContainer = document.getElementById('webConsoleContainer');
+        const previewPane = document.getElementById('previewPane');
+        const consoleBtn = document.getElementById('consoleToggleBtn');
+
+        if (isWebConsoleOpen) {
+          consoleContainer.classList.add('show');
+          previewPane.classList.add('console-open');
+          consoleBtn.style.color = '#3b82f6';
+        } else {
+          consoleContainer.classList.remove('show');
+          previewPane.classList.remove('console-open');
+          consoleBtn.style.color = '';
+        }
+      }
+
+      function clearWebConsole() {
+        window.siteConsoleLogs = [];
+        document.getElementById('webConsoleLogs').innerHTML = '';
+      }
+
+      // Отправка ошибки напрямую ИИ
+      window.askAIAboutError = function(errorMessage) {
+         if (!document.body.classList.contains("ai-open")) {
+             toggleAISidebar();
+         }
+         
+         const input = document.getElementById("aiInput");
+         // Автоматически включаем Агента
+         const agentBtn = document.querySelector('.ai-mode-btn[onclick*="agent"]');
+         if (agentBtn) setAIMode('agent', agentBtn);
+
+         // Убедимся, что сайт прикреплен к контексту, чтобы ИИ видел DOM
+         if (!window.aiAttachedSite) {
+             toggleSiteContext();
+         }
+
+         input.value = `У меня в коде возникла ошибка в консоли браузера:\n\`\`\`\n${errorMessage}\n\`\`\`\nПроанализируй код, найди причину и исправь её.`;
+         sendAIChat();
+      };
 
       function toggleWebPreview() {
         isWebPreview = !isWebPreview;
         const pane = document.getElementById('previewPane');
         const btn = document.getElementById('webPreviewBtn');
+        const consoleBtn = document.getElementById('consoleToggleBtn');
         const status = document.getElementById('renderStatus');
-        const ws = document.getElementById('workspace'); // Получаем рабочую область
+        const ws = document.getElementById('workspace');
 
         if (isWebPreview) {
             pane.classList.add('show-web-mode');
             btn.innerHTML = '<i class="bx bx-stop-circle" style="color: #ef4444;"></i>'; 
             btn.title = "Остановить сайт";
+            consoleBtn.style.display = "block"; // Показываем кнопку консоли
             status.textContent = "Live Server 🟢";
             status.style.color = "#3b82f6";
             
-            // ФИКС ДЛЯ ЕДИНОГО ОКНА: Принудительно выходим из режима редактирования, 
-            // чтобы прозрачность превью стала 1, и сайт вышел на передний план.
             if (ws.classList.contains('live-mode')) {
                 ws.classList.remove('editing');
             }
@@ -2420,8 +2549,8 @@
             pane.classList.remove('show-web-mode');
             btn.innerHTML = '<i class="bx bx-play-circle" style="color: #3b82f6;"></i>'; 
             btn.title = "Запустить код как Сайт";
+            consoleBtn.style.display = "none"; // Прячем кнопку консоли
             
-            // Возвращаем окно кода на передний план при остановке сайта
             if (ws.classList.contains('live-mode')) {
                 ws.classList.add('editing');
             }
@@ -2430,8 +2559,8 @@
             if (oldIframe) {
                 const blankIframe = document.createElement('iframe');
                 blankIframe.id = 'htmlPreviewFrame';
-                blankIframe.sandbox = 'allow-scripts allow-modals allow-popups allow-forms allow-downloads';
-                blankIframe.srcdoc = ''; // Очищаем память
+                // Убрали sandbox для чистоты памяти и консоли
+                blankIframe.srcdoc = ''; 
                 pane.replaceChild(blankIframe, oldIframe);
             }
 
@@ -2439,10 +2568,43 @@
         }
       }
 
+      // Слушатель сообщений от iframe (Консоли)
+      window.addEventListener('message', function(e) {
+          if (e.data && e.data.source === 'web-preview-console') {
+              const { type, message } = e.data;
+              window.siteConsoleLogs.push({ type, message });
+              
+              // Если логов больше 50, удаляем старые, чтобы не засорять память ИИ
+              if (window.siteConsoleLogs.length > 50) window.siteConsoleLogs.shift();
+
+              const logsContainer = document.getElementById('webConsoleLogs');
+              const line = document.createElement('div');
+              line.className = `console-line ${type}`;
+              
+              let htmlContent = `[${new Date().toLocaleTimeString()}] ${message.replace(/</g, "&lt;")}`;
+              
+              // Если это ошибка, добавляем кнопку "Спросить ИИ"
+              if (type === 'error') {
+                  const safeMsg = message.replace(/"/g, '&quot;').replace(/'/g, "\\'");
+                  htmlContent += `<button class="console-ask-ai-btn" onclick="window.askAIAboutError('${safeMsg}')"><i class='bx bx-bot'></i> Спросить ИИ</button>`;
+                  
+                  // Принудительно открываем консоль, если произошла ошибка
+                  if (!isWebConsoleOpen && isWebPreview) {
+                      toggleWebConsole();
+                  }
+              }
+
+              line.innerHTML = htmlContent;
+              logsContainer.appendChild(line);
+              logsContainer.scrollTop = logsContainer.scrollHeight; // Автоскролл вниз
+          }
+      });
+
       function updateWebFrame() {
         if (!isWebPreview) return;
         
         try {
+            clearWebConsole(); // Очищаем консоль при перезапуске сайта
             const container = document.getElementById('previewPane');
             const oldIframe = document.getElementById('htmlPreviewFrame');
             const currentCode = isIdeMode ? ideEditor.getValue() : editor.value;
@@ -2450,13 +2612,47 @@
             const newIframe = document.createElement('iframe');
             newIframe.id = 'htmlPreviewFrame';
             
-            // Строгая изоляция: скрипты работают, но доступа к родителю (localhost) нет
-            newIframe.sandbox = 'allow-scripts allow-modals allow-popups allow-forms allow-downloads';
+            // ФИКС: Мы полностью убрали атрибут sandbox. 
+            // Это восстанавливает работу localStorage внутри сайтов, позволяет ИИ делать снимок DOM
+            // и навсегда убирает желтые предупреждения из консоли браузера (F12).
             
-            // Загружаем код напрямую в iframe (Мгновенно, без утечек памяти)
-            newIframe.srcdoc = currentCode;
+            // Улучшенный и более агрессивный перехватчик логов и синтаксических ошибок
+            const consoleInterceptor = `
+            <script>
+              (function() {
+                const sendLog = (type, args) => {
+                  try {
+                    const msg = Array.from(args).map(a => {
+                        if (a instanceof Error) return a.stack || a.message;
+                        return typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a);
+                    }).join(' ');
+                    window.parent.postMessage({ source: 'web-preview-console', type, message: msg }, '*');
+                  } catch(e) {}
+                };
+                
+                const origLog = console.log, origError = console.error, origWarn = console.warn, origInfo = console.info;
+                
+                console.log = function(...args) { sendLog('log', args); origLog.apply(console, args); };
+                console.error = function(...args) { sendLog('error', args); origError.apply(console, args); };
+                console.warn = function(...args) { sendLog('warn', args); origWarn.apply(console, args); };
+                console.info = function(...args) { sendLog('info', args); origInfo.apply(console, args); };
+                
+                // Перехват глобальных ошибок (включая синтаксические)
+                window.addEventListener('error', function(e) {
+                  sendLog('error', [e.message + ' (Строка: ' + e.lineno + ', Столбец: ' + e.colno + ')']);
+                });
+                
+                // Перехват ошибок в асинхронном коде (Promise)
+                window.addEventListener('unhandledrejection', function(e) {
+                  sendLog('error', ['Unhandled Promise Rejection: ' + (e.reason ? (e.reason.stack || e.reason.message || e.reason) : 'Unknown')]);
+                });
+              })();
+            <\/script>
+            `;
             
-            // Пересоздаем элемент, чтобы 100% убить старые циклы (setInterval) из предыдущего кода
+            // Внедряем скрипт-перехватчик перед кодом пользователя
+            newIframe.srcdoc = consoleInterceptor + currentCode;
+            
             if (oldIframe) {
                 container.replaceChild(newIframe, oldIframe);
             } else {
@@ -2823,10 +3019,34 @@
         updateAttachedNotesUI();
       };
 
+      // Глобальная переменная для экрана сайта
+      window.aiAttachedSite = false;
+
+      window.toggleSiteContext = function() {
+          if (!isWebPreview) {
+              alert("Сначала запустите сайт (синяя кнопка Play в тулбаре), чтобы ИИ мог на него посмотреть!");
+              return;
+          }
+          window.aiAttachedSite = !window.aiAttachedSite;
+          const btn = document.getElementById("attachSiteBtn");
+          if (btn) {
+              if (window.aiAttachedSite) {
+                  btn.classList.add("active");
+                  btn.style.borderColor = "#3b82f6";
+                  btn.style.color = "#3b82f6";
+              } else {
+                  btn.classList.remove("active");
+                  btn.style.borderColor = "";
+                  btn.style.color = "";
+              }
+          }
+          updateAttachedNotesUI();
+      };
+
       // Отрисовка плашек прикрепленных заметок над полем ввода
       function updateAttachedNotesUI() {
         const bar = document.getElementById('aiMentionsBar');
-        if (!bar) return; // Защита, если HTML элемент еще не добавлен
+        if (!bar) return; 
         
         bar.innerHTML = "";
         
@@ -2842,6 +3062,19 @@
                 bar.appendChild(pill);
             }
         });
+
+        // НОВОЕ: Отрисовка плашки прикрепленного экрана сайта
+        if (window.aiAttachedSite) {
+            const sitePill = document.createElement('div');
+            sitePill.className = 'mention-pill';
+            sitePill.style.borderColor = '#3b82f6';
+            sitePill.style.background = 'rgba(59, 130, 246, 0.15)';
+            sitePill.innerHTML = `
+              <i class='bx bx-window-open' style="color:#3b82f6;"></i> Текущий экран сайта
+              <button onclick="toggleSiteContext()" title="Убрать"><i class='bx bx-x'></i></button>
+            `;
+            bar.appendChild(sitePill);
+        }
       }
 
       // Сохранение ввода
@@ -4952,6 +5185,46 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
         
         let selectionContext = selectedText ? `\n\n[ВЫДЕЛЕННЫЙ ТЕКСТ]:\n"""\n${selectedText}\n"""\nОпирайся именно на этот фрагмент.\n\n` : "";
 
+        // НОВОЕ: ПЕРЕХВАТ СОСТОЯНИЯ ЭКРАНА (LIVE DOM)
+        let liveSiteContext = "";
+        if (window.aiAttachedSite && isWebPreview) {
+            try {
+                const iframe = document.getElementById('htmlPreviewFrame');
+                const idoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                // Читаем видимый текст как его видит пользователь
+                const visibleText = idoc.body.innerText;
+                
+                // Копируем DOM, чтобы удалить скрипты (они не нужны для визуала и жрут токены)
+                const bodyClone = idoc.body.cloneNode(true);
+                bodyClone.querySelectorAll('script').forEach(s => s.remove());
+                const currentDOM = bodyClone.innerHTML.trim();
+
+                // Формируем логи терминала для ИИ
+                let terminalLogsContext = "";
+                if (window.siteConsoleLogs && window.siteConsoleLogs.length > 0) {
+                    const recentLogs = window.siteConsoleLogs.map(l => `[${l.type.toUpperCase()}] ${l.message}`).join('\n');
+                    terminalLogsContext = `\n\n[ЛОГИ ТЕРМИНАЛА / ОШИБКИ БРАУЗЕРА]:\n\`\`\`text\n${recentLogs}\n\`\`\``;
+                }
+
+                liveSiteContext = `\n\n=== 👁️ СНИМОК ЭКРАНА И ТЕРМИНАЛА САЙТА ===\n[ОТ СИСТЕМЫ]: Пользователь прикрепил текущее состояние запущенного сайта.\n\n[ВИДИМЫЙ ТЕКСТ НА ЭКРАНЕ]:\n${visibleText || "(текста нет)"}\n\n[АКТУАЛЬНАЯ СТРУКТУРА HTML (ВНУТРИ <body>)]:\n\`\`\`html\n${currentDOM.substring(0, 8000)} <!-- Обрезано -->\n\`\`\`${terminalLogsContext}\n==========================================\n`;
+
+                // Отключаем слежку после отправки запроса
+                window.aiAttachedSite = false;
+                const attachBtn = document.getElementById("attachSiteBtn");
+                if (attachBtn) {
+                    attachBtn.classList.remove("active");
+                    attachBtn.style.borderColor = "";
+                    attachBtn.style.color = "";
+                }
+                updateAttachedNotesUI();
+            } catch(e) {
+                console.error("Ошибка захвата DOM:", e);
+                liveSiteContext = `\n\n[ОШИБКА]: Пользователь хотел показать экран сайта, но доступ к DOM заблокирован (${e.message}).\n`;
+            }
+        }
+
+        // ОБНОВЛЕНО: Подставляем liveSiteContext в промпты
         if (currentAIMode === "agent") {
           systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. Твоя задача — писать код и управлять файлами.
 
@@ -4971,15 +5244,15 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
 ОБЯЗАТЕЛЬНО используй точные ID файлов из оглавления:
 ${JSON.stringify(notesDirectory)}` + textAccessRule;
           
-          currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ФАЙЛЫ:\n" + mentionedNotesContext : ""}\nЗапрос: ${userText}`;
+currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ФАЙЛЫ:\n" + mentionedNotesContext : ""}${liveSiteContext}\nЗапрос: ${userText}`;
         }
         else if (currentAIMode === "plan") {
           systemPrompt = `Ты Senior Менеджер. Составь подробный Roadmap. ВСЕГДА используй markdown-задачи в формате \`- [ ] Задача\`.` + textAccessRule;
-          currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nУПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}\nЗапрос: ${userText}`;
+          currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nУПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}${liveSiteContext}\nЗапрос: ${userText}`;
         } 
         else if (currentAIMode === "ask") {
           systemPrompt = `Ты ИИ-ассистент.` + textAccessRule;
-          currentDocumentContext = `РАЗРЕШЕННЫЕ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\nТЕКУЩИЙ ДОКУМЕНТ:\n"""\n${window.formatNoteWithLines(editor.value.trim())}\n"""\n${selectionContext}${mentionedNotesContext ? "\nДОП. МАТЕРИАЛЫ:\n" + mentionedNotesContext : ""}\nЗапрос: ${userText}`;
+          currentDocumentContext = `РАЗРЕШЕННЫЕ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\nТЕКУЩИЙ ДОКУМЕНТ:\n"""\n${window.formatNoteWithLines(editor.value.trim())}\n"""\n${selectionContext}${mentionedNotesContext ? "\nДОП. МАТЕРИАЛЫ:\n" + mentionedNotesContext : ""}${liveSiteContext}\nЗапрос: ${userText}`;
         }
 
         const apiMessages = [{ role: "system", content: systemPrompt }];
