@@ -561,6 +561,7 @@
         background: rgba(5, 5, 5, 0.4);
         backdrop-filter: blur(10px);
         border-bottom: 1px solid var(--panel-border);
+        z-index: 1000;
       }
 
       .menu-toggle {
@@ -628,6 +629,7 @@
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
         overflow: hidden;
         transition: border-color 0.3s;
+        position: relative; /* Удерживает окно поиска внутри рамки */
       }
       .pane:focus-within {
         border-color: rgba(var(--accent-rgb), 0.5);
@@ -1986,6 +1988,110 @@
         border-radius: 0;
       }
 
+      /* === ГЛАВНОЕ МЕНЮ (МЕНЮ ДЕЙСТВИЙ) === */
+      .toolbar-dropdown {
+        position: relative;
+      }
+      .toolbar-menu {
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        width: 240px;
+        background: rgba(15, 15, 17, 0.95);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-10px);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 200;
+        display: flex;
+        flex-direction: column;
+        padding: 6px;
+      }
+      .toolbar-dropdown.open .toolbar-menu {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+      }
+      .t-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        color: #e2e8f0;
+        font-size: 13px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+        font-family: var(--font-ui);
+      }
+      .t-menu-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+      }
+      .t-menu-item i { font-size: 18px; color: var(--text-muted); transition: 0.2s; }
+      .t-menu-item:hover i { color: var(--accent); }
+
+      /* === ПЛАВАЮЩАЯ ПАНЕЛЬ ПОИСКА === */
+      .editor-search-box {
+        position: absolute;
+        top: 50px; /* Опускаем ниже заголовка "Markdown" */
+        right: 20px;
+        background: rgba(15, 15, 17, 0.95);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        padding: 6px 10px;
+        gap: 8px;
+        z-index: 10000; /* Жестко перекрывает IDE */
+        box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+        transform: translateY(-20px);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .editor-search-box.show {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .editor-search-input {
+        background: transparent;
+        border: none;
+        color: #fff;
+        font-family: var(--font-ui);
+        font-size: 13px;
+        outline: none;
+        width: 160px;
+      }
+      .editor-search-input::placeholder { color: rgba(255, 255, 255, 0.3); }
+      .editor-search-matches { font-size: 11px; color: #94a3b8; white-space: nowrap; margin-right: 5px; font-variant-numeric: tabular-nums; }
+      .search-btn {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+        font-size: 16px;
+      }
+      .search-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+      .CodeMirror-search-match { background: rgba(59, 130, 246, 0.4); border-radius: 2px; }
+
     </style>
 
     <!-- ================= IDE (CodeMirror) ================= -->
@@ -2000,6 +2106,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/markdown/markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/searchcursor.min.js"></script>
   <!-- ==================================================== -->
   </head>
   <body>
@@ -2062,30 +2169,42 @@
         <div class="toolbar-actions">
           <div class="stats" id="stats">0 слов</div>
           
-          <!-- КНОПКА ПЕРЕКЛЮЧЕНИЯ IDE -->
-          <button class="btn-icon" id="ideToggleBtn" title="Режим IDE (Код)" onclick="toggleIdeMode()">
-            <i class="bx bx-code-curly"></i>
-          </button>
-          
-          <!-- НОВАЯ КНОПКА: ЗАПУСК ВЕБ-КОДА -->
+          <!-- КНОПКА ЗАПУСКА САЙТА (Самая важная) -->
           <button class="btn-icon" id="webPreviewBtn" title="Запустить код как Сайт" onclick="toggleWebPreview()">
             <i class="bx bx-play-circle" style="color: #3b82f6;"></i>
           </button>
-          
-          <!-- КНОПКА ТЕРМИНАЛА (КОНСОЛИ) -->
+
+          <!-- КНОПКА ТЕРМИНАЛА (ВЕРНУЛАСЬ НА МЕСТО) -->
           <button class="btn-icon" id="consoleToggleBtn" title="Консоль разработчика (Сайт)" onclick="toggleWebConsole()" style="display: none;">
             <i class="bx bx-terminal"></i>
           </button>
 
-          <button class="btn-icon" style="color: #a78bfa;" title="AI Assistant (Cursor Style)" onclick="toggleAIModal()">
+          <!-- КНОПКА ИИ -->
+          <button class="btn-icon" style="color: #a78bfa;" title="AI Assistant" onclick="toggleAIModal()">
             <i class="bx bx-bot"></i>
           </button>
-          <button class="btn-icon" title="Скачать как HTML" onclick="downloadHTML()">
-            <i class="bx bx-code-block"></i>
-          </button>
-          <button class="btn-icon" title="Скачать как Markdown" onclick="downloadMarkdown()">
-            <i class="bx bx-download"></i>
-          </button>
+
+          <!-- ГЛАВНОЕ МЕНЮ (МАСТЕР-КНОПКА) -->
+          <div class="toolbar-dropdown" id="masterMenuDropdown">
+              <button class="btn-icon" title="Доп. действия" onclick="toggleMasterMenu(event)">
+                  <i class="bx bx-dots-vertical-rounded"></i>
+              </button>
+              <div class="toolbar-menu" id="masterMenu">
+                  <button class="t-menu-item" onclick="toggleSearchBox(); closeMasterMenu();">
+                      <i class='bx bx-search'></i> Найти в тексте (Ctrl+F)
+                  </button>
+                  <button class="t-menu-item" id="ideToggleBtnMenu" onclick="toggleIdeMode(); closeMasterMenu();">
+                      <i class='bx bx-code-curly'></i> Режим IDE (Код)
+                  </button>
+                  <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 5px 0;"></div>
+                  <button class="t-menu-item" onclick="downloadHTML(); closeMasterMenu();">
+                      <i class='bx bx-code-block'></i> Скачать как HTML
+                  </button>
+                  <button class="t-menu-item" onclick="downloadMarkdown(); closeMasterMenu();">
+                      <i class='bx bx-download'></i> Скачать как Markdown
+                  </button>
+              </div>
+          </div>
         </div>
       </div> <!-- Добавлен этот закрывающий тег -->
 
@@ -2094,6 +2213,17 @@
           <div class="pane-header">
             <span><i class="bx bx-code-alt"></i> Markdown</span>
           </div>
+
+          <!-- НОВАЯ ПЛАВАЮЩАЯ ПАНЕЛЬ ПОИСКА -->
+          <div class="editor-search-box" id="editorSearchBox">
+            <i class='bx bx-search' style="color: var(--text-muted);"></i>
+            <input type="text" id="searchInputField" class="editor-search-input" placeholder="Найти..." oninput="triggerSearch()" onkeydown="handleSearchKey(event)">
+            <span class="editor-search-matches" id="searchMatchCount">0 / 0</span>
+            <button class="search-btn" title="Предыдущее (Shift+Enter)" onclick="performSearch(true)"><i class='bx bx-up-arrow-alt'></i></button>
+            <button class="search-btn" title="Следующее (Enter)" onclick="performSearch(false)"><i class='bx bx-down-arrow-alt'></i></button>
+            <button class="search-btn" title="Закрыть (Esc)" onclick="closeSearchBox()" style="margin-left: 4px; color: #ef4444;"><i class='bx bx-x'></i></button>
+          </div>
+
           <textarea
             id="editor"
             spellcheck="false"
@@ -2299,13 +2429,22 @@
           <!-- ПАНЕЛЬ ПРИКРЕПЛЕННЫХ ЗАМЕТОК (@) -->
           <div class="ai-mentions-bar" id="aiMentionsBar"></div>
 
-          <!-- ПРЕВЬЮ ВЫДЕЛЕННОГО ТЕКСТА -->
+          <!-- ПРЕВЬЮ ВЫДЕЛЕННОГО ТЕКСТА ИЗ РЕДАКТОРА -->
           <div class="ai-selection-preview" id="aiSelectionPreview">
             <div class="selection-header">
               <span style="display: flex; align-items: center; gap: 4px;"><i class='bx bx-text'></i> Контекст</span>
               <button onclick="clearSelectionContext()" title="Убрать выделение"><i class='bx bx-x'></i></button>
             </div>
             <div class="selection-text" id="aiSelectionText"></div>
+          </div>
+
+          <!-- КРАСИВАЯ ПЛАШКА ДЛЯ ВЫДЕЛЕННОГО ТЕКСТА ИЗ ЧАТА (Синяя) -->
+          <div class="ai-selection-preview" id="aiChatSelectionPreview" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3);">
+            <div class="selection-header" style="color: #3b82f6;">
+              <span style="display: flex; align-items: center; gap: 4px;"><i class='bx bx-message-square-quote'></i> Цитата из чата</span>
+              <button onclick="clearChatSelectionContext()" title="Убрать цитату" style="color: #3b82f6;"><i class='bx bx-x'></i></button>
+            </div>
+            <div class="selection-text" id="aiChatSelectionText" style="color: #e2e8f0;"></div>
           </div>
 
           <div class="ai-textarea-wrapper">
@@ -5183,7 +5322,12 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             selectedText = startPos !== endPos ? editor.value.substring(startPos, endPos) : "";
         }
         
-        let selectionContext = selectedText ? `\n\n[ВЫДЕЛЕННЫЙ ТЕКСТ]:\n"""\n${selectedText}\n"""\nОпирайся именно на этот фрагмент.\n\n` : "";
+        let selectionContext = selectedText ? `\n\n[ВЫДЕЛЕННЫЙ ТЕКСТ ИЗ РЕДАКТОРА]:\n"""\n${selectedText}\n"""\nОпирайся именно на этот фрагмент.\n\n` : "";
+
+        // Если есть выделенный текст из чата, добавляем его к контексту
+        if (window.chatSelectedText) {
+            selectionContext += `\n\n[ЦИТАТА ИЗ НАШЕГО ДИАЛОГА В ЧАТЕ]:\n"""\n${window.chatSelectedText}\n"""\nПользователь прикрепил этот фрагмент из чата. Обязательно обрати на него внимание при ответе.\n\n`;
+        }
 
         // НОВОЕ: ПЕРЕХВАТ СОСТОЯНИЯ ЭКРАНА (LIVE DOM)
         let liveSiteContext = "";
@@ -5308,6 +5452,7 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
           aiChatHistory.push({ role: "assistant", content: errMsg });
           saveAIChat();
         } finally {
+          if (window.clearChatSelectionContext) window.clearChatSelectionContext(); // Очищаем плашку после отправки
           input.disabled = false;
           sendBtn.style.display = "flex";
           stopContainer.style.display = "none";
@@ -5586,6 +5731,156 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
         // Принудительно обновляем превью после изменения
         editor.dispatchEvent(new Event("input"));
       };
+
+      // === ЛОГИКА ГЛАВНОГО МЕНЮ (МАСТЕР-КНОПКА) ===
+    function toggleMasterMenu(e) {
+      e.stopPropagation();
+      document.getElementById("masterMenuDropdown").classList.toggle("open");
+    }
+    
+    function closeMasterMenu() {
+      document.getElementById("masterMenuDropdown").classList.remove("open");
+    }
+
+    document.addEventListener("click", (e) => {
+      const menu = document.getElementById("masterMenuDropdown");
+      if (menu && !menu.contains(e.target)) closeMasterMenu();
+    });
+
+    // === ОБНОВЛЕНИЕ СТАРЫХ КНОПОК ДЛЯ НОВОГО МЕНЮ ===
+    
+    // Перехватываем включение IDE, чтобы обновить кнопку в МЕНЮ
+    const originalToggleIdeMode = window.toggleIdeMode;
+    window.toggleIdeMode = function() {
+        originalToggleIdeMode(); // Вызываем твой старый функционал
+        const menuBtn = document.getElementById('ideToggleBtnMenu');
+        if (isIdeMode) {
+            menuBtn.innerHTML = "<i class='bx bx-code-curly' style='color:#10b981;'></i> <span style='color:#10b981;'>Выключить IDE</span>";
+        } else {
+            menuBtn.innerHTML = "<i class='bx bx-code-curly'></i> Режим IDE (Код)";
+        }
+    };
+
+    // === УМНАЯ СИСТЕМА ПОИСКА (CTRL + F) ===
+    let cmSearchMarks = [];
+    let searchMatches = [];
+    let currentMatchIdx = -1;
+
+    function toggleSearchBox() {
+        const box = document.getElementById("editorSearchBox");
+        if (box.classList.contains("show")) {
+            closeSearchBox();
+        } else {
+            box.classList.add("show");
+            setTimeout(() => {
+                const input = document.getElementById("searchInputField");
+                input.focus();
+                input.select(); // выделяем старый текст, если он был
+            }, 50);
+        }
+    }
+
+    function closeSearchBox() {
+        document.getElementById("editorSearchBox").classList.remove("show");
+        clearSearchState();
+        if (isIdeMode) ideEditor.focus();
+        else editor.focus();
+    }
+
+    function clearSearchState() {
+        cmSearchMarks.forEach(m => m.clear());
+        cmSearchMarks = [];
+        searchMatches = [];
+        currentMatchIdx = -1;
+        document.getElementById("searchMatchCount").textContent = "0 / 0";
+    }
+
+    function triggerSearch() {
+        clearSearchState();
+        performSearch(false, true); // initial search
+    }
+
+    function handleSearchKey(e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            performSearch(e.shiftKey); // Shift+Enter ищет назад
+        }
+        if (e.key === "Escape") {
+            closeSearchBox();
+        }
+    }
+
+    function performSearch(reverse = false, initial = false) {
+        const query = document.getElementById("searchInputField").value;
+        if (!query) { clearSearchState(); return; }
+
+        if (isIdeMode) {
+            // Поиск через CodeMirror
+            if (initial) {
+                const cursor = ideEditor.getSearchCursor(query, null, {caseFold: true});
+                while (cursor.findNext()) {
+                    searchMatches.push({from: cursor.from(), to: cursor.to()});
+                    cmSearchMarks.push(ideEditor.markText(cursor.from(), cursor.to(), {className: "CodeMirror-search-match"}));
+                }
+            }
+
+            if (searchMatches.length === 0) return;
+
+            if (!initial) {
+                if (reverse) currentMatchIdx = (currentMatchIdx - 1 + searchMatches.length) % searchMatches.length;
+                else currentMatchIdx = (currentMatchIdx + 1) % searchMatches.length;
+            } else {
+                currentMatchIdx = 0;
+            }
+
+            const activeMatch = searchMatches[currentMatchIdx];
+            ideEditor.setSelection(activeMatch.from, activeMatch.to);
+            ideEditor.scrollIntoView({from: activeMatch.from, to: activeMatch.to}, 100);
+            document.getElementById("searchMatchCount").textContent = `${currentMatchIdx + 1} / ${searchMatches.length}`;
+            
+        } else {
+            // Поиск в стандартном textarea
+            if (initial) {
+                const text = editor.value.toLowerCase();
+                const q = query.toLowerCase();
+                let startIndex = 0, index;
+                while ((index = text.indexOf(q, startIndex)) > -1) {
+                    searchMatches.push({start: index, end: index + query.length});
+                    startIndex = index + query.length;
+                }
+            }
+
+            if (searchMatches.length === 0) return;
+
+            if (!initial) {
+                if (reverse) currentMatchIdx = (currentMatchIdx - 1 + searchMatches.length) % searchMatches.length;
+                else currentMatchIdx = (currentMatchIdx + 1) % searchMatches.length;
+            } else {
+                currentMatchIdx = 0;
+            }
+
+            const match = searchMatches[currentMatchIdx];
+            editor.focus();
+            editor.setSelectionRange(match.start, match.end);
+
+            // Скроллим textarea до нужной строки (математический расчет)
+            const textBefore = editor.value.substring(0, match.start);
+            const linesBefore = textBefore.split('\n').length;
+            const lineHeight = 22; // примерная высота строки
+            editor.scrollTop = (linesBefore * lineHeight) - (editor.clientHeight / 2);
+
+            document.getElementById("searchMatchCount").textContent = `${currentMatchIdx + 1} / ${searchMatches.length}`;
+        }
+    }
+
+    // Глобальный бинд на Ctrl + F
+    document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
+            // Если фокус на строке поиска или это не редактор, всё равно перехватываем
+            e.preventDefault();
+            toggleSearchBox();
+        }
+    });
     </script>
   <!-- ========================================== -->
   <!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
@@ -6139,12 +6434,27 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
     </button>
   </div>
 
-  <!-- МОДАЛКА ДЛЯ ВЫДЕЛЕНИЯ ТЕКСТА -->
+  <!-- ПЛАВАЮЩАЯ КНОПКА ДЛЯ ВЫДЕЛЕННОГО ТЕКСТА В ЧАТЕ -->
+  <button id="floatingChatContextBtn" class="btn btn-primary" style="display: none; position: fixed; z-index: 1000000; box-shadow: 0 4px 15px rgba(0,0,0,0.6); border-radius: 8px; font-size: 12px; padding: 6px 12px; gap: 6px; pointer-events: auto; cursor: pointer;" onmousedown="event.preventDefault(); addChatSelectionToContext()">
+    <i class='bx bx-comment-add'></i> В контекст
+  </button>
+
+  <!-- ПЛАВАЮЩАЯ КНОПКА ДЛЯ ВЫДЕЛЕНИЯ В ЧАТЕ (ДЛЯ ПК) -->
+  <button id="floatingChatContextBtn" class="btn btn-primary" style="display: none; position: fixed; z-index: 1000000; box-shadow: 0 4px 15px rgba(0,0,0,0.6); border-radius: 8px; font-size: 12px; padding: 6px 12px; gap: 6px; background: #3b82f6; pointer-events: auto; cursor: pointer;" onmousedown="event.preventDefault(); addChatSelectionToContext()">
+    <i class='bx bx-comment-add'></i> Выбрать для ИИ
+  </button>
+
+  <!-- МОДАЛКА ДЛЯ ВЫДЕЛЕНИЯ ТЕКСТА (ДЛЯ СМАРТФОНОВ) -->
   <div class="modal-overlay" id="textSelectModal" onclick="if (event.target === this) document.getElementById('textSelectModal').classList.remove('active');">
     <div class="modal" style="max-width: 600px;">
-      <h2 style="font-size: 16px; margin-bottom: 15px; display: flex; justify-content: space-between;">
+      <h2 style="font-size: 16px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
         <span><i class='bx bx-text'></i> Выделение текста</span>
-        <button class="btn-icon" style="padding: 0;" onclick="document.getElementById('textSelectModal').classList.remove('active')"><i class='bx bx-x'></i></button>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; border-radius: 8px; background: #3b82f6;" onmousedown="event.preventDefault(); addChatSelectionToContext()">
+            <i class='bx bx-comment-add'></i> В контекст
+          </button>
+          <button class="btn-icon" style="padding: 0;" onclick="document.getElementById('textSelectModal').classList.remove('active')"><i class='bx bx-x'></i></button>
+        </div>
       </h2>
       <!-- Здесь текст МОЖНО выделять -->
       <div class="selectable-text-content" id="textSelectContent"></div>
@@ -6302,6 +6612,177 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
       };
     });
   </script>
+
+<script>
+  // --- ИНТЕГРАЦИЯ ВЫДЕЛЕННОГО ТЕКСТА В ЧАТ С ИИ ---
+  document.addEventListener("selectionchange", () => {
+      const selection = window.getSelection();
+      const floatingBtn = document.getElementById("floatingChatContextBtn");
+      
+      if (!floatingBtn) return;
+
+      const text = selection.toString().trim();
+      
+      if (text !== "") {
+          // Проверяем, где выделен текст (в истории чата ИЛИ внутри модалки)
+          let isInsideChat = false;
+          
+          if (selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0);
+              let container = range.commonAncestorContainer;
+              // Если попали в текстовую ноду, берем ее родителя
+              if (container.nodeType === 3) container = container.parentNode; 
+              
+              isInsideChat = !!container.closest('.ai-chat-area, .selectable-text-content');
+          }
+          
+          // Если текст выделен внутри чата, показываем плавающую кнопку
+          if (isInsideChat) {
+              const range = selection.getRangeAt(0);
+              const rect = range.getBoundingClientRect();
+              
+              floatingBtn.style.display = "flex";
+              // Поднимаем кнопку чуть выше выделенного текста
+              floatingBtn.style.top = Math.max(10, rect.top - 45) + "px";
+              let leftPos = rect.left + (rect.width / 2) - (floatingBtn.offsetWidth / 2);
+              
+              // Защита: чтобы кнопка не уходила за края экрана
+              if (leftPos + 120 > window.innerWidth) leftPos = window.innerWidth - 130;
+              if (leftPos < 10) leftPos = 10;
+              
+              floatingBtn.style.left = leftPos + "px";
+              return;
+          }
+      }
+      
+      // Скрываем, если ничего не выделено или выделение сбросилось
+      floatingBtn.style.display = "none";
+  });
+
+  // Функция отправки выделенного текста в поле ввода
+  window.addChatSelectionToContext = function() {
+      const selection = window.getSelection().toString().trim();
+      
+      if (!selection) {
+          alert("Сначала выделите нужные слова для ИИ!");
+          return;
+      }
+
+      const aiInput = document.getElementById("aiInput");
+      const floatingBtn = document.getElementById("floatingChatContextBtn");
+      const modal = document.getElementById('textSelectModal');
+      
+      // 1. Прячем интерфейсы
+      if(floatingBtn) floatingBtn.style.display = "none";
+      if (modal) modal.classList.remove('active');
+      if (!document.body.classList.contains("ai-open")) toggleAISidebar();
+
+      // 2. Формируем контекст, чтобы ИИ понимал, что мы цитируем его (или свои) слова из чата
+      const contextMarker = `[ФРАГМЕНТ ИЗ СООБЩЕНИЯ В ЧАТЕ]:\n"${selection}"\n\nМой вопрос: `;
+      
+      // 3. Добавляем в textarea
+      if (aiInput.value.trim() === "") {
+          aiInput.value = contextMarker;
+      } else {
+          aiInput.value = aiInput.value.trim() + "\n\n" + contextMarker;
+      }
+      
+      // 4. Переключаем ИИ в режим Ask (Вопрос)
+      const askBtn = document.querySelector('.ai-mode-btn[onclick*="ask"]');
+      if (askBtn) setAIMode('ask', askBtn);
+      
+      // 5. Ставим курсор в самый конец для удобства ввода
+      aiInput.focus();
+      aiInput.selectionStart = aiInput.selectionEnd = aiInput.value.length;
+      
+      // 6. Сбрасываем системное выделение текста
+      window.getSelection().removeAllRanges();
+  };
+</script>
+
+<script>
+  // --- ПЛАШКА И ВЫДЕЛЕНИЕ ТЕКСТА ИЗ ЧАТА ---
+  window.chatSelectedText = "";
+
+  // Отслеживаем выделение мышкой или пальцем
+  document.addEventListener("selectionchange", () => {
+      const selection = window.getSelection();
+      const floatingBtn = document.getElementById("floatingChatContextBtn");
+      if (!floatingBtn) return;
+
+      const text = selection.toString().trim();
+      if (text !== "") {
+          let isInsideChat = false;
+          if (selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0);
+              let container = range.commonAncestorContainer;
+              if (container.nodeType === 3) container = container.parentNode; 
+              // Показывать кнопку только если выделяем внутри истории чата или модалки
+              isInsideChat = !!container.closest('.ai-chat-area, .selectable-text-content');
+          }
+          
+          // Если текст выделен, показываем кнопку над текстом
+          if (isInsideChat) {
+              const rect = selection.getRangeAt(0).getBoundingClientRect();
+              floatingBtn.style.display = "flex";
+              floatingBtn.style.top = Math.max(10, rect.top - 45) + "px";
+              let leftPos = rect.left + (rect.width / 2) - (floatingBtn.offsetWidth / 2);
+              
+              if (leftPos + 120 > window.innerWidth) leftPos = window.innerWidth - 130;
+              if (leftPos < 10) leftPos = 10;
+              floatingBtn.style.left = leftPos + "px";
+              return;
+          }
+      }
+      floatingBtn.style.display = "none";
+  });
+
+  // Функция передачи текста в красивую синюю плашку
+  window.addChatSelectionToContext = function() {
+      const selection = window.getSelection().toString().trim();
+      if (!selection) return;
+
+      window.chatSelectedText = selection;
+      
+      // 1. Прячем интерфейсы
+      const floatingBtn = document.getElementById("floatingChatContextBtn");
+      const modal = document.getElementById('textSelectModal');
+      if (floatingBtn) floatingBtn.style.display = "none";
+      if (modal) modal.classList.remove('active');
+      if (!document.body.classList.contains("ai-open")) toggleAISidebar();
+
+      // 2. Обновляем и показываем синюю плашку
+      const previewBox = document.getElementById("aiChatSelectionPreview");
+      const previewText = document.getElementById("aiChatSelectionText");
+      
+      // Убираем переносы для красоты на плашке
+      previewText.textContent = '"' + selection.replace(/\n/g, " ") + '"'; 
+      previewBox.classList.add("show");
+      
+      // 3. Сбрасываем системное выделение текста, чтобы оно не мешало
+      window.getSelection().removeAllRanges();
+
+      // 4. Переключаем на режим "Ask" (Вопрос), так как цитаты обычно нужны для вопросов
+      const askBtn = document.querySelector('.ai-mode-btn[onclick*="ask"]');
+      if (askBtn) setAIMode('ask', askBtn);
+
+      // 5. Ставим фокус
+      const aiInput = document.getElementById("aiInput");
+      aiInput.placeholder = "Что вы хотите сделать с этой цитатой?";
+      aiInput.focus();
+  };
+
+  // Очистка синей плашки
+  window.clearChatSelectionContext = function() {
+      window.chatSelectedText = "";
+      const previewBox = document.getElementById("aiChatSelectionPreview");
+      if (previewBox) previewBox.classList.remove("show");
+      
+      // Возвращаем плейсхолдер
+      const activeBtn = document.querySelector('.ai-mode-btn.active');
+      if (activeBtn) setAIMode(currentAIMode, activeBtn);
+  };
+</script>
 
   </body>
 </html>
