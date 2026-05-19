@@ -32,6 +32,7 @@
     <!-- Удаляем старую ссылку и ставим зафиксированную версию -->
 <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <!-- MathJax (LaTeX) -->
     <script>
@@ -1150,7 +1151,7 @@
         border-left: 1px solid rgba(255, 255, 255, 0.08);
         transform: translateX(100%);
         transition: transform 0.3s ease; /* Плавный выезд */
-        z-index: 90;
+        z-index: 2000;
         display: flex;
         flex-direction: column;
         box-shadow: -20px 0 50px rgba(0,0,0,0.5);
@@ -1439,6 +1440,68 @@
         box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
       }
 
+      /* Стили для прикрепленных картинок */
+      .ai-attached-images {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 0 16px;
+        margin-top: 10px;
+        display: none;
+      }
+      .ai-attached-images.show {
+        display: flex;
+      }
+      .attached-img-box {
+        position: relative;
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.1);
+      }
+      .attached-img-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .attached-img-remove {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: rgba(0,0,0,0.7);
+        color: #ef4444;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .ai-attach-btn {
+        background: transparent;
+        color: var(--text-muted);
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+        margin-left: 8px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+      }
+      .ai-attach-btn:hover {
+        color: #fff;
+        background: rgba(255,255,255,0.1);
+      }
+
       /* Само поле ввода */
       #aiInput {
         width: 100%;
@@ -1515,7 +1578,8 @@
           position: fixed;
           top: 0; left: 0; width: 100vw; height: 100vh;
           background: rgba(0,0,0,0.6);
-          opacity: 0; pointer-events: none; transition: 0.3s; z-index: 89;
+          opacity: 0; pointer-events: none; transition: 0.3s; 
+          z-index: 1999; /* Оверлей тоже поднимаем над тулбаром */
         }
         body.ai-open .ai-sidebar-overlay { opacity: 1; pointer-events: all; }
       }
@@ -2069,10 +2133,33 @@
         background: transparent;
         border: none;
         color: #fff;
-        font-family: var(--font-ui);
+        font-family: var(--font-code);
         font-size: 13px;
         outline: none;
-        width: 160px;
+        width: 300px; /* Делаем еще шире */
+        height: 24px; /* Стартовая высота */
+        max-height: 200px; /* Максимальная высота перед появлением скролла */
+        resize: none; /* Убираем ручной ресайз */
+        padding: 4px 0;
+        line-height: 1.4;
+        white-space: pre-wrap; /* ВАЖНО: Разрешаем перенос длинных строк */
+        word-break: break-all;
+        overflow-y: auto;
+      }
+      .editor-search-input::-webkit-scrollbar { width: 4px; }
+      .editor-search-input::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+      
+      .editor-search-box {
+        align-items: flex-start; /* Чтобы иконки были сверху, если поле растянется */
+      }
+      .editor-search-box > i {
+        margin-top: 6px;
+      }
+      .editor-search-box .search-btn {
+        margin-top: -2px;
+      }
+      .editor-search-matches {
+        margin-top: 6px;
       }
       .editor-search-input::placeholder { color: rgba(255, 255, 255, 0.3); }
       .editor-search-matches { font-size: 11px; color: #94a3b8; white-space: nowrap; margin-right: 5px; font-variant-numeric: tabular-nums; }
@@ -2174,6 +2261,11 @@
             <i class="bx bx-play-circle" style="color: #3b82f6;"></i>
           </button>
 
+          <!-- КНОПКА СКРИНШОТА САЙТА ДЛЯ ИИ (Новая) -->
+          <button class="btn-icon" id="screenshotBtn" title="Отправить скриншот сайта в ИИ" onclick="sendSiteScreenshotToAI()" style="display: none; color: #10b981;">
+            <i class="bx bx-camera"></i>
+          </button>
+
           <!-- КНОПКА ТЕРМИНАЛА (ВЕРНУЛАСЬ НА МЕСТО) -->
           <button class="btn-icon" id="consoleToggleBtn" title="Консоль разработчика (Сайт)" onclick="toggleWebConsole()" style="display: none;">
             <i class="bx bx-terminal"></i>
@@ -2217,7 +2309,7 @@
           <!-- НОВАЯ ПЛАВАЮЩАЯ ПАНЕЛЬ ПОИСКА -->
           <div class="editor-search-box" id="editorSearchBox">
             <i class='bx bx-search' style="color: var(--text-muted);"></i>
-            <input type="text" id="searchInputField" class="editor-search-input" placeholder="Найти..." oninput="triggerSearch()" onkeydown="handleSearchKey(event)">
+            <textarea id="searchInputField" class="editor-search-input" placeholder="Найти (можно вставить код)..." oninput="autoResizeSearch(); triggerSearch()" onkeydown="handleSearchKey(event)"></textarea>
             <span class="editor-search-matches" id="searchMatchCount">0 / 0</span>
             <button class="search-btn" title="Предыдущее (Shift+Enter)" onclick="performSearch(true)"><i class='bx bx-up-arrow-alt'></i></button>
             <button class="search-btn" title="Следующее (Enter)" onclick="performSearch(false)"><i class='bx bx-down-arrow-alt'></i></button>
@@ -2447,11 +2539,25 @@
             <div class="selection-text" id="aiChatSelectionText" style="color: #e2e8f0;"></div>
           </div>
 
-          <div class="ai-textarea-wrapper">
-            <textarea id="aiInput" placeholder="Plan, @ for context, / for commands..." onkeydown="handleAIEnter(event)"></textarea>
-            <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIChat()">
-              <i class='bx bx-up-arrow-alt'></i>
-            </button>
+          <div class="ai-textarea-wrapper" style="flex-direction: column; align-items: stretch;">
+            
+            <!-- Контейнер для отображения выбранных картинок -->
+            <div class="ai-attached-images" id="aiAttachedImages"></div>
+            
+            <div style="display: flex; align-items: flex-end; width: 100%;">
+              <!-- Скрытый инпут для файлов -->
+              <input type="file" id="aiImageUpload" accept="image/jpeg, image/png, image/webp, image/gif" multiple style="display: none;" onchange="handleImageUpload(event)">
+              
+              <!-- Кнопка прикрепления -->
+              <button class="ai-attach-btn" onclick="document.getElementById('aiImageUpload').click()" title="Прикрепить картинку">
+                <i class='bx bx-paperclip'></i>
+              </button>
+
+              <textarea id="aiInput" placeholder="Plan, @ for context, / for commands..." onkeydown="handleAIEnter(event)"></textarea>
+              <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIChat()">
+                <i class='bx bx-up-arrow-alt'></i>
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -2668,6 +2774,7 @@
         const pane = document.getElementById('previewPane');
         const btn = document.getElementById('webPreviewBtn');
         const consoleBtn = document.getElementById('consoleToggleBtn');
+        const screenshotBtn = document.getElementById('screenshotBtn'); // Наша кнопка
         const status = document.getElementById('renderStatus');
         const ws = document.getElementById('workspace');
 
@@ -2675,7 +2782,8 @@
             pane.classList.add('show-web-mode');
             btn.innerHTML = '<i class="bx bx-stop-circle" style="color: #ef4444;"></i>'; 
             btn.title = "Остановить сайт";
-            consoleBtn.style.display = "block"; // Показываем кнопку консоли
+            consoleBtn.style.display = "block";
+            if (screenshotBtn) screenshotBtn.style.display = "block"; // Показываем
             status.textContent = "Live Server 🟢";
             status.style.color = "#3b82f6";
             
@@ -2688,7 +2796,8 @@
             pane.classList.remove('show-web-mode');
             btn.innerHTML = '<i class="bx bx-play-circle" style="color: #3b82f6;"></i>'; 
             btn.title = "Запустить код как Сайт";
-            consoleBtn.style.display = "none"; // Прячем кнопку консоли
+            consoleBtn.style.display = "none";
+            if (screenshotBtn) screenshotBtn.style.display = "none"; // Скрываем
             
             if (ws.classList.contains('live-mode')) {
                 ws.classList.add('editing');
@@ -2698,7 +2807,6 @@
             if (oldIframe) {
                 const blankIframe = document.createElement('iframe');
                 blankIframe.id = 'htmlPreviewFrame';
-                // Убрали sandbox для чистоты памяти и консоли
                 blankIframe.srcdoc = ''; 
                 pane.replaceChild(blankIframe, oldIframe);
             }
@@ -2738,6 +2846,79 @@
               logsContainer.scrollTop = logsContainer.scrollHeight; // Автоскролл вниз
           }
       });
+
+      // === ФУНКЦИЯ: СДЕЛАТЬ СКРИНШОТ САЙТА И ОТПРАВИТЬ ИИ ===
+      window.sendSiteScreenshotToAI = async function() {
+        if (!isWebPreview) {
+            alert("Сначала запустите сайт (синяя кнопка Play)!");
+            return;
+        }
+
+        const iframe = document.getElementById('htmlPreviewFrame');
+        const btn = document.getElementById('screenshotBtn');
+        const originalIcon = btn.innerHTML;
+
+        try {
+            // Визуально показываем, что идет процесс
+            btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i>";
+            
+            const idoc = iframe.contentDocument || iframe.contentWindow.document;
+
+            // Фикс для html2canvas: если у body нет фона, делаем его белым (иначе скриншот будет прозрачно-черным)
+            const oldBg = idoc.body.style.backgroundColor;
+            if (!oldBg || oldBg === 'transparent' || oldBg === 'rgba(0, 0, 0, 0)') {
+                idoc.body.style.backgroundColor = '#ffffff';
+            }
+
+            // Делаем скриншот только внутренностей Iframe
+            const canvas = await html2canvas(idoc.body, {
+                useCORS: true,
+                logging: false,
+                windowWidth: iframe.clientWidth,
+                windowHeight: iframe.clientHeight
+            });
+
+            // Возвращаем оригинальный фон
+            idoc.body.style.backgroundColor = oldBg;
+
+            // Конвертируем в base64 JPEG
+            const base64Data = canvas.toDataURL("image/jpeg", 0.8);
+
+            // Добавляем картинку в хранилище прикрепленных файлов ИИ
+            window.userAttachedImages.push(base64Data);
+            if (window.renderAttachedImagesUI) window.renderAttachedImagesUI();
+
+            // Открываем панель ИИ, если она была закрыта
+            if (!document.body.classList.contains("ai-open")) {
+                toggleAISidebar();
+            }
+
+            // Подготавливаем системный текст в поле ввода
+            const aiInput = document.getElementById("aiInput");
+            const contextMarker = `[СИСТЕМА]: Я прикрепил скриншот визуального превью сайта (результат твоего кода). Проанализируй его дизайн, вёрстку и укажи на ошибки отображения, если они есть.`;
+            
+            if (aiInput.value.trim() === "") {
+                aiInput.value = contextMarker + "\n\n";
+            } else {
+                aiInput.value = aiInput.value.trim() + "\n\n" + contextMarker + "\n\n";
+            }
+
+            // Автоматически переключаем в режим 'ask' (вопрос-ответ)
+            const askBtn = document.querySelector('.ai-mode-btn[onclick*="ask"]');
+            if (askBtn) setAIMode('ask', askBtn);
+
+            // Фокусируем пользователя на поле ввода
+            aiInput.focus();
+            aiInput.selectionStart = aiInput.selectionEnd = aiInput.value.length;
+
+        } catch (err) {
+            console.error("Ошибка при создании скриншота:", err);
+            alert("Не удалось сделать скриншот: " + err.message);
+        } finally {
+            // Возвращаем иконку камеры
+            btn.innerHTML = originalIcon;
+        }
+      };
 
       function updateWebFrame() {
         if (!isWebPreview) return;
@@ -2789,8 +2970,12 @@
             <\/script>
             `;
             
-            // Внедряем скрипт-перехватчик перед кодом пользователя
-            newIframe.srcdoc = consoleInterceptor + currentCode;
+            // АВТО-ФИКС: Интеллектуально превращаем скрипты пользователя в модули,
+            // чтобы из коробки работал Top-Level Await без падений браузера.
+            const processedCode = currentCode.replace(/<script(?![^>]*type=)([^>]*)>/gi, '<script type="module"$1>');
+            
+            // Внедряем скрипт-перехватчик перед обработанным кодом пользователя
+            newIframe.srcdoc = consoleInterceptor + processedCode;
             
             if (oldIframe) {
                 container.replaceChild(newIframe, oldIframe);
@@ -2883,8 +3068,12 @@
               cmWrapper.style.display = "block";
               editor.style.display = "none"; 
               if (toolbarWrapper) toolbarWrapper.style.display = "none"; 
-              toggleBtn.style.color = "#10b981"; 
-              toggleBtn.style.background = "rgba(16, 185, 129, 0.15)";
+              
+              // Защита от ошибки, если кнопки в панели больше нет
+              if (toggleBtn) {
+                  toggleBtn.style.color = "#10b981"; 
+                  toggleBtn.style.background = "rgba(16, 185, 129, 0.15)";
+              }
               
               // ФИКС 3: setValue сам вызывает обновление. Вызываем вручную только если текст не менялся.
               const currentVal = editor.value;
@@ -2898,8 +3087,12 @@
               cmWrapper.style.display = "none";
               editor.style.display = "block"; 
               if (toolbarWrapper) toolbarWrapper.style.display = "flex"; 
-              toggleBtn.style.color = ""; 
-              toggleBtn.style.background = "transparent";
+              
+              // Защита от ошибки
+              if (toggleBtn) {
+                  toggleBtn.style.color = ""; 
+                  toggleBtn.style.background = "transparent";
+              }
               
               const currentVal = ideEditor.getValue();
               if (editor.value !== currentVal) {
@@ -2982,10 +3175,32 @@
         }
       }
 
+      // ГЕНЕРАТОР УНИКАЛЬНЫХ ИМЕН
+      function getUniqueTitle(desiredTitle, currentNoteId = null) {
+          let title = desiredTitle.trim();
+          if (!title) title = "Без названия";
+          
+          let isUnique = false;
+          let counter = 1;
+          let finalTitle = title;
+          
+          while (!isUnique) {
+              // Ищем точное совпадение (без учета регистра), игнорируя текущий файл
+              const exists = notes.find(n => n.id !== currentNoteId && n.title.toLowerCase() === finalTitle.toLowerCase());
+              if (exists) {
+                  finalTitle = `${title} ${counter}`;
+                  counter++;
+              } else {
+                  isUnique = true;
+              }
+          }
+          return finalTitle;
+      }
+
       function createNewNote() {
         const newNote = {
           id: Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9),
-          title: "Новая заметка",
+          title: getUniqueTitle("Новая заметка"),
           content: "# ",
           date: new Date().toLocaleDateString(),
         };
@@ -3096,7 +3311,8 @@
         if (!note) return;
         const newTitle = prompt("Введите новое название заметки:", note.title);
         if (newTitle !== null && newTitle.trim() !== "") {
-          note.title = newTitle.trim();
+          // Прогоняем введенное имя через генератор уникальности
+          note.title = getUniqueTitle(newTitle, note.id); 
           if(activeId === note.id) {
               titleInput.value = note.title;
               // Динамически меняем синтаксис IDE прямо во время работы
@@ -3216,13 +3432,28 @@
         }
       }
 
-      // Сохранение ввода
+      // Сохранение ввода (Пока печатает - не трогаем уникальность, чтобы не сбивать курсор)
       titleInput.addEventListener("input", (e) => {
         const note = notes.find((n) => n.id === activeId);
         if (note) {
-          note.title = e.target.value;
+          note.title = e.target.value; 
+          renderNotesList(searchInput.value);
+        }
+      });
+
+      // Жесткая проверка уникальности при потере фокуса или нажатии Enter
+      titleInput.addEventListener("change", (e) => {
+        const note = notes.find((n) => n.id === activeId);
+        if (note) {
+          note.title = getUniqueTitle(e.target.value, activeId);
+          e.target.value = note.title; // Обновляем инпут, если добавилась цифра
           renderNotesList(searchInput.value);
           localStorage.setItem("qn_notes", JSON.stringify(notes));
+          
+          // Обновляем синтаксис IDE, если сменилось расширение (например на .js)
+          if (typeof ideEditor !== 'undefined' && isIdeMode) {
+              ideEditor.setOption("mode", getSyntaxMode(note.title));
+          }
         }
       });
 
@@ -4039,6 +4270,119 @@ function setTheme(e, hex, rgb) {
         }
       });
 
+      // Закрываем меню при клике вне его
+      document.addEventListener("click", (e) => {
+        if (mentionDropdown && !mentionDropdown.contains(e.target) && e.target !== aiInputEl) {
+          mentionDropdown.classList.remove("show");
+        }
+      });
+
+      // === НОВАЯ ЛОГИКА: ЗАГРУЗКА ИЗОБРАЖЕНИЙ (VISION) ===
+      window.userAttachedImages = []; // Массив для хранения base64 картинок
+
+      window.handleImageUpload = function(event) {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        Array.from(files).forEach(file => {
+          // Проверяем размер (до 20МБ по докам, но для браузера лучше до 5МБ, чтобы не повесить вкладку)
+          if (file.size > 10 * 1024 * 1024) {
+            alert(`Файл ${file.name} слишком большой. Выберите изображение до 10MB.`);
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const base64Data = e.target.result; // Это уже формат data:image/jpeg;base64,...
+            window.userAttachedImages.push(base64Data);
+            renderAttachedImagesUI();
+          };
+          reader.readAsDataURL(file);
+        });
+        
+        event.target.value = ''; // Сбрасываем инпут
+      };
+
+      window.removeAttachedImage = function(index) {
+        window.userAttachedImages.splice(index, 1);
+        renderAttachedImagesUI();
+      };
+
+      // === ФУНКЦИЯ: СДЕЛАТЬ СКРИНШОТ САЙТА СО СКРЫТЫМ ПРОМПТОМ ===
+      window.sendSiteScreenshotToAI = async function() {
+        if (!isWebPreview) return;
+
+        const iframe = document.getElementById('htmlPreviewFrame');
+        const btn = document.getElementById('screenshotBtn');
+        const originalIcon = btn.innerHTML;
+
+        try {
+            btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i>";
+            const idoc = iframe.contentDocument || iframe.contentWindow.document;
+
+            // Чтобы фон не был прозрачно-черным
+            const oldBg = idoc.body.style.backgroundColor;
+            if (!oldBg || oldBg === 'transparent' || oldBg === 'rgba(0, 0, 0, 0)') {
+                idoc.body.style.backgroundColor = '#ffffff';
+            }
+
+            const canvas = await html2canvas(idoc.body, {
+                useCORS: true,
+                logging: false,
+                windowWidth: iframe.clientWidth,
+                windowHeight: iframe.clientHeight
+            });
+
+            idoc.body.style.backgroundColor = oldBg;
+            const base64Data = canvas.toDataURL("image/jpeg", 0.8);
+
+            // КЛЮЧЕВАЯ МАГИЯ: Сохраняем картинку как объект вместе со скрытым системным текстом
+            window.userAttachedImages.push({
+                base64: base64Data,
+                hiddenPrompt: "[СИСТЕМНОЕ УВЕДОМЛЕНИЕ]: Пользователь прикрепил скриншот превью запущенного сайта (результат твоего кода). Внимательно проанализируй визуальный дизайн и вёрстку на этом скриншоте. Укажи на ошибки отображения, если они есть, и предложи исправления."
+            });
+
+            if (window.renderAttachedImagesUI) window.renderAttachedImagesUI();
+
+            // Открываем чат и ставим фокус
+            if (!document.body.classList.contains("ai-open")) toggleAISidebar();
+            
+            const askBtn = document.querySelector('.ai-mode-btn[onclick*="ask"]');
+            if (askBtn) setAIMode('ask', askBtn);
+            
+            document.getElementById("aiInput").focus();
+
+        } catch (err) {
+            console.error("Ошибка при создании скриншота:", err);
+            alert("Не удалось сделать скриншот: " + err.message);
+        } finally {
+            btn.innerHTML = originalIcon;
+        }
+      };
+
+      window.renderAttachedImagesUI = function() {
+        const container = document.getElementById("aiAttachedImages");
+        container.innerHTML = "";
+        
+        if (window.userAttachedImages.length > 0) {
+          container.classList.add("show");
+          window.userAttachedImages.forEach((item, index) => {
+            // Поддерживаем как старые обычные строки, так и объекты со скрытым текстом
+            const imgSrc = typeof item === 'string' ? item : item.base64;
+            const box = document.createElement("div");
+            box.className = "attached-img-box";
+            box.innerHTML = `
+              <img src="${imgSrc}" alt="attached">
+              <button class="attached-img-remove" onclick="removeAttachedImage(${index})"><i class='bx bx-x'></i></button>
+            `;
+            container.appendChild(box);
+          });
+        } else {
+          container.classList.remove("show");
+        }
+      };
+      // ====================================================
+
       // 4. Единая функция добавления нового сообщения (записывает в массив и сохраняет)
       function addNewMessage(role, content) {
         const dbRole = role === "bot" ? "assistant" : "user";
@@ -4305,11 +4649,18 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
                     };
                 }
 
-                // Если движок уже загружен - продолжаем нормальную генерацию
-                const localMessages = messages.map(m => ({
-                    role: m.role === "bot" ? "assistant" : m.role,
-                    content: m.content
-                }));
+                                // ЗАЩИТА: Локальная текстовая модель упадет от объекта картинки. Превращаем обратно в строку.
+                                const localMessages = messages.map(m => {
+                    let textContent = m.content;
+                    if (Array.isArray(m.content)) {
+                        textContent = m.content.find(p => p.type === "text")?.text || "";
+                    }
+                    return {
+                        role: m.role === "bot" ? "assistant" : m.role,
+                        content: textContent
+                    };
+                });
+
 
                 const request = {
                     messages: localMessages,
@@ -4339,11 +4690,24 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             // 1. ЛОГИКА ДЛЯ ANTHROPIC (CLAUDE)
             // ========================================================
             else if (rawModel.includes("claude")) {
-                let systemPrompt = "";
+              let systemPrompt = "";
                 const anthropicMessages = messages.filter(m => {
                     if (m.role === "system") { systemPrompt = m.content; return false; }
                     return true;
-                }).map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }));
+                }).map(m => {
+                    // АДАПТАЦИЯ КАРТИНОК ПОД ФОРМАТ ANTHROPIC CLAUDE
+                    let newContent = m.content;
+                    if (Array.isArray(m.content)) {
+                        newContent = m.content.map(part => {
+                            if (part.type === "text") return { type: "text", text: part.text };
+                            if (part.type === "image_url") {
+                                const b64 = part.image_url.url.split(",")[1];
+                                return { type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } };
+                            }
+                        });
+                    }
+                    return { role: m.role === "assistant" ? "assistant" : "user", content: newContent };
+                });
 
                 const isSonnet = rawModel.includes("sonnet");
                 const body = {
@@ -4401,13 +4765,27 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             // 2. ЛОГИКА ДЛЯ GOOGLE (GEMINI)
             // ========================================================
             else if (rawModel.includes("gemini")) {
-                let history = [];
+              let history = [];
                 let systemText = "";
 
                 messages.forEach(m => {
                     if (m.role === "system") { systemText = `System Instructions:\n${m.content}\n\n`; return; }
                     const role = m.role === "assistant" ? "model" : "user";
-                    const parts = [{ text: m.content || "-" }];
+                    
+                    // АДАПТАЦИЯ КАРТИНОК ПОД ФОРМАТ GEMINI
+                    const parts = [];
+                    if (Array.isArray(m.content)) {
+                        m.content.forEach(part => {
+                            if (part.type === "text") parts.push({ text: part.text });
+                            if (part.type === "image_url") {
+                                const b64 = part.image_url.url.split(",")[1];
+                                parts.push({ inlineData: { mimeType: "image/jpeg", data: b64 } });
+                            }
+                        });
+                    } else {
+                        parts.push({ text: m.content || "-" });
+                    }
+
                     if (history.length > 0 && history[history.length - 1].role === role) history[history.length - 1].parts.push(...parts);
                     else history.push({ role, parts });
                 });
@@ -4895,17 +5273,19 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             } 
             else if (action.type === "UPDATE_NOTE") {
               note.content = action.content;
-              if (action.title) note.title = action.title;
+              // Если ИИ решил при обновлении еще и переименовать файл
+              if (action.title) note.title = getUniqueTitle(action.title, note.id);
             }
             // ИСПРАВЛЕНИЕ: НОВАЯ ЛОГИКА ДЛЯ RENAME
             else if (action.type === "RENAME_NOTE") {
-              note.title = action.newTitle;
+              note.title = getUniqueTitle(action.newTitle, note.id);
             }
             else if (action.type === "CREATE_NOTE") {
               const uniqueId = Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9);
               const newNote = { 
                   id: uniqueId, 
-                  title: action.title || "Новая заметка", 
+                  // Защищаем имя созданного ИИ файла
+                  title: getUniqueTitle(action.title || "Новая заметка"), 
                   content: action.content || "# ", 
                   date: new Date().toLocaleDateString() 
               };
@@ -5069,9 +5449,18 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
           return content || "";
       };
 
-      // Парсер XML-ответов от ИИ
+      // Парсер XML-ответов от ИИ (Улучшенный и отказоустойчивый)
       window.parseAIResponseToActions = function(finalContent) {
           let actionData = { actions: [], reply: finalContent };
+
+          // УМНЫЙ ПОИСК: Ищем по ID, затем по названию, иначе берем текущий открытый файл
+          const resolveNote = (idStr) => {
+              if (idStr) {
+                  let n = notes.find(n => n.id === idStr) || notes.find(n => n.title.trim().toLowerCase() === idStr.trim().toLowerCase());
+                  if (n) return n;
+              }
+              return notes.find(n => n.id === activeId);
+          };
 
           // 1. Roadmap (План задач)
           const roadmapMatch = finalContent.match(/<roadmap>([\s\S]*?)<\/roadmap>/i);
@@ -5088,62 +5477,88 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
           }
 
           // 2. Create Note (Создать)
-          const createRegex = /<create\s+title="([^"]+)">([\s\S]*?)<\/create>/gi;
+          const createRegex = /<create(?:\s+title=["']?([^"'>]+)["']?)?>([\s\S]*?)<\/create>/gi;
           let match;
           while ((match = createRegex.exec(finalContent)) !== null) {
+              let title = match[1] || "Новая заметка";
               let content = match[2].trim().replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '');
-              actionData.actions.push({ type: "CREATE_NOTE", title: match[1], content: content });
-              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-file-blank' style='color:#3b82f6'></i> **Создан файл:** ${match[1]}\n`);
+              actionData.actions.push({ type: "CREATE_NOTE", title: title, content: content });
+              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-file-blank' style='color:#3b82f6'></i> **Создан файл:** ${title}\n`);
+          }
+
+          // Проверка на оборванный тег <create>
+          const unclosedCreateRegex = /<create(?:\s+title=["']?([^"'>]+)["']?)?>([\s\S]*)$/i;
+          const unclosedCreateMatch = finalContent.match(unclosedCreateRegex);
+          if (unclosedCreateMatch && !finalContent.includes('</create>')) {
+              let title = unclosedCreateMatch[1] || "Новая заметка";
+              let content = unclosedCreateMatch[2].trim().replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '');
+              actionData.actions.push({ type: "CREATE_NOTE", title: title, content: content });
+              actionData.reply = actionData.reply.replace(unclosedCreateMatch[0], `\n> <i class='bx bx-error' style='color:#ef4444'></i> **Создан незавершенный файл:** ${title}\n*(Напишите ИИ "продолжай")*\n`);
           }
 
           // 3. Update Note (Полная перезапись файла)
-          const updateRegex = /<update\s+id="([^"]+)">([\s\S]*?)<\/update>/gi;
+          const updateRegex = /<update(?:\s+id=["']?([^"'>]+)["']?)?>([\s\S]*?)<\/update>/gi;
           while ((match = updateRegex.exec(finalContent)) !== null) {
+              let note = resolveNote(match[1]);
+              if (!note) continue;
               let content = match[2].trim().replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '');
-              actionData.actions.push({ type: "UPDATE_NOTE", noteId: match[1], content: content });
-              const note = notes.find(n => n.id === match[1]);
-              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-refresh' style='color:#f59e0b'></i> **Перезаписан файл:** ${note ? note.title : match[1]}\n`);
+              actionData.actions.push({ type: "UPDATE_NOTE", noteId: note.id, content: content });
+              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-refresh' style='color:#f59e0b'></i> **Перезаписан файл:** ${note.title}\n`);
           }
 
-          // 4. Rename Note (Переименовать файл) - ИСПРАВЛЕНО: ТЕПЕРЬ ЭТО ОТДЕЛЬНЫЙ ТИП ДЕЙСТВИЯ
-          const renameRegex = /<rename\s+id="([^"]+)"\s+title="([^"]+)"\s*\/?>/gi;
+          // Проверка на оборванный тег <update>
+          const unclosedUpdateRegex = /<update(?:\s+id=["']?([^"'>]+)["']?)?>([\s\S]*)$/i;
+          const unclosedUpdateMatch = finalContent.match(unclosedUpdateRegex);
+          if (unclosedUpdateMatch && !finalContent.includes('</update>')) {
+              let note = resolveNote(unclosedUpdateMatch[1]);
+              if (note) {
+                  let content = unclosedUpdateMatch[2].trim().replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '');
+                  actionData.actions.push({ type: "UPDATE_NOTE", noteId: note.id, content: content });
+                  actionData.reply = actionData.reply.replace(unclosedUpdateMatch[0], `\n> <i class='bx bx-error' style='color:#ef4444'></i> **Код оборвался! Перезаписана только часть файла:** ${note.title}\n*(Напишите ИИ "продолжай")*\n`);
+              }
+          }
+
+          // 4. Rename Note (Переименовать файл)
+          const renameRegex = /<rename(?:\s+id=["']?([^"'>]+)["']?)?\s+title=["']?([^"'>]+)["']?\s*\/?>/gi;
           while ((match = renameRegex.exec(finalContent)) !== null) {
-              const note = notes.find(n => n.id === match[1]);
-              actionData.actions.push({ type: "RENAME_NOTE", noteId: match[1], oldTitle: note ? note.title : match[1], newTitle: match[2] });
-              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-rename' style='color:#a855f7'></i> **Переименован файл:** ${note ? note.title : match[1]} ➔ ${match[2]}\n`);
+              let note = resolveNote(match[1]);
+              if (!note) continue;
+              let newTitle = match[2] || "Без названия";
+              actionData.actions.push({ type: "RENAME_NOTE", noteId: note.id, oldTitle: note.title, newTitle: newTitle });
+              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-rename' style='color:#a855f7'></i> **Переименован файл:** ${note.title} ➔ ${newTitle}\n`);
           }
 
           // 5. Delete Note (Удалить)
-          const deleteRegex = /<delete\s+id="([^"]+)"\s*\/?>/gi;
+          const deleteRegex = /<delete(?:\s+id=["']?([^"'>]+)["']?)?\s*\/?>/gi;
           while ((match = deleteRegex.exec(finalContent)) !== null) {
-              actionData.actions.push({ type: "DELETE_NOTE", noteId: match[1] });
-              const note = notes.find(n => n.id === match[1]);
-              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-trash' style='color:#ef4444'></i> **Удален файл:** ${note ? note.title : match[1]}\n`);
+              let note = resolveNote(match[1]);
+              if (!note) continue;
+              actionData.actions.push({ type: "DELETE_NOTE", noteId: note.id });
+              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-trash' style='color:#ef4444'></i> **Удален файл:** ${note.title}\n`);
           }
 
-          // 5.5 Удалить ВСЕ заметки (Системная команда)
+          // 5.5 Удалить ВСЕ заметки
           const deleteAllRegex = /<delete_all\s*\/?>/gi;
           if (deleteAllRegex.test(finalContent)) {
               actionData.actions.push({ type: "DELETE_ALL_NOTES" });
               actionData.reply = actionData.reply.replace(deleteAllRegex, `\n> <i class='bx bx-bomb' style='color:#ef4444'></i> **КРИТИЧЕСКОЕ ДЕЙСТВИЕ:** Запрошено удаление ВСЕХ файлов!\n`);
           }
 
-          // 6. Edit Note (СИСТЕМНЫЙ ПОИСК И ЗАМЕНА БЕЗ НОМЕРОВ СТРОК)
-          const editRegex = /<edit\s+id="([^"]+)">([\s\S]*?)<\/edit>/gi;
+          // 6. Edit Note (СИСТЕМНЫЙ ПОИСК И ЗАМЕНА)
+          const editRegex = /<edit(?:\s+id=["']?([^"'>]+)["']?)?>([\s\S]*?)<\/edit>/gi;
           while ((match = editRegex.exec(finalContent)) !== null) {
-              const noteId = match[1];
-              const patchesContent = match[2];
-              const note = notes.find(n => n.id === noteId);
-              
+              let note = resolveNote(match[1]);
               if (!note) continue;
               
+              const patchesContent = match[2];
               const patches = [];
-              // Ищем блоки <find> и <replace>
-              const replaceRegex = /<find>([\s\S]*?)<\/find>\s*<replace>([\s\S]*?)<\/replace>/gi;
+              
+              // Ищем блоки <find> и <replace> (replace теперь тоже опционален, на случай если ИИ просто удаляет код)
+              const replaceRegex = /<find>([\s\S]*?)<\/find>(?:\s*<replace>([\s\S]*?)<\/replace>)?/gi;
               let repMatch;
               while ((repMatch = replaceRegex.exec(patchesContent)) !== null) {
                   let oldCode = repMatch[1].replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '').trim();
-                  let newCode = repMatch[2].replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '').trim();
+                  let newCode = (repMatch[2] || "").replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '').trim();
                   
                   if (oldCode) {
                       patches.push({ find: oldCode, replace: newCode });
@@ -5151,8 +5566,16 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
               }
 
               if (patches.length > 0) {
-                  actionData.actions.push({ type: "PATCH_NOTE", noteId: noteId, patches: patches });
-                  actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-git-commit' style='color:#10b981'></i> **Точечная правка (Drift):** ${note.title}\n`);
+                  actionData.actions.push({ type: "PATCH_NOTE", noteId: note.id, patches: patches });
+                  actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-git-commit' style='color:#10b981'></i> **Точечная правка:** ${note.title}\n`);
+              } else if (patchesContent.trim().length > 0) {
+                  // Fallback: ИИ забыл теги find/replace, просто записал новый код внутри <edit>
+                  let cleanContent = patchesContent.trim().replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '');
+                  actionData.actions.push({ type: "UPDATE_NOTE", noteId: note.id, content: cleanContent });
+                  actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-refresh' style='color:#f59e0b'></i> **Перезаписан файл (Исправлено):** ${note.title}\n`);
+              } else {
+                  // Пустой тег <edit> без контента
+                  actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-x' style='color:#ef4444'></i> **Пустая правка проигнорирована:** ${note.title}\n`);
               }
           }
 
@@ -5329,31 +5752,50 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             selectionContext += `\n\n[ЦИТАТА ИЗ НАШЕГО ДИАЛОГА В ЧАТЕ]:\n"""\n${window.chatSelectedText}\n"""\nПользователь прикрепил этот фрагмент из чата. Обязательно обрати на него внимание при ответе.\n\n`;
         }
 
-        // НОВОЕ: ПЕРЕХВАТ СОСТОЯНИЯ ЭКРАНА (LIVE DOM)
-        let liveSiteContext = "";
+       // НОВОЕ: ПЕРЕХВАТ СОСТОЯНИЯ ЭКРАНА (LIVE DOM + СКРИНШОТ VISION)
+       let liveSiteContext = "";
+        let liveSiteImageBase64 = null; // Хранилище для картинки
+
         if (window.aiAttachedSite && isWebPreview) {
             try {
                 const iframe = document.getElementById('htmlPreviewFrame');
                 const idoc = iframe.contentDocument || iframe.contentWindow.document;
                 
-                // Читаем видимый текст как его видит пользователь
+                // 1. Читаем структуру (Оставляем, это полезно для понимания кода)
                 const visibleText = idoc.body.innerText;
-                
-                // Копируем DOM, чтобы удалить скрипты (они не нужны для визуала и жрут токены)
                 const bodyClone = idoc.body.cloneNode(true);
                 bodyClone.querySelectorAll('script').forEach(s => s.remove());
                 const currentDOM = bodyClone.innerHTML.trim();
 
-                // Формируем логи терминала для ИИ
                 let terminalLogsContext = "";
                 if (window.siteConsoleLogs && window.siteConsoleLogs.length > 0) {
                     const recentLogs = window.siteConsoleLogs.map(l => `[${l.type.toUpperCase()}] ${l.message}`).join('\n');
                     terminalLogsContext = `\n\n[ЛОГИ ТЕРМИНАЛА / ОШИБКИ БРАУЗЕРА]:\n\`\`\`text\n${recentLogs}\n\`\`\``;
                 }
 
-                liveSiteContext = `\n\n=== 👁️ СНИМОК ЭКРАНА И ТЕРМИНАЛА САЙТА ===\n[ОТ СИСТЕМЫ]: Пользователь прикрепил текущее состояние запущенного сайта.\n\n[ВИДИМЫЙ ТЕКСТ НА ЭКРАНЕ]:\n${visibleText || "(текста нет)"}\n\n[АКТУАЛЬНАЯ СТРУКТУРА HTML (ВНУТРИ <body>)]:\n\`\`\`html\n${currentDOM.substring(0, 8000)} <!-- Обрезано -->\n\`\`\`${terminalLogsContext}\n==========================================\n`;
+                liveSiteContext = `\n\n=== 👁️ СНИМОК ЭКРАНА И ТЕРМИНАЛА САЙТА ===\n[ОТ СИСТЕМЫ]: Пользователь прикрепил текущее состояние запущенного сайта (включая визуальный скриншот!).\n\n[ВИДИМЫЙ ТЕКСТ НА ЭКРАНЕ]:\n${visibleText || "(текста нет)"}\n\n[АКТУАЛЬНАЯ СТРУКТУРА HTML]:\n\`\`\`html\n${currentDOM.substring(0, 8000)}\n\`\`\`${terminalLogsContext}\n==========================================\n`;
 
-                // Отключаем слежку после отправки запроса
+                // 2. ДЕЛАЕМ НАСТОЯЩИЙ ВИЗУАЛЬНЫЙ СКРИНШОТ ЧЕРЕЗ HTML2CANVAS
+                try {
+                    // Временно делаем body непрозрачным для нормального рендера
+                    const oldBg = idoc.body.style.backgroundColor;
+                    if (!oldBg) idoc.body.style.backgroundColor = '#ffffff';
+                    
+                    const canvas = await html2canvas(idoc.body, {
+                        useCORS: true,
+                        logging: false,
+                        windowWidth: iframe.clientWidth,
+                        windowHeight: iframe.clientHeight
+                    });
+                    
+                    idoc.body.style.backgroundColor = oldBg; // возвращаем как было
+                    // Сжимаем в JPEG (качество 0.7), чтобы не превысить лимиты API
+                    liveSiteImageBase64 = canvas.toDataURL("image/jpeg", 0.7); 
+                } catch (imgErr) {
+                    console.error("Ошибка html2canvas:", imgErr);
+                }
+
+                // Отключаем слежку после успешного захвата
                 window.aiAttachedSite = false;
                 const attachBtn = document.getElementById("attachSiteBtn");
                 if (attachBtn) {
@@ -5384,6 +5826,7 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
 4. Удалить: <delete id="ID_ФАЙЛА" />
 5. План задач: <roadmap>- [ ] Шаг 1\n- [ ] Шаг 2</roadmap>
 6. АБСОЛЮТНО ВСЕГДА вноси изменения точечно. Никогда не переписывай файл полностью, если только тебя не попросил об этом пользователь. Иначе ты тратишь слишком много денег за токены.
+7. ВЕСЬ КОД (HTML, CSS, JS) ПИШИ В ОДНОМ ФАЙЛЕ (внутри <style> и <script>). Категорически запрещено подключать локальные файлы (например <link href="styles.css">), так как приложение работает локально в браузере. Подключай только внешние CDN.
 
 ОБЯЗАТЕЛЬНО используй точные ID файлов из оглавления:
 ${JSON.stringify(notesDirectory)}` + textAccessRule;
@@ -5401,7 +5844,39 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
 
         const apiMessages = [{ role: "system", content: systemPrompt }];
         for (let i = 0; i < aiChatHistory.length - 1; i++) apiMessages.push(aiChatHistory[i]);
-        apiMessages.push({ role: "user", content: currentDocumentContext });
+        
+        // НОВАЯ ЛОГИКА: Добавляем картинки пользователя И извлекаем их скрытые промпты
+        let finalContextText = currentDocumentContext;
+        let hasImages = (window.userAttachedImages && window.userAttachedImages.length > 0) || liveSiteImageBase64;
+
+        if (hasImages) {
+            let contentArray = [];
+            
+            // 1. Извлекаем картинки и скрытые промпты
+            if (window.userAttachedImages) {
+                window.userAttachedImages.forEach(item => {
+                    const b64 = typeof item === 'string' ? item : item.base64;
+                    contentArray.push({ type: "image_url", image_url: { url: b64 } });
+                    
+                    // Если у картинки есть скрытый промпт - незаметно добавляем его к запросу
+                    if (item.hiddenPrompt) {
+                        finalContextText += `\n\n${item.hiddenPrompt}`;
+                    }
+                });
+            }
+
+            // 2. Системный Live-скриншот (если включена слежка за DOM)
+            if (liveSiteImageBase64) {
+                contentArray.push({ type: "image_url", image_url: { url: liveSiteImageBase64 } });
+            }
+
+            // Текст всегда идет первым элементом массива
+            contentArray.unshift({ type: "text", text: finalContextText });
+
+            apiMessages.push({ role: "user", content: contentArray });
+        } else {
+            apiMessages.push({ role: "user", content: finalContextText });
+        }
 
         const msgDiv = renderMessageUI("bot", "", -1);
 
@@ -5453,6 +5928,11 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
           saveAIChat();
         } finally {
           if (window.clearChatSelectionContext) window.clearChatSelectionContext(); // Очищаем плашку после отправки
+          
+          // Очищаем прикрепленные картинки
+          window.userAttachedImages = [];
+          if (window.renderAttachedImagesUI) window.renderAttachedImagesUI();
+          
           input.disabled = false;
           sendBtn.style.display = "flex";
           stopContainer.style.display = "none";
@@ -5766,23 +6246,51 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
     let searchMatches = [];
     let currentMatchIdx = -1;
 
+    // Новая функция автоматического изменения высоты окна поиска
+    function autoResizeSearch() {
+        const input = document.getElementById("searchInputField");
+        input.style.height = '24px'; // Сбрасываем для пересчета
+        input.style.height = Math.min(input.scrollHeight, 200) + 'px'; // Растягиваем под контент
+    }
+
     function toggleSearchBox() {
         const box = document.getElementById("editorSearchBox");
+        const input = document.getElementById("searchInputField");
+        
         if (box.classList.contains("show")) {
             closeSearchBox();
         } else {
             box.classList.add("show");
+            
+            // УМНАЯ ФИШКА IDE: Захватываем выделенный текст автоматически
+            let selectedText = "";
+            if (isIdeMode && typeof ideEditor !== 'undefined') {
+                selectedText = ideEditor.getSelection();
+            } else {
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                selectedText = start !== end ? editor.value.substring(start, end) : "";
+            }
+
+            if (selectedText) {
+                input.value = selectedText;
+            }
+
             setTimeout(() => {
-                const input = document.getElementById("searchInputField");
                 input.focus();
-                input.select(); // выделяем старый текст, если он был
+                input.select();
+                autoResizeSearch(); // Подгоняем размер сразу после открытия
+                if (selectedText) triggerSearch(); // Ищем сразу, если был выделен текст
             }, 50);
         }
     }
 
     function closeSearchBox() {
         document.getElementById("editorSearchBox").classList.remove("show");
+        const input = document.getElementById("searchInputField");
+        input.style.height = '24px'; // Возвращаем компактный вид при закрытии
         clearSearchState();
+        
         if (isIdeMode) ideEditor.focus();
         else editor.focus();
     }
@@ -5811,65 +6319,78 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
     }
 
     function performSearch(reverse = false, initial = false) {
-        const query = document.getElementById("searchInputField").value;
-        if (!query) { clearSearchState(); return; }
+        const rawQuery = document.getElementById("searchInputField").value;
+        if (!rawQuery.trim()) { clearSearchState(); return; }
 
-        if (isIdeMode) {
-            // Поиск через CodeMirror
-            if (initial) {
-                const cursor = ideEditor.getSearchCursor(query, null, {caseFold: true});
-                while (cursor.findNext()) {
-                    searchMatches.push({from: cursor.from(), to: cursor.to()});
-                    cmSearchMarks.push(ideEditor.markText(cursor.from(), cursor.to(), {className: "CodeMirror-search-match"}));
-                }
-            }
+        // Делаем trim() для запроса, чтобы случайные пробелы по краям не ломали старт/конец
+        const escapedQuery = rawQuery.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Заменяем все пробелы, табы и переносы строк на \s+ (один или более пробелов)
+        const flexibleRegexStr = escapedQuery.replace(/\s+/g, '\\s+');
+        
+        let searchRegex;
+        try {
+            searchRegex = new RegExp(flexibleRegexStr, 'gi'); // Глобально и игнорируя регистр
+        } catch (e) {
+            return;
+        }
 
-            if (searchMatches.length === 0) return;
-
-            if (!initial) {
-                if (reverse) currentMatchIdx = (currentMatchIdx - 1 + searchMatches.length) % searchMatches.length;
-                else currentMatchIdx = (currentMatchIdx + 1) % searchMatches.length;
-            } else {
-                currentMatchIdx = 0;
-            }
-
-            const activeMatch = searchMatches[currentMatchIdx];
-            ideEditor.setSelection(activeMatch.from, activeMatch.to);
-            ideEditor.scrollIntoView({from: activeMatch.from, to: activeMatch.to}, 100);
-            document.getElementById("searchMatchCount").textContent = `${currentMatchIdx + 1} / ${searchMatches.length}`;
+        // --- ЕДИНАЯ ЛОГИКА ПОИСКА ДЛЯ ОБОИХ РЕДАКТОРОВ ---
+        if (initial) {
+            // Получаем текст как ОДНУ большую строку, независимо от редактора
+            const text = isIdeMode ? ideEditor.getValue() : editor.value;
+            let match;
+            searchRegex.lastIndex = 0; 
             
-        } else {
-            // Поиск в стандартном textarea
-            if (initial) {
-                const text = editor.value.toLowerCase();
-                const q = query.toLowerCase();
-                let startIndex = 0, index;
-                while ((index = text.indexOf(q, startIndex)) > -1) {
-                    searchMatches.push({start: index, end: index + query.length});
-                    startIndex = index + query.length;
+            while ((match = searchRegex.exec(text)) !== null) {
+                if (match[0].length === 0) {
+                    searchRegex.lastIndex++; 
+                    continue;
                 }
+                searchMatches.push({ start: match.index, end: match.index + match[0].length });
             }
 
-            if (searchMatches.length === 0) return;
-
-            if (!initial) {
-                if (reverse) currentMatchIdx = (currentMatchIdx - 1 + searchMatches.length) % searchMatches.length;
-                else currentMatchIdx = (currentMatchIdx + 1) % searchMatches.length;
-            } else {
-                currentMatchIdx = 0;
+            // Если мы в режиме IDE, рисуем красивые синие выделения для всех найденных совпадений
+            if (isIdeMode) {
+                searchMatches.forEach(m => {
+                    const fromPos = ideEditor.posFromIndex(m.start);
+                    const toPos = ideEditor.posFromIndex(m.end);
+                    cmSearchMarks.push(ideEditor.markText(fromPos, toPos, {className: "CodeMirror-search-match"}));
+                });
             }
+        }
 
-            const match = searchMatches[currentMatchIdx];
+        if (searchMatches.length === 0) {
+            document.getElementById("searchMatchCount").textContent = "0 / 0";
+            return;
+        }
+
+        // Логика перехода к следующему/предыдущему совпадению
+        if (!initial) {
+            if (reverse) currentMatchIdx = (currentMatchIdx - 1 + searchMatches.length) % searchMatches.length;
+            else currentMatchIdx = (currentMatchIdx + 1) % searchMatches.length;
+        } else {
+            currentMatchIdx = 0;
+        }
+
+        const match = searchMatches[currentMatchIdx];
+        document.getElementById("searchMatchCount").textContent = `${currentMatchIdx + 1} / ${searchMatches.length}`;
+
+        // --- ФОКУС И СКРОЛЛ К НАЙДЕННОМУ ЭЛЕМЕНТУ ---
+        if (isIdeMode) {
+            // Конвертируем индексы строки в координаты CodeMirror
+            const fromPos = ideEditor.posFromIndex(match.start);
+            const toPos = ideEditor.posFromIndex(match.end);
+            
+            ideEditor.setSelection(fromPos, toPos);
+            ideEditor.scrollIntoView({from: fromPos, to: toPos}, 100);
+        } else {
             editor.focus();
             editor.setSelectionRange(match.start, match.end);
 
-            // Скроллим textarea до нужной строки (математический расчет)
             const textBefore = editor.value.substring(0, match.start);
             const linesBefore = textBefore.split('\n').length;
-            const lineHeight = 22; // примерная высота строки
+            const lineHeight = 22; 
             editor.scrollTop = (linesBefore * lineHeight) - (editor.clientHeight / 2);
-
-            document.getElementById("searchMatchCount").textContent = `${currentMatchIdx + 1} / ${searchMatches.length}`;
         }
     }
 
