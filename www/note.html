@@ -1180,6 +1180,7 @@
         position: absolute;
         top: calc(100% + 8px); left: 0;
         width: 260px;
+        max-width: calc(100vw - 40px); /* Защита ширины на телефонах */
         background: #18181b;
         border: 1px solid rgba(255,255,255,0.1);
         border-radius: 12px;
@@ -1187,8 +1188,16 @@
         opacity: 0; pointer-events: none;
         transform: translateY(-10px);
         transition: all 0.2s ease;
-        z-index: 100;
+        z-index: 21474836; /* Поднимаем поверх всего */
         overflow: hidden;
+      }
+      
+      /* На смартфонах второе меню (Размышления) прижимаем вправо, чтобы оно не улетало за правый край экрана */
+      @media (max-width: 768px) {
+        #aiThinkingMenu {
+          left: auto;
+          right: -10px;
+        }
       }
       .ai-model-dropdown.open .ai-model-menu {
         opacity: 1; pointer-events: auto; transform: translateY(0);
@@ -1395,7 +1404,7 @@
       .ai-mode-selector {
         display: flex;
         gap: 8px;
-        overflow-x: auto;
+        flex-wrap: wrap; /* Кнопки красиво переносятся, и меню больше не обрезается */
       }
       .ai-mode-selector::-webkit-scrollbar { display: none; }
       
@@ -1597,7 +1606,7 @@
         display: flex !important;
         flex-direction: column !important;
         gap: 4px !important;
-        z-index: 2147483647 !important; /* Максимальный лимит Z-index в браузере */
+        z-index: 21474836; /* Максимальный лимит Z-index в браузере */
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
@@ -1848,7 +1857,8 @@
       }
 
       /* === ЗАПРЕТ ВЫДЕЛЕНИЯ ТЕКСТА (ГЛОБАЛЬНО ДЛЯ ВСЕХ УСТРОЙСТВ) === */
-      .note-title-list, .brand, .pane-header, .ai-message, .note-item {
+      /* ВНИМАНИЕ: Убрали .ai-message отсюда, чтобы текст в чате можно было выделять! */
+      .note-title-list, .brand, .pane-header, .note-item {
         user-select: none !important;
         -webkit-user-select: none !important;
         -webkit-touch-callout: none !important;
@@ -2150,19 +2160,31 @@
       .editor-search-input {
         background: transparent;
         border: none;
-        color: #fff;
+        color: #9cdcfe; /* Цвет кода (Светло-голубой, как переменные в VS Code) */
         font-family: var(--font-code);
         font-size: 13px;
         outline: none;
-        width: 300px; /* Делаем еще шире */
-        height: 24px; /* Стартовая высота */
-        max-height: 200px; /* Максимальная высота перед появлением скролла */
-        resize: none; /* Убираем ручной ресайз */
+        width: 300px; 
+        max-width: 100%; /* Защита от переполнения */
+        flex: 1; /* Резиновая ширина */
+        height: 24px; 
+        max-height: 200px; 
+        resize: none; 
         padding: 4px 0;
         line-height: 1.4;
-        white-space: pre-wrap; /* ВАЖНО: Разрешаем перенос длинных строк */
+        white-space: pre-wrap; 
         word-break: break-all;
         overflow-y: auto;
+      }
+
+      /* Адаптив окна поиска для смартфонов */
+      @media (max-width: 768px) {
+        .editor-search-box {
+          top: 45px !important;
+          left: 10px;
+          right: 10px;
+          width: auto; /* Занимает всю ширину с отступами */
+        }
       }
       .editor-search-input::-webkit-scrollbar { width: 4px; }
       .editor-search-input::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
@@ -2255,6 +2277,166 @@
         color: #fff !important;
       }
 
+      /* Стили для подсветки одинаковых слов */
+      .CodeMirror-matchingword {
+        background: rgba(255, 255, 255, 0.15);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 2px;
+      }
+
+      /* Красивые иконки сворачивания кода */
+      .CodeMirror-foldmarker {
+        color: var(--accent);
+        text-shadow: none;
+        font-family: var(--font-ui);
+        padding: 0 4px;
+        background: rgba(var(--accent-rgb), 0.15);
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 0 4px;
+      }
+      .CodeMirror-foldgutter-open, .CodeMirror-foldgutter-folded {
+        color: #64748b;
+        cursor: pointer;
+      }
+      .CodeMirror-foldgutter-open::after { content: "▼"; font-size: 10px; }
+      .CodeMirror-foldgutter-folded::after { content: "▶"; font-size: 10px; color: var(--accent); }
+
+      /* ==========================================
+         VS CODE DARK+ THEME & IDE QoL FEATURES
+         ========================================== */
+         
+      /* Фон и базовый текст */
+      .CodeMirror {
+        background: #1e1e1e !important;
+        color: #d4d4d4 !important;
+      }
+      /* Панель с цифрами строк */
+      .CodeMirror-gutters {
+        background: #1e1e1e !important;
+        border-right: 1px solid #333 !important;
+      }
+      .CodeMirror-linenumber { color: #858585 !important; }
+
+      /* Плавный курсор (Smooth Caret Animation) */
+      .CodeMirror-cursor { 
+        border-left: 2px solid #007acc !important; 
+        transition: left 0.08s ease-out, top 0.08s ease-out !important; 
+      }
+      
+      /* Подсветка выделения */
+      .CodeMirror-selected { background: #264f78 !important; }
+      .CodeMirror-focused .CodeMirror-selected { background: #264f78 !important; }
+      
+      /* Активная строка */
+      .CodeMirror-activeline-background { background: #282828 !important; }
+
+      /* === ЛИНИИ ОТСТУПОВ (INDENT GUIDES) === 
+         Магический трюк: 4ch означает ровно 4 символа пробела (размер 1 табуляции). */
+      .CodeMirror-line {
+        background-image: linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px);
+        background-size: 4ch 100%;
+        background-position: 4ch 0;
+        background-repeat: repeat-y;
+      }
+
+      /* Подсветка парных тегов (<div> ... </div>) */
+      .CodeMirror-matchingtag {
+        background: rgba(86, 156, 214, 0.25) !important;
+        border-bottom: 1px solid #569cd6;
+      }
+
+      /* === СТИЛИ ТЕРМИНАЛА ОШИБОК (ЛИНТЕРА) === */
+      .CodeMirror-lint-tooltip {
+        background: #18181b !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 8px !important;
+        color: #e2e8f0 !important;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+        font-family: var(--font-ui) !important;
+        padding: 8px 12px !important;
+        z-index: 999999 !important;
+      }
+      .CodeMirror-lint-marker-error { background-image: none !important; position: relative; }
+      .CodeMirror-lint-marker-error::after { content: "✖"; color: #ef4444; position: absolute; left: 2px; top: 0; font-size: 12px; }
+      .CodeMirror-lint-marker-warning { background-image: none !important; position: relative; }
+      .CodeMirror-lint-marker-warning::after { content: "⚠"; color: #f59e0b; position: absolute; left: 2px; top: 0; font-size: 12px; }
+
+      /* === СИНТАКСИС VS CODE DARK+ === */
+      .cm-keyword { color: #569cd6 !important; } /* const, let, class */
+      .cm-operator { color: #d4d4d4 !important; } /* = + - */
+      .cm-variable { color: #9cdcfe !important; } /* имена переменных */
+      .cm-variable-2 { color: #9cdcfe !important; }
+      .cm-variable-3 { color: #4fc1ff !important; }
+      .cm-builtin { color: #4ec9b0 !important; } /* console, document */
+      .cm-atom { color: #569cd6 !important; } /* true, false, null */
+      .cm-number { color: #b5cea8 !important; } /* 100, 2.5 */
+      .cm-def { color: #dcdcaa !important; } /* имена функций */
+      .cm-string { color: #ce9178 !important; } /* "строки" */
+      .cm-string-2 { color: #ce9178 !important; }
+      .cm-comment { color: #6a9955 !important; font-style: italic; } /* // комментарии */
+      .cm-property { color: #9cdcfe !important; } /* obj.property */
+      .cm-type { color: #4ec9b0 !important; } /* Типы */
+
+      /* HTML/XML Специфика */
+      .cm-tag { color: #569cd6 !important; } /* <div>, <span> */
+      .cm-attribute { color: #9cdcfe !important; } /* class, id, href */
+      
+      /* CSS Специфика */
+      .cm-qualifier { color: #d7ba7d !important; } /* .class-name */
+      .cm-property.cm-error { color: #d4d4d4 !important; } /* Сброс ошибок парсера для кастомных свойств CSS */
+      
+      /* Markdown Специфика */
+      .cm-header { color: #569cd6 !important; font-weight: bold; }
+      .cm-link { color: #4ec9b0 !important; text-decoration: underline; }
+
+      /* === МЕНЮ ДОП ФУНКЦИЙ ИИ (+) === */
+      .ai-extra-tools-menu {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        right: 0; /* ФИКС 1: Выравниваем по правому краю, чтобы меню росло вовнутрь экрана */
+        left: auto; /* Отключаем левую привязку */
+        background: #18181b;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(10px);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 21474836; /* ФИКС 2: Максимально возможный Z-index браузера */
+        min-width: 180px;
+        max-width: calc(100vw - 30px); /* ФИКС 3: Жесткая защита от вылета за границы смартфона */
+      }
+      .ai-extra-tools-menu.show {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0);
+      }
+      .ai-extra-tool-item {
+        background: transparent;
+        border: none;
+        color: #e2e8f0;
+        padding: 8px 12px;
+        text-align: left;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: var(--font-ui);
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s, color 0.2s;
+        white-space: nowrap;
+      }
+      .ai-extra-tool-item i { font-size: 16px; }
+      .ai-extra-tool-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
     </style>
 
     <!-- ================= IDE (CodeMirror) ================= -->
@@ -2269,12 +2451,48 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/matchbrackets.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
+  <!-- Подсветка парных тегов HTML -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/matchtags.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/markdown/markdown.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/searchcursor.min.js"></script>
   
+  <!-- ДОПОЛНИТЕЛЬНЫЕ ЯЗЫКИ ПРОГРАММИРОВАНИЯ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/php/php.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/sql/sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/shell/shell.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/jsx/jsx.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/searchcursor.min.js"></script>
+
+  <!-- === ЯДРА ЛИНТЕРОВ (АНАЛИЗАТОРЫ ОШИБОК) === -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jshint/2.13.6/jshint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/csslint/1.0.5/csslint.min.js"></script>
+  
+  <!-- ФИКС: Используем рабочую версию HTMLHint, совместимую с CodeMirror -->
+  <script src="https://unpkg.com/htmlhint@1.1.4/dist/htmlhint.js"></script>
+  <script>
+    // Гарантируем, что CodeMirror безошибочно найдет HTMLHint в глобальной области
+    if (typeof HTMLHint !== "undefined") {
+      window.HTMLHint = HTMLHint.default || HTMLHint.HTMLHint || HTMLHint;
+    }
+  </script>
+  
+  <!-- Используем специальную Web-сборку JSON-линтера для надежности -->
+  <script src="https://unpkg.com/jsonlint@1.6.3/web/jsonlint.js"></script>
+
+  <!-- ПЛАГИНЫ CODEMIRROR ДЛЯ ВЫВОДА ОШИБОК -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/lint.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/lint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/javascript-lint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/css-lint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/html-lint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/lint/json-lint.min.js"></script>
+  
+  <!-- Плагины Автодополнения -->
   <!-- Плагины Автодополнения -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/show-hint.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/anyword-hint.min.js"></script>
@@ -2285,6 +2503,25 @@
   
   <!-- Emmet (Быстрый код) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/emmet/2.4.3/emmet.browser.min.js"></script>
+
+  <!-- === НОВЫЕ ПЛАГИНЫ ДЛЯ КОМФОРТА === -->
+  <!-- 1. Сворачивание кода -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/foldgutter.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/foldcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/foldgutter.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/brace-fold.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/xml-fold.min.js"></script>
+  
+  <!-- 2. Подсветка одинаковых слов -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/match-highlighter.min.js"></script>
+  
+  <!-- 3. Прокрутка за конец файла -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/scroll/scrollpastend.min.js"></script>
+
+  <!-- 4. Beautify (Авто-форматирование) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify-html.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.9/beautify-css.min.js"></script>
   <!-- ==================================================== -->
   </head>
   <body>
@@ -2362,6 +2599,12 @@
             <i class="bx bx-terminal"></i>
           </button>
 
+          <!-- КНОПКА ПРОБЛЕМ IDE (НОВАЯ) -->
+          <button class="btn-icon" id="ideConsoleToggleBtn" title="Синтаксические ошибки" onclick="toggleIdeConsole()" style="display: none; position: relative;">
+            <i class='bx bx-bug' id="ideConsoleIcon"></i>
+            <span id="ideErrorBadge" style="display:none; position:absolute; top:-2px; right:-2px; background:#ef4444; color:#fff; font-size:9px; font-weight:bold; padding:1px 4px; border-radius:10px;">0</span>
+          </button>
+
           <!-- КНОПКА ИИ -->
           <button class="btn-icon" style="color: #a78bfa;" title="AI Assistant" onclick="toggleAIModal()">
             <i class="bx bx-bot"></i>
@@ -2377,9 +2620,12 @@
                       <i class='bx bx-search'></i> Найти в тексте (Ctrl+F)
                   </button>
                   <button class="t-menu-item" id="ideToggleBtnMenu" onclick="toggleIdeMode(); closeMasterMenu();">
-                      <i class='bx bx-code-curly'></i> Режим IDE (Код)
-                  </button>
-                  <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 5px 0;"></div>
+                    <i class='bx bx-code-curly'></i> Режим IDE (Код)
+                </button>
+                <button class="t-menu-item" onclick="window.formatIdeCode(); closeMasterMenu();">
+                    <i class='bx bx-align-left'></i> Форматировать код (Shift+Alt+F)
+                </button>
+                <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 5px 0;"></div>
                   <button class="t-menu-item" onclick="downloadHTML(); closeMasterMenu();">
                       <i class='bx bx-code-block'></i> Скачать как HTML
                   </button>
@@ -2458,6 +2704,16 @@
               <button class="toolbar-btn" onclick="editor.blur(); toggleSheet('');"><i class='bx bx-x-circle'></i></button>
             </div>
           </div>
+
+          <!-- ТЕРМИНАЛ ОШИБОК IDE -->
+          <div id="ideConsoleContainer" class="web-console" style="border-top: 1px solid var(--panel-border);">
+             <div class="web-console-header">
+                <span><i class='bx bx-bug'></i> Проблемы (Синтаксис)</span>
+                <button class="btn-icon" style="padding: 2px; font-size: 16px;" onclick="toggleIdeConsole()"><i class='bx bx-x'></i></button>
+             </div>
+             <div id="ideConsoleLogs" class="web-console-logs"></div>
+          </div>
+
         </div>
         <div class="pane preview-pane" id="previewPane">
           <div class="pane-header">
@@ -2527,6 +2783,9 @@
                 <div class="ai-model-item" onclick="selectAIModel('gpt-5.4-nano', 'GPT-5.4-nano')">
                   <span class="m-title">GPT-5.4-nano</span><span class="m-desc">Легкая и дешевая модель</span>
                 </div>
+                <div class="ai-model-item" onclick="selectAIModel('qwen/qwen3-235b-a22b-2507', 'Qwen3')">
+                  <span class="m-title">Qwen3-235</span><span class="m-desc">Легкая и дешевая модель</span>
+                </div>
                 <div class="ai-model-item" onclick="selectAIModel('claude-opus-4-7', 'Claude Opus 4.7')">
                   <span class="m-title">Claude Opus 4.7</span><span class="m-desc">Мощная аналитика (Anthropic)</span>
                 </div>
@@ -2535,6 +2794,12 @@
                 </div>
                 <div class="ai-model-item" onclick="selectAIModel('claude-haiku-4-5', 'Claude Haiku 4.5')">
                   <span class="m-title">Claude Haiku 4.5</span><span class="m-desc">Молниеносная скорость</span>
+                </div>
+                <div class="ai-model-item" onclick="selectAIModel('gemini-3.5-flash', 'Gemini 3.5 Flash(p)')">
+                  <span class="m-title">Gemini 3.5 Flash</span><span class="m-desc">Новая сверхбыстрая модель Google (proxyapi)</span>
+                </div>
+                <div class="ai-model-item" onclick="selectAIModel('google/gemini-3.5-flash', 'Gemini 3.5 Flash')">
+                  <span class="m-title">Gemini 3.5 Flash</span><span class="m-desc">Новая сверхбыстрая модель Google</span>
                 </div>
                 <div class="ai-model-item" onclick="selectAIModel('gemini-3.1-pro-preview', 'Gemini 3.1 Pro')">
                   <span class="m-title">Gemini 3.1 Pro</span><span class="m-desc">Модель Google с рассуждением</span>
@@ -2602,8 +2867,21 @@
             <button class="ai-mode-btn active" onclick="setAIMode('agent', this)"><i class='bx bx-magic-wand'></i> Agent</button>
             <button class="ai-mode-btn" onclick="setAIMode('plan', this)"><i class='bx bx-task'></i> Plan</button>
             <button class="ai-mode-btn" onclick="setAIMode('ask', this)"><i class='bx bx-message-rounded'></i> Ask</button>
-            <!-- НОВАЯ КНОПКА СЛЕЖКИ ЗА САЙТОМ -->
-            <button class="ai-mode-btn" id="attachSiteBtn" onclick="toggleSiteContext()"><i class='bx bx-window-open'></i> + Экран сайта</button>
+            
+            <!-- КНОПКА "+" ДЛЯ ДОП. ФУНКЦИЙ -->
+            <div style="position: relative; display: flex;">
+              <button class="ai-mode-btn" id="aiExtraToolsBtn" onclick="toggleExtraAITools(event)">
+                <i class='bx bx-plus'></i> Доп.
+              </button>
+              <div class="ai-extra-tools-menu" id="aiExtraToolsMenu">
+                <button class="ai-extra-tool-item" id="attachSiteBtn" onclick="toggleSiteContext()">
+                  <i class='bx bx-window-open'></i> + Экран сайта
+                </button>
+                <button class="ai-extra-tool-item" id="attachTerminalBtn" onclick="toggleTerminalContext()">
+                  <i class='bx bx-terminal'></i> + Ошибки терминала
+                </button>
+              </div>
+            </div>
           </div>
           
           <!-- ВЫПАДАЮЩИЙ СПИСОК @ -->
@@ -2745,9 +3023,12 @@
             <option value="gpt-5.5">GPT-5.5</option>
             <option value="gpt-5.4-mini">GPT-5.4-mini</option>
             <option value="gpt-5.4-nano">GPT-5.4-nano</option>
+            <option value="qwen/qwen3-235b-a22b-2507">Qwen 3-235b</option>
             <option value="claude-opus-4-7">Claude Opus 4.7</option>
             <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
             <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
+            <option value="gemini-3.5-flash">Gemini 3.5 Flash(p)</option>
+            <option value="google/gemini-3.5-flash">Gemini 3.5 Flash</option>
             <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
             <option value="openrouter/x-ai/grok-4.3">Grok-4.3</option>
           </select>
@@ -2800,10 +3081,30 @@
       function getSyntaxMode(filename) {
         if (!filename) return "markdown";
         const name = filename.toLowerCase();
-        if (name.endsWith('.js') || name.endsWith('.json')) return "javascript";
-        if (name.endsWith('.html')) return "htmlmixed";
+        
+        // Веб-языки
+        if (name.endsWith('.html') || name.endsWith('.htm')) return "htmlmixed";
         if (name.endsWith('.css')) return "css";
+        if (name.endsWith('.js')) return "javascript";
+        if (name.endsWith('.jsx')) return "jsx";
+        if (name.endsWith('.ts') || name.endsWith('.tsx')) return "text/typescript";
+        
+        // Важно: application/json, чтобы редактор не подчеркивал ошибки JS внутри JSON файла
+        if (name.endsWith('.json')) return "application/json"; 
+        
+        // Бэкенд, скрипты и системы
+        if (name.endsWith('.py')) return "python";
+        if (name.endsWith('.php')) return "php";
+        if (name.endsWith('.sql')) return "sql";
+        if (name.endsWith('.sh') || name.endsWith('.bash')) return "shell";
+        // C-подобные языки (C, C++, C#, Java)
+        if (name.endsWith('.java') || name.endsWith('.c') || name.endsWith('.cpp') || name.endsWith('.cs')) return "text/x-csrc";
+        
+        // Разметка
         if (name.endsWith('.xml')) return "xml";
+        if (name.endsWith('.md')) return "markdown";
+        
+        // Если неизвестное расширение, включаем безопасный Markdown
         return "markdown";
       }
 
@@ -3133,16 +3434,36 @@
           // 1. Инициализируем CodeMirror поверх textarea
           ideEditor = CodeMirror.fromTextArea(editor, {
               mode: "markdown",
-              theme: "dracula",
+              // Удалили theme: "dracula", теперь стили будут браться из нашего кастомного CSS
               lineNumbers: true,
               lineWrapping: true,
               styleActiveLine: true,
               matchBrackets: true,
-              autoCloseBrackets: true, // Автоматически закрывать скобки {}, []
-              autoCloseTags: true,     // Автоматически закрывать HTML-теги
+              matchTags: { bothTags: true }, // Включаем подсветку <div> </div>
+              autoCloseBrackets: true, 
+              autoCloseTags: true,
               indentUnit: 4,
+              
+              // НОВЫЕ ПАРАМЕТРЫ КОМФОРТА
+              scrollPastEnd: true, 
+              highlightSelectionMatches: {showToken: /\w/, annotateScrollbar: true}, 
+              foldGutter: true, 
+              
+              // === ВКЛЮЧАЕМ ЛИНТЕР И ПАНЕЛЬ ОШИБОК ===
+              gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter", "CodeMirror-lint-markers"],
+              lint: {
+                  // Эта функция срабатывает каждый раз, когда линтер находит ошибку
+                  onUpdateLinting: function(annotationsNotSorted, annotations, cm) {
+                      if (typeof window.updateIdeConsole === "function") {
+                          // ФИКС: Передаем ПЕРВЫЙ аргумент (annotationsNotSorted) - плоский список ошибок
+                          window.updateIdeConsole(annotationsNotSorted);
+                      }
+                  }
+              },
+
               extraKeys: {
-                  "Ctrl-Space": "autocomplete", // Вызов подсказок
+                  "Ctrl-Space": "autocomplete",
+                  "Shift-Alt-F": function(cm) { window.formatIdeCode(); }, // Хоткей для выравнивания кода
                   "Tab": function(cm) {
                       // Логика работы Emmet: если можно развернуть аббревиатуру - разворачиваем, иначе обычный Tab
                       try {
@@ -3170,12 +3491,14 @@
           // 2. Восстанавливаем состояние режима IDE из памяти
           const cmWrapper = ideEditor.getWrapperElement();
           isIdeMode = localStorage.getItem("qn_ide_mode") === "true";
+          const ideConsoleBtn = document.getElementById('ideConsoleToggleBtn'); // Находим кнопку жука
           
           if (isIdeMode) {
               cmWrapper.style.display = "block";
               editor.style.display = "none";
               const toolbarWrapper = document.querySelector('.editor-toolbar-wrapper');
               if (toolbarWrapper) toolbarWrapper.style.display = "none";
+              if (ideConsoleBtn) ideConsoleBtn.style.display = "block"; // Показываем кнопку при загрузке страницы
               
               // Обновляем кнопку в меню (с небольшой задержкой, чтобы DOM отрисовался)
               setTimeout(() => {
@@ -3185,6 +3508,7 @@
           } else {
               cmWrapper.style.display = "none";
               editor.style.display = "block";
+              if (ideConsoleBtn) ideConsoleBtn.style.display = "none"; // Прячем кнопку при загрузке страницы
           }
 
           // 3. Слушатель изменения текста (СУПЕР-АВТОДОПОЛНЕНИЕ КАК В VS CODE)
@@ -3194,10 +3518,10 @@
               if (cm.state.completionActive) return; 
               
               const isTyping = change.origin === "+input" || change.origin === "*compose";
-              const isPick = change.origin === "complete"; // Срабатывает при выборе подсказки
+              const isPick = change.origin === "complete";
 
               if (isTyping || isPick) {
-                  if (isTyping && change.text.length > 1) return; // Защита от спама при Ctrl+V
+                  if (isTyping && change.text.length > 1) return;
 
                   setTimeout(() => {
                       if (cm.state.completionActive) return;
@@ -3208,98 +3532,171 @@
                       const line = cm.getLine(cursor.line);
                       const textBeforeCursor = line.substring(0, cursor.ch);
 
-                      // 1. АВТО-ПРОБЕЛ ПОСЛЕ ТЕГА: Если выбрали имя тега (например <html), ставим пробел!
                       if (isPick && /<[a-zA-Z0-9-]+$/.test(textBeforeCursor)) {
                           cm.replaceRange(" ", cursor, cursor, "complete");
                       }
 
-                      // 2. СМАРТ-СЛОВАРЬ (Перехватываем подсказки и делаем их умными)
+                      // === УМНЫЙ HTML СЛОВАРЬ (КАВЫЧКИ И ЗНАЧЕНИЯ АТРИБУТОВ) ===
                       const smartHtmlHint = function(cm, options) {
                           let result = CodeMirror.hint.html(cm, options);
-                          // Если стандартный HTML словарь пуст, вызываем словарь текста документа
-                          if (!result || !result.list || result.list.length === 0) {
-                              return CodeMirror.hint.anyword(cm, options);
-                          }
-
+                          
                           const cur = cm.getCursor();
                           const txtBefore = cm.getLine(cur.line).substring(0, cur.ch);
-
-                          // Проверяем: находимся ли мы внутри открытого тега (вводим атрибуты)?
+                          
                           const tagMatch = txtBefore.match(/<([a-zA-Z0-9-]+)\s+[^>]*$/);
-                          // Проверяем: находимся ли мы УЖЕ внутри кавычек атрибута (например lang="|")?
-                          const inQuotes = /="[^"]*$/.test(txtBefore) || /='[^']*$/.test(txtBefore);
+                          const attrMatch = txtBefore.match(/([a-zA-Z0-9-]+)=["'][^"']*$/); 
+                          const inQuotes = /=["'][^"']*$/.test(txtBefore);
 
-                          // Если мы пишем атрибуты и НЕ внутри кавычек
-                          if (tagMatch && !inQuotes) {
+                          // 1. АВТОДОПОЛНЕНИЕ ВНУТРИ КАВЫЧЕК (ЗНАЧЕНИЯ АТРИБУТОВ)
+                          if (tagMatch && inQuotes && attrMatch) {
+                              const attrName = attrMatch[1].toLowerCase();
                               const tagName = tagMatch[1].toLowerCase();
                               
-                              // УМНАЯ СОРТИРОВКА: Самые важные атрибуты для каждого тега
-                              const topAttrs = {
-                                  "html": ["lang"],
-                                  "img": ["src", "alt", "width", "height"],
-                                  "a": ["href", "target", "rel"],
-                                  "link": ["rel", "href"],
-                                  "script": ["src", "type", "defer", "async"],
-                                  "meta": ["charset", "name", "content", "viewport"],
-                                  "input": ["type", "placeholder", "value", "name", "required"],
-                                  "form": ["action", "method"],
-                                  "button": ["type", "onclick"],
-                                  "div": ["class", "id"],
-                                  "span": ["class", "id"],
-                                  "iframe": ["src", "width", "height", "allowfullscreen"]
+                              // Наш кастомный словарь для внутренностей кавычек
+                              const attrValues = {
+                                  "rel": ["stylesheet", "icon", "preconnect", "prefetch", "preload", "alternate", "manifest", "author"],
+                                  "type": (tagName === "input" || tagName === "button") ? 
+                                          ["text", "password", "submit", "button", "checkbox", "radio", "file", "email", "number", "hidden", "color", "date"] : 
+                                          ["text/css", "text/javascript", "module"],
+                                  "target": ["_blank", "_self", "_parent", "_top"],
+                                  "method": ["get", "post", "dialog"],
+                                  "dir": ["ltr", "rtl", "auto"]
                               };
-                              // Глобальные атрибуты, которые актуальны всегда
-                              const globals = ["class", "id", "style"];
-                              const priority = (topAttrs[tagName] || []).concat(globals);
 
-                              // МОДЕРНИЗИРУЕМ ПОДСКАЗКИ
-                              result.list = result.list.map(item => {
-                                  let text = typeof item === 'string' ? item : item.text;
+                              if (attrValues[attrName]) {
+                                  const typedValueMatch = txtBefore.match(/=["']([^"']*)$/);
+                                  const typedValue = typedValueMatch ? typedValueMatch[1] : "";
                                   
-                                  // Не трогаем теги и то, что уже содержит знак =
-                                  if (text.startsWith("<") || text.includes("=")) return item;
+                                  const list = attrValues[attrName]
+                                      .filter(v => v.startsWith(typedValue)) // Показываем только те, что подходят
+                                      .map(text => ({ text: text, displayText: text }));
+                                  
+                                  if (list.length > 0) {
+                                      return {
+                                          list: list,
+                                          from: CodeMirror.Pos(cur.line, cur.ch - typedValue.length),
+                                          to: cur
+                                      };
+                                  }
+                              }
+                          }
 
-                                  // ДОБАВЛЯЕМ ="" К АТРИБУТУ
-                                  let newText = text + '=""';
-                                  
-                                  return {
-                                      text: newText,
-                                      displayText: text, // В меню отображается чисто (без ="")
-                                      hint: function(cm, data, completion) {
-                                          const from = completion.from || data.from;
-                                          const to = completion.to || data.to;
-                                          // Вставляем с меткой 'complete', чтобы зациклить вызов
-                                          cm.replaceRange(newText, from, to, "complete");
-                                          
-                                          // СТАВИМ КУРСОР РОВНО ВНУТРЬ КАВЫЧЕК!
-                                          const newCur = cm.getCursor();
-                                          cm.setCursor({line: newCur.line, ch: newCur.ch - 1});
-                                      },
-                                      // Выдаем ранг (чем меньше, тем выше в списке)
-                                      _rank: priority.indexOf(text) !== -1 ? priority.indexOf(text) : 999
+                          // 2. АВТОДОПОЛНЕНИЕ АТРИБУТОВ (С ДОБАВЛЕНИЕМ ="")
+                          if (tagMatch && !inQuotes) {
+                              if (!result || !result.list) result = CodeMirror.hint.anyword(cm, options);
+                              if (result && result.list) {
+                                  const tagName = tagMatch[1].toLowerCase();
+                                  const topAttrs = {
+                                      "html": ["lang"],
+                                      "img": ["src", "alt", "width", "height", "loading"],
+                                      "a": ["href", "target", "rel"],
+                                      "link": ["rel", "href", "type"],
+                                      "script": ["src", "type", "defer", "async"],
+                                      "meta": ["charset", "name", "content", "viewport"],
+                                      "input": ["type", "placeholder", "value", "name", "required", "checked"],
+                                      "form": ["action", "method"],
+                                      "button": ["type", "onclick"],
+                                      "div": ["class", "id"],
+                                      "span": ["class", "id"],
+                                      "iframe": ["src", "width", "height", "allowfullscreen", "loading"]
                                   };
-                              });
+                                  const globals = ["class", "id", "style"];
+                                  const priority = (topAttrs[tagName] || []).concat(globals);
 
-                              // СОРТИРУЕМ МЕНЮ
-                              result.list.sort((a, b) => {
-                                  let rankA = a._rank !== undefined ? a._rank : 999;
-                                  let rankB = b._rank !== undefined ? b._rank : 999;
-                                  if (rankA !== rankB) return rankA - rankB; // Сначала приоритетные
-                                  
-                                  let textA = a.displayText || a.text || a;
-                                  let textB = b.displayText || b.text || b;
-                                  return textA.localeCompare(textB); // Остальные по алфавиту
-                              });
+                                  result.list = result.list.map(item => {
+                                      let text = typeof item === 'string' ? item : item.text;
+                                      if (text.startsWith("<") || text.includes("=")) return item;
+
+                                      let newText = text + '=""';
+                                      return {
+                                          text: newText,
+                                          displayText: text,
+                                          hint: function(cm, data, completion) {
+                                              const from = completion.from || data.from;
+                                              const to = completion.to || data.to;
+                                              cm.replaceRange(newText, from, to, "complete");
+                                              const newCur = cm.getCursor();
+                                              cm.setCursor({line: newCur.line, ch: newCur.ch - 1});
+                                          },
+                                          _rank: priority.indexOf(text) !== -1 ? priority.indexOf(text) : 999
+                                      };
+                                  });
+
+                                  result.list.sort((a, b) => {
+                                      let rankA = a._rank !== undefined ? a._rank : 999;
+                                      let rankB = b._rank !== undefined ? b._rank : 999;
+                                      if (rankA !== rankB) return rankA - rankB;
+                                      let textA = a.displayText || a.text || a;
+                                      let textB = b.displayText || b.text || b;
+                                      return textA.localeCompare(textB);
+                                  });
+                              }
+                          }
+                          
+                          if (!result || !result.list || result.list.length === 0) {
+                              return CodeMirror.hint.anyword(cm, options);
                           }
                           return result;
                       };
 
-                      // 3. ПРИМЕНЕНИЕ СЛОВАРЕЙ (Запуск)
-                      let hintOptions = { completeSingle: false };
+                      // === УМНЫЙ CSS СЛОВАРЬ (ДВОЕТОЧИЕ И СКОБКИ ДЛЯ СВОЙСТВ) ===
+                      const smartCssHint = function(cm, options) {
+                          let result = CodeMirror.hint.css(cm, options);
+                          if (!result || !result.list) return result;
+                          
+                          const cur = cm.getCursor();
+                          const txtBefore = cm.getLine(cur.line).substring(0, cur.ch);
+                          
+                          if (txtBefore.includes(":")) return result;
+
+                          result.list = result.list.map(item => {
+                              let text = typeof item === 'string' ? item : item.text;
+                              
+                              if (!text.includes(":") && !text.includes(";")) {
+                                  return {
+                                      text: text + ": ;",
+                                      displayText: text,
+                                      hint: function(cm, data, completion) {
+                                          const from = completion.from || data.from;
+                                          const to = completion.to || data.to;
+                                          cm.replaceRange(text + ": ;", from, to, "complete");
+                                          const newCur = cm.getCursor();
+                                          cm.setCursor({line: newCur.line, ch: newCur.ch - 1}); 
+                                      }
+                                  };
+                              }
+                              return item;
+                          });
+                          return result;
+                      };
+
+                      // === НАСТРОЙКИ ПРИМЕНЕНИЯ (Навигация, Enter и Tab) ===
+                      let hintOptions = { 
+                          completeSingle: false,
+                          extraKeys: {
+                              // Навигация стрелочками
+                              "Up": function(cm, handle) { handle.moveFocus(-1); },
+                              "Down": function(cm, handle) { handle.moveFocus(1); },
+                              // Enter закрывает меню и переносит строку
+                              "Enter": function(cm, handle) {
+                                  handle.close(); 
+                                  return CodeMirror.Pass; 
+                              },
+                              // Tab вставляет выбранное слово
+                              "Tab": function(cm, handle) {
+                                  handle.pick(); 
+                              }
+                          }
+                      };
                       
+                      const innerMode = CodeMirror.innerMode(cm.getMode(), cm.getTokenAt(cursor).state).mode.name;
+
                       if (token.type && (token.type.includes("meta") || token.type.includes("comment"))) {
                           hintOptions.hint = CodeMirror.hint.anyword;
                       } 
+                      else if (innerMode === "css" || mode === "css") {
+                          hintOptions.hint = smartCssHint;
+                      }
                       else if (mode === "markdown") {
                           if (change.text[0] === '<' || isPick || (token.type && token.type.includes("tag"))) {
                               hintOptions.hint = smartHtmlHint;
@@ -3333,6 +3730,160 @@
           });
       });
 
+      // === ФУНКЦИЯ АВТО-ФОРМАТИРОВАНИЯ КОДА (BEAUTIFY) ===
+      window.formatIdeCode = function() {
+          if (!isIdeMode || typeof ideEditor === 'undefined') return;
+          
+          const mode = ideEditor.getOption("mode");
+          const currentValue = ideEditor.getValue();
+          let formattedValue = currentValue;
+
+          // Настройки красоты кода
+          const options = {
+              indent_size: 4,
+              space_in_empty_paren: true,
+              preserve_newlines: true,
+              max_preserve_newlines: 2,
+              wrap_line_length: 120
+          };
+
+          try {
+              if (mode === "htmlmixed" || mode === "xml") {
+                  formattedValue = html_beautify(currentValue, options);
+              } else if (mode === "css") {
+                  formattedValue = css_beautify(currentValue, options);
+              } else if (mode === "javascript" || mode === "application/json" || mode === "json") {
+                  // Теперь форматирование сработает и для правильного JSON режима
+                  formattedValue = js_beautify(currentValue, options);
+              } else {
+                  // Для Markdown и других языков (Python и т.д.) просто сбрасываем пробелы по краям
+                  formattedValue = currentValue.trim();
+              }
+
+              // Применяем изменения только если они реально есть
+              if (formattedValue !== currentValue) {
+                  // Запоминаем позицию скролла и курсора
+                  const scrollInfo = ideEditor.getScrollInfo();
+                  const cursor = ideEditor.getCursor();
+                  
+                  ideEditor.setValue(formattedValue);
+                  
+                  // Возвращаем фокус
+                  ideEditor.setCursor(cursor);
+                  ideEditor.scrollTo(scrollInfo.left, scrollInfo.top);
+                  saveAndRender(formattedValue);
+              }
+          } catch (e) {
+              console.warn("Ошибка при форматировании кода:", e);
+          }
+      };
+
+      // === ЛОГИКА ТЕРМИНАЛА ОШИБОК IDE ===
+      let isIdeConsoleOpen = false;
+
+      window.toggleIdeConsole = function() {
+          isIdeConsoleOpen = !isIdeConsoleOpen;
+          const consoleContainer = document.getElementById('ideConsoleContainer');
+          
+          if (isIdeConsoleOpen) {
+              consoleContainer.classList.add('show');
+          } else {
+              consoleContainer.classList.remove('show');
+          }
+      };
+
+      window.updateIdeConsole = function(annotations) {
+          const consoleBox = document.getElementById("ideConsoleLogs"); 
+          const badge = document.getElementById("ideErrorBadge");
+          const btnIcon = document.getElementById("ideConsoleIcon");
+          
+          // 1. Берем чистый список ошибок (мы теперь передаем правильный аргумент)
+          const validErrors = (annotations || []).filter(err => err && (err.message || err.reason));
+          
+          // НОВОЕ: Сохраняем ошибки глобально, чтобы ИИ мог их прочитать по клику
+          window.currentIdeErrors = validErrors;
+
+          // 2. ЖИВОЙ БЕЙДЖ: Обновляем счетчик на кнопке с жуком в верхней панели
+          if (badge && btnIcon) {
+              if (validErrors.length > 0) {
+                  badge.textContent = validErrors.length;
+                  badge.style.display = "block";
+                  btnIcon.style.color = "#ef4444"; // Красим жука в красный
+              } else {
+                  badge.style.display = "none";
+                  btnIcon.style.color = ""; // Возвращаем стандартный цвет
+              }
+          }
+
+          // Если сама панель терминала не отрендерилась на экране - прерываем
+          if (!consoleBox) return;
+          consoleBox.innerHTML = "";
+
+          // 3. Если ошибок нет — выводим зеленую галочку
+          if (validErrors.length === 0) {
+              consoleBox.innerHTML = `
+                <div style="padding: 15px; color: #10b981; font-family: var(--font-ui); font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                  <i class='bx bx-check-circle' style="font-size: 18px;"></i> Ошибок синтаксиса не найдено
+                </div>`;
+              return;
+          }
+
+          // 4. Отрисовываем каждую ошибку (строка, колонка, причина)
+          validErrors.forEach(err => {
+              // CodeMirror считает строки с нуля, поэтому прибавляем +1
+              const line = err.from && typeof err.from.line !== 'undefined' ? err.from.line + 1 : "?";
+              const ch = err.from && typeof err.from.ch !== 'undefined' ? err.from.ch + 1 : "?";
+              const severity = err.severity || "error";
+              
+              // Безопасное экранирование текста ошибки (чтобы не сломать HTML панели)
+              const rawMsg = err.message || err.reason || "Синтаксическая ошибка";
+              const safeMsg = String(rawMsg).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+              const errDiv = document.createElement("div");
+              errDiv.style.padding = "8px 15px";
+              errDiv.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+              errDiv.style.fontFamily = "var(--font-code)";
+              errDiv.style.fontSize = "12px";
+              errDiv.style.display = "flex";
+              errDiv.style.gap = "10px";
+              errDiv.style.cursor = "pointer";
+              errDiv.style.transition = "0.2s";
+              
+              errDiv.onmouseover = () => errDiv.style.background = "rgba(255,255,255,0.05)";
+              errDiv.onmouseout = () => errDiv.style.background = "transparent";
+
+              // УМНЫЙ КЛИК: прыгаем на строку с ошибкой
+              errDiv.onclick = () => {
+                  if (typeof ideEditor !== 'undefined' && err.from) {
+                      ideEditor.setCursor({line: err.from.line, ch: err.from.ch});
+                      ideEditor.focus();
+                      
+                      // Мигание красным фоном на секунду
+                      ideEditor.addLineClass(err.from.line, "background", "CodeMirror-activeline-background");
+                      setTimeout(() => {
+                          ideEditor.removeLineClass(err.from.line, "background", "CodeMirror-activeline-background");
+                      }, 1500);
+                  }
+              };
+
+              // Иконка и цвет (желтый для warning, красный для error)
+              const icon = severity === "warning" 
+                  ? `<i class='bx bx-error' style="color: #fbbf24; font-size: 16px;"></i>` 
+                  : `<i class='bx bx-x-circle' style="color: #ef4444; font-size: 16px;"></i>`;
+              const color = severity === "warning" ? "#fbbf24" : "#ef4444";
+
+              errDiv.innerHTML = `
+                  <div style="flex-shrink: 0; margin-top: 1px;">${icon}</div>
+                  <div style="flex: 1; color: #cbd5e1; line-height: 1.5;">
+                      <span style="color: ${color}; font-weight: 600;">Строка ${line}, Символ ${ch}:</span> 
+                      <span style="opacity: 0.9;">${safeMsg}</span>
+                  </div>
+              `;
+
+              consoleBox.appendChild(errDiv);
+          });
+      };
+
       // Функция переключения режимов
       function toggleIdeMode() {
           isIdeMode = !isIdeMode;
@@ -3340,11 +3891,13 @@
           const cmWrapper = ideEditor.getWrapperElement();
           const toolbarWrapper = document.querySelector('.editor-toolbar-wrapper');
           const toggleBtn = document.getElementById('ideToggleBtnMenu'); // <-- ИСПРАВЛЕНО
+          const ideConsoleBtn = document.getElementById('ideConsoleToggleBtn'); // Кнопка ошибок
 
           if (isIdeMode) {
               cmWrapper.style.display = "block";
               editor.style.display = "none"; 
               if (toolbarWrapper) toolbarWrapper.style.display = "none"; 
+              if (ideConsoleBtn) ideConsoleBtn.style.display = "block"; // Показываем жука
               
               // Защита от ошибки, если кнопки в панели больше нет
               if (toggleBtn) {
@@ -3360,10 +3913,11 @@
                   saveAndRender(currentVal);
               }
               setTimeout(() => ideEditor.refresh(), 10);
-          } else {
+            } else {
               cmWrapper.style.display = "none";
               editor.style.display = "block"; 
               if (toolbarWrapper) toolbarWrapper.style.display = "flex"; 
+              if (ideConsoleBtn) ideConsoleBtn.style.display = "none"; // Прячем жука
               
               // Защита от ошибки
               if (toggleBtn) {
@@ -3776,7 +4330,7 @@
         `;
 
         // ЖЕЛЕЗОБЕТОННЫЙ ВНЕШНИЙ ВИД (INLINE CSS)
-        menuEl.style.cssText = "position: fixed !important; background: #18181b !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 12px !important; padding: 6px !important; display: flex !important; flex-direction: column !important; gap: 4px !important; z-index: 2147483647 !important; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8) !important; min-width: 180px !important; margin: 0 !important; pointer-events: auto !important;";
+        menuEl.style.cssText = "position: fixed !important; background: #18181b !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 12px !important; padding: 6px !important; display: flex !important; flex-direction: column !important; gap: 4px !important; z-index: 21474836 !important; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8) !important; min-width: 180px !important; margin: 0 !important; pointer-events: auto !important;";
 
         document.body.appendChild(menuEl);
 
@@ -3808,7 +4362,7 @@
             <button class="dyn-menu-btn del-btn" onclick="handleChatDelete()"><i class='bx bx-trash'></i> Удалить сообщение</button>
         `;
 
-        menuEl.style.cssText = "position: fixed !important; background: #18181b !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 12px !important; padding: 6px !important; display: flex !important; flex-direction: column !important; gap: 4px !important; z-index: 2147483647 !important; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8) !important; min-width: 180px !important; margin: 0 !important; pointer-events: auto !important;";
+        menuEl.style.cssText = "position: fixed !important; background: #18181b !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 12px !important; padding: 6px !important; display: flex !important; flex-direction: column !important; gap: 4px !important; z-index: 21474836 !important; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8) !important; min-width: 180px !important; margin: 0 !important; pointer-events: auto !important;";
 
         document.body.appendChild(menuEl);
 
@@ -3836,8 +4390,8 @@
       // --- ДЕЙСТВИЯ ИЗ МЕНЮ ---
 
       window.handleNoteFavorite = function() {
-        if (!targetNoteIdForMenu) return;
-        const note = notes.find((n) => n.id === targetNoteIdForMenu);
+        if (!window.targetNoteIdForMenu) return;
+        const note = notes.find((n) => n.id === window.targetNoteIdForMenu);
         if (note) {
           note.isFavorite = !note.isFavorite;
           localStorage.setItem("qn_notes", JSON.stringify(notes));
@@ -3847,16 +4401,14 @@
       };
 
       window.handleNoteRename = function() {
-        if (!targetNoteIdForMenu) return;
-        const note = notes.find((n) => n.id === targetNoteIdForMenu);
+        if (!window.targetNoteIdForMenu) return;
+        const note = notes.find((n) => n.id === window.targetNoteIdForMenu);
         if (!note) return;
         const newTitle = prompt("Введите новое название заметки:", note.title);
         if (newTitle !== null && newTitle.trim() !== "") {
-          // Прогоняем введенное имя через генератор уникальности
           note.title = getUniqueTitle(newTitle, note.id); 
           if(activeId === note.id) {
               titleInput.value = note.title;
-              // Динамически меняем синтаксис IDE прямо во время работы
               if (ideEditor) ideEditor.setOption("mode", getSyntaxMode(note.title));
           }
           localStorage.setItem("qn_notes", JSON.stringify(notes));
@@ -3867,45 +4419,39 @@
       };
 
       window.handleNoteDelete = function() {
-        if (!targetNoteIdForMenu) return;
+        if (!window.targetNoteIdForMenu) return;
         if (notes.length === 1) {
             alert("Нельзя удалить последнюю!");
             hideNoteContextMenu();
             return;
         }
         if (confirm("Удалить заметку?")) {
-          notes = notes.filter((n) => n.id !== targetNoteIdForMenu);
-          window.aiAttachedNotes.delete(targetNoteIdForMenu); // Удаляем из ИИ контекста
+          notes = notes.filter((n) => n.id !== window.targetNoteIdForMenu);
+          window.aiAttachedNotes.delete(window.targetNoteIdForMenu); 
           updateAttachedNotesUI();
           
-          if (activeId === targetNoteIdForMenu) switchNote(notes[0].id);
+          if (activeId === window.targetNoteIdForMenu) switchNote(notes[0].id);
           else renderNotesList(searchInput.value);
           
           localStorage.setItem("qn_notes", JSON.stringify(notes));
         }
         hideNoteContextMenu();
       };
-
-      // --- ЛОГИКА УПОМИНАНИЙ ДЛЯ ИИ ---
       
       window.handleNoteMention = function() {
-        if (!targetNoteIdForMenu) return;
+        if (!window.targetNoteIdForMenu) return;
         
-        // Добавляем ID заметки в список для ИИ
-        window.aiAttachedNotes.add(targetNoteIdForMenu);
+        window.aiAttachedNotes.add(window.targetNoteIdForMenu);
         updateAttachedNotesUI();
         hideNoteContextMenu();
         
-        // Открываем панель ИИ, если она закрыта
         if (!document.body.classList.contains("ai-open")) {
             toggleAISidebar();
         }
         
-        // Автоматически включаем Агента
         const agentBtn = document.querySelector('.ai-mode-btn[onclick*="agent"]');
         if (agentBtn) setAIMode('agent', agentBtn);
         
-        // Ставим фокус на поле ввода чата
         document.getElementById('aiInput').focus();
       };
 
@@ -3918,6 +4464,13 @@
       // Глобальная переменная для экрана сайта
       window.aiAttachedSite = false;
 
+      // === МЕНЮ ДОП ФУНКЦИЙ ИИ ===
+      window.toggleExtraAITools = function(e) {
+          e.stopPropagation();
+          const menu = document.getElementById("aiExtraToolsMenu");
+          if (menu) menu.classList.toggle("show");
+      };
+
       window.toggleSiteContext = function() {
           if (!isWebPreview) {
               alert("Сначала запустите сайт (синяя кнопка Play в тулбаре), чтобы ИИ мог на него посмотреть!");
@@ -3925,15 +4478,37 @@
           }
           window.aiAttachedSite = !window.aiAttachedSite;
           const btn = document.getElementById("attachSiteBtn");
+          const extraBtn = document.getElementById("aiExtraToolsBtn");
+          
           if (btn) {
               if (window.aiAttachedSite) {
-                  btn.classList.add("active");
-                  btn.style.borderColor = "#3b82f6";
+                  btn.style.background = "rgba(59, 130, 246, 0.15)";
                   btn.style.color = "#3b82f6";
+                  if (extraBtn) { extraBtn.style.borderColor = "#3b82f6"; extraBtn.style.color = "#3b82f6"; }
               } else {
-                  btn.classList.remove("active");
-                  btn.style.borderColor = "";
-                  btn.style.color = "";
+                  btn.style.background = "transparent";
+                  btn.style.color = "#e2e8f0";
+                  if (extraBtn && !window.aiAttachedTerminal) { extraBtn.style.borderColor = ""; extraBtn.style.color = ""; }
+              }
+          }
+          updateAttachedNotesUI();
+      };
+
+      window.aiAttachedTerminal = false;
+      window.toggleTerminalContext = function() {
+          window.aiAttachedTerminal = !window.aiAttachedTerminal;
+          const btn = document.getElementById("attachTerminalBtn");
+          const extraBtn = document.getElementById("aiExtraToolsBtn");
+          
+          if (btn) {
+              if (window.aiAttachedTerminal) {
+                  btn.style.background = "rgba(239, 68, 68, 0.15)";
+                  btn.style.color = "#ef4444";
+                  if (extraBtn) { extraBtn.style.borderColor = "#ef4444"; extraBtn.style.color = "#ef4444"; }
+              } else {
+                  btn.style.background = "transparent";
+                  btn.style.color = "#e2e8f0";
+                  if (extraBtn && !window.aiAttachedSite) { extraBtn.style.borderColor = ""; extraBtn.style.color = ""; }
               }
           }
           updateAttachedNotesUI();
@@ -3959,7 +4534,6 @@
             }
         });
 
-        // НОВОЕ: Отрисовка плашки прикрепленного экрана сайта
         if (window.aiAttachedSite) {
             const sitePill = document.createElement('div');
             sitePill.className = 'mention-pill';
@@ -3970,6 +4544,20 @@
               <button onclick="toggleSiteContext()" title="Убрать"><i class='bx bx-x'></i></button>
             `;
             bar.appendChild(sitePill);
+        }
+
+        // НОВОЕ: Плашка Терминала
+        if (window.aiAttachedTerminal) {
+            const termPill = document.createElement('div');
+            termPill.className = 'mention-pill';
+            termPill.style.borderColor = '#ef4444';
+            termPill.style.background = 'rgba(239, 68, 68, 0.15)';
+            termPill.style.color = '#ef4444';
+            termPill.innerHTML = `
+              <i class='bx bx-terminal'></i> Ошибки терминала
+              <button onclick="toggleTerminalContext()" title="Убрать" style="color:#ef4444;"><i class='bx bx-x'></i></button>
+            `;
+            bar.appendChild(termPill);
         }
       }
 
@@ -4266,9 +4854,12 @@ function setTheme(e, hex, rgb) {
           "gpt-5.5": "GPT-5.5",
           "gpt-5.4-mini": "GPT-5.4-mini",
           "gpt-5.4-nano": "GPT-5.4-nano",
+          "qwen/qwen3-235b-a22b-2507": "Qwen3",
           "claude-opus-4-7": "Claude Opus 4.7",
           "claude-sonnet-4-6": "Claude Sonnet 4.6",
           "claude-haiku-4-5": "Claude Haiku 4.5",
+          "gemini-3.5-flash": "Gemini 3.5 Flash(p)",
+          "google/gemini-3.5-flash": "Gemini 3.5 Flash",
           "gemini-3.1-pro-preview": "Gemini 3.1 Pro",
           "openrouter/x-ai/grok-4.3": "Grok-4.3"
         };
@@ -4552,8 +5143,15 @@ function setTheme(e, hex, rgb) {
       document.addEventListener("click", (e) => {
         const mDropdown = document.getElementById("aiModelDropdown");
         const tDropdown = document.getElementById("aiThinkingDropdown");
+        const extMenu = document.getElementById("aiExtraToolsMenu");
+        
         if (mDropdown && !mDropdown.contains(e.target)) mDropdown.classList.remove("open");
         if (tDropdown && !tDropdown.contains(e.target)) tDropdown.classList.remove("open");
+        
+        // Закрываем меню доп. функций, если кликнули мимо
+        if (extMenu && !extMenu.contains(e.target) && (!e.target.closest('#aiExtraToolsBtn'))) {
+            extMenu.classList.remove("show");
+        }
       });
 
       // ==========================================
@@ -5260,7 +5858,7 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             // ========================================================
             // 1. ЛОГИКА ДЛЯ ANTHROPIC (CLAUDE)
             // ========================================================
-            else if (rawModel.includes("claude")) {
+            else if (rawModel.includes("claude") && !rawModel.startsWith("openrouter/")) {
               let systemPrompt = "";
                 const anthropicMessages = messages.filter(m => {
                     if (m.role === "system") { systemPrompt = m.content; return false; }
@@ -5335,7 +5933,7 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             // ========================================================
             // 2. ЛОГИКА ДЛЯ GOOGLE (GEMINI)
             // ========================================================
-            else if (rawModel.includes("gemini")) {
+            else if (rawModel.includes("gemini") && !rawModel.startsWith("openrouter/")) {
               let history = [];
                 let systemText = "";
 
@@ -5407,10 +6005,24 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             else {
                 let apiUrl = "https://api.proxyapi.ru/openai/v1/chat/completions";
                 let modelForApi = rawModel;
-                if (rawModel.startsWith("openrouter/")) { apiUrl = "https://api.proxyapi.ru/openrouter/v1/chat/completions"; modelForApi = rawModel.replace("openrouter/", ""); }
-                else if (rawModel.startsWith("openai/")) { modelForApi = rawModel.replace("openai/", ""); }
+                let isOpenRouter = false;
+
+                // Умная маршрутизация: перехватываем все модели с '/', которые не относятся к основным провайдерам
+                if (rawModel.startsWith("openrouter/")) { 
+                    isOpenRouter = true;
+                    apiUrl = "https://api.proxyapi.ru/openrouter/v1/chat/completions"; 
+                    modelForApi = rawModel.replace("openrouter/", ""); 
+                } else if (rawModel.includes("/") && !rawModel.startsWith("openai/") && !rawModel.startsWith("anthropic/") && !rawModel.startsWith("gemini/")) {
+                    isOpenRouter = true;
+                    apiUrl = "https://api.proxyapi.ru/openrouter/v1/chat/completions";
+                    modelForApi = rawModel; // Оставляем как есть, например: qwen/qwen3-235b-a22b-2507
+                } else if (rawModel.startsWith("openai/")) { 
+                    modelForApi = rawModel.replace("openai/", ""); 
+                }
 
                 const requestBody = { model: modelForApi, messages: messages, temperature: 1.0, stream: true };
+                
+                // Передаем параметр reasoning (Поддерживается в Grok и OpenAI)
                 if (effort !== "off") requestBody.reasoning_effort = effort;
 
                 const res = await fetch(apiUrl, {
@@ -5422,7 +6034,7 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
 
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
-                    throw new Error(`OpenAI/OpenRouter Error: ${err.error?.message || res.status}`);
+                    throw new Error(`${isOpenRouter ? 'OpenRouter' : 'OpenAI'} Error: ${err.error?.message || res.status}`);
                 }
 
                 const reader = res.body.getReader();
@@ -5434,12 +6046,14 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
                     const chunk = decoder.decode(value, { stream: true });
                     const lines = chunk.split("\n");
                     for (const line of lines) {
-                        if (line.trim().startsWith("data: ")) {
-                            const dataStr = line.replace("data: ", "").trim();
+                        // Исправлен парсер: некоторые ответы OpenRouter могут не содержать пробела после двоеточия ("data:{...")
+                        if (line.trim().startsWith("data:")) {
+                            const dataStr = line.replace("data:", "").trim();
                             if (dataStr === "[DONE]") continue;
                             try {
                                 const parsed = JSON.parse(dataStr);
                                 const delta = parsed.choices[0].delta;
+                                // Читаем рассуждения (reasoning/reasoning_content в зависимости от модели OpenRouter)
                                 processDelta(delta.content || "", delta.reasoning_content || delta.reasoning || "");
                             } catch (e) {}
                         }
@@ -6015,9 +6629,12 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
       };
 
       // === НОВАЯ СИСТЕМА ПАРСИНГА XML-ТЕГОВ ===
-      // ИИ больше не должен ориентироваться по строкам. Передаем чистый код.
+      // Включаем нумерацию строк для ИИ, чтобы он идеально ориентировался в больших файлах.
       window.formatNoteWithLines = function(content) {
-          return content || "";
+          if (!content) return "";
+          const lines = content.split('\n');
+          // Форматируем с выравниванием: "  1 | код", " 10 | код", "100 | код"
+          return lines.map((line, index) => `${String(index + 1).padStart(3, ' ')} | ${line}`).join('\n');
       };
 
       // Парсер XML-ответов от ИИ (Улучшенный и отказоустойчивый)
@@ -6353,15 +6970,26 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
           .map(n => `\n--- ПРИКРЕПЛЕННАЯ ЗАМЕТКА ---\nID: ${n.id}\nНАЗВАНИЕ: ${n.title}\nСОДЕРЖИМОЕ:\n${window.formatNoteWithLines(n.content)}\n--------------------------\n`)
           .join("");
 
-        let selectedText = "";
-        if (isIdeMode && typeof ideEditor !== 'undefined') selectedText = ideEditor.getSelection();
-        else {
+          let selectedText = "";
+        let cursorInfo = ""; // Новая переменная для хранения позиции
+        
+        if (isIdeMode && typeof ideEditor !== 'undefined') {
+            selectedText = ideEditor.getSelection();
+            if (!selectedText) {
+                // Если текст не выделен, забираем позицию курсора
+                const cursor = ideEditor.getCursor();
+                cursorInfo = `\n\n[ЛОКАЦИЯ КУРСОРОВ ПОЛЬЗОВАТЕЛЯ]: Разработчик сейчас смотрит на строку ${cursor.line + 1}, позиция ${cursor.ch}. Если он просит что-то исправить/добавить без уточнений файла или функции — делай это именно на этой строке.\n\n`;
+            }
+        } else {
             const startPos = editor.selectionStart;
             const endPos = editor.selectionEnd;
             selectedText = startPos !== endPos ? editor.value.substring(startPos, endPos) : "";
         }
         
-        let selectionContext = selectedText ? `\n\n[ВЫДЕЛЕННЫЙ ТЕКСТ ИЗ РЕДАКТОРА]:\n"""\n${selectedText}\n"""\nОпирайся именно на этот фрагмент.\n\n` : "";
+        // Передаем либо выделенный текст, либо позицию курсора
+        let selectionContext = selectedText 
+            ? `\n\n[ВЫДЕЛЕННЫЙ ТЕКСТ ИЗ РЕДАКТОРА]:\n"""\n${selectedText}\n"""\nОпирайся именно на этот фрагмент.\n\n` 
+            : cursorInfo;
 
         // Если есть выделенный текст из чата, добавляем его к контексту
         if (window.chatSelectedText) {
@@ -6426,35 +7054,68 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             }
         }
 
-        // ОБНОВЛЕНО: Подставляем liveSiteContext в промпты
+        // НОВОЕ: ПЕРЕХВАТ ОШИБОК И ЛОГОВ ТЕРМИНАЛА
+        let terminalContext = "";
+        if (window.aiAttachedTerminal) {
+            terminalContext += `\n\n=== 🚨 ЛОГИ ТЕРМИНАЛА И ОШИБКИ ===\n`;
+            
+            // 1. Ошибки синтаксиса IDE
+            if (window.currentIdeErrors && window.currentIdeErrors.length > 0) {
+                terminalContext += `[СИНТАКСИЧЕСКИЕ ОШИБКИ В АКТИВНОМ ФАЙЛЕ (IDE)]:\n`;
+                window.currentIdeErrors.forEach(err => {
+                    const line = err.from && typeof err.from.line !== 'undefined' ? err.from.line + 1 : "?";
+                    const ch = err.from && typeof err.from.ch !== 'undefined' ? err.from.ch + 1 : "?";
+                    terminalContext += `- Строка ${line}, Символ ${ch}: ${err.message || err.reason}\n`;
+                });
+            } else {
+                terminalContext += `[СИНТАКСИЧЕСКИЕ ОШИБКИ В АКТИВНОМ ФАЙЛЕ]: Ошибок синтаксиса нет.\n`;
+            }
+
+            // 2. Логи веб-браузера (Консоль сайта)
+            if (window.siteConsoleLogs && window.siteConsoleLogs.length > 0) {
+                const recentLogs = window.siteConsoleLogs.map(l => `[${l.type.toUpperCase()}] ${l.message}`).join('\n');
+                terminalContext += `\n[КОНСОЛЬ БРАУЗЕРА (Ошибки выполнения сайта)]:\n\`\`\`text\n${recentLogs}\n\`\`\`\n`;
+            } else {
+                terminalContext += `\n[КОНСОЛЬ БРАУЗЕРА]: Пусто.\n`;
+            }
+            terminalContext += `==========================================\n`;
+
+            // Отключаем плашку после отправки (одноразовая привязка)
+            window.toggleTerminalContext();
+        }
+
+        // ОБНОВЛЕНО: Подставляем liveSiteContext и terminalContext в промпты
         if (currentAIMode === "agent") {
           systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. Твоя задача — писать код и управлять файлами.
 
 АБСОЛЮТНЫЕ ПРАВИЛА (ИСПОЛЬЗУЙ ТОЛЬКО ЭТИ XML-ТЕГИ, НИКАКОГО JSON):
 1. Изменить часть кода (Системный Поиск и Замена):
 <edit id="ID_ФАЙЛА">
-  <find>точный кусок старого кода, который нужно заменить (без сокращений)</find>
-  <replace>весь новый код для этого участка</replace>
+  <find>точный кусок старого кода БЕЗ НОМЕРОВ СТРОК</find>
+  <replace>новый код БЕЗ НОМЕРОВ СТРОК</replace>
 </edit>
 
-2. Перезаписать весь файл (надежнее для больших правок): <update id="ID_ФАЙЛА">весь код</update>
+КРИТИЧЕСКИ ВАЖНО: В базу файлов добавлены номера строк для твоей ориентации (например " 12 | код"). 
+НО внутри тегов <find> и <replace> ты ОБЯЗАН писать АБСОЛЮТНО ЧИСТЫЙ КОД без этих номеров и префиксов! Иначе система не сможет применить патч!
+
+2. Перезаписать весь файл целиком: <update id="ID_ФАЙЛА">весь код</update>
 3. Создать файл: <create title="Имя">код</create>
 4. Удалить: <delete id="ID_ФАЙЛА" />
 5. План задач: <roadmap>- [ ] Шаг 1\n- [ ] Шаг 2</roadmap>
-6. АБСОЛЮТНО ВСЕГДА вноси изменения точечно. Никогда не переписывай файл полностью, если только тебя не попросил об этом пользователь. Иначе ты тратишь слишком много денег за токены.
+6. АБСОЛЮТНО ВСЕГДА вноси изменения точечно (через <edit>). Никогда не переписывай файл полностью (<update>), если только тебя об этом прямо не попросили, чтобы экономить токены.
 
 ОБЯЗАТЕЛЬНО используй точные ID файлов из оглавления:
 ${JSON.stringify(notesDirectory)}` + textAccessRule;
           
-currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\n${graphContext}АКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ФАЙЛЫ:\n" + mentionedNotesContext : ""}${liveSiteContext}\nЗапрос: ${userText}`;
+currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\n${graphContext}АКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ФАЙЛЫ:\n" + mentionedNotesContext : ""}${liveSiteContext}${terminalContext}\nЗапрос: ${userText}`;
         }
         else if (currentAIMode === "plan") {
           systemPrompt = `Ты Senior Менеджер. Составь подробный Roadmap. ВСЕГДА используй markdown-задачи в формате \`- [ ] Задача\`.` + textAccessRule;
-          currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\n${graphContext}АКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nУПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}${liveSiteContext}\nЗапрос: ${userText}`;
+          currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\n${graphContext}АКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nУПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}${liveSiteContext}${terminalContext}\nЗапрос: ${userText}`;
         } 
         else if (currentAIMode === "ask") {
           systemPrompt = `Ты ИИ-ассистент.` + textAccessRule;
-          currentDocumentContext = `РАЗРЕШЕННЫЕ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\n${graphContext}ТЕКУЩИЙ ДОКУМЕНТ:\n"""\n${window.formatNoteWithLines(editor.value.trim())}\n"""\n${selectionContext}${mentionedNotesContext ? "\nДОП. МАТЕРИАЛЫ:\n" + mentionedNotesContext : ""}${liveSiteContext}\nЗапрос: ${userText}`;
+          currentDocumentContext = `РАЗРЕШЕННЫЕ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\n${graphContext}ТЕКУЩИЙ ДОКУМЕНТ:\n"""\n${window.formatNoteWithLines(editor.value.trim())}\n"""\n${selectionContext}${mentionedNotesContext ? "\nДОП. МАТЕРИАЛЫ:\n" + mentionedNotesContext : ""}${liveSiteContext}${terminalContext}\nЗапрос: ${userText}`;
         }
 
         const apiMessages = [{ role: "system", content: systemPrompt }];
@@ -6726,16 +7387,6 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
           // Если мы касаемся кнопки или элемента выпадающего меню - блокируем потерю фокуса
           if (e.target.closest('.toolbar-btn') || e.target.closest('.sheet-item')) {
             e.preventDefault(); 
-          }
-        });
-      }
-
-      function toggleSheet(sheetId) {
-        document.querySelectorAll('.format-sheet').forEach(sheet => {
-          if (sheet.id === sheetId) {
-            sheet.classList.toggle('show');
-          } else {
-            sheet.classList.remove('show');
           }
         });
       }
@@ -7030,7 +7681,8 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
       position: fixed;
       bottom: 25px;
       right: 25px;
-      z-index: 999999;
+      /* Устанавливаем максимальный лимит z-index в 32-битной системе */
+      z-index: 21474836;
       /* ФИКС: Убрали flex, жестко фиксируем размер под кнопку */
       width: 54px;
       height: 54px;
@@ -7540,13 +8192,8 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
   </script>
   <!-- ========================================== -->
 
-  <!-- ПЛАВАЮЩАЯ КНОПКА ДЛЯ ВЫДЕЛЕННОГО ТЕКСТА В ЧАТЕ -->
-  <button id="floatingChatContextBtn" class="btn btn-primary" style="display: none; position: fixed; z-index: 1000000; box-shadow: 0 4px 15px rgba(0,0,0,0.6); border-radius: 8px; font-size: 12px; padding: 6px 12px; gap: 6px; pointer-events: auto; cursor: pointer;" onmousedown="event.preventDefault(); addChatSelectionToContext()">
-    <i class='bx bx-comment-add'></i> В контекст
-  </button>
-
-  <!-- ПЛАВАЮЩАЯ КНОПКА ДЛЯ ВЫДЕЛЕНИЯ В ЧАТЕ (ДЛЯ ПК) -->
-  <button id="floatingChatContextBtn" class="btn btn-primary" style="display: none; position: fixed; z-index: 1000000; box-shadow: 0 4px 15px rgba(0,0,0,0.6); border-radius: 8px; font-size: 12px; padding: 6px 12px; gap: 6px; background: #3b82f6; pointer-events: auto; cursor: pointer;" onmousedown="event.preventDefault(); addChatSelectionToContext()">
+  <!-- ЕДИНСТВЕННАЯ ПЛАВАЮЩАЯ КНОПКА ДЛЯ ВЫДЕЛЕНИЯ ТЕКСТА В ЧАТЕ -->
+  <button id="floatingChatContextBtn" class="btn btn-primary" style="display: none; position: fixed; z-index: 1000000; box-shadow: 0 4px 15px rgba(0,0,0,0.6); border-radius: 8px; font-size: 12px; padding: 6px 12px; gap: 6px; background: #3b82f6; pointer-events: auto; cursor: pointer;" onmousedown="event.preventDefault(); addChatSelectionToContext()" ontouchstart="event.preventDefault(); addChatSelectionToContext()">
     <i class='bx bx-comment-add'></i> Выбрать для ИИ
   </button>
 
@@ -7556,22 +8203,18 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
       <h2 style="font-size: 16px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
         <span><i class='bx bx-text'></i> Выделение текста</span>
         <div style="display: flex; gap: 8px; align-items: center;">
-          <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; border-radius: 8px; background: #3b82f6;" onmousedown="event.preventDefault(); addChatSelectionToContext()">
+          <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; border-radius: 8px; background: #3b82f6;" onmousedown="event.preventDefault(); addChatSelectionToContext()" ontouchstart="event.preventDefault(); addChatSelectionToContext()">
             <i class='bx bx-comment-add'></i> В контекст
           </button>
           <button class="btn-icon" style="padding: 0;" onclick="document.getElementById('textSelectModal').classList.remove('active')"><i class='bx bx-x'></i></button>
         </div>
       </h2>
-      <!-- Здесь текст МОЖНО выделять -->
       <div class="selectable-text-content" id="textSelectContent"></div>
     </div>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // Глобальные функции действий для контекстного меню чата (Генерируется динамически)
-      
-      // 1. Выбрать текст (Открывает модалку)
       window.handleChatSelectText = function() {
         if (!window.targetMessageNode) return;
         const rawText = window.targetMessageNode.getAttribute('data-raw');
@@ -7585,14 +8228,11 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
         window.hideChatContextMenu();
       };
 
-      // 2. Скопировать всё сообщение
       window.handleChatCopy = function() {
         if (!window.targetMessageNode) return;
-        
         const rawText = window.targetMessageNode.getAttribute('data-raw');
         if (rawText) {
           navigator.clipboard.writeText(rawText).then(() => {
-             // Визуальная отдача (меняем текст кнопки на 800мс)
              const menu = document.getElementById('dynamicChatMenu');
              if (menu) {
                  const copyBtn = menu.querySelector('.dyn-menu-btn:nth-child(2)');
@@ -7606,122 +8246,27 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
         }
       };
 
-      // 3. Удалить сообщение
       window.handleChatDelete = function() {
         if (!window.targetMessageNode) return;
-
         const nodeToRemove = window.targetMessageNode;
         const chatArea = document.getElementById('aiChatHistory');
         const allMessages = Array.from(chatArea.querySelectorAll('.ai-message'));
         const index = allMessages.indexOf(nodeToRemove);
 
-        // Удаляем из базы данных
         if (index > -1 && typeof aiChatHistory !== 'undefined') {
           aiChatHistory.splice(index, 1);
           if (typeof saveAIChat === 'function') saveAIChat();
         }
 
-        // Красивая анимация исчезновения
         nodeToRemove.style.opacity = '0';
         nodeToRemove.style.transform = 'scale(0.8)';
         nodeToRemove.style.marginBottom = `-${nodeToRemove.offsetHeight}px`;
         nodeToRemove.style.padding = '0';
-        
-        setTimeout(() => {
-          if (nodeToRemove) nodeToRemove.remove();
-        }, 300);
-
+        setTimeout(() => { if (nodeToRemove) nodeToRemove.remove(); }, 300);
         window.hideChatContextMenu();
       };
     });
   </script>
-
-<script>
-  // --- ИНТЕГРАЦИЯ ВЫДЕЛЕННОГО ТЕКСТА В ЧАТ С ИИ ---
-  document.addEventListener("selectionchange", () => {
-      const selection = window.getSelection();
-      const floatingBtn = document.getElementById("floatingChatContextBtn");
-      
-      if (!floatingBtn) return;
-
-      const text = selection.toString().trim();
-      
-      if (text !== "") {
-          // Проверяем, где выделен текст (в истории чата ИЛИ внутри модалки)
-          let isInsideChat = false;
-          
-          if (selection.rangeCount > 0) {
-              const range = selection.getRangeAt(0);
-              let container = range.commonAncestorContainer;
-              // Если попали в текстовую ноду, берем ее родителя
-              if (container.nodeType === 3) container = container.parentNode; 
-              
-              isInsideChat = !!container.closest('.ai-chat-area, .selectable-text-content');
-          }
-          
-          // Если текст выделен внутри чата, показываем плавающую кнопку
-          if (isInsideChat) {
-              const range = selection.getRangeAt(0);
-              const rect = range.getBoundingClientRect();
-              
-              floatingBtn.style.display = "flex";
-              // Поднимаем кнопку чуть выше выделенного текста
-              floatingBtn.style.top = Math.max(10, rect.top - 45) + "px";
-              let leftPos = rect.left + (rect.width / 2) - (floatingBtn.offsetWidth / 2);
-              
-              // Защита: чтобы кнопка не уходила за края экрана
-              if (leftPos + 120 > window.innerWidth) leftPos = window.innerWidth - 130;
-              if (leftPos < 10) leftPos = 10;
-              
-              floatingBtn.style.left = leftPos + "px";
-              return;
-          }
-      }
-      
-      // Скрываем, если ничего не выделено или выделение сбросилось
-      floatingBtn.style.display = "none";
-  });
-
-  // Функция отправки выделенного текста в поле ввода
-  window.addChatSelectionToContext = function() {
-      const selection = window.getSelection().toString().trim();
-      
-      if (!selection) {
-          alert("Сначала выделите нужные слова для ИИ!");
-          return;
-      }
-
-      const aiInput = document.getElementById("aiInput");
-      const floatingBtn = document.getElementById("floatingChatContextBtn");
-      const modal = document.getElementById('textSelectModal');
-      
-      // 1. Прячем интерфейсы
-      if(floatingBtn) floatingBtn.style.display = "none";
-      if (modal) modal.classList.remove('active');
-      if (!document.body.classList.contains("ai-open")) toggleAISidebar();
-
-      // 2. Формируем контекст, чтобы ИИ понимал, что мы цитируем его (или свои) слова из чата
-      const contextMarker = `[ФРАГМЕНТ ИЗ СООБЩЕНИЯ В ЧАТЕ]:\n"${selection}"\n\nМой вопрос: `;
-      
-      // 3. Добавляем в textarea
-      if (aiInput.value.trim() === "") {
-          aiInput.value = contextMarker;
-      } else {
-          aiInput.value = aiInput.value.trim() + "\n\n" + contextMarker;
-      }
-      
-      // 4. Переключаем ИИ в режим Ask (Вопрос)
-      const askBtn = document.querySelector('.ai-mode-btn[onclick*="ask"]');
-      if (askBtn) setAIMode('ask', askBtn);
-      
-      // 5. Ставим курсор в самый конец для удобства ввода
-      aiInput.focus();
-      aiInput.selectionStart = aiInput.selectionEnd = aiInput.value.length;
-      
-      // 6. Сбрасываем системное выделение текста
-      window.getSelection().removeAllRanges();
-  };
-</script>
 
 <script>
   // --- ПЛАШКА И ВЫДЕЛЕНИЕ ТЕКСТА ИЗ ЧАТА ---
