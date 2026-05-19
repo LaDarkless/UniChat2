@@ -2179,21 +2179,94 @@
       .search-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
       .CodeMirror-search-match { background: rgba(59, 130, 246, 0.4); border-radius: 2px; }
 
+      /* ==========================================
+         АВТОДОПОЛНЕНИЕ (IDE STYLE - VS CODE / CURSOR)
+         ========================================== */
+         .CodeMirror-hints {
+        position: absolute;
+        z-index: 999999 !important; /* Всегда поверх всего */
+        overflow: hidden;
+        list-style: none;
+        margin: 0;
+        padding: 6px !important;
+        background: rgba(24, 24, 27, 0.95) !important;
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7) !important;
+        font-family: var(--font-code), monospace !important;
+        font-size: 14px !important;
+        max-height: 250px;
+        overflow-y: auto;
+        min-width: 220px;
+      }
+      
+      .CodeMirror-hints::-webkit-scrollbar {
+        width: 6px;
+      }
+      .CodeMirror-hints::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+      }
+
+      .CodeMirror-hint {
+        margin: 2px 0 !important;
+        padding: 8px 12px !important;
+        border-radius: 8px !important;
+        color: #a1a1aa !important;
+        cursor: pointer;
+        transition: background 0.1s, color 0.1s;
+        display: flex;
+        align-items: center;
+      }
+
+      /* Красивая иконка "кода" перед каждым тегом */
+      .CodeMirror-hint::before {
+        content: "/>";
+        margin-right: 12px;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 700;
+        opacity: 0.8;
+      }
+
+      .CodeMirror-hint:hover,
+      .CodeMirror-hint-active {
+        background: rgba(var(--accent-rgb), 0.2) !important;
+        color: #fff !important;
+      }
+
     </style>
 
     <!-- ================= IDE (CodeMirror) ================= -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+  <!-- Подключаем стили для подсказок (Автодополнение) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/show-hint.min.css">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/selection/active-line.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/markdown/markdown.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/searchcursor.min.js"></script>
+  
+  <!-- Плагины Автодополнения -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/show-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/anyword-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/javascript-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/css-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/xml-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/html-hint.min.js"></script>
+  
+  <!-- Emmet (Быстрый код) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/emmet/2.4.3/emmet.browser.min.js"></script>
   <!-- ==================================================== -->
   </head>
   <body>
@@ -2576,18 +2649,12 @@
         <div class="setting-group">
           <label>Тема (Акцентный цвет)</label>
           <div class="color-picker">
-            <div class="color-dot" style="background: #8b5cf6; color: #8b5cf6" onclick="setTheme('#8b5cf6', '139, 92, 246')"></div>
             <div class="color-dot" style="background: #8b5cf6; color: #8b5cf6" onclick="setTheme(event, '#8b5cf6', '139, 92, 246')"></div>
-<div class="color-dot" style="background: #3b82f6; color: #3b82f6" onclick="setTheme(event, '#3b82f6', '59, 130, 246')"></div>
-<div class="color-dot" style="background: #10b981; color: #10b981" onclick="setTheme(event, '#10b981', '16, 185, 129')"></div>
-<div class="color-dot" style="background: #f43f5e; color: #f43f5e" onclick="setTheme(event, '#f43f5e', '244, 63, 94')"></div>
-<div class="color-dot" style="background: #f59e0b; color: #f59e0b" onclick="setTheme(event, '#f59e0b', '245, 158, 11')"></div>
-            <div class="color-dot" style="background: #3b82f6; color: #3b82f6" onclick="setTheme('#3b82f6', '59, 130, 246')"></div>
-            <div class="color-dot" style="background: #10b981; color: #10b981" onclick="setTheme('#10b981', '16, 185, 129')"></div>
-            <div class="color-dot" style="background: #f43f5e; color: #f43f5e" onclick="setTheme('#f43f5e', '244, 63, 94')"></div>
-            <div class="color-dot" style="background: #f59e0b; color: #f59e0b" onclick="setTheme('#f59e0b', '245, 158, 11')"></div>
+            <div class="color-dot" style="background: #3b82f6; color: #3b82f6" onclick="setTheme(event, '#3b82f6', '59, 130, 246')"></div>
+            <div class="color-dot" style="background: #10b981; color: #10b981" onclick="setTheme(event, '#10b981', '16, 185, 129')"></div>
+            <div class="color-dot" style="background: #f43f5e; color: #f43f5e" onclick="setTheme(event, '#f43f5e', '244, 63, 94')"></div>
+            <div class="color-dot" style="background: #f59e0b; color: #f59e0b" onclick="setTheme(event, '#f59e0b', '245, 158, 11')"></div>
           </div>
-        </div>
 
         <div class="setting-group">
           <label>Шрифт текста</label>
@@ -2932,11 +2999,7 @@
             const newIframe = document.createElement('iframe');
             newIframe.id = 'htmlPreviewFrame';
             
-            // ФИКС: Мы полностью убрали атрибут sandbox. 
-            // Это восстанавливает работу localStorage внутри сайтов, позволяет ИИ делать снимок DOM
-            // и навсегда убирает желтые предупреждения из консоли браузера (F12).
-            
-            // Улучшенный и более агрессивный перехватчик логов и синтаксических ошибок
+            // ВАЖНО: Используем <\/script>, чтобы браузер не закрыл наш тег <script> раньше времени
             const consoleInterceptor = `
             <script>
               (function() {
@@ -2957,12 +3020,10 @@
                 console.warn = function(...args) { sendLog('warn', args); origWarn.apply(console, args); };
                 console.info = function(...args) { sendLog('info', args); origInfo.apply(console, args); };
                 
-                // Перехват глобальных ошибок (включая синтаксические)
                 window.addEventListener('error', function(e) {
                   sendLog('error', [e.message + ' (Строка: ' + e.lineno + ', Столбец: ' + e.colno + ')']);
                 });
                 
-                // Перехват ошибок в асинхронном коде (Promise)
                 window.addEventListener('unhandledrejection', function(e) {
                   sendLog('error', ['Unhandled Promise Rejection: ' + (e.reason ? (e.reason.stack || e.reason.message || e.reason) : 'Unknown')]);
                 });
@@ -2970,10 +3031,33 @@
             <\/script>
             `;
             
-            // АВТО-ФИКС: Интеллектуально превращаем скрипты пользователя в модули,
-            // чтобы из коробки работал Top-Level Await без падений браузера.
-            const processedCode = currentCode.replace(/<script(?![^>]*type=)([^>]*)>/gi, '<script type="module"$1>');
+            // АВТО-ФИКС: Интеллектуально превращаем скрипты пользователя в модули
+            let processedCode = currentCode.replace(/<script(?![^>]*type=)([^>]*)>/gi, '<script type="module"$1>');
             
+            // МАГИЯ IDE: Виртуальная файловая система (Связка файлов)
+            const activeNote = notes.find(n => n.id === activeId);
+            if (activeNote && getSyntaxMode(activeNote.title) === "htmlmixed") {
+                
+                // 1. Подменяем внешние стили на встроенный <style>
+                processedCode = processedCode.replace(/<link[^>]*href=["']([^"']+\.css)["'][^>]*>/gi, (match, filename) => {
+                    const extNote = notes.find(n => n.title.toLowerCase() === filename.toLowerCase());
+                    if (extNote) {
+                        return `<style>\n/* Внедрено из ${filename} */\n${extNote.content}\n</style>`;
+                    }
+                    return match;
+                });
+
+                // 2. Подменяем внешние скрипты на встроенный модуль
+                // Защита от HTML-парсера: используем <\/[s]cript> в регулярке и <\/script> в строке
+                processedCode = processedCode.replace(/<script[^>]*src=["']([^"']+\.js)["'][^>]*>[\s\S]*?<\/[s]cript>/gi, (match, filename) => {
+                    const extNote = notes.find(n => n.title.toLowerCase() === filename.toLowerCase());
+                    if (extNote) {
+                        return `<script type="module">\n/* Внедрено из ${filename} */\n${extNote.content}\n<\/script>`;
+                    }
+                    return match;
+                });
+            }
+
             // Внедряем скрипт-перехватчик перед обработанным кодом пользователя
             newIframe.srcdoc = consoleInterceptor + processedCode;
             
@@ -2994,6 +3078,11 @@
         if (note) {
             note.content = textValue;
             localStorage.setItem("qn_notes", JSON.stringify(notes));
+        }
+
+        // НОВОЕ: Живое обновление ниток (если дописали или стерли зависимость)
+        if (typeof drawDependencyThreads === "function") {
+            setTimeout(drawDependencyThreads, 50);
         }
         
         clearTimeout(window.renderTimeout);
@@ -3031,17 +3120,186 @@
               lineWrapping: true,
               styleActiveLine: true,
               matchBrackets: true,
-              indentUnit: 4
+              autoCloseBrackets: true, // Автоматически закрывать скобки {}, []
+              autoCloseTags: true,     // Автоматически закрывать HTML-теги
+              indentUnit: 4,
+              extraKeys: {
+                  "Ctrl-Space": "autocomplete", // Вызов подсказок
+                  "Tab": function(cm) {
+                      // Логика работы Emmet: если можно развернуть аббревиатуру - разворачиваем, иначе обычный Tab
+                      try {
+                          if (cm.getOption("mode") === "htmlmixed" || cm.getOption("mode") === "css") {
+                            const cursor = cm.getCursor();
+                          const line = cm.getLine(cursor.line);
+                          const word = line.slice(0, cursor.ch).match(/[\w.-]+$/);
+                          // Безопасная проверка наличия глобальной переменной emmet
+                          if (word && typeof emmet !== 'undefined') {
+                              const expanded = emmet.expandAbbreviation(word[0]);
+                              if (expanded) {
+                                  cm.replaceRange(expanded, {line: cursor.line, ch: cursor.ch - word[0].length}, cursor);
+                                  return;
+                              }
+                          }
+                          }
+                      } catch (e) {}
+                      // Если Emmet не сработал — ставим отступ (4 пробела)
+                      if (cm.somethingSelected()) { cm.indentSelection("add"); } 
+                      else { cm.replaceSelection("    ", "end"); }
+                  }
+              }
           });
 
-          // 2. Скрываем IDE при загрузке (оставляем стандартный текстовый редактор)
+          // 2. Восстанавливаем состояние режима IDE из памяти
           const cmWrapper = ideEditor.getWrapperElement();
-          cmWrapper.style.display = "none";
-          editor.style.display = "block"; // Возвращаем видимость оригинальному textarea
+          isIdeMode = localStorage.getItem("qn_ide_mode") === "true";
+          
+          if (isIdeMode) {
+              cmWrapper.style.display = "block";
+              editor.style.display = "none";
+              const toolbarWrapper = document.querySelector('.editor-toolbar-wrapper');
+              if (toolbarWrapper) toolbarWrapper.style.display = "none";
+              
+              // Обновляем кнопку в меню (с небольшой задержкой, чтобы DOM отрисовался)
+              setTimeout(() => {
+                  const menuBtn = document.getElementById('ideToggleBtnMenu');
+                  if (menuBtn) menuBtn.innerHTML = "<i class='bx bx-code-curly' style='color:#10b981;'></i> <span style='color:#10b981;'>Выключить IDE</span>";
+              }, 50);
+          } else {
+              cmWrapper.style.display = "none";
+              editor.style.display = "block";
+          }
 
-          // 3. Слушатель для IDE (когда режим кода включен)
-          ideEditor.on("change", () => {
-              if (isIdeMode) saveAndRender(ideEditor.getValue());
+          // 3. Слушатель изменения текста (СУПЕР-АВТОДОПОЛНЕНИЕ КАК В VS CODE)
+          ideEditor.on("change", function(cm, change) {
+              if (isIdeMode) saveAndRender(cm.getValue());
+
+              if (cm.state.completionActive) return; 
+              
+              const isTyping = change.origin === "+input" || change.origin === "*compose";
+              const isPick = change.origin === "complete"; // Срабатывает при выборе подсказки
+
+              if (isTyping || isPick) {
+                  if (isTyping && change.text.length > 1) return; // Защита от спама при Ctrl+V
+
+                  setTimeout(() => {
+                      if (cm.state.completionActive) return;
+                      
+                      const cursor = cm.getCursor();
+                      const token = cm.getTokenAt(cursor);
+                      const mode = cm.getOption("mode");
+                      const line = cm.getLine(cursor.line);
+                      const textBeforeCursor = line.substring(0, cursor.ch);
+
+                      // 1. АВТО-ПРОБЕЛ ПОСЛЕ ТЕГА: Если выбрали имя тега (например <html), ставим пробел!
+                      if (isPick && /<[a-zA-Z0-9-]+$/.test(textBeforeCursor)) {
+                          cm.replaceRange(" ", cursor, cursor, "complete");
+                      }
+
+                      // 2. СМАРТ-СЛОВАРЬ (Перехватываем подсказки и делаем их умными)
+                      const smartHtmlHint = function(cm, options) {
+                          let result = CodeMirror.hint.html(cm, options);
+                          // Если стандартный HTML словарь пуст, вызываем словарь текста документа
+                          if (!result || !result.list || result.list.length === 0) {
+                              return CodeMirror.hint.anyword(cm, options);
+                          }
+
+                          const cur = cm.getCursor();
+                          const txtBefore = cm.getLine(cur.line).substring(0, cur.ch);
+
+                          // Проверяем: находимся ли мы внутри открытого тега (вводим атрибуты)?
+                          const tagMatch = txtBefore.match(/<([a-zA-Z0-9-]+)\s+[^>]*$/);
+                          // Проверяем: находимся ли мы УЖЕ внутри кавычек атрибута (например lang="|")?
+                          const inQuotes = /="[^"]*$/.test(txtBefore) || /='[^']*$/.test(txtBefore);
+
+                          // Если мы пишем атрибуты и НЕ внутри кавычек
+                          if (tagMatch && !inQuotes) {
+                              const tagName = tagMatch[1].toLowerCase();
+                              
+                              // УМНАЯ СОРТИРОВКА: Самые важные атрибуты для каждого тега
+                              const topAttrs = {
+                                  "html": ["lang"],
+                                  "img": ["src", "alt", "width", "height"],
+                                  "a": ["href", "target", "rel"],
+                                  "link": ["rel", "href"],
+                                  "script": ["src", "type", "defer", "async"],
+                                  "meta": ["charset", "name", "content", "viewport"],
+                                  "input": ["type", "placeholder", "value", "name", "required"],
+                                  "form": ["action", "method"],
+                                  "button": ["type", "onclick"],
+                                  "div": ["class", "id"],
+                                  "span": ["class", "id"],
+                                  "iframe": ["src", "width", "height", "allowfullscreen"]
+                              };
+                              // Глобальные атрибуты, которые актуальны всегда
+                              const globals = ["class", "id", "style"];
+                              const priority = (topAttrs[tagName] || []).concat(globals);
+
+                              // МОДЕРНИЗИРУЕМ ПОДСКАЗКИ
+                              result.list = result.list.map(item => {
+                                  let text = typeof item === 'string' ? item : item.text;
+                                  
+                                  // Не трогаем теги и то, что уже содержит знак =
+                                  if (text.startsWith("<") || text.includes("=")) return item;
+
+                                  // ДОБАВЛЯЕМ ="" К АТРИБУТУ
+                                  let newText = text + '=""';
+                                  
+                                  return {
+                                      text: newText,
+                                      displayText: text, // В меню отображается чисто (без ="")
+                                      hint: function(cm, data, completion) {
+                                          const from = completion.from || data.from;
+                                          const to = completion.to || data.to;
+                                          // Вставляем с меткой 'complete', чтобы зациклить вызов
+                                          cm.replaceRange(newText, from, to, "complete");
+                                          
+                                          // СТАВИМ КУРСОР РОВНО ВНУТРЬ КАВЫЧЕК!
+                                          const newCur = cm.getCursor();
+                                          cm.setCursor({line: newCur.line, ch: newCur.ch - 1});
+                                      },
+                                      // Выдаем ранг (чем меньше, тем выше в списке)
+                                      _rank: priority.indexOf(text) !== -1 ? priority.indexOf(text) : 999
+                                  };
+                              });
+
+                              // СОРТИРУЕМ МЕНЮ
+                              result.list.sort((a, b) => {
+                                  let rankA = a._rank !== undefined ? a._rank : 999;
+                                  let rankB = b._rank !== undefined ? b._rank : 999;
+                                  if (rankA !== rankB) return rankA - rankB; // Сначала приоритетные
+                                  
+                                  let textA = a.displayText || a.text || a;
+                                  let textB = b.displayText || b.text || b;
+                                  return textA.localeCompare(textB); // Остальные по алфавиту
+                              });
+                          }
+                          return result;
+                      };
+
+                      // 3. ПРИМЕНЕНИЕ СЛОВАРЕЙ (Запуск)
+                      let hintOptions = { completeSingle: false };
+                      
+                      if (token.type && (token.type.includes("meta") || token.type.includes("comment"))) {
+                          hintOptions.hint = CodeMirror.hint.anyword;
+                      } 
+                      else if (mode === "markdown") {
+                          if (change.text[0] === '<' || isPick || (token.type && token.type.includes("tag"))) {
+                              hintOptions.hint = smartHtmlHint;
+                          } else {
+                              hintOptions.hint = CodeMirror.hint.anyword;
+                          }
+                      } 
+                      else if (mode === "htmlmixed" || mode === "xml") {
+                          if (!token.type && change.text[0] !== '<' && !isPick) {
+                              hintOptions.hint = CodeMirror.hint.anyword;
+                          } else {
+                              hintOptions.hint = smartHtmlHint;
+                          }
+                      }
+                      
+                      cm.showHint(hintOptions);
+                  }, 20);
+              }
           });
           
           // Отслеживаем выделение текста внутри IDE
@@ -3060,9 +3318,10 @@
       // Функция переключения режимов
       function toggleIdeMode() {
           isIdeMode = !isIdeMode;
+          localStorage.setItem("qn_ide_mode", isIdeMode); // Сохраняем в память
           const cmWrapper = ideEditor.getWrapperElement();
           const toolbarWrapper = document.querySelector('.editor-toolbar-wrapper');
-          const toggleBtn = document.getElementById('ideToggleBtn');
+          const toggleBtn = document.getElementById('ideToggleBtnMenu'); // <-- ИСПРАВЛЕНО
 
           if (isIdeMode) {
               cmWrapper.style.display = "block";
@@ -3105,10 +3364,30 @@
       }
       // ==========================================
 
+      // НОВОЕ: Умное определение иконки по расширению файла
+      function getFileIcon(filename) {
+          if (!filename) return "<i class='bx bx-file' style='color: #94a3b8; font-size: 24px;'></i>";
+          const name = filename.toLowerCase();
+          
+          if (name.endsWith('.html') || name.endsWith('.htm')) return "<i class='bx bxl-html5' style='color: #e34f26; font-size: 24px;'></i>";
+          if (name.endsWith('.css')) return "<i class='bx bxl-css3' style='color: #264de4; font-size: 24px;'></i>";
+          if (name.endsWith('.js')) return "<i class='bx bxl-javascript' style='color: #f7df1e; font-size: 24px;'></i>";
+          if (name.endsWith('.json')) return "<i class='bx bxs-data' style='color: #4caf50; font-size: 24px;'></i>";
+          if (name.endsWith('.md')) return "<i class='bx bxl-markdown' style='color: #8b5cf6; font-size: 24px;'></i>";
+          if (name.endsWith('.xml')) return "<i class='bx bx-code-alt' style='color: #f59e0b; font-size: 24px;'></i>";
+          if (name.endsWith('.txt')) return "<i class='bx bx-text' style='color: #cbd5e1; font-size: 24px;'></i>";
+          if (name.endsWith('.py')) return "<i class='bx bxl-python' style='color: #3776ab; font-size: 24px;'></i>";
+          
+          return "<i class='bx bx-file' style='color: #94a3b8; font-size: 24px;'></i>"; // Иконка по умолчанию
+      }
+
       // Рендер списка (убрали старые кнопки, оставили только клик)
       function renderNotesList(filterText = "") {
         const list = document.getElementById("notesList");
         list.innerHTML = "";
+        
+        // Обязательно делаем список relative для абсолютного позиционирования ниток
+        list.style.position = "relative";
 
         const filtered = notes
           .filter((n) => n.title.toLowerCase().includes(filterText.toLowerCase()))
@@ -3121,22 +3400,116 @@
 
         filtered.forEach((note) => {
           const div = document.createElement("div");
+          // Устанавливаем z-index, чтобы карточки были КЛИКАБЕЛЬНЫМИ поверх ниток
+          div.style.zIndex = "2"; 
           div.className = `note-item ${note.id === activeId ? "active" : ""} ${note.isFavorite ? "is-fav" : ""}`;
-          div.setAttribute("data-id", note.id); // Для контекстного меню
+          div.setAttribute("data-id", note.id); 
           
-          div.onclick = () => switchNote(note.id); // Просто переключение
+          div.onclick = () => switchNote(note.id); 
 
           div.innerHTML = `
                 <div class="note-info">
-                    <i class='bx bxs-star fav-icon'></i>
-                    <div style="min-width:0;">
+                    ${getFileIcon(note.title)}
+                    <div style="min-width:0; flex:1;">
                        <div class="note-title-list">${note.title || "Без названия"}</div>
                        <div class="note-date">${note.date}</div>
                     </div>
+                    <i class='bx bxs-star fav-icon'></i>
                 </div>
             `;
           list.appendChild(div);
         });
+
+        // Запускаем отрисовку ниток с небольшой задержкой (чтобы браузер успел просчитать размеры блоков)
+        setTimeout(drawDependencyThreads, 50);
+      }
+
+      // НОВОЕ: Функция отрисовки анимированных ниток между файлами
+      function drawDependencyThreads() {
+          const list = document.getElementById("notesList");
+          if (!list) return;
+
+          // Удаляем старый холст с нитками, если он есть
+          let svg = document.getElementById("threadsSvg");
+          if (svg) svg.remove(); 
+
+          // Создаем новый SVG холст
+          svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          svg.id = "threadsSvg";
+          svg.style.position = "absolute";
+          svg.style.top = "0";
+          svg.style.left = "0";
+          svg.style.width = "100%";
+          svg.style.pointerEvents = "none"; // Запрещаем кликать по самим ниткам
+          svg.style.zIndex = "1"; // Прячем ПОД заметки
+          
+          // Добавляем CSS анимацию "бегущих данных"
+          const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+          style.textContent = `
+              @keyframes dashFlow { to { stroke-dashoffset: -12; } }
+              .link-thread { animation: dashFlow 1s linear infinite; }
+          `;
+          svg.appendChild(style);
+          list.appendChild(svg);
+
+          // Делаем холст равным всей высоте скроллинга
+          svg.style.height = Math.max(list.scrollHeight, list.clientHeight) + "px";
+          const listRect = list.getBoundingClientRect();
+
+          notes.forEach(parentNote => {
+              // Ищем зависимости только внутри HTML файлов
+              if (!parentNote.title.toLowerCase().endsWith('.html') && !parentNote.title.toLowerCase().endsWith('.htm')) return;
+              
+              const linkRegex = /<link[^>]*href=["']([^"']+\.css)["'][^>]*>/gi;
+              const scriptRegex = /<script[^>]*src=["']([^"']+\.js)["'][^>]*>/gi;
+              
+              let deps = [];
+              let m;
+              // Вытаскиваем названия всех подключенных CSS и JS файлов
+              while (m = linkRegex.exec(parentNote.content)) deps.push(m[1].toLowerCase());
+              while (m = scriptRegex.exec(parentNote.content)) deps.push(m[1].toLowerCase());
+              deps = [...new Set(deps)]; // Убираем дубликаты
+
+              if (deps.length === 0) return;
+
+              // Находим HTML файл в DOM дереве
+              const parentEl = list.querySelector(`.note-item[data-id="${parentNote.id}"]`);
+              if (!parentEl) return;
+
+              deps.forEach(depTitle => {
+                  const childNote = notes.find(n => n.title.toLowerCase() === depTitle);
+                  if (!childNote) return;
+
+                  // Находим зависимый файл в DOM дереве
+                  const childEl = list.querySelector(`.note-item[data-id="${childNote.id}"]`);
+                  if (!childEl) return;
+
+                  const parentRect = parentEl.getBoundingClientRect();
+                  const childRect = childEl.getBoundingClientRect();
+
+                  // Рассчитываем центры иконок (примерно 26px от левого края)
+                  const iconX = 26;
+                  const startY = parentRect.top - listRect.top + list.scrollTop + (parentRect.height / 2);
+                  const endY = childRect.top - listRect.top + list.scrollTop + (childRect.height / 2);
+
+                  // Рисуем кривую Безье (выгибается влево за пределы текста)
+                  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                  const curveOffset = 5; // Левая точка изгиба
+                  
+                  const d = `M ${iconX} ${startY} C ${curveOffset} ${startY}, ${curveOffset} ${endY}, ${iconX} ${endY}`;
+                  
+                  path.setAttribute("d", d);
+                  path.setAttribute("stroke", "var(--accent)"); // Цвет нитки берется из активной темы
+                  path.setAttribute("stroke-width", "2.5");
+                  path.setAttribute("fill", "transparent");
+                  path.setAttribute("stroke-dasharray", "6 6"); // Пунктир
+                  path.style.opacity = "0.7";
+                  path.style.filter = "drop-shadow(0 0 5px var(--accent))"; // Неоновое свечение
+                  path.classList.add("link-thread");
+                  
+                  svg.appendChild(path);
+              });
+          });
       }
 
       // Базовые функции (остаются без изменений)
@@ -4259,13 +4632,6 @@ function setTheme(e, hex, rgb) {
             mentionDropdown.classList.remove("show");
           }
         } else {
-          mentionDropdown.classList.remove("show");
-        }
-      });
-
-      // Закрываем меню при клике вне его
-      document.addEventListener("click", (e) => {
-        if (mentionDropdown && !mentionDropdown.contains(e.target) && e.target !== aiInputEl) {
           mentionDropdown.classList.remove("show");
         }
       });
@@ -5583,6 +5949,49 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
           return actionData;
       };
 
+      // ========================================================
+      // УМНЫЙ СБОРЩИК ЗАВИСИМОСТЕЙ (ГРАФ ФАЙЛОВ ДЛЯ ИИ)
+      // ========================================================
+      window.resolveDependencies = function(baseNotesArray) {
+          const resultSet = new Set(baseNotesArray);
+          let graphInfo = [];
+
+          baseNotesArray.forEach(note => {
+              if (!note || !note.title) return;
+              if (!note.title.toLowerCase().match(/\.html?$/)) return; // Ищем связи только внутри HTML
+
+              const linkRegex = /<link[^>]*href=["']([^"']+\.css)["'][^>]*>/gi;
+              const scriptRegex = /<script[^>]*src=["']([^"']+\.js)["'][^>]*>/gi;
+              
+              let deps = [];
+              let m;
+              while (m = linkRegex.exec(note.content)) deps.push(m[1].toLowerCase());
+              while (m = scriptRegex.exec(note.content)) deps.push(m[1].toLowerCase());
+              
+              deps = [...new Set(deps)]; // Убираем дубликаты
+              
+              if (deps.length > 0) {
+                  const foundDeps = [];
+                  deps.forEach(depTitle => {
+                      const depNote = notes.find(n => n.title.toLowerCase() === depTitle);
+                      if (depNote) {
+                          resultSet.add(depNote); // Добавляем файл в память ИИ
+                          foundDeps.push(depNote.title);
+                      }
+                  });
+                  
+                  if (foundDeps.length > 0) {
+                      graphInfo.push(`- Файл "${note.title}" подключил к себе: ${foundDeps.join(", ")}`);
+                  }
+              }
+          });
+
+          return {
+              notes: Array.from(resultSet),
+              graphText: graphInfo.length > 0 ? `\n[ГРАФ СВЯЗЕЙ ФАЙЛОВ]:\n${graphInfo.join("\n")}\n` : ""
+          };
+      };
+
       async function sendAIChat(isSystemContinue = false) {
         if (window.currentAIController) return;
 
@@ -5724,12 +6133,14 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
         const allContextNotes = [...new Set([...textMentionedNotes, ...uiAttachedNotes])];
         
         const notesDirectory = notes.map(n => ({ id: n.id, title: n.title }));
-        const allowedNotesToRead = new Set([...allContextNotes]);
+        const baseAllowed = new Set([...allContextNotes]);
         const activeNote = notes.find(n => n.id === activeId);
-        if (activeNote) allowedNotesToRead.add(activeNote);
+        if (activeNote) baseAllowed.add(activeNote);
         
-        // ПРОПУСКАЕМ ЗАМЕТКИ ЧЕРЕЗ НУМЕРАЦИЮ СТРОК
-        const workspaceDB = Array.from(allowedNotesToRead).map(n => ({ id: n.id, title: n.title, content: window.formatNoteWithLines(n.content) }));
+        // --- АВТОМАТИЧЕСКИ ПОДТЯГИВАЕМ СВЯЗАННЫЕ ФАЙЛЫ ---
+        const depResolution = window.resolveDependencies(Array.from(baseAllowed));
+        const workspaceDB = depResolution.notes.map(n => ({ id: n.id, title: n.title, content: window.formatNoteWithLines(n.content) }));
+        const graphContext = depResolution.graphText;
         
         const textAccessRule = `\n\n[ПРАВА ДОСТУПА] Оглавление базы: ${JSON.stringify(notesDirectory)}. Если нужно содержимое других файлов, попроси пользователя прикрепить их через @.`;
 
@@ -5826,20 +6237,19 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
 4. Удалить: <delete id="ID_ФАЙЛА" />
 5. План задач: <roadmap>- [ ] Шаг 1\n- [ ] Шаг 2</roadmap>
 6. АБСОЛЮТНО ВСЕГДА вноси изменения точечно. Никогда не переписывай файл полностью, если только тебя не попросил об этом пользователь. Иначе ты тратишь слишком много денег за токены.
-7. ВЕСЬ КОД (HTML, CSS, JS) ПИШИ В ОДНОМ ФАЙЛЕ (внутри <style> и <script>). Категорически запрещено подключать локальные файлы (например <link href="styles.css">), так как приложение работает локально в браузере. Подключай только внешние CDN.
 
 ОБЯЗАТЕЛЬНО используй точные ID файлов из оглавления:
 ${JSON.stringify(notesDirectory)}` + textAccessRule;
           
-currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ФАЙЛЫ:\n" + mentionedNotesContext : ""}${liveSiteContext}\nЗапрос: ${userText}`;
+currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\n${graphContext}АКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ФАЙЛЫ:\n" + mentionedNotesContext : ""}${liveSiteContext}\nЗапрос: ${userText}`;
         }
         else if (currentAIMode === "plan") {
           systemPrompt = `Ты Senior Менеджер. Составь подробный Roadmap. ВСЕГДА используй markdown-задачи в формате \`- [ ] Задача\`.` + textAccessRule;
-          currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\nАКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nУПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}${liveSiteContext}\nЗапрос: ${userText}`;
+          currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\n${graphContext}АКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nУПОМЯНУТЫЕ ЗАМЕТКИ:\n" + mentionedNotesContext : ""}${liveSiteContext}\nЗапрос: ${userText}`;
         } 
         else if (currentAIMode === "ask") {
           systemPrompt = `Ты ИИ-ассистент.` + textAccessRule;
-          currentDocumentContext = `РАЗРЕШЕННЫЕ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\nТЕКУЩИЙ ДОКУМЕНТ:\n"""\n${window.formatNoteWithLines(editor.value.trim())}\n"""\n${selectionContext}${mentionedNotesContext ? "\nДОП. МАТЕРИАЛЫ:\n" + mentionedNotesContext : ""}${liveSiteContext}\nЗапрос: ${userText}`;
+          currentDocumentContext = `РАЗРЕШЕННЫЕ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\n${graphContext}ТЕКУЩИЙ ДОКУМЕНТ:\n"""\n${window.formatNoteWithLines(editor.value.trim())}\n"""\n${selectionContext}${mentionedNotesContext ? "\nДОП. МАТЕРИАЛЫ:\n" + mentionedNotesContext : ""}${liveSiteContext}\nЗапрос: ${userText}`;
         }
 
         const apiMessages = [{ role: "system", content: systemPrompt }];
@@ -5993,8 +6403,12 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
 
             // Собираем актуальный контекст
             const notesDirectory = notes.map(n => ({ id: n.id, title: n.title }));
-            const allowedNotesToRead = new Set([activeId, ...window.aiAttachedNotes]);
-            const workspaceDB = Array.from(allowedNotesToRead).map(id => notes.find(n=>n.id===id)).filter(Boolean).map(n => ({ id: n.id, title: n.title, content: window.formatNoteWithLines(n.content) }));
+            const baseAllowedNotes = Array.from(new Set([activeId, ...window.aiAttachedNotes])).map(id => notes.find(n=>n.id===id)).filter(Boolean);
+            
+            // Подтягиваем связанные файлы!
+            const depResolution = window.resolveDependencies(baseAllowedNotes);
+            const workspaceDB = depResolution.notes.map(n => ({ id: n.id, title: n.title, content: window.formatNoteWithLines(n.content) }));
+            const graphContext = depResolution.graphText;
 
             // СИСТЕМНЫЙ ПРОМПТ ДЛЯ КАЖДОГО ШАГА ROADMAP
             const stepSystemPrompt = `Ты Автономный IDE-Агент. Выполни СТРОГО ОДИН шаг из плана.
@@ -6013,7 +6427,7 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
 
             const messages = [
               { role: "system", content: stepSystemPrompt },
-              { role: "user", content: `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\n\nТВОЯ ЗАДАЧА НА ЭТОТ ШАГ:\n"${currentTask}"\n\nВыполни этот шаг и выдай XML-теги.` }
+              { role: "user", content: `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ:\n${JSON.stringify(workspaceDB)}\n${graphContext}\nТВОЯ ЗАДАЧА НА ЭТОТ ШАГ:\n"${currentTask}"\n\nВыполни этот шаг и выдай XML-теги.` }
             ];
 
             try {
