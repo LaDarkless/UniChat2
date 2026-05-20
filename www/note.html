@@ -550,6 +550,58 @@
         border-radius: 10px;
       }
 
+      /* === ХЛЕБНЫЕ КРОШКИ (ПУТИ) === */
+      .folder-breadcrumbs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-top: 10px;
+        font-size: 11px;
+        font-family: var(--font-ui);
+        color: var(--text-muted);
+      }
+      .crumb {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: 0.2s;
+        padding: 2px 4px;
+        border-radius: 4px;
+      }
+      .crumb:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+      .crumb-separator {
+        color: rgba(255, 255, 255, 0.2);
+        pointer-events: none;
+      }
+
+      /* === ВИЗУАЛ ФАЙЛОВОЙ СИСТЕМЫ === */
+      .folder-item {
+        color: #e2e8f0;
+      }
+      .folder-item.active-folder {
+        background: rgba(255,255,255,0.06);
+        border: 1px dashed rgba(255,255,255,0.2) !important;
+      }
+      .tree-children {
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
+        margin-left: 14px;
+        padding-left: 6px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
       /* Карточки заметок в стиле редакционных сеток */
       .note-item {
         padding: clamp(10px, 1.5vh, 14px) clamp(12px, 1.2vw, 16px);
@@ -563,6 +615,14 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-shrink: 0; /* ЗАПРЕЩАЕМ СПЛЮЩИВАНИЕ, ПОЯВИТСЯ СКРОЛЛБАР */
+      }
+      
+      /* Подсветка папки при наведении файла (Drag & Drop) */
+      .note-item.drag-over {
+        border-color: var(--accent) !important;
+        background: rgba(var(--accent-rgb), 0.2) !important;
+        transform: scale(1.02);
       }
       .note-item:hover {
         background: rgba(255, 255, 255, 0.04);
@@ -2507,6 +2567,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/markdown/markdown.min.js"></script>
+  <!-- АВТОЗАГРУЗЧИК ЛЮБЫХ ЯЗЫКОВ ПРОГРАММИРОВАНИЯ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/mode/loadmode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/meta.min.js"></script>
   
   <!-- ДОПОЛНИТЕЛЬНЫЕ ЯЗЫКИ ПРОГРАММИРОВАНИЯ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
@@ -2599,9 +2662,20 @@
     <!-- ЛЕВАЯ ПАНЕЛЬ -->
     <aside class="sidebar" id="sidebar">
       <div class="brand"><i class="bx bxl-graphql"></i> Quantum Notes</div>
-      <button class="btn btn-primary" onclick="createNewNote()">
-        <i class="bx bx-plus"></i> Новая заметка
-      </button>
+      
+      <!-- ФАЙЛОВАЯ СИСТЕМА: Кнопки создания -->
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-primary" style="flex: 1; padding: 10px;" onclick="createNewNote()">
+          <i class="bx bx-file-blank"></i> Файл
+        </button>
+        <button class="btn" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.05);" onclick="createNewFolder()">
+          <i class="bx bx-folder-plus"></i> Папка
+        </button>
+      </div>
+      <!-- ХЛЕБНЫЕ КРОШКИ (ПУТЬ ПАПОК КАК В ОС) -->
+      <div class="folder-breadcrumbs" id="folderPathCrumbs">
+        <span class="crumb" onclick="window.setActiveFolder(null)"><i class="bx bx-hdd"></i> Корень</span>
+     </div>
 
       <div class="search-box">
         <i class="bx bx-search"></i>
@@ -3229,7 +3303,7 @@
       // База данных
       const defaultText = `# Добро пожаловать 🚀...`;
 
-      let notes = JSON.parse(localStorage.getItem("qn_notes")) || [
+      let rawNotes = JSON.parse(localStorage.getItem("qn_notes")) || [
         {
           id: Date.now().toString(),
           title: "Инструкция",
@@ -3237,48 +3311,44 @@
           date: new Date().toLocaleDateString(),
         },
       ];
-      let activeId = localStorage.getItem("qn_active") || notes[0].id;
+      
+      // АВТО-МИГРАЦИЯ БАЗЫ ДАННЫХ ПОД ПАПКИ
+      let notes = rawNotes.map(n => ({
+          ...n,
+          type: n.type || 'file',
+          parentId: n.parentId || null,
+          isOpen: n.isOpen !== undefined ? n.isOpen : false
+      }));
+
+      let activeId = localStorage.getItem("qn_active") || (notes.find(n => n.type === 'file') || {}).id;
+      let activeFolderId = null; // Какая папка сейчас выделена
 
       const editor = document.getElementById("editor");
       const preview = document.getElementById("preview");
       const titleInput = document.getElementById("noteTitle");
       const searchInput = document.getElementById("searchInput");
 
-      // Глобальный Set для хранения ID прикрепленных к ИИ заметок
       window.aiAttachedNotes = new Set();
 
-      // === ИНИЦИАЛИЗАЦИЯ IDE И СТАНДАРТНОГО РЕДАКТОРА ===
+      // === ИНИЦИАЛИЗАЦИЯ IDE С ПОДДЕРЖКОЙ ВСЕХ ЯЗЫКОВ В МИРЕ ===
       let ideEditor; 
-      let isIdeMode = false; // По умолчанию IDE выключен
+      let isIdeMode = false;
 
-      function getSyntaxMode(filename) {
-        if (!filename) return "markdown";
-        const name = filename.toLowerCase();
-        
-        // Веб-языки
-        if (name.endsWith('.html') || name.endsWith('.htm')) return "htmlmixed";
-        if (name.endsWith('.css')) return "css";
-        if (name.endsWith('.js')) return "javascript";
-        if (name.endsWith('.jsx')) return "jsx";
-        if (name.endsWith('.ts') || name.endsWith('.tsx')) return "text/typescript";
-        
-        // Важно: application/json, чтобы редактор не подчеркивал ошибки JS внутри JSON файла
-        if (name.endsWith('.json')) return "application/json"; 
-        
-        // Бэкенд, скрипты и системы
-        if (name.endsWith('.py')) return "python";
-        if (name.endsWith('.php')) return "php";
-        if (name.endsWith('.sql')) return "sql";
-        if (name.endsWith('.sh') || name.endsWith('.bash')) return "shell";
-        // C-подобные языки (C, C++, C#, Java)
-        if (name.endsWith('.java') || name.endsWith('.c') || name.endsWith('.cpp') || name.endsWith('.cs')) return "text/x-csrc";
-        
-        // Разметка
-        if (name.endsWith('.xml')) return "xml";
-        if (name.endsWith('.md')) return "markdown";
-        
-        // Если неизвестное расширение, включаем безопасный Markdown
-        return "markdown";
+      // Указываем CodeMirror откуда скачивать парсеры "на лету"
+      CodeMirror.modeURL = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/%N/%N.min.js";
+
+      function setIdeModeByFilename(filename, cmInstance) {
+          if (!filename || !cmInstance) return;
+          const info = CodeMirror.findModeByFileName(filename);
+          
+          if (info) {
+              // Если парсер языка еще не загружен в браузер — он скачается сам
+              CodeMirror.requireMode(info.mode, () => {
+                  cmInstance.setOption("mode", info.mime || info.mode);
+              });
+          } else {
+              cmInstance.setOption("mode", "markdown"); // Резервный режим
+          }
       }
 
       // === НОВАЯ ЛОГИКА: ВЕБ ПРЕВЬЮ И КОНСОЛЬ ===
@@ -4126,77 +4196,278 @@
           return "<i class='bx bx-file' style='color: #94a3b8; font-size: 24px;'></i>"; // Иконка по умолчанию
       }
 
-      // Рендер списка (убрали старые кнопки, оставили только клик)
+      function resetActiveFolder() {
+          activeFolderId = null;
+          renderNotesList(searchInput.value);
+      }
+
+      function createNewFolder() {
+          const title = prompt("Имя новой папки:", "Новая папка");
+          if (!title) return;
+          const newFolder = {
+              id: "folder-" + Date.now().toString(),
+              // ФИКС: Проверка уникальности имени папки внутри текущей директории
+              title: getUniqueTitle(title, null, activeFolderId || null),
+              type: 'folder',
+              parentId: activeFolderId || null,
+              isOpen: true,
+              date: new Date().toLocaleDateString()
+          };
+          notes.push(newFolder);
+          activeFolderId = newFolder.id; // Фокус сразу на новую папку
+          localStorage.setItem("qn_notes", JSON.stringify(notes));
+          renderNotesList(searchInput.value);
+      }
+
+      // Вспомогательные функции для ПКМ
+      window.createNewNoteInFolder = function(folderId) {
+          activeFolderId = folderId;
+          createNewNote();
+          window.hideNoteContextMenu();
+      };
+      
+      window.createNewFolderInFolder = function(folderId) {
+          activeFolderId = folderId;
+          createNewFolder();
+          window.hideNoteContextMenu();
+      };
+
+      // Логика перемещения файлов и папок (С ЗАЩИТОЙ ИМЕН)
+      window.moveItem = function(itemId, newParentId) {
+          if (itemId === newParentId) return; 
+          const item = notes.find(n => n.id === itemId);
+          if (!item) return;
+
+          // Защита от перемещения папки в саму себя или в свою дочернюю папку
+          if (item.type === 'folder') {
+              let current = notes.find(n => n.id === newParentId);
+              while (current) {
+                  if (current.id === itemId) {
+                      alert("Нельзя переместить папку в саму себя или в свои подпапки!");
+                      return;
+                  }
+                  current = notes.find(n => n.id === current.parentId);
+              }
+          }
+
+          // === РАЗРЕШЕНИЕ КОНФЛИКТА ИМЕН ===
+          const conflict = notes.find(n => 
+              n.id !== itemId && 
+              n.parentId === newParentId && 
+              n.title.toLowerCase() === item.title.toLowerCase()
+          );
+
+          if (conflict) {
+              const wantToRename = confirm(`Файл или папка с именем "${item.title}" уже существует в этой директории.\n\nНажмите "ОК", чтобы переименовать перемещаемый элемент (будет добавлена цифра), или "Отмена", чтобы прервать перенос.`);
+              if (!wantToRename) return; // Отмена переноса
+              
+              // Переименовываем, опираясь на новую папку
+              item.title = getUniqueTitle(item.title, item.id, newParentId);
+              
+              // Если перенесли активный файл, обновим заголовок в тулбаре
+              if (activeId === item.id) {
+                  const titleInput = document.getElementById("noteTitle");
+                  if (titleInput) titleInput.value = item.title;
+              }
+          }
+
+          item.parentId = newParentId;
+          
+          // Открываем папку назначения, чтобы сразу увидеть перемещенный файл
+          if (newParentId) {
+              const parent = notes.find(n => n.id === newParentId);
+              if (parent) parent.isOpen = true;
+          }
+
+          localStorage.setItem("qn_notes", JSON.stringify(notes));
+          renderNotesList(searchInput.value);
+      };
+
+      function createNewNote() {
+        const newNote = {
+          id: Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9),
+          title: getUniqueTitle("Новый файл", null, activeFolderId || null),
+          content: "# ",
+          date: new Date().toLocaleDateString(),
+          type: 'file',
+          parentId: activeFolderId || null // ФИКС: Явно указываем null (теперь файлы появляются сразу, без F5)
+        };
+        notes.push(newNote);
+        localStorage.setItem("qn_notes", JSON.stringify(notes));
+        searchInput.value = "";
+        
+        if (activeFolderId) {
+            const parent = notes.find(n => n.id === activeFolderId);
+            if (parent) parent.isOpen = true;
+        }
+        
+        switchNote(newNote.id);
+      }
+
       function renderNotesList(filterText = "") {
+        window.renderFolderPath(); // ОБНОВЛЯЕМ ПУТИ ПРИ КАЖДОМ РЕНДЕРЕ ФАЙЛОВ
         const list = document.getElementById("notesList");
         list.innerHTML = "";
-        
-        // Обязательно делаем список relative для абсолютного позиционирования ниток
         list.style.position = "relative";
 
-        const filtered = notes
-          .filter((n) => n.title.toLowerCase().includes(filterText.toLowerCase()))
-          .sort((a, b) => {
-            // Сначала Избранные, затем новые
-            if (a.isFavorite && !b.isFavorite) return -1;
-            if (!a.isFavorite && b.isFavorite) return 1;
-            return b.id - a.id;
-          });
+        const renderTree = (parentId, container, depth = 0) => {
+            let items = notes.filter(n => n.parentId === parentId);
+            
+            if (filterText) {
+                if (parentId !== null) return; 
+                items = notes.filter(n => n.type === 'file' && n.title.toLowerCase().includes(filterText.toLowerCase()));
+            } else {
+                items.sort((a, b) => {
+                    if (a.type === 'folder' && b.type === 'file') return -1;
+                    if (a.type === 'file' && b.type === 'folder') return 1;
+                    if (a.isFavorite && !b.isFavorite) return -1;
+                    if (!a.isFavorite && b.isFavorite) return 1;
+                    return a.title.localeCompare(b.title); 
+                });
+            }
 
-          filtered.forEach((note) => {
-          const div = document.createElement("div");
-          div.style.zIndex = "2"; 
-          div.className = `note-item ${note.id === activeId ? "active" : ""} ${note.isFavorite ? "is-fav" : ""}`;
-          div.setAttribute("data-id", note.id); 
-          
-          // === ОБЫЧНЫЙ КЛИК (ОТКРЫТЬ ЗАМЕТКУ) ===
-          div.onclick = (e) => {
-             if (window.ignoreMenuClickTime && Date.now() < window.ignoreMenuClickTime) {
-                 e.preventDefault();
-                 return;
-             }
-             switchNote(note.id);
-          }; 
+            items.forEach((item) => {
+                const div = document.createElement("div");
+                div.style.zIndex = "2"; 
+                
+                // DRAG & DROP: Начинаем перетаскивание
+                div.draggable = true;
+                div.ondragstart = (e) => {
+                    e.dataTransfer.setData("text/plain", item.id);
+                    e.dataTransfer.effectAllowed = "move";
+                    setTimeout(() => div.style.opacity = "0.4", 10); // Визуальная прозрачность
+                    e.stopPropagation();
+                };
+                div.ondragend = (e) => { div.style.opacity = "1"; };
 
-          // === ПРАВЫЙ КЛИК (ПКМ) - НАМЕРТВО ===
-          div.oncontextmenu = (e) => {
-              e.preventDefault();
-              e.stopPropagation(); // Блокируем любые конфликты
-              window.ignoreMenuClickTime = Date.now() + 300;
-              const chatMenu = document.getElementById('chatContextMenu');
-              if (chatMenu) chatMenu.classList.remove('show');
-              window.showNoteContextMenu(e.clientX, e.clientY, note.id);
-          };
+                if (item.type === 'folder') {
+                    div.className = `note-item folder-item ${item.id === activeFolderId ? "active-folder" : ""}`;
+                    
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        if (activeFolderId === item.id) {
+                             item.isOpen = !item.isOpen;
+                             if(!item.isOpen) activeFolderId = item.parentId; 
+                        } else {
+                             item.isOpen = true;
+                             activeFolderId = item.id;
+                        }
+                        localStorage.setItem("qn_notes", JSON.stringify(notes));
+                        renderNotesList(filterText);
+                    };
 
-          // === ДОЛГИЙ ТАП (СМАРТФОНЫ - 1 СЕК) ===
-          let pressTimer;
-          div.ontouchstart = (e) => {
-              pressTimer = setTimeout(() => {
-                  window.ignoreMenuClickTime = Date.now() + 500;
-                  const chatMenu = document.getElementById('chatContextMenu');
-                  if (chatMenu) chatMenu.classList.remove('show');
-                  window.showNoteContextMenu(e.touches[0].clientX, e.touches[0].clientY, note.id);
-                  if (navigator.vibrate) navigator.vibrate(50); // Легкая вибрация
-              }, 1000);
-          };
-          div.ontouchmove = () => clearTimeout(pressTimer);
-          div.ontouchend = () => clearTimeout(pressTimer);
+                    div.oncontextmenu = (e) => {
+                        e.preventDefault(); e.stopPropagation();
+                        window.showFolderContextMenu(e.clientX, e.clientY, item.id);
+                    };
+                    
+                    // DRAG & DROP: Если навели на папку
+                    div.ondragover = (e) => { e.preventDefault(); div.classList.add("drag-over"); };
+                    div.ondragleave = (e) => { div.classList.remove("drag-over"); };
+                    div.ondrop = (e) => {
+                        e.preventDefault(); e.stopPropagation();
+                        div.classList.remove("drag-over");
+                        const draggedId = e.dataTransfer.getData("text/plain");
+                        window.moveItem(draggedId, item.id);
+                    };
+                    
+                    div.innerHTML = `
+                        <div class="note-info">
+                            <i class='bx ${item.isOpen ? "bx-folder-open" : "bx-folder"}' style="color: #eab308; font-size: 22px;"></i>
+                            <div style="min-width:0; flex:1;">
+                               <div class="note-title-list" style="font-weight: 700;">${item.title}</div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
 
-          div.innerHTML = `
-                <div class="note-info">
-                    ${getFileIcon(note.title)}
-                    <div style="min-width:0; flex:1;">
-                       <div class="note-title-list">${note.title || "Без названия"}</div>
-                       <div class="note-date">${note.date}</div>
-                    </div>
-                    <i class='bx bxs-star fav-icon'></i>
-                </div>
-            `;
-          list.appendChild(div);
-        });
+                    if (item.isOpen && !filterText) {
+                        const childContainer = document.createElement("div");
+                        childContainer.className = "tree-children";
+                        
+                        // Позволяем сбросить файл внутрь открытой папки (на её отступы)
+                        childContainer.ondragover = (e) => e.preventDefault();
+                        childContainer.ondrop = (e) => {
+                            e.preventDefault(); e.stopPropagation();
+                            const draggedId = e.dataTransfer.getData("text/plain");
+                            window.moveItem(draggedId, item.id);
+                        };
+                        // Позволяем создавать файлы по ПКМ в пустом месте открытой папки
+                        childContainer.oncontextmenu = (e) => {
+                            if (e.target === childContainer) {
+                                e.preventDefault(); e.stopPropagation();
+                                window.showFolderContextMenu(e.clientX, e.clientY, item.id);
+                            }
+                        };
 
-        // Запускаем отрисовку ниток с небольшой задержкой (чтобы браузер успел просчитать размеры блоков)
+                        container.appendChild(childContainer);
+                        renderTree(item.id, childContainer, depth + 1);
+                    }
+                } else {
+                    div.className = `note-item ${item.id === activeId ? "active" : ""} ${item.isFavorite ? "is-fav" : ""}`;
+                    div.setAttribute("data-id", item.id); 
+                    
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        activeFolderId = item.parentId; 
+                        if (window.ignoreMenuClickTime && Date.now() < window.ignoreMenuClickTime) {
+                            e.preventDefault(); return;
+                        }
+                        switchNote(item.id);
+                    }; 
+
+                    div.oncontextmenu = (e) => {
+                        e.preventDefault(); e.stopPropagation();
+                        window.ignoreMenuClickTime = Date.now() + 300;
+                        window.showNoteContextMenu(e.clientX, e.clientY, item.id);
+                    };
+
+                    div.innerHTML = `
+                        <div class="note-info">
+                            ${getFileIcon(item.title)}
+                            <div style="min-width:0; flex:1;">
+                               <div class="note-title-list">${item.title || "Без названия"}</div>
+                               <div class="note-date">${item.date}</div>
+                            </div>
+                            <i class='bx bxs-star fav-icon'></i>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                }
+            });
+        };
+
+        renderTree(null, list, 0);
         setTimeout(drawDependencyThreads, 50);
+
+        // DRAG & DROP В КОРЕНЬ + УМНЫЙ АВТО-СКРОЛЛ ДЛЯ ПК
+        list.ondragover = (e) => {
+            e.preventDefault();
+            
+            // Автоматическая прокрутка списка, если курсор близко к краю
+            const rect = list.getBoundingClientRect();
+            const threshold = 40; // Зона чувствительности (40px от края)
+            const speed = 12;     // Скорость прокрутки
+
+            if (e.clientY - rect.top < threshold) {
+                list.scrollTop -= speed; // Крутим вверх
+            } else if (rect.bottom - e.clientY < threshold) {
+                list.scrollTop += speed; // Крутим вниз
+            }
+        };
+        list.ondrop = (e) => {
+            e.preventDefault();
+            const draggedId = e.dataTransfer.getData("text/plain");
+            window.moveItem(draggedId, null);
+        };
+        
+        // ПКМ ПО ПУСТОМУ МЕСТУ (В КОРНЕ)
+        list.oncontextmenu = (e) => {
+            if (e.target === list || e.target.classList.contains('notes-list')) {
+                e.preventDefault();
+                window.showRootContextMenu(e.clientX, e.clientY);
+            }
+        };
       }
 
       window.openNoteMenu = function(e, noteId) {
@@ -4252,16 +4523,16 @@
               // Вытаскиваем названия всех подключенных CSS и JS файлов
               while (m = linkRegex.exec(parentNote.content)) deps.push(m[1].toLowerCase());
               while (m = scriptRegex.exec(parentNote.content)) deps.push(m[1].toLowerCase());
-              deps = [...new Set(deps)]; // Убираем дубликаты
+              deps = [...new Set(deps)]; 
 
               if (deps.length === 0) return;
 
-              // Находим HTML файл в DOM дереве
               const parentEl = list.querySelector(`.note-item[data-id="${parentNote.id}"]`);
               if (!parentEl) return;
 
               deps.forEach(depTitle => {
-                  const childNote = notes.find(n => n.title.toLowerCase() === depTitle);
+                  // ФИЛЬТР: Соединяем только если файлы находятся в ОДНОЙ ПАПКЕ (Изоляция)
+                  const childNote = notes.find(n => n.title.toLowerCase() === depTitle && n.parentId === parentNote.parentId);
                   if (!childNote) return;
 
                   // Находим зависимый файл в DOM дереве
@@ -4319,9 +4590,14 @@
           editor.value = note.content || "";
           
           if (ideEditor) {
+              // ФИКС: Очищаем терминал синтаксических ошибок от предыдущего файла
+              if (typeof window.updateIdeConsole === "function") {
+                  window.updateIdeConsole([]); 
+              }
+
               ideEditor.setValue(note.content || ""); 
-              ideEditor.setOption("mode", getSyntaxMode(note.title));
-              ideEditor.clearHistory(); 
+              setIdeModeByFilename(note.title, ideEditor); // УМНАЯ ЗАГРУЗКА ЯЗЫКА
+              ideEditor.clearHistory();
               if (isIdeMode) {
                  setTimeout(() => ideEditor.refresh(), 10);
               }
@@ -4337,8 +4613,8 @@
         }
       }
 
-      // ГЕНЕРАТОР УНИКАЛЬНЫХ ИМЕН
-      function getUniqueTitle(desiredTitle, currentNoteId = null) {
+      // ГЕНЕРАТОР УНИКАЛЬНЫХ ИМЕН (ИЗОЛИРОВАННЫЙ ПО ПАПКАМ)
+      function getUniqueTitle(desiredTitle, currentNoteId = null, targetParentId = null) {
           let title = desiredTitle.trim();
           if (!title) title = "Без названия";
           
@@ -4347,8 +4623,12 @@
           let finalTitle = title;
           
           while (!isUnique) {
-              // Ищем точное совпадение (без учета регистра), игнорируя текущий файл
-              const exists = notes.find(n => n.id !== currentNoteId && n.title.toLowerCase() === finalTitle.toLowerCase());
+              // Ищем совпадение ТОЛЬКО внутри целевой папки
+              const exists = notes.find(n => 
+                  n.id !== currentNoteId && 
+                  n.parentId === targetParentId && 
+                  n.title.toLowerCase() === finalTitle.toLowerCase()
+              );
               if (exists) {
                   finalTitle = `${title} ${counter}`;
                   counter++;
@@ -4359,18 +4639,50 @@
           return finalTitle;
       }
 
-      function createNewNote() {
-        const newNote = {
-          id: Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9),
-          title: getUniqueTitle("Новая заметка"),
-          content: "# ",
-          date: new Date().toLocaleDateString(),
-        };
-        notes.push(newNote);
-        localStorage.setItem("qn_notes", JSON.stringify(notes));
-        searchInput.value = "";
-        switchNote(newNote.id);
-      }
+      // СТАРЫЙ БАГОВАННЫЙ БЛОК УДАЛЕН.
+      // ЗДЕСЬ ТЕПЕРЬ ЛОГИКА ОТРИСОВКИ ПУТЕЙ (ХЛЕБНЫЕ КРОШКИ)
+      window.setActiveFolder = function(folderId) {
+          activeFolderId = folderId;
+          renderNotesList(searchInput.value);
+      };
+
+      window.renderFolderPath = function() {
+          const crumbsContainer = document.getElementById("folderPathCrumbs");
+          if (!crumbsContainer) return;
+
+          let path = [];
+          let currentFolder = notes.find(n => n.id === activeFolderId);
+          
+          while (currentFolder) {
+              path.unshift({ id: currentFolder.id, title: currentFolder.title });
+              currentFolder = notes.find(n => n.id === currentFolder.parentId);
+          }
+
+          // DRAG & DROP ПРЯМО НА КНОПКУ "КОРЕНЬ"
+          let html = `<span class="crumb ${activeFolderId === null ? 'active' : ''}" 
+              style="${activeFolderId === null ? 'color: #fff;' : ''}" 
+              onclick="window.setActiveFolder(null)"
+              ondragover="event.preventDefault(); this.style.background='rgba(59, 130, 246, 0.4)'"
+              ondragleave="this.style.background=''"
+              ondrop="event.preventDefault(); this.style.background=''; window.moveItem(event.dataTransfer.getData('text/plain'), null)">
+              <i class="bx bx-hdd"></i> Корень
+          </span>`;
+          
+          path.forEach(folder => {
+              html += `<span class="crumb-separator">/</span>`;
+              // DRAG & DROP ПРЯМО НА РОДИТЕЛЬСКИЕ ПАПКИ В ПУТИ
+              html += `<span class="crumb ${activeFolderId === folder.id ? 'active' : ''}" 
+                  style="${activeFolderId === folder.id ? 'color: #fff;' : ''}" 
+                  onclick="window.setActiveFolder('${folder.id}')"
+                  ondragover="event.preventDefault(); this.style.background='rgba(59, 130, 246, 0.4)'"
+                  ondragleave="this.style.background=''"
+                  ondrop="event.preventDefault(); this.style.background=''; window.moveItem(event.dataTransfer.getData('text/plain'), '${folder.id}')">
+                  <i class="bx bx-folder"></i> ${folder.title}
+              </span>`;
+          });
+
+          crumbsContainer.innerHTML = html;
+      };
 
       // ==========================================
       // НОВАЯ ЛОГИКА: КОНТЕКСТНОЕ МЕНЮ ЗАМЕТОК
@@ -4499,10 +4811,11 @@
             "<i class='bx bxs-star' style='color:#f59e0b;'></i> Убрать из избранного" :
             "<i class='bx bx-star'></i> В избранное";
 
-        // Собираем HTML кнопок
+        // Собираем HTML кнопок (ТОЛЬКО ДЛЯ ФАЙЛОВ)
         menuEl.innerHTML = `
             <button class="dyn-menu-btn" onclick="handleNoteMention()"><i class='bx bx-bot' style="color: #a78bfa;"></i> Упомянуть для ИИ</button>
             <button class="dyn-menu-btn" onclick="handleNoteRename()"><i class='bx bx-edit-alt'></i> Переименовать</button>
+            <button class="dyn-menu-btn" onclick="window.handleMoveClick('${noteId}')"><i class='bx bx-transfer-alt'></i> Переместить...</button>
             <button class="dyn-menu-btn" onclick="handleNoteFavorite()">${favText}</button>
             <button class="dyn-menu-btn del-btn" onclick="handleNoteDelete()"><i class='bx bx-trash'></i> Удалить</button>
         `;
@@ -4521,6 +4834,8 @@
         menuEl.style.left = posX + 'px';
         menuEl.style.top = posY + 'px';
       };
+
+      
 
       // 2. ОТРИСОВКА МЕНЮ ДЛЯ ЧАТА
       window.showChatContextMenu = function(x, y, node) {
@@ -4553,6 +4868,174 @@
         menuEl.style.top = posY + 'px';
       };
 
+      window.showFolderContextMenu = function(x, y, folderId) {
+        window.ignoreMenuClickTime = Date.now() + 300;
+        window.hideNoteContextMenu();
+        window.hideChatContextMenu();
+        addDynamicMenuStyles();
+
+        const menuEl = document.createElement('div');
+        menuEl.id = 'dynamicNoteMenu'; 
+
+        menuEl.innerHTML = `
+            <button class="dyn-menu-btn" onclick="window.createNewNoteInFolder('${folderId}')"><i class='bx bx-file-blank'></i> Создать файл здесь</button>
+            <button class="dyn-menu-btn" onclick="window.createNewFolderInFolder('${folderId}')"><i class='bx bx-folder-plus'></i> Создать папку здесь</button>
+            <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0;"></div>
+            <button class="dyn-menu-btn" onclick="handleFolderRename('${folderId}')"><i class='bx bx-edit-alt'></i> Переименовать папку</button>
+            <button class="dyn-menu-btn del-btn" onclick="handleFolderDelete('${folderId}')"><i class='bx bx-trash'></i> Удалить папку и всё внутри</button>
+        `;
+
+        menuEl.style.cssText = "position: fixed !important; background: #18181b !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 12px !important; padding: 6px !important; display: flex !important; flex-direction: column !important; gap: 4px !important; z-index: 21474836 !important; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8) !important; min-width: 180px !important; margin: 0 !important; pointer-events: auto !important;";
+
+        document.body.appendChild(menuEl);
+
+        const menuRect = menuEl.getBoundingClientRect();
+        let posX = x, posY = y;
+        if (posX + menuRect.width > window.innerWidth) posX = window.innerWidth - menuRect.width - 10;
+        if (posY + menuRect.height > window.innerHeight) posY = window.innerHeight - menuRect.height - 10;
+
+        menuEl.style.left = posX + 'px';
+        menuEl.style.top = posY + 'px';
+      };
+
+      // ==========================================
+      // МОДАЛЬНОЕ ОКНО ПЕРЕМЕЩЕНИЯ (ДЛЯ МОБИЛОК И ПК)
+      // ==========================================
+      window.handleMoveClick = function(itemId) {
+          window.hideNoteContextMenu();
+          window.hideChatContextMenu();
+
+          const item = notes.find(n => n.id === itemId);
+          if (!item) return;
+
+          // Собираем дерево папок, исключая ту, которую перемещаем, и её подпапки
+          let availableFolders = [{ id: null, title: "Корень (Root)" }];
+
+          const addFolders = (parentId, depthStr) => {
+              let children = notes.filter(n => n.type === 'folder' && n.parentId === parentId);
+              children.sort((a,b) => a.title.localeCompare(b.title)); // Сортируем по алфавиту
+              
+              children.forEach(c => {
+                  let isDescendant = false;
+                  let curr = c;
+                  // Проверка на зацикливание (чтобы не засунуть папку саму в себя)
+                  while(curr) {
+                      if (curr.id === itemId) { isDescendant = true; break; }
+                      curr = notes.find(n => n.id === curr.parentId);
+                  }
+                  
+                  if (!isDescendant && c.id !== itemId) {
+                      availableFolders.push({ id: c.id, title: depthStr + c.title });
+                      addFolders(c.id, depthStr + "&nbsp;&nbsp;&nbsp;&nbsp;└ "); // Красивые отступы
+                  }
+              });
+          };
+          addFolders(null, "");
+
+          // Создаем визуальное модальное окно поверх всего
+          const modal = document.createElement('div');
+          modal.id = 'moveModal';
+          modal.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 21474836; display: flex; align-items: center; justify-content: center;";
+
+          let optionsHtml = availableFolders.map(f => `
+              <button class="dyn-menu-btn" style="justify-content: flex-start; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02);" 
+                  onclick="window.confirmMove('${itemId}', ${f.id ? `'${f.id}'` : 'null'})">
+                  <i class='bx ${f.id ? 'bx-folder' : 'bx-hdd'}' style="color: ${f.id ? '#eab308' : '#3b82f6'};"></i> ${f.title}
+              </button>
+          `).join('');
+
+          modal.innerHTML = `
+              <div style="background: #18181b; border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; width: 90%; max-width: 340px; padding: 20px; display: flex; flex-direction: column; max-height: 80vh; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
+                  <h3 style="font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 15px; font-family: var(--font-ui); display: flex; align-items: center; gap: 8px;">
+                      <i class='bx bx-transfer-alt'></i> Переместить "${item.title}"
+                  </h3>
+                  <div style="overflow-y: auto; flex: 1; margin-bottom: 15px; padding-right: 5px;">
+                      ${optionsHtml}
+                  </div>
+                  <button class="btn" style="width: 100%; justify-content: center; background: rgba(255,255,255,0.05);" onclick="document.getElementById('moveModal').remove()">Отмена</button>
+              </div>
+          `;
+          document.body.appendChild(modal);
+      };
+
+      // Функция подтверждения переноса
+      window.confirmMove = function(itemId, newParentId) {
+          document.getElementById('moveModal').remove();
+          window.moveItem(itemId, newParentId);
+      };
+
+      // НОВОЕ: Контекстное меню для пустого места (Корня)
+      window.showRootContextMenu = function(x, y) {
+        window.ignoreMenuClickTime = Date.now() + 300;
+        window.hideNoteContextMenu();
+        window.hideChatContextMenu();
+        addDynamicMenuStyles();
+
+        const menuEl = document.createElement('div');
+        menuEl.id = 'dynamicNoteMenu';
+
+        menuEl.innerHTML = `
+            <button class="dyn-menu-btn" onclick="activeFolderId = null; createNewNote(); window.hideNoteContextMenu();"><i class='bx bx-file-blank'></i> Создать файл (в корне)</button>
+            <button class="dyn-menu-btn" onclick="activeFolderId = null; createNewFolder(); window.hideNoteContextMenu();"><i class='bx bx-folder-plus'></i> Создать папку (в корне)</button>
+        `;
+
+        menuEl.style.cssText = "position: fixed !important; background: #18181b !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 12px !important; padding: 6px !important; display: flex !important; flex-direction: column !important; gap: 4px !important; z-index: 21474836 !important; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8) !important; min-width: 180px !important; margin: 0 !important; pointer-events: auto !important;";
+
+        document.body.appendChild(menuEl);
+
+        const menuRect = menuEl.getBoundingClientRect();
+        let posX = x, posY = y;
+        if (posX + menuRect.width > window.innerWidth) posX = window.innerWidth - menuRect.width - 10;
+        if (posY + menuRect.height > window.innerHeight) posY = window.innerHeight - menuRect.height - 10;
+
+        menuEl.style.left = posX + 'px';
+        menuEl.style.top = posY + 'px';
+      };
+
+      window.handleFolderRename = function(folderId) {
+          const folder = notes.find(n => n.id === folderId);
+          if (!folder) return;
+          const newName = prompt("Новое имя папки:", folder.title);
+          if (newName && newName.trim()) {
+              // ФИКС: Проверка уникальности при переименовании папки
+              folder.title = getUniqueTitle(newName.trim(), folder.id, folder.parentId);
+              localStorage.setItem("qn_notes", JSON.stringify(notes));
+              renderNotesList(searchInput.value);
+          }
+          window.hideNoteContextMenu();
+      };
+
+      window.handleFolderDelete = function(folderId) {
+          if (confirm("ВНИМАНИЕ! Удалить папку и все вложенные в неё файлы и папки безвозвратно?")) {
+              // Рекурсивное удаление
+              const deleteRecursive = (pId) => {
+                  const children = notes.filter(n => n.parentId === pId);
+                  children.forEach(c => {
+                      if (c.type === 'folder') deleteRecursive(c.id);
+                      notes = notes.filter(n => n.id !== c.id);
+                      window.aiAttachedNotes.delete(c.id); // Убираем из памяти ИИ, если было
+                  });
+              };
+              deleteRecursive(folderId);
+              notes = notes.filter(n => n.id !== folderId); // Удаляем саму папку
+              
+              if (activeFolderId === folderId) activeFolderId = null;
+              
+              // Если удалили активный файл вместе с папкой - переключаем на другой
+              if (!notes.find(n => n.id === activeId)) {
+                  const anyFile = notes.find(n => n.type === 'file');
+                  if (anyFile) switchNote(anyFile.id);
+                  else createNewNote();
+              } else {
+                  localStorage.setItem("qn_notes", JSON.stringify(notes));
+                  renderNotesList(searchInput.value);
+                  if(typeof updateAttachedNotesUI === "function") updateAttachedNotesUI();
+              }
+          }
+          window.hideNoteContextMenu();
+      };
+      
+
       // 3. ЗАКРЫТИЕ ПРИ КЛИКЕ В ПУСТОЕ МЕСТО
       document.addEventListener('mousedown', (e) => {
         if (e.button === 2) return; // Игнорируем правый клик
@@ -4584,7 +5067,7 @@
         if (!note) return;
         const newTitle = prompt("Введите новое название заметки:", note.title);
         if (newTitle !== null && newTitle.trim() !== "") {
-          note.title = getUniqueTitle(newTitle, note.id); 
+          note.title = getUniqueTitle(newTitle, note.id, note.parentId);
           if(activeId === note.id) {
               titleInput.value = note.title;
               if (ideEditor) ideEditor.setOption("mode", getSyntaxMode(note.title));
@@ -4752,14 +5235,18 @@
       titleInput.addEventListener("change", (e) => {
         const note = notes.find((n) => n.id === activeId);
         if (note) {
-          note.title = getUniqueTitle(e.target.value, activeId);
+          note.title = getUniqueTitle(e.target.value, activeId, note.parentId);
           e.target.value = note.title; // Обновляем инпут, если добавилась цифра
           renderNotesList(searchInput.value);
           localStorage.setItem("qn_notes", JSON.stringify(notes));
           
           // Обновляем синтаксис IDE, если сменилось расширение (например на .js)
           if (typeof ideEditor !== 'undefined' && isIdeMode) {
-              ideEditor.setOption("mode", getSyntaxMode(note.title));
+              // ФИКС: Сбрасываем старые ошибки при смене расширения файла
+              if (typeof window.updateIdeConsole === "function") {
+                  window.updateIdeConsole([]); 
+              }
+              setIdeModeByFilename(note.title, ideEditor);
           }
         }
       });
@@ -6637,19 +7124,19 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             } 
             else if (action.type === "UPDATE_NOTE") {
               note.content = action.content;
-              // Если ИИ решил при обновлении еще и переименовать файл
-              if (action.title) note.title = getUniqueTitle(action.title, note.id);
+              // Добавили note.parentId
+              if (action.title) note.title = getUniqueTitle(action.title, note.id, note.parentId);
             }
-            // ИСПРАВЛЕНИЕ: НОВАЯ ЛОГИКА ДЛЯ RENAME
             else if (action.type === "RENAME_NOTE") {
-              note.title = getUniqueTitle(action.newTitle, note.id);
+              // Добавили note.parentId
+              note.title = getUniqueTitle(action.newTitle, note.id, note.parentId);
             }
             else if (action.type === "CREATE_NOTE") {
               const uniqueId = Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9);
               const newNote = { 
                   id: uniqueId, 
-                  // Защищаем имя созданного ИИ файла
-                  title: getUniqueTitle(action.title || "Новая заметка"), 
+                  // Добавили activeFolderId || null
+                  title: getUniqueTitle(action.title || "Новая заметка", null, activeFolderId || null),
                   content: action.content || "# ", 
                   date: new Date().toLocaleDateString() 
               };
@@ -6974,7 +7461,8 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
               if (deps.length > 0) {
                   const foundDeps = [];
                   deps.forEach(depTitle => {
-                      const depNote = notes.find(n => n.title.toLowerCase() === depTitle);
+                      // ФИЛЬТР: Добавляем в контекст ИИ только файлы из ТОЙ ЖЕ ПАПКИ
+                      const depNote = notes.find(n => n.title.toLowerCase() === depTitle && n.parentId === note.parentId);
                       if (depNote) {
                           resultSet.add(depNote); // Добавляем файл в память ИИ
                           foundDeps.push(depNote.title);
