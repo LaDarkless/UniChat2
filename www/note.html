@@ -60,22 +60,22 @@
     <style>
       :root {
         --bg-color: #030303;
-        --grid-color: rgba(255, 255, 255, 0.04);
-        --panel-bg: rgba(12, 12, 14, 0.65);
-        --panel-border: rgba(255, 255, 255, 0.08);
+        --grid-color: rgba(255, 255, 255, 0.03);
+        --panel-bg: rgba(8, 8, 10, 0.72);
+        --panel-border: rgba(255, 255, 255, 0.06);
         --text-main: #f8fafc;
-        --text-muted: #94a3b8;
+        --text-muted: #8a99ad;
 
-        /* Акцентные цвета (меняются в настройках) */
+        /* Акцентные цвета */
         --accent: #8b5cf6;
         --accent-hover: #a78bfa;
         --accent-rgb: 139, 92, 246;
 
-        /* Шрифты */
+        /* Шрифты и адаптивное fluid-масштабирование */
         --font-ui: "Inter", sans-serif;
         --font-text: "Inter", sans-serif;
         --font-code: "JetBrains Mono", monospace;
-        --text-size: 16px;
+        --text-size: clamp(14px, 1.05vw, 17px); /* Плавное масштабирование текста */
       }
 
       * {
@@ -106,41 +106,68 @@
         position: relative;
       }
 
+      /* Процедурная текстура поверх всей страницы */
+      .noise-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0.04;
+        mix-blend-mode: overlay;
+      }
+      .noise-overlay::before {
+        content: '';
+        position: absolute;
+        top: -50%; left: -50%; width: 200%; height: 200%;
+        background: transparent;
+        filter: url(#noiseFilter);
+      }
+
+      /* Интерактивный курсор с инерцией */
+      .cursor-glow {
+        position: fixed;
+        width: clamp(350px, 35vw, 650px);
+        height: clamp(350px, 35vw, 650px);
+        background: radial-gradient(circle, rgba(var(--accent-rgb), 0.12) 0%, rgba(var(--accent-rgb), 0.03) 50%, transparent 100%);
+        border-radius: 50%;
+        pointer-events: none;
+        top: 0; left: 0;
+        transform: translate3d(-50%, -50%, 0);
+        z-index: -1;
+        mix-blend-mode: screen;
+        will-change: transform;
+        transition: background 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
       .glow {
         position: absolute;
         border-radius: 50%;
-        filter: blur(150px);
-        z-index: -1;
-        opacity: 0.25;
-        animation: breathe 8s infinite alternate ease-in-out;
+        filter: blur(160px);
+        z-index: -2;
+        opacity: 0.18;
+        animation: breathe 12s infinite alternate ease-in-out;
         pointer-events: none;
-        transition: background 0.5s;
+        transition: background 0.8s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .glow-1 {
-        width: 50vw;
-        height: 50vw;
-        background: var(--accent);
+        width: 55vw;
+        height: 55vw;
+        background: radial-gradient(circle, rgba(var(--accent-rgb), 0.35) 0%, transparent 70%);
         top: -20%;
-        left: 10%;
+        left: 5%;
       }
       .glow-2 {
-        width: 40vw;
-        height: 40vw;
-        background: #3b82f6;
-        bottom: -20%;
-        right: 5%;
-        animation-delay: -4s;
+        width: 45vw;
+        height: 45vw;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
+        bottom: -15%;
+        right: 0%;
+        animation-delay: -6s;
       }
 
       @keyframes breathe {
-        0% {
-          transform: scale(1);
-          opacity: 0.2;
-        }
-        100% {
-          transform: scale(1.1);
-          opacity: 0.35;
-        }
+        0% { transform: scale(1) translate3d(0, 0, 0); opacity: 0.15; }
+        100% { transform: scale(1.08) translate3d(20px, -10px, 0); opacity: 0.25; }
       }
 
       /* ==========================================
@@ -373,32 +400,51 @@
       body.theme-matrix { background: #000; }
       /* ========================================== */
 
-      /* UI Компоненты */
+      /* Эстетичные адаптивные кнопки */
       .btn {
-        background: var(--panel-border);
-        color: #fff;
-        border: 1px solid transparent;
-        padding: 10px 14px;
-        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--text-main);
+        border: 1px solid var(--panel-border);
+        padding: clamp(8px, 1.2vh, 11px) clamp(12px, 1.5vw, 18px);
+        border-radius: 8px;
         cursor: pointer;
         font-family: var(--font-ui);
-        font-size: 14px;
+        font-size: clamp(12px, 1vw, 14px);
         font-weight: 500;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        transition: 0.3s;
+        gap: 10px;
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+        overflow: hidden;
+      }
+      .btn::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%; width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+        transition: 0.6s;
+      }
+      .btn:hover::before {
+        left: 100%;
+      }
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(var(--accent-rgb), 0.3);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
       }
       .btn-primary {
         background: var(--accent);
-        border: none;
-        box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 18px rgba(var(--accent-rgb), 0.25);
       }
       .btn-primary:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.5);
-        filter: brightness(1.1);
+        box-shadow: 0 6px 22px rgba(var(--accent-rgb), 0.45);
+        filter: brightness(1.15);
+        border-color: rgba(255,255,255,0.2);
       }
       .btn-icon {
         background: transparent;
@@ -504,31 +550,28 @@
         border-radius: 10px;
       }
 
+      /* Карточки заметок в стиле редакционных сеток */
       .note-item {
-        padding: 12px 14px;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 10px;
+        padding: clamp(10px, 1.5vh, 14px) clamp(12px, 1.2vw, 16px);
+        background: rgba(255, 255, 255, 0.01);
+        border-radius: 12px;
         cursor: pointer;
-        transition: 0.2s;
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         position: relative;
         overflow: hidden;
-        border: 1px solid transparent;
+        border: 1px solid rgba(255, 255, 255, 0.02);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
       .note-item:hover {
-        background: rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.06);
+        transform: translateX(4px);
       }
       .note-item.active {
-        background: rgba(var(--accent-rgb), 0.15);
-        border-color: rgba(var(--accent-rgb), 0.4);
-      }
-      .note-item.active::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background: var(--accent);
+        background: rgba(var(--accent-rgb), 0.08);
+        border-color: rgba(var(--accent-rgb), 0.25);
       }
       .note-title-list {
         font-weight: 600;
@@ -626,14 +669,21 @@
         background: var(--panel-bg);
         border: 1px solid var(--panel-border);
         border-radius: 16px;
-        backdrop-filter: blur(20px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(35px) saturate(120%);
+        -webkit-backdrop-filter: blur(35px) saturate(120%);
+        box-shadow: 
+          0 25px 60px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
         overflow: hidden;
-        transition: border-color 0.3s;
-        position: relative; /* Удерживает окно поиска внутри рамки */
+        transition: border-color 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
       }
       .pane:focus-within {
         border-color: rgba(var(--accent-rgb), 0.5);
+        box-shadow: 
+          0 25px 60px rgba(0, 0, 0, 0.5),
+          0 0 40px rgba(var(--accent-rgb), 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
 
       .pane-header {
@@ -2525,6 +2575,16 @@
   <!-- ==================================================== -->
   </head>
   <body>
+    <!-- Процедурный шум и интерактивный курсор -->
+    <svg style="display:none;">
+      <filter id="noiseFilter">
+        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" />
+        <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.08 0" />
+      </filter>
+    </svg>
+    <div class="noise-overlay"></div>
+    <div class="cursor-glow" id="cursorGlow"></div>
+
     <div id="theme-layer"></div> <!-- НОВЫЙ БЛОК ДЛЯ ТЕМ -->
     <div class="glow glow-1"></div>
     <div class="glow glow-2"></div>
@@ -3043,6 +3103,119 @@
     </div>
 
     <script>
+      // === ПРЕМИУМ-ДВИЖОК ОРГАНИЧЕСКИХ ВИЗУАЛОВ И ЗВУКОВОГО ДИЗАЙНА ===
+      class SoundSynth {
+        constructor() {
+          this.ctx = null;
+        }
+
+        init() {
+          if (this.ctx) return;
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            this.ctx = new AudioCtx();
+          }
+        }
+
+        // Синтез мягкого механического щелчка
+        playClick() {
+          this.init();
+          if (!this.ctx || this.ctx.state === 'suspended') return;
+          
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1400, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.03);
+          
+          gain.gain.setValueAtTime(0.012, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.03);
+          
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.04);
+        }
+
+        // Синтез глубокого мягкого перехода
+        playSoftHum() {
+          this.init();
+          if (!this.ctx || this.ctx.state === 'suspended') return;
+          
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(380, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(110, this.ctx.currentTime + 0.12);
+          
+          gain.gain.setValueAtTime(0.008, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.12);
+          
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.13);
+        }
+      }
+
+      class AmbientVisuals {
+        constructor() {
+          this.glow = document.getElementById('cursorGlow');
+          this.mouseX = window.innerWidth / 2;
+          this.mouseY = window.innerHeight / 2;
+          this.currentX = this.mouseX;
+          this.currentY = this.mouseY;
+          this.ease = 0.06; /* Инерция слежения (чем меньше, тем мягче движение) */
+          this.active = false;
+          this.init();
+        }
+
+        init() {
+          if (window.matchMedia('(hover: hover)').matches) {
+            this.active = true;
+            window.addEventListener('mousemove', (e) => {
+              this.mouseX = e.clientX;
+              this.mouseY = e.clientY;
+            }, { passive: true });
+            this.animate();
+          } else {
+            if (this.glow) this.glow.style.display = 'none';
+          }
+        }
+
+        animate() {
+          if (!this.active || !this.glow) return;
+          this.currentX += (this.mouseX - this.currentX) * this.ease;
+          this.currentY += (this.mouseY - this.currentY) * this.ease;
+          this.glow.style.transform = `translate3d(${this.currentX}px, ${this.currentY}px, 0)`;
+          requestAnimationFrame(() => this.animate());
+        }
+      }
+
+      window.synth = new SoundSynth();
+
+      // Навешиваем клики на интерактивные элементы
+      document.addEventListener('click', (e) => {
+        if (window.synth) {
+          window.synth.init();
+          if (window.synth.ctx && window.synth.ctx.state === 'suspended') {
+            window.synth.ctx.resume();
+          }
+        }
+        const target = e.target.closest('.btn, .btn-icon, .note-item, .t-menu-item, .ai-mode-btn, .toolbar-btn, .sheet-item, .color-dot, .theme-btn');
+        if (target && window.synth) {
+          window.synth.playClick();
+        }
+      });
+
+      window.addEventListener('load', () => {
+        new AmbientVisuals();
+      });
+
       // Инициализация Marked.js
       marked.setOptions({
         highlight: (code, lang) =>
@@ -4131,6 +4304,11 @@
       function switchNote(id) {
         // ЕСЛИ БЫЛ ВКЛЮЧЕН ВЕБ-РЕЖИМ - ВЫКЛЮЧАЕМ ЕГО ПРИ СМЕНЕ ЗАМЕТКИ
         if (isWebPreview) toggleWebPreview();
+        
+        // Премиальный звуковой отклик при открытии файла
+        if (window.synth) {
+          window.synth.playSoftHum();
+        }
         
         activeId = id;
         const note = notes.find((n) => n.id === id);
@@ -5297,6 +5475,7 @@ function setTheme(e, hex, rgb) {
       }
 
       function toggleAISidebar() {
+        if (window.synth) window.synth.playSoftHum();
         document.body.classList.toggle("ai-open");
         if (document.body.classList.contains("ai-open")) {
           updateSelectionUI(); // Проверяем выделение при открытии
@@ -7673,684 +7852,764 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
         }
     });
     </script>
-  <!-- ========================================== -->
-  <!-- ПЛАВАЮЩЕЕ МЕНЮ (FAB DOCK)                  -->
-  <!-- ========================================== -->
-  <style>
+  <!-- PREMIUM CELESTIAL SEA NAV DOCK (Kanata x Gura Theme)                    -->
+<!-- ======================================================================= -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+
+  :root {
+    --primary-sky: #00E5FF;
+    --primary-heaven: #a78bfa;
+    --gold-halo: #FFE082;
+    --deep-ocean: #081020;
+    --neon-blue: #00f0ff;
+    --neon-purple: #bd00ff;
+    --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  }
+
+  /* Враппер плавающей кнопки */
+  .fab-wrapper {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 999999;
+    width: 68px;
+    height: 68px;
+    pointer-events: none;
+    will-change: transform;
+    filter: drop-shadow(0 10px 30px rgba(0, 229, 255, 0.25));
+  }
+
+  /* Основная круглая кнопка (Триггер) */
+  .fab-button {
+    pointer-events: auto;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(20, 30, 55, 0.9) 0%, rgba(8, 12, 24, 0.95) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(0, 229, 255, 0.3);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    box-shadow: 
+      0 0 20px rgba(0, 229, 255, 0.15),
+      inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    transition: 
+      border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.2s ease;
+    touch-action: none;
+    overflow: visible;
+  }
+
+  .fab-button:active {
+    cursor: grabbing;
+    transform: scale(0.95);
+  }
+
+  /* Анимация и свечение при наведении */
+  .fab-button:hover {
+    border-color: var(--primary-sky);
+    box-shadow: 
+      0 0 30px rgba(0, 229, 255, 0.4),
+      0 0 15px rgba(167, 139, 250, 0.3),
+      inset 0 1px 4px rgba(255, 255, 255, 0.4);
+  }
+
+  /* Стилизация SVG Эмблемы (Нимб + Трезубец) */
+  .emblem-svg {
+    width: 110%;
+    height: 110%;
+    position: absolute;
+    transform: scale(1);
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Вращение нимба Канаты */
+  .emblem-halo {
+    transform-origin: 50px 18px;
+    animation: haloRotate 12s linear infinite;
+  }
+
+  /* Покачивание крыльев */
+  .emblem-wings path {
+    transform-origin: 50px 52px;
+    animation: wingBreathe 4s ease-in-out infinite alternate;
+  }
+
+  .emblem-wings path:nth-child(even) {
+    animation-delay: -2s;
+  }
+
+  @keyframes haloRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes wingBreathe {
+    0% { transform: scale(0.96) rotate(-2deg); }
+    100% { transform: scale(1.02) rotate(2deg); }
+  }
+
+  /* Эффект при открытом состоянии */
+  .fab-wrapper.open .fab-button {
+    border-color: var(--primary-heaven);
+    box-shadow: 0 0 40px rgba(167, 139, 250, 0.5);
+  }
+
+  .fab-wrapper.open .emblem-svg {
+    transform: rotate(45deg) scale(0.9);
+  }
+
+  /* Глобальный Док навигации */
+  .global-dock {
+    position: absolute;
+    top: 50%;
+    right: calc(100% + 20px);
+    transform: translateY(-50%) scale(0.9) translateX(30px);
+    transform-origin: right center;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: rgba(6, 11, 25, 0.75);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid rgba(0, 229, 255, 0.15);
+    border-radius: 24px;
+    box-shadow: 
+      0 30px 60px rgba(0, 4, 16, 0.8),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+    max-width: calc(100vw - 120px);
+    overflow-x: auto;
+    scrollbar-width: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: 
+      transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      visibility 0.4s;
+  }
+
+  .global-dock::-webkit-scrollbar { display: none; }
+
+  /* Фоновый интерактивный холст */
+  .dock-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 24px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  /* Позиционирование выезжающих панелей */
+  .fab-wrapper.open .global-dock {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(-50%) scale(1) translateX(0);
+  }
+
+  .fab-wrapper.is-left .global-dock {
+    right: auto;
+    left: calc(100% + 20px);
+    transform-origin: left center;
+    transform: translateY(-50%) scale(0.9) translateX(-30px);
+  }
+  .fab-wrapper.is-left.open .global-dock {
+    transform: translateY(-50%) scale(1) translateX(0);
+  }
+
+  .fab-wrapper.is-up .global-dock {
+    flex-direction: column;
+    right: 50%;
+    top: auto;
+    bottom: calc(100% + 20px);
+    transform-origin: bottom center;
+    transform: translateX(50%) scale(0.9) translateY(30px);
+    max-height: calc(100vh - 120px);
+    max-width: none;
+    overflow-y: auto;
+  }
+  .fab-wrapper.is-up.open .global-dock {
+    transform: translateX(50%) scale(1) translateY(0);
+  }
+
+  .fab-wrapper.is-down .global-dock {
+    flex-direction: column;
+    right: 50%;
+    bottom: auto;
+    top: calc(100% + 20px);
+    transform-origin: top center;
+    transform: translateX(50%) scale(0.9) translateY(-30px);
+    max-height: calc(100vh - 120px);
+    max-width: none;
+    overflow-y: auto;
+  }
+  .fab-wrapper.is-down.open .global-dock {
+    transform: translateX(50%) scale(1) translateY(0);
+  }
+
+  /* Элементы меню навигации */
+  .dock-item {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 14px;
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+
+  /* Эффект наведения с деформацией глитча */
+  .dock-item:hover {
+    color: #fff;
+    background: rgba(0, 229, 255, 0.08);
+    border-color: rgba(0, 229, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 229, 255, 0.1);
+    filter: url(#glitch-distortion);
+  }
+
+  .dock-item.active {
+    color: #fff;
+    background: rgba(167, 139, 250, 0.15);
+    border-color: rgba(167, 139, 250, 0.3);
+    box-shadow: 
+      0 4px 20px rgba(167, 139, 250, 0.2),
+      inset 0 0 12px rgba(167, 139, 250, 0.1);
+  }
+
+  /* Стилизация иконок */
+  .dock-icon-wrapper {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dock-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.4));
+    pointer-events: none;
+    user-select: none;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .dock-item:hover .dock-icon {
+    transform: scale(1.18) rotate(5deg);
+  }
+
+  .dock-text {
+    font-family: 'Space Grotesk', sans-serif;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+
+  /* Хвост-индикатор для активного пункта */
+  .dock-item.active::after {
+    content: "";
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 3px;
+    background: var(--primary-heaven);
+    border-radius: 4px;
+    box-shadow: 0 0 8px var(--primary-heaven);
+  }
+
+  /* Адаптивность для мобильных экранов */
+  @media (max-width: 768px) {
     .fab-wrapper {
-      position: fixed;
-      bottom: 25px;
-      right: 25px;
-      /* Устанавливаем максимальный лимит z-index в 32-битной системе */
-      z-index: 21474836;
-      /* ФИКС: Убрали flex, жестко фиксируем размер под кнопку */
-      width: 54px;
-      height: 54px;
-      pointer-events: none;
+      bottom: 20px;
+      right: 20px;
+      width: 58px;
+      height: 58px;
     }
-
-    .fab-button {
-      pointer-events: auto;
-      width: 100%; /* ФИКС: занимает 100% от враппера */
-      height: 100%;
-      border-radius: 50%;
-      background: rgba(20, 20, 25, 0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow:
-        0 10px 30px rgba(0, 0, 0, 0.6),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      outline: none;
-      padding: 0;
-      /* Для телефонов */
-      touch-action: none; 
-    }
-
-    .fab-button:hover {
-      transform: scale(1.1);
-      background: rgba(40, 40, 50, 0.9);
-      border-color: rgba(255, 255, 255, 0.4);
-      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 1px 5px rgba(255, 255, 255, 0.3);
-    }
-
-    .fab-button svg {
-      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    }
-
-    .fab-wrapper.open .fab-button svg {
-      transform: rotate(90deg) scale(0.9);
-      color: #a78bfa;
-    }
-
-    /* Выезжающая панель навигации */
-    .global-dock {
-      /* ФИКС: Абсолютное позиционирование, чтобы не ломать контейнер */
-      position: absolute;
-      top: 50%;
-      right: calc(100% + 15px); /* По умолчанию открывается влево */
-      transform: translateY(-50%) translateX(40px) scale(0.9);
-      transform-origin: right center;
-
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      background: rgba(12, 12, 14, 0.85);
-      backdrop-filter: blur(25px);
-      -webkit-backdrop-filter: blur(25px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 100px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-
-      /* ФИКС: Защита от вылета за экран и скролл */
-      max-width: calc(100vw - 100px); 
-      overflow-x: auto;
-      -ms-overflow-style: none; /* Скрытие ползунка скролла IE/Edge */
-      scrollbar-width: none;    /* Скрытие ползунка скролла Firefox */
-
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    /* Скрытие ползунка скролла Chrome/Safari */
-    .global-dock::-webkit-scrollbar { display: none; }
-
-    /* Состояние открытого меню */
-    .fab-wrapper.open .global-dock {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-      transform: translateY(-50%) translateX(0) scale(1);
-    }
-
-    /* === СТАРЫЙ КОД ОСТАЕТСЯ (открытия влево и вправо) === */
-    .fab-wrapper.is-left .global-dock {
-      right: auto;
-      left: calc(100% + 15px);
-      transform-origin: left center;
-      transform: translateY(-50%) translateX(-40px) scale(0.9);
-    }
-    .fab-wrapper.is-left.open .global-dock {
-      transform: translateY(-50%) translateX(0) scale(1);
-    }
-
-    /* === НОВЫЙ КОД (Добавить сюда) === */
     
-    /* Вертикальный режим: Открывается ВВЕРХ */
-    .fab-wrapper.is-up .global-dock {
-      flex-direction: column;   /* Иконки выстраиваются в колонку */
-      right: 50%;               /* Центрируем ровно по центру кнопки */
-      top: auto;
-      bottom: calc(100% + 15px);
-      transform-origin: bottom center;
-      transform: translateX(50%) translateY(40px) scale(0.9);
-      
-      /* Защита от вылета по вертикали */
-      max-height: calc(100vh - 100px); 
-      max-width: none; 
-      overflow-y: auto;         /* Вертикальный скролл, если иконок очень много */
-      overflow-x: hidden;
-    }
-    .fab-wrapper.is-up.open .global-dock {
-      transform: translateX(50%) translateY(0) scale(1);
+    .global-dock {
+      padding: 8px;
+      gap: 6px;
+      border-radius: 20px;
+      max-width: calc(100vw - 80px);
     }
 
-    /* Вертикальный режим: Открывается ВНИЗ */
-    .fab-wrapper.is-down .global-dock {
-      flex-direction: column;
-      right: 50%;
-      bottom: auto;
-      top: calc(100% + 15px);
-      transform-origin: top center;
-      transform: translateX(50%) translateY(-40px) scale(0.9);
-      
-      max-height: calc(100vh - 100px);
-      max-width: none;
-      overflow-y: auto;
-      overflow-x: hidden;
-    }
-    .fab-wrapper.is-down.open .global-dock {
-      transform: translateX(50%) translateY(0) scale(1);
+    .dock-canvas {
+      border-radius: 20px;
     }
 
     .dock-item {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 10px 18px;
-      border-radius: 100px;
-      color: rgba(255, 255, 255, 0.6);
-      text-decoration: none;
-      font-family: "Inter", "Segoe UI", sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      position: relative;
-      white-space: nowrap;
+      padding: 10px;
+      border-radius: 12px;
     }
 
-    .dock-item:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.08);
+    .dock-text {
+      display: none;
     }
 
-    .dock-item.active {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.12);
-      box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
+    .dock-icon {
+      width: 26px;
+      height: 26px;
     }
 
     .dock-item.active::after {
-      content: "";
-      position: absolute;
-      bottom: -6px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 18px;
-      height: 3px;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+      bottom: -1px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .emblem-halo, .emblem-wings path {
+      animation: none !important;
+    }
+    .fab-wrapper, .global-dock {
+      transition: none !important;
+    }
+  }
+</style>
+
+<!-- SVG Фильтры глитча и деформации воды -->
+<svg style="position: absolute; width: 0; height: 0;" width="0" height="0">
+  <defs>
+    <filter id="glitch-distortion">
+      <feTurbulence type="fractalNoise" baseFrequency="0.08 0.85" numOctaves="1" result="wave" />
+      <feDisplacementMap in="SourceGraphic" in2="wave" scale="0" xChannelSelector="R" yChannelSelector="G" id="displacement-map" />
+    </filter>
+  </defs>
+</svg>
+
+<div class="fab-wrapper" id="fabWrapper">
+  <!-- Кнопка-герб с Нимбом Канаты и Трезубцем Гуры -->
+  <button class="fab-button" id="fabToggleBtn" title="Навигация" aria-label="Открыть меню навигации">
+    <svg class="emblem-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Золотой градиент Нимба -->
+        <linearGradient id="haloGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFE57F" />
+          <stop offset="100%" stop-color="#FFC107" />
+        </linearGradient>
+        <!-- Сине-бирюзовый градиент Трезубца -->
+        <linearGradient id="tridentGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#00E5FF" />
+          <stop offset="100%" stop-color="#0057b8" />
+        </linearGradient>
+        <filter id="glow-heavy" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="3.5" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      <!-- Декоративные волны (Gura Style) -->
+      <path d="M25,75 C35,68 40,80 50,75 C60,70 65,82 75,75" stroke="rgba(0, 229, 255, 0.35)" stroke-width="2" stroke-linecap="round"/>
+
+      <!-- Легкие Ангельские Крылья (Kanata Style) -->
+      <g class="emblem-wings" stroke="rgba(255, 255, 255, 0.45)" stroke-width="1.5" fill="none">
+        <!-- Левое -->
+        <path d="M38,54 C26,45 14,48 10,60 C13,68 25,66 36,59" />
+        <!-- Правое -->
+        <path d="M62,54 C74,45 86,48 90,60 C87,68 75,66 64,59" />
+      </g>
+
+      <!-- Легендарный Трезубец Гуры -->
+      <g class="emblem-trident" filter="url(#glow-heavy)">
+        <path d="M50,82 L50,34" stroke="url(#tridentGrad)" stroke-width="3" stroke-linecap="round"/>
+        <!-- Рога трезубца -->
+        <path d="M42,44 C42,51 45,53 50,53 C55,53 58,51 58,44" fill="none" stroke="url(#tridentGrad)" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Зубья -->
+        <path d="M42,45 L42,35 L40,37" fill="none" stroke="url(#tridentGrad)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M58,45 L58,35 L60,37" fill="none" stroke="url(#tridentGrad)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M50,34 L50,26" fill="none" stroke="url(#tridentGrad)" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+
+      <!-- Звездный Нимб Канаты (Вращается отдельно) -->
+      <g class="emblem-halo" filter="url(#glow-heavy)">
+        <!-- Эллипс-основание -->
+        <ellipse cx="50" cy="18" rx="16" ry="5" fill="none" stroke="url(#haloGrad)" stroke-width="1.8" opacity="0.85"/>
+        <!-- Каноничный четырёхконечный нимб-звезда -->
+        <path d="M50,6 L52.5,14 L60.5,18 L52.5,22 L50,30 L47.5,22 L39.5,18 L47.5,14 Z" fill="url(#haloGrad)"/>
+      </g>
+    </svg>
+  </button>
+
+  <!-- Меню навигации с динамическим холстом -->
+  <nav class="global-dock" id="globalDock" aria-label="Ссылки навигации">
+    <canvas class="dock-canvas" id="dockCanvas"></canvas>
+    
+    <a href="index.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://i.imgur.com/tpFK0jG.png" alt="Menu" class="dock-icon" /></div>
+      <span class="dock-text">Menu</span>
+    </a>
+    <a href="ai.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon" /></div>
+      <span class="dock-text">AI</span>
+    </a>
+    <a href="agent.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://i.imgur.com/HTTz55C.png" alt="Agent" class="dock-icon" /></div>
+      <span class="dock-text">Agent</span>
+    </a>
+    <a href="game.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://i.imgur.com/4Uk0ui7.png" alt="Music" class="dock-icon" /></div>
+      <span class="dock-text">Tetris</span>
+    </a>
+    <a href="note.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://i.imgur.com/GcjfCTh.png" alt="Note" class="dock-icon" /></div>
+      <span class="dock-text">Note</span>
+    </a>
+    <a href="googleweb.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="dock-icon" /></div>
+      <span class="dock-text">Google</span>
+    </a>
+    <a href="browser.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX" class="dock-icon" /></div>
+      <span class="dock-text">SearX</span>
+    </a>
+  </nav>
+</div>
+
+<!-- ======================================================================= -->
+<!-- FRONTEND ENGINE (JavaScript)                                           -->
+<!-- ======================================================================= -->
+<script>
+  /**
+   * Контроллер глитч-эффектов на основе деформации SVG.
+   */
+  class GlitchEngine {
+    constructor() {
+      this.map = document.getElementById('displacement-map');
+      this.isGlitching = false;
     }
 
-    .dock-icon {
-      font-size: 18px;
-      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+    trigger() {
+      if (this.isGlitching) return;
+      this.isGlitching = true;
+      let start = null;
+
+      const animate = (timestamp) => {
+        if (!start) start = timestamp;
+        const progress = timestamp - start;
+
+        if (progress < 150) {
+          // Интенсивный глитч на взлете
+          const scale = Math.sin(progress * 0.1) * 14;
+          this.map.setAttribute('scale', Math.abs(scale));
+          requestAnimationFrame(animate);
+        } else {
+          this.map.setAttribute('scale', '0');
+          this.isGlitching = false;
+        }
+      };
+
+      requestAnimationFrame(animate);
+    }
+  }
+
+  /**
+   * Procedural Dynamic Canvas Background.
+   * Отрисовывает звездное небо Канаты и морские глубины Гуры в реальном времени.
+   */
+  class CanvasBackground {
+    constructor(canvasId) {
+      this.canvas = document.getElementById(canvasId);
+      this.ctx = this.canvas.getContext('2d');
+      this.stars = [];
+      this.time = 0;
+      this.dpr = window.devicePixelRatio || 1;
+
+      this.resize();
+      this.initStars();
+      this.animate = this.animate.bind(this);
+      requestAnimationFrame(this.animate);
     }
 
-    @media (max-width: 768px) {
-      .fab-wrapper {
-        bottom: 20px;
-        right: 20px;
-        width: 48px;  /* ФИКС: Изменяем ширину/высоту самого враппера */
-        height: 48px; 
+    resize() {
+      const parent = this.canvas.parentElement;
+      this.width = parent.offsetWidth;
+      this.height = parent.offsetHeight;
+      this.canvas.width = this.width * this.dpr;
+      this.canvas.height = this.height * this.dpr;
+      this.ctx.scale(this.dpr, this.dpr);
+    }
+
+    initStars() {
+      this.stars = Array.from({ length: 15 }, () => ({
+        x: Math.random() * this.width,
+        y: Math.random() * this.height,
+        size: Math.random() * 1.5 + 0.5,
+        alpha: Math.random(),
+        speed: 0.01 + Math.random() * 0.02
+      }));
+    }
+
+    animate() {
+      this.time += 0.02;
+      this.ctx.clearRect(0, 0, this.width, this.height);
+
+      // 1. Рисуем космические звезды (Небеса)
+      this.stars.forEach(star => {
+        star.alpha += star.speed;
+        if (star.alpha > 1 || star.alpha < 0) star.speed = -star.speed;
+        this.ctx.fillStyle = `rgba(167, 139, 250, ${Math.max(0, star.alpha)})`;
+        this.ctx.beginPath();
+        this.ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        this.ctx.fill();
+      });
+
+      // 2. Рисуем интерактивные синусоидальные волны (Океан)
+      this.ctx.strokeStyle = 'rgba(0, 229, 255, 0.12)';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      for (let x = 0; x <= this.width; x += 5) {
+        const y = this.height * 0.8 + Math.sin(x * 0.05 + this.time) * 4;
+        if (x === 0) this.ctx.moveTo(x, y);
+        else this.ctx.lineTo(x, y);
       }
-      .global-dock {
-        padding: 6px 8px;
-        gap: 4px;
-        /* ФИКС: делаем отступ для узких экранов чуть меньше */
-        max-width: calc(100vw - 80px); 
-      }
-      .dock-item {
-        padding: 12px;
-      }
-      .dock-text {
-        display: none;
-      }
-      .dock-icon {
-        font-size: 22px;
-      }
-      .dock-item.active::after {
-        bottom: -2px;
-      }
+      this.ctx.stroke();
+
+      requestAnimationFrame(this.animate);
+    }
+  }
+
+  /**
+   * Главный движок управления док-панелью.
+   */
+   class CelestialSeaDock {
+    constructor() {
+      this.wrapper = document.getElementById("fabWrapper");
+      this.btn = document.getElementById("fabToggleBtn");
+      this.dock = document.getElementById("globalDock");
+
+      // Безопасно связываем с глобальным аудио-движком терминала
+      this.synth = window.sound || { playChime() {}, playBubble() {} }; 
+      
+      this.glitch = new GlitchEngine();
+      this.bg = new CanvasBackground("dockCanvas");
+      // ...
+
+      // Физика Lerp (сглаживание перемещения)
+      this.pos = { currentX: 0, currentY: 0, targetX: 0, targetY: 0 };
+      this.isDragging = false;
+      this.hasMoved = false;
+      this.dragOffset = { x: 0, y: 0 };
+
+      this.initEvents();
+      this.initActiveLink();
+      this.snapToInitial();
     }
 
-    /* --- НОВЫЕ СТИЛИ ДЛЯ ИКОНОК-КАРТИНОК И ПЕРЕТАСКИВАНИЯ --- */
-
-    .dock-icon {
-      width: 20px; /* Размер ваших иконок */
-      height: 20px;
-      object-fit: contain; /* Чтобы картинка не искажалась */
-      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
-      /* Важно! Запрещаем перетаскивать саму картинку браузером */
-      pointer-events: none;
-      user-select: none;
+    snapToInitial() {
+      // Инициализируем стартовую позицию в правом нижнем углу
+      const initialX = window.innerWidth - 98; // 30px offset + 68px width
+      const initialY = window.innerHeight - 98;
+      this.pos.currentX = this.pos.targetX = initialX;
+      this.pos.currentY = this.pos.targetY = initialY;
+      this.updateDOMPosition();
     }
 
-    @media (max-width: 768px) {
-      .dock-icon {
-        width: 24px; /* На телефоне иконки чуть больше */
-        height: 24px;
-      }
-    }
-
-    /* Курсоры для кнопки перетаскивания */
-    .fab-button {
-      cursor: grab;
-      touch-action: none; /* Запрещаем скролл страницы при касании кнопки на телефоне */
-    }
-
-    .fab-button:active {
-      cursor: grabbing;
-    }
-
-    /* Класс для плавного возврата в границы экрана (если меню открыли у самого края) */
-    .fab-wrapper.snap-transition {
-      transition:
-        left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-        top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-  </style>
-
-  <div class="fab-wrapper" id="fabWrapper">
-    <!-- Кнопка открытия/закрытия меню (она же ручка для перетаскивания) -->
-    <button class="fab-button" id="fabToggleBtn" title="Навигация">
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-      </svg>
-    </button>
-
-    <!-- Сама панель (Dock) -->
-    <div class="global-dock" id="globalDock">
-      <a href="index.html" class="dock-item">
-        <img
-          src="https://i.imgur.com/tpFK0jG.png"
-          alt="Menu"
-          class="dock-icon"
-        />
-        <span class="dock-text">Menu</span>
-      </a>
-      <a href="ai.html" class="dock-item">
-        <img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon" />
-        <span class="dock-text">AI</span>
-      </a>
-      <a href="agent.html" class="dock-item">
-        <img
-          src="https://i.imgur.com/HTTz55C.png"
-          alt="Agent"
-          class="dock-icon"
-        />
-        <span class="dock-text">Agent</span>
-      </a>
-      <a href="game.html" class="dock-item">
-        <img
-          src="https://i.imgur.com/4Uk0ui7.png"
-          alt="Music"
-          class="dock-icon"
-        />
-        <span class="dock-text">Tetris</span>
-      </a>
-      <a href="note.html" class="dock-item">
-        <img
-          src="https://i.imgur.com/GcjfCTh.png"
-          alt="Note"
-          class="dock-icon"
-        />
-        <span class="dock-text">Note</span>
-      </a>
-      <a href="googleweb.html" class="dock-item">
-        <img
-          src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png"
-          alt="Google"
-          class="dock-icon"
-        />
-        <span class="dock-text">Google</span>
-      </a>
-      <a href="browser.html" class="dock-item">
-        <img
-          src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png"
-          alt="SearX"
-          class="dock-icon"
-        />
-        <span class="dock-text">SearX</span>
-      </a>
-    </div>
-  </div>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const fabWrapper = document.getElementById("fabWrapper");
-      const fabToggleBtn = document.getElementById("fabToggleBtn");
-      const globalDock = document.getElementById("globalDock");
-
-      // Подсветка активной ссылки
-      let currentPath = window.location.pathname.split("/").pop();
-      if (currentPath === "") currentPath = "index.html";
-      document.querySelectorAll(".dock-item").forEach((item) => {
-        const href = item.getAttribute("href");
-        if (currentPath === href) {
+    initActiveLink() {
+      let path = window.location.pathname.split("/").pop();
+      if (!path) path = "index.html";
+      document.querySelectorAll(".dock-item").forEach(item => {
+        if (item.getAttribute("href") === path) {
           item.classList.add("active");
         }
       });
+    }
 
-      // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (DRAG & DROP) ---
-      let isDragging = false;
-      let hasMoved = false; 
-      let startX, startY;
-      let initialLeft, initialTop;
-
-      // Умное направление (Влево, Вправо, Вверх, Вниз)
-      function updateDockDirection() {
-        const rect = fabWrapper.getBoundingClientRect();
-        const screenWidth = window.innerWidth;
-        const screenHeight = window.innerHeight;
-
-        // Очищаем все классы направлений
-        fabWrapper.classList.remove("is-left", "is-up", "is-down");
-
-        // 1. Узнаем реальную ширину меню (принудительно делаем его строкой на секунду)
-        const oldFlexDir = globalDock.style.flexDirection;
-        globalDock.style.flexDirection = 'row';
-        const dockWidth = globalDock.scrollWidth; 
-        globalDock.style.flexDirection = oldFlexDir; // Возвращаем как было
-
-        const gap = 15; // Расстояние от кнопки до меню
-
-        // Считаем свободное место со всех четырех сторон от кнопки
-        const spaceLeft = rect.left;
-        const spaceRight = screenWidth - rect.right;
-        const spaceTop = rect.top;
-        const spaceBottom = screenHeight - rect.bottom;
-
-        // Логика принятия решения:
-        // Шаг 1: Влезает ли справа?
-        if (spaceRight >= dockWidth + gap) {
-          fabWrapper.classList.add("is-left"); // (открывается вправо, т.к. кнопка слева)
-        } 
-        // Шаг 2: Влезает ли слева?
-        else if (spaceLeft >= dockWidth + gap) {
-          // Ничего не добавляем, стандартный CSS открывает влево
-        } 
-        // Шаг 3: НЕ ВЛЕЗАЕТ ПО ГОРИЗОНТАЛИ (Экран слишком узкий) -> Переходим в вертикаль
-        else {
-          // Смотрим, где больше места - сверху или снизу?
-          if (spaceTop > spaceBottom) {
-            fabWrapper.classList.add("is-up"); // Открываем вверх
-          } else {
-            fabWrapper.classList.add("is-down"); // Открываем вниз
-          }
-        }
-      }
-
-      function dragStart(e) {
-        if (e.type === "touchstart") {
-          startX = e.touches[0].clientX;
-          startY = e.touches[0].clientY;
-        } else {
-          startX = e.clientX;
-          startY = e.clientY;
-          e.preventDefault(); 
-        }
-
-        const rect = fabWrapper.getBoundingClientRect();
-
-        fabWrapper.style.bottom = "auto";
-        fabWrapper.style.right = "auto";
-        fabWrapper.style.left = rect.left + "px";
-        fabWrapper.style.top = rect.top + "px";
-
-        initialLeft = rect.left;
-        initialTop = rect.top;
-
-        isDragging = true;
-        hasMoved = false;
-
-        fabWrapper.classList.remove("snap-transition");
-
-        document.addEventListener("mousemove", dragMove);
-        document.addEventListener("mouseup", dragEnd);
-        document.addEventListener("touchmove", dragMove, { passive: false });
-        document.addEventListener("touchend", dragEnd);
-      }
-
-      function dragMove(e) {
-        if (!isDragging) return;
-
-        let currentX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
-        let currentY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
-
-        let deltaX = currentX - startX;
-        let deltaY = currentY - startY;
-
-        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-          hasMoved = true;
-          if (e.type === "touchmove") e.preventDefault(); 
-        }
-
-        if (hasMoved) {
-          let newLeft = initialLeft + deltaX;
-          let newTop = initialTop + deltaY;
-
-          // Ограничение выхода за пределы экрана
-          // Так как враппер теперь всегда размером с кнопку (54x54), расчеты идеальны
-          const maxLeft = window.innerWidth - fabWrapper.offsetWidth;
-          const maxTop = window.innerHeight - fabWrapper.offsetHeight;
-
-          newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-          newTop = Math.max(0, Math.min(newTop, maxTop));
-
-          fabWrapper.style.left = newLeft + "px";
-          fabWrapper.style.top = newTop + "px";
-          
-          updateDockDirection(); // Проверяем на какую сторону перетащили
-        }
-      }
-
-      function dragEnd() {
-        isDragging = false;
-        document.removeEventListener("mousemove", dragMove);
-        document.removeEventListener("mouseup", dragEnd);
-        document.removeEventListener("touchmove", dragMove);
-        document.removeEventListener("touchend", dragEnd);
-      }
-
-      fabToggleBtn.addEventListener("mousedown", dragStart);
-      fabToggleBtn.addEventListener("touchstart", dragStart, { passive: true });
-
-      // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ МЕНЮ ---
-      fabToggleBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-
-        if (hasMoved) {
+    initEvents() {
+      // Клик по кнопке
+      this.btn.addEventListener("click", (e) => {
+        if (this.hasMoved) {
           e.preventDefault();
           return;
         }
-
-        updateDockDirection(); // Перед открытием проверяем сторону
-        fabWrapper.classList.toggle("open");
+        this.toggleDock();
       });
 
-      // Функция возврата в рамки при изменении размера окна (поворот телефона)
-      function keepInBounds() {
-        const rect = fabWrapper.getBoundingClientRect();
-        const maxLeft = window.innerWidth - rect.width;
-        const maxTop = window.innerHeight - rect.height;
+      // Drag events
+      this.btn.addEventListener("mousedown", (e) => this.dragStart(e));
+      this.btn.addEventListener("touchstart", (e) => this.dragStart(e), { passive: true });
 
-        let correctedLeft = Math.max(0, Math.min(rect.left, maxLeft));
-        let correctedTop = Math.max(0, Math.min(rect.top, maxTop));
+      window.addEventListener("mousemove", (e) => this.dragMove(e));
+      window.addEventListener("touchmove", (e) => this.dragMove(e), { passive: false });
 
-        if (correctedLeft !== rect.left || correctedTop !== rect.top) {
-          fabWrapper.classList.add("snap-transition"); 
-          fabWrapper.style.left = correctedLeft + "px";
-          fabWrapper.style.top = correctedTop + "px";
-        }
-        updateDockDirection();
-      }
+      window.addEventListener("mouseup", () => this.dragEnd());
+      window.addEventListener("touchend", () => this.dragEnd());
 
+      // Закрытие по клику вне
       document.addEventListener("click", (e) => {
-        if (!fabWrapper.contains(e.target) && fabWrapper.classList.contains("open")) {
-          fabWrapper.classList.remove("open");
+        if (!this.wrapper.contains(e.target) && this.wrapper.classList.contains("open")) {
+          this.wrapper.classList.remove("open");
+          this.synth.playBubble();
         }
       });
 
-      window.addEventListener("resize", keepInBounds);
-      // Инициализируем направление при загрузке (если изначально висит справа)
-      updateDockDirection(); 
-    });
-  </script>
-  <!-- ========================================== -->
+      // Resize observer
+      window.addEventListener("resize", () => {
+        this.bg.resize();
+        this.keepInBounds();
+      });
 
-  <!-- ЕДИНСТВЕННАЯ ПЛАВАЮЩАЯ КНОПКА ДЛЯ ВЫДЕЛЕНИЯ ТЕКСТА В ЧАТЕ -->
-  <button id="floatingChatContextBtn" class="btn btn-primary" style="display: none; position: fixed; z-index: 1000000; box-shadow: 0 4px 15px rgba(0,0,0,0.6); border-radius: 8px; font-size: 12px; padding: 6px 12px; gap: 6px; background: #3b82f6; pointer-events: auto; cursor: pointer;" onmousedown="event.preventDefault(); addChatSelectionToContext()" ontouchstart="event.preventDefault(); addChatSelectionToContext()">
-    <i class='bx bx-comment-add'></i> Выбрать для ИИ
-  </button>
+      // Глитч при наведении на пункты меню
+      document.querySelectorAll('.dock-item').forEach(item => {
+        item.addEventListener('mouseenter', () => {
+          this.glitch.trigger();
+          this.synth.playChime();
+        });
+      });
+    }
 
-  <!-- МОДАЛКА ДЛЯ ВЫДЕЛЕНИЯ ТЕКСТА (ДЛЯ СМАРТФОНОВ) -->
-  <div class="modal-overlay" id="textSelectModal" onclick="if (event.target === this) document.getElementById('textSelectModal').classList.remove('active');">
-    <div class="modal" style="max-width: 600px;">
-      <h2 style="font-size: 16px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-        <span><i class='bx bx-text'></i> Выделение текста</span>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; border-radius: 8px; background: #3b82f6;" onmousedown="event.preventDefault(); addChatSelectionToContext()" ontouchstart="event.preventDefault(); addChatSelectionToContext()">
-            <i class='bx bx-comment-add'></i> В контекст
-          </button>
-          <button class="btn-icon" style="padding: 0;" onclick="document.getElementById('textSelectModal').classList.remove('active')"><i class='bx bx-x'></i></button>
-        </div>
-      </h2>
-      <div class="selectable-text-content" id="textSelectContent"></div>
-    </div>
-  </div>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      window.handleChatSelectText = function() {
-        if (!window.targetMessageNode) return;
-        const rawText = window.targetMessageNode.getAttribute('data-raw');
-        
-        const modal = document.getElementById('textSelectModal');
-        const contentBox = document.getElementById('textSelectContent');
-        if (modal && contentBox && rawText) {
-            contentBox.innerHTML = marked.parse(rawText);
-            modal.classList.add('active');
-        }
-        window.hideChatContextMenu();
-      };
-
-      window.handleChatCopy = function() {
-        if (!window.targetMessageNode) return;
-        const rawText = window.targetMessageNode.getAttribute('data-raw');
-        if (rawText) {
-          navigator.clipboard.writeText(rawText).then(() => {
-             const menu = document.getElementById('dynamicChatMenu');
-             if (menu) {
-                 const copyBtn = menu.querySelector('.dyn-menu-btn:nth-child(2)');
-                 if (copyBtn) {
-                     copyBtn.innerHTML = "<i class='bx bx-check'></i> Скопировано!";
-                     copyBtn.style.color = "#10b981";
-                 }
-             }
-             setTimeout(() => { window.hideChatContextMenu(); }, 800);
-          });
-        }
-      };
-
-      window.handleChatDelete = function() {
-        if (!window.targetMessageNode) return;
-        const nodeToRemove = window.targetMessageNode;
-        const chatArea = document.getElementById('aiChatHistory');
-        const allMessages = Array.from(chatArea.querySelectorAll('.ai-message'));
-        const index = allMessages.indexOf(nodeToRemove);
-
-        if (index > -1 && typeof aiChatHistory !== 'undefined') {
-          aiChatHistory.splice(index, 1);
-          if (typeof saveAIChat === 'function') saveAIChat();
-        }
-
-        nodeToRemove.style.opacity = '0';
-        nodeToRemove.style.transform = 'scale(0.8)';
-        nodeToRemove.style.marginBottom = `-${nodeToRemove.offsetHeight}px`;
-        nodeToRemove.style.padding = '0';
-        setTimeout(() => { if (nodeToRemove) nodeToRemove.remove(); }, 300);
-        window.hideChatContextMenu();
-      };
-    });
-  </script>
-
-<script>
-  // --- ПЛАШКА И ВЫДЕЛЕНИЕ ТЕКСТА ИЗ ЧАТА ---
-  window.chatSelectedText = "";
-
-  // Отслеживаем выделение мышкой или пальцем
-  document.addEventListener("selectionchange", () => {
-      const selection = window.getSelection();
-      const floatingBtn = document.getElementById("floatingChatContextBtn");
-      if (!floatingBtn) return;
-
-      const text = selection.toString().trim();
-      if (text !== "") {
-          let isInsideChat = false;
-          if (selection.rangeCount > 0) {
-              const range = selection.getRangeAt(0);
-              let container = range.commonAncestorContainer;
-              if (container.nodeType === 3) container = container.parentNode; 
-              // Показывать кнопку только если выделяем внутри истории чата или модалки
-              isInsideChat = !!container.closest('.ai-chat-area, .selectable-text-content');
-          }
-          
-          // Если текст выделен, показываем кнопку над текстом
-          if (isInsideChat) {
-              const rect = selection.getRangeAt(0).getBoundingClientRect();
-              floatingBtn.style.display = "flex";
-              floatingBtn.style.top = Math.max(10, rect.top - 45) + "px";
-              let leftPos = rect.left + (rect.width / 2) - (floatingBtn.offsetWidth / 2);
-              
-              if (leftPos + 120 > window.innerWidth) leftPos = window.innerWidth - 130;
-              if (leftPos < 10) leftPos = 10;
-              floatingBtn.style.left = leftPos + "px";
-              return;
-          }
+    toggleDock() {
+      this.updateDockDirection();
+      const isOpen = this.wrapper.classList.toggle("open");
+      if (isOpen) {
+        this.synth.playChime();
+      } else {
+        this.synth.playBubble();
       }
-      floatingBtn.style.display = "none";
+    }
+
+    dragStart(e) {
+      this.isDragging = true;
+      this.hasMoved = false;
+
+      // Получаем текущие координаты из объекта положения
+      const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+      const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+
+      this.dragOffset.x = clientX - this.pos.currentX;
+      this.dragOffset.y = clientY - this.pos.currentY;
+
+      this.wrapper.style.willChange = "transform";
+    }
+
+    dragMove(e) {
+      if (!this.isDragging) return;
+
+      const clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+      const clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+
+      const targetX = clientX - this.dragOffset.x;
+      const targetY = clientY - this.dragOffset.y;
+
+      // Лимиты экрана
+      const maxLeft = window.innerWidth - this.wrapper.offsetWidth;
+      const maxTop = window.innerHeight - this.wrapper.offsetHeight;
+
+      this.pos.targetX = Math.max(0, Math.min(targetX, maxLeft));
+      this.pos.targetY = Math.max(0, Math.min(targetY, maxTop));
+
+      if (Math.abs(this.pos.targetX - this.pos.currentX) > 4 || Math.abs(this.pos.targetY - this.pos.currentY) > 4) {
+        this.hasMoved = true;
+        if (e.cancelable) e.preventDefault();
+      }
+
+      this.updatePhysics();
+    }
+
+    dragEnd() {
+      if (!this.isDragging) return;
+      this.isDragging = false;
+      this.wrapper.style.willChange = "auto";
+      this.keepInBounds();
+    }
+
+    /**
+     * Сглаживание движения с использованием LERP (Linear Interpolation).
+     * Дает благородное "тяжелое" скольжение виджета.
+     */
+    updatePhysics() {
+      if (!this.isDragging && Math.abs(this.pos.targetX - this.pos.currentX) < 0.1 && Math.abs(this.pos.targetY - this.pos.currentY) < 0.1) {
+        return;
+      }
+
+      const lerpFactor = this.isDragging ? 0.25 : 0.15;
+      this.pos.currentX += (this.pos.targetX - this.pos.currentX) * lerpFactor;
+      this.pos.currentY += (this.pos.targetY - this.pos.currentY) * lerpFactor;
+
+      this.updateDOMPosition();
+      this.updateDockDirection();
+
+      if (this.isDragging) {
+        requestAnimationFrame(() => this.updatePhysics());
+      }
+    }
+
+    updateDOMPosition() {
+      this.wrapper.style.left = `${this.pos.currentX}px`;
+      this.wrapper.style.top = `${this.pos.currentY}px`;
+      this.wrapper.style.bottom = "auto";
+      this.wrapper.style.right = "auto";
+    }
+
+    updateDockDirection() {
+      const rect = this.wrapper.getBoundingClientRect();
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
+      this.wrapper.classList.remove("is-left", "is-up", "is-down");
+
+      const dockWidth = this.dock.scrollWidth;
+      const gap = 20;
+
+      const spaceLeft = rect.left;
+      const spaceRight = screenWidth - rect.right;
+      const spaceTop = rect.top;
+      const spaceBottom = screenHeight - rect.bottom;
+
+      if (spaceRight >= dockWidth + gap) {
+        this.wrapper.classList.add("is-left"); // Открывается вправо
+      } else if (spaceLeft < dockWidth + gap) {
+        // Вертикальный фоллбек, если по бокам места нет
+        if (spaceTop > spaceBottom) {
+          this.wrapper.classList.add("is-up");
+        } else {
+          this.wrapper.classList.add("is-down");
+        }
+      }
+    }
+
+    keepInBounds() {
+      const maxLeft = window.innerWidth - this.wrapper.offsetWidth;
+      const maxTop = window.innerHeight - this.wrapper.offsetHeight;
+
+      this.pos.targetX = Math.max(10, Math.min(this.pos.targetX, maxLeft - 10));
+      this.pos.targetY = Math.max(10, Math.min(this.pos.targetY, maxTop - 10));
+      
+      this.updatePhysics();
+    }
+  }
+
+  // Запуск интерфейса после загрузки DOM
+  document.addEventListener("DOMContentLoaded", () => {
+    window.celestialSea = new CelestialSeaDock();
   });
-
-  // Функция передачи текста в красивую синюю плашку
-  window.addChatSelectionToContext = function() {
-      const selection = window.getSelection().toString().trim();
-      if (!selection) return;
-
-      window.chatSelectedText = selection;
-      
-      // 1. Прячем интерфейсы
-      const floatingBtn = document.getElementById("floatingChatContextBtn");
-      const modal = document.getElementById('textSelectModal');
-      if (floatingBtn) floatingBtn.style.display = "none";
-      if (modal) modal.classList.remove('active');
-      if (!document.body.classList.contains("ai-open")) toggleAISidebar();
-
-      // 2. Обновляем и показываем синюю плашку
-      const previewBox = document.getElementById("aiChatSelectionPreview");
-      const previewText = document.getElementById("aiChatSelectionText");
-      
-      // Убираем переносы для красоты на плашке
-      previewText.textContent = '"' + selection.replace(/\n/g, " ") + '"'; 
-      previewBox.classList.add("show");
-      
-      // 3. Сбрасываем системное выделение текста, чтобы оно не мешало
-      window.getSelection().removeAllRanges();
-
-      // 4. Переключаем на режим "Ask" (Вопрос), так как цитаты обычно нужны для вопросов
-      const askBtn = document.querySelector('.ai-mode-btn[onclick*="ask"]');
-      if (askBtn) setAIMode('ask', askBtn);
-
-      // 5. Ставим фокус
-      const aiInput = document.getElementById("aiInput");
-      aiInput.placeholder = "Что вы хотите сделать с этой цитатой?";
-      aiInput.focus();
-  };
-
-  // Очистка синей плашки
-  window.clearChatSelectionContext = function() {
-      window.chatSelectedText = "";
-      const previewBox = document.getElementById("aiChatSelectionPreview");
-      if (previewBox) previewBox.classList.remove("show");
-      
-      // Возвращаем плейсхолдер
-      const activeBtn = document.querySelector('.ai-mode-btn.active');
-      if (activeBtn) setAIMode(currentAIMode, activeBtn);
-  };
 </script>
-
   </body>
 </html>

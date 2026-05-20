@@ -2,881 +2,1201 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Phone OS Pro 2.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CELESTIAL MARINE LINK // GATEWAY</title>
+    
+    <!-- Google Fonts для премиальной типографики -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.25);
-            --text-color: #ffffff;
-            --icon-size: 60px;
+            --color-gura: #00ffcc;
+            --color-gura-dark: #002b49;
+            --color-gura-glow: rgba(0, 255, 204, 0.4);
+            --color-kanata: #b1cffc;
+            --color-kanata-purple: #a084e8;
+            --color-kanata-glow: rgba(160, 132, 232, 0.4);
+            --color-bg-start: #080d21;
+            --color-bg-end: #011522;
+            --font-display: 'Orbitron', sans-serif;
+            --font-sans: 'Outfit', sans-serif;
+            --transition-smooth: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            -webkit-tap-highlight-color: transparent;
             user-select: none;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background-color: var(--color-bg-start);
+            color: #e2f1ff;
+            font-family: var(--font-sans);
+            overflow-x: hidden;
             min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+        }
+
+        /* Фоновый холст для частиц и эффектов */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Кастомный курсор */
+        .custom-cursor {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: var(--color-gura);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px var(--color-gura);
+            mix-blend-mode: screen;
+            transition: width 0.1s, height 0.1s;
+        }
+
+        @media (hover: none) {
+            .custom-cursor { display: none; }
+        }
+
+        /* Загрузочный экран и инициализатор звука */
+        .boot-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #071026 0%, #010612 100%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .boot-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .boot-terminal {
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .boot-title {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            letter-spacing: 4px;
+            color: #fff;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--color-kanata-glow);
+        }
+
+        .boot-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
             overflow: hidden;
-            perspective: 1000px; /* Для 3D эффекта */
+            margin-bottom: 30px;
+            position: relative;
         }
 
-        /* ОБОИ И ТЕМЫ */
-        .wallpaper {
+        .boot-progress {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-gura), var(--color-kanata));
+            box-shadow: 0 0 10px var(--color-gura);
+            transition: width 0.1s linear;
+        }
+
+        .boot-btn {
+            font-family: var(--font-display);
+            background: transparent;
+            border: 2px solid var(--color-gura);
+            color: var(--color-gura);
+            padding: 15px 35px;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: var(--transition-smooth);
+            pointer-events: none;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+        }
+
+        .boot-btn.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .boot-btn:hover {
+            background: var(--color-gura);
+            color: #010612;
+            box-shadow: 0 0 30px var(--color-gura);
+        }
+
+        /* Главный интерфейс */
+        .app-container {
+            position: relative;
+            z-index: 2;
+            width: 92vw;
+            max-width: 1400px;
+            min-height: 85vh;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 40px;
+            margin: 40px auto;
+            opacity: 0;
+            transform: scale(0.97);
+            transition: var(--transition-smooth);
+            filter: url(#cyber-glitch-filter); /* Наш кастомный глитч через SVG */
+        }
+
+        .app-container.loaded {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        @media (min-width: 1024px) {
+            .app-container {
+                grid-template-columns: 42% 58%;
+            }
+        }
+
+        /* Левая панель - артефакт (Нимб и Трезубец) */
+        .sidebar-visualizer {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: rgba(8, 20, 39, 0.45);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(177, 207, 252, 0.15);
+            border-radius: 8px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-visualizer::before {
+            content: '';
             position: absolute;
-            top: -5%; left: -5%; width: 110%; height: 110%;
-            background-size: cover;
-            background-position: center;
-            transition: background 0.5s ease, transform 0.1s ease-out;
-            z-index: -2;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--color-kanata-purple), var(--color-gura));
         }
 
-        /* Тема: Черная с белой сеткой */
-        .theme-grid {
-            background-color: #050505;
-            background-image: 
-                linear-gradient(to right, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-        
-        /* Тема: iOS Градиент */
-        .theme-aurora {
-            background: linear-gradient(135deg, #2b00ff, #8a2be2, #ff007b);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-        }
-        @keyframes gradientBG { 0% {background-position: 0% 50%;} 50% {background-position: 100% 50%;} 100% {background-position: 0% 50%;} }
-
-        /* Оверлей яркости экрана */
-        .brightness-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0); z-index: 900; pointer-events: none;
-            transition: background 0.2s;
+        .brand-header h1 {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: clamp(1.8rem, 3vw, 2.8rem);
+            line-height: 1.1;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #fff, var(--color-kanata), var(--color-gura));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
         }
 
-        /* ЭКРАН БЛОКИРОВКИ */
-        .lock-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 100;
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            padding-top: 15vh; transition: transform 0.6s cubic-bezier(0.8, 0, 0.2, 1), opacity 0.5s ease;
-        }
-        .lock-clock { font-size: 80px; font-weight: 200; color: white; letter-spacing: -2px; }
-        .lock-date { font-size: 20px; font-weight: 500; color: white; margin-bottom: auto; opacity: 0.9; }
-        .swipe-hint { color: white; margin-bottom: 40px; font-size: 14px; animation: bounce 2s infinite; cursor: pointer; }
-        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-15px);} 60% {transform: translateY(-7px);} }
-
-        /* СТАТУС БАР И ДИНАМИЧЕСКИЙ ОСТРОВ */
-        .status-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 25px; font-size: 14px; font-weight: 600; color: white; z-index: 60; cursor: pointer;
-        }
-        .status-right { display: flex; gap: 7px; align-items: center; }
-        .status-icon { width: 16px; height: 16px; fill: white; }
-        
-        /* Dynamic Island */
-        .dynamic-island {
-            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-            width: 100px; height: 30px; background: #000; border-radius: 20px;
-            z-index: 65; display: flex; justify-content: center; align-items: center;
-            color: white; font-size: 12px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-        .dynamic-island.expanded {
-            width: 300px; height: 80px; border-radius: 30px;
-        }
-        .island-content { opacity: 0; transition: opacity 0.3s; display: none; padding: 10px 20px; width: 100%; justify-content: space-between; align-items: center;}
-        .dynamic-island.expanded .island-content { opacity: 1; display: flex; }
-
-        .battery-level { width: 22px; height: 12px; border: 1px solid white; border-radius: 3px; position: relative; padding: 1px; }
-        .battery-level::after { content: ''; position: absolute; right: -3px; top: 2px; width: 2px; height: 4px; background: white; border-radius: 0 2px 2px 0; }
-        .battery-fill { height: 100%; background: white; border-radius: 1px; width: 100%; transition: width 0.3s, background 0.3s; }
-
-        /* ПУНКТ УПРАВЛЕНИЯ */
-        .control-center {
-            position: absolute; top: -100%; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-            z-index: 50; transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1);
-            padding: 80px 20px 20px; display: flex; flex-direction: column; gap: 20px;
-        }
-        .control-center.active { top: 0; }
-        .cc-row { display: flex; gap: 15px; }
-        .cc-block { background: var(--glass-bg); border-radius: 20px; padding: 20px; flex: 1; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
-        .cc-block:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
-        
-        .brightness-slider-container { background: var(--glass-bg); padding: 15px; border-radius: 20px; display: flex; align-items: center; gap: 15px; }
-        .brightness-slider { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 5px; background: rgba(255,255,255,0.3); outline: none; }
-        .brightness-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: white; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
-
-        /* Контейнер-ОС */
-.device-screen {
-    position: relative;
-    width: 100%;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: #000;
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
-    transform-style: preserve-3d;
-    transition: all 0.3s ease;
-}
-
-/* Адаптация под планшеты и ПК (стиль iPad / macOS) */
-@media (min-width: 768px) {
-    :root {
-        --icon-size: 75px; /* Увеличиваем иконки на ПК */
-    }
-    .device-screen {
-        max-width: 1200px;
-        height: 90vh;
-        max-height: 800px;
-        border-radius: 20px;
-        border: 1px solid rgba(255,255,255,0.1);
-        box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-    }
-}
-
-/* РАБОЧИЙ СТОЛ И СЕТКА */
-.apps-container { flex-grow: 1; display: flex; flex-direction: column; position: relative; z-index: 10; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
-.apps-container::-webkit-scrollbar { display: none; }
-
-.apps-grid { 
-    display: grid; 
-    /* Умная адаптивная сетка: сама решает, сколько колонок вместить */
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); 
-    gap: 25px 15px; 
-    padding: 30px 20px; 
-    align-content: start; 
-    justify-items: center;
-}
-
-@media (min-width: 768px) {
-    .apps-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 40px 20px; padding: 40px; }
-}
-
-/* Стили для Drag & Drop */
-.app-link.dragging {
-    opacity: 0.4;
-    transform: scale(1.1);
-    z-index: 100;
-}
-.app-link.over {
-    transform: scale(0.95);
-}
-
-        /* ВИДЖЕТ */
-        .widget {
-            grid-column: span 4; height: 100px; background: var(--glass-bg); border-radius: 25px; border: 1px solid var(--glass-border);
-            backdrop-filter: blur(15px); padding: 15px 20px; display: flex; flex-direction: column; justify-content: center; color: white;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-        .widget h2 { font-size: 20px; font-weight: 600; }
-        .widget p { font-size: 13px; opacity: 0.8; margin-top: 4px; }
-
-        /* ПРИЛОЖЕНИЕ (Иконки) */
-        .app-link { text-decoration: none; color: white; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; position: relative; }
-        .app-icon {
-            width: var(--icon-size); height: var(--icon-size); background: var(--glass-bg); border: 1px solid var(--glass-border);
-            border-radius: 22.5%; display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); backdrop-filter: blur(10px); transition: transform 0.2s; position: relative;
-        }
-        .app-icon img { width: 60%; height: 60%; object-fit: contain; pointer-events: none; }
-        .app-name { font-size: 11px; font-weight: 500; text-shadow: 0 1px 3px rgba(0,0,0,0.8); white-space: nowrap; }
-        .badge {
-            position: absolute; top: -5px; right: -5px; background: #ff3b30; color: white; font-size: 12px; font-weight: bold;
-            width: 22px; height: 22px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5); border: 2px solid #333; pointer-events: none;
+        .brand-header p {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            color: rgba(177, 207, 252, 0.6);
+            font-family: var(--font-display);
         }
 
-        /* КНОПКА ПОИСКА (Spotlight) */
-        .search-pill {
-            align-self: center; margin-top: auto; margin-bottom: 15px; background: rgba(255,255,255,0.2);
-            padding: 8px 20px; border-radius: 20px; color: white; font-size: 12px; font-weight: bold;
-            backdrop-filter: blur(10px); cursor: pointer; display: flex; align-items: center; gap: 5px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.2s;
+        /* Контейнер интерактивного холста артефакта */
+        .artifact-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            position: relative;
         }
-        .search-pill:active { transform: scale(0.95); }
 
-        /* ДОК ПАНЕЛЬ */
-        .dock {
-            margin: 0 15px 15px 15px; padding: 15px 10px; background: rgba(255, 255, 255, 0.15);
-            border-radius: 35px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-            backdrop-filter: blur(25px); border: 1px solid var(--glass-border); position: relative; z-index: 10;
+        #artifact-canvas {
+            max-width: 100%;
+            max-height: 100%;
         }
-        .dock .app-name { display: none; }
 
-        /* КОНТЕКСТНОЕ МЕНЮ (Haptic Touch) */
-        .context-menu-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); z-index: 800;
-            display: none; opacity: 0; transition: opacity 0.3s;
+        /* Информационная панель телеметрии */
+        .telemetry-panel {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            color: rgba(177, 207, 252, 0.5);
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 25px;
         }
-        .context-menu {
-            position: absolute; width: 200px; background: rgba(40,40,40,0.8); border-radius: 15px;
-            backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column;
-            overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5); transform: scale(0.8); opacity: 0; transition: 0.2s;
-        }
-        .context-item { padding: 12px 15px; color: white; font-size: 14px; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
-        .context-item:active { background: rgba(255,255,255,0.2); }
-        .context-item:last-child { border-bottom: none; color: #ff3b30; }
 
-        /* АНИМАЦИЯ ОТКРЫТИЯ */
-        .app-transition-overlay {
-            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; background: black;
-            border-radius: 50%; transform: translate(-50%, -50%) scale(0); z-index: 999;
-            transition: transform 0.4s ease-in; pointer-events: none;
+        .telemetry-item span {
+            display: block;
+            color: #fff;
+            font-weight: bold;
+            font-size: 0.9rem;
         }
-        .app-transition-overlay.active { transform: translate(-50%, -50%) scale(150); }
 
-        /* Поиск Overlay */
-        .search-screen {
-            position: absolute; top: -100%; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(25px); z-index: 70; transition: top 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
-            padding: 50px 20px; display: flex; flex-direction: column; align-items: center;
+        /* Правая панель - сетка ссылок */
+        .links-hub {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        .search-screen.active { top: 0; }
-        .search-input {
-            width: 100%; padding: 15px 20px; border-radius: 15px; border: none; background: rgba(255,255,255,0.2);
-            color: white; font-size: 16px; outline: none; backdrop-filter: blur(10px);
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
         }
-        .search-input::placeholder { color: rgba(255,255,255,0.6); }
 
-        /* --- ПРИЛОЖЕНИЕ НАСТРОЙКИ --- */
-        .settings-app {
-            position: absolute; top: 100%; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 15, 15, 0.85); backdrop-filter: blur(35px); -webkit-backdrop-filter: blur(35px);
-            z-index: 1000; display: flex; flex-direction: column;
-            transition: top 0.4s cubic-bezier(0.1, 0.9, 0.2, 1);
+        /* Карточка ссылки */
+        .nav-card {
+            background: rgba(5, 15, 30, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 204, 0.12);
+            border-radius: 6px;
+            padding: 30px;
+            position: relative;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 180px;
+            overflow: hidden;
+            transition: var(--transition-smooth);
+            will-change: transform;
         }
-        .settings-app.active { top: 0; }
-        
-        .settings-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2);
+
+        /* Индивидуальное свечение карточки на ховер */
+        .card-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            transition: var(--transition-smooth);
         }
-        .settings-header h2 { font-size: 18px; color: white; font-weight: 600; }
-        .settings-header .close-btn { color: #0a84ff; font-size: 16px; cursor: pointer; font-weight: 500; }
-        .settings-header .close-btn:active { opacity: 0.5; }
 
-        .settings-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
-        .settings-group-title { color: rgba(255,255,255,0.5); font-size: 13px; text-transform: uppercase; margin: 0 0 10px 15px; letter-spacing: 1px; }
-        .settings-group { background: rgba(255,255,255,0.08); border-radius: 15px; margin-bottom: 25px; overflow: hidden; }
-        
-        .settings-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); color: white; font-size: 15px;
+        .nav-card:nth-child(odd) {
+            border-color: rgba(177, 207, 252, 0.12);
         }
-        .settings-item:last-child { border-bottom: none; }
 
-        /* Элементы управления в настройках */
-        .ios-switch {
-            position: relative; width: 50px; height: 30px; -webkit-appearance: none; appearance: none;
-            background: rgba(255,255,255,0.2); border-radius: 30px; outline: none; cursor: pointer; transition: 0.3s;
+        .nav-card:hover {
+            border-color: var(--color-gura);
+            box-shadow: 0 10px 30px rgba(0, 255, 204, 0.1);
         }
-        .ios-switch:checked { background: #34c759; }
-        .ios-switch::after {
-            content: ''; position: absolute; top: 2px; left: 2px; width: 26px; height: 26px;
-            background: white; border-radius: 50%; transition: transform 0.3s cubic-bezier(0.2, 0.85, 0.32, 1.2); box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+
+        .nav-card:nth-child(odd):hover {
+            border-color: var(--color-kanata-purple);
+            box-shadow: 0 10px 30px rgba(160, 132, 232, 0.15);
         }
-        .ios-switch:checked::after { transform: translateX(20px); }
 
-        .ios-range { -webkit-appearance: none; width: 120px; height: 6px; border-radius: 5px; background: rgba(255,255,255,0.2); outline: none; }
-        .ios-range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: white; cursor: pointer; }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
 
-        .ios-select { background: transparent; color: #0a84ff; border: none; font-size: 15px; text-align: right; outline: none; cursor: pointer; }
-        .ios-select option { background: #1a1a1a; color: white; }
+        .card-num {
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.3);
+        }
 
-        /* Классы для применения настроек (Логика CSS) */
-        body.no-animations * { transition: none !important; animation: none !important; }
-        body.hide-badges .badge { display: none !important; }
-        body.no-parallax .wallpaper { transform: none !important; }
-        body.dock-hidden .dock { display: none !important; }
-        body.dock-dark .dock { background: rgba(0,0,0,0.6) !important; border-color: rgba(255,255,255,0.05) !important; }
+        .card-icon {
+            width: 24px;
+            height: 24px;
+            stroke-width: 1.5;
+            transition: var(--transition-smooth);
+        }
 
+        .nav-card:hover .card-icon {
+            transform: scale(1.15) rotate(5deg);
+        }
+
+        .card-body {
+            position: relative;
+            z-index: 2;
+            margin-top: auto;
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            color: #fff;
+            transition: var(--transition-smooth);
+        }
+
+        .card-desc {
+            font-size: 0.8rem;
+            color: rgba(177, 207, 252, 0.6);
+            margin-top: 6px;
+            line-height: 1.3;
+        }
+
+        /* Элементы декораций */
+        .scramble-char {
+            color: var(--color-gura);
+            font-weight: bold;
+        }
+
+        /* Стилизация анимации глитча тела при триггере */
+        .screen-glitch-active {
+            animation: screen-shear 0.2s steps(2) infinite;
+        }
+
+        @keyframes screen-shear {
+            0% { transform: skewX(0deg) translate(0); }
+            50% { transform: skewX(1deg) translate(2px, -1px); }
+            100% { transform: skewX(-1deg) translate(-2px, 1px); }
+        }
     </style>
 </head>
 <body>
 
-    <div class="device-screen" id="deviceScreen">
-        <!-- Обои -->
-        <div class="wallpaper theme-grid" id="wallpaper"></div>
-        <!-- Затемнение экрана -->
-        <div class="brightness-overlay" id="brightnessOverlay"></div>
-        <!-- Анимация перехода -->
-        <div class="app-transition-overlay" id="transitionOverlay"></div>
+    <!-- SVG-фильтр смещения для кинематографического глитч-эффекта разрыва экрана -->
+    <svg style="display: none;">
+        <defs>
+            <filter id="cyber-glitch-filter">
+                <feTurbulence type="fractalNoise" baseFrequency="0.05 0.95" numOctaves="1" result="noise" />
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G" id="displacement-map" />
+            </filter>
+        </defs>
+    </svg>
 
-        <!-- Контекстное меню -->
-        <div class="context-menu-overlay" id="contextOverlay" onclick="closeContextMenu()">
-            <div class="context-menu" id="contextMenu">
-                <div class="context-item" onclick="alert('Открыто!')">Открыть приложение</div>
-                <div class="context-item" onclick="alert('Поделиться...')">Поделиться</div>
-                <div class="context-item" onclick="alert('Удаление заблокировано системой')">Удалить</div>
+    <!-- Основной бэкграунд-холст -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Интерактивный курсор -->
+    <div class="custom-cursor" id="cursor"></div>
+
+    <!-- Загрузчик и активатор звука -->
+    <div class="boot-overlay" id="boot-overlay">
+        <div class="boot-terminal">
+            <div class="boot-title">CELESTIAL MARINE</div>
+            <div class="boot-bar">
+                <div class="boot-progress" id="boot-progress"></div>
             </div>
-        </div>
-
-        <!-- ИНТЕРФЕЙС НАСТРОЕК (Всплывающее приложение) -->
-        <div class="settings-app" id="settingsApp">
-            <div class="settings-header">
-                <h2>Настройки</h2>
-                <span class="close-btn" onclick="closeSettings()">Готово</span>
-            </div>
-            <div class="settings-content">
-                
-                <div class="settings-group-title">Внешний вид</div>
-                <div class="settings-group">
-                    <div class="settings-item">
-                        <span>Размер иконок</span>
-                        <input type="range" min="45" max="75" value="60" class="ios-range" id="set-icon-size" oninput="applySettings()">
-                    </div>
-                    <div class="settings-item">
-                        <span>Стиль Док-панели</span>
-                        <select class="ios-select" id="set-dock-style" onchange="applySettings()">
-                            <option value="glass">Стекло (Обычный)</option>
-                            <option value="dark">Темный</option>
-                            <option value="hidden">Скрыть</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="settings-group-title">Эффекты и Система</div>
-                <div class="settings-group">
-                    <div class="settings-item">
-                        <span>Скрыть уведомления (Бейджи)</span>
-                        <input type="checkbox" class="ios-switch" id="set-badges" onchange="applySettings()">
-                    </div>
-                    <div class="settings-item">
-                        <span>Отключить параллакс (3D фон)</span>
-                        <input type="checkbox" class="ios-switch" id="set-parallax" onchange="applySettings()">
-                    </div>
-                    <div class="settings-item">
-                        <span>Тактильный отклик (Вибрация)</span>
-                        <input type="checkbox" class="ios-switch" id="set-haptic" checked onchange="applySettings()">
-                    </div>
-                    <div class="settings-item">
-                        <span>Снижение движения (Без анимаций)</span>
-                        <input type="checkbox" class="ios-switch" id="set-animations" onchange="applySettings()">
-                    </div>
-                </div>
-
-                <div style="text-align: center; margin-top: 30px; color: rgba(255,255,255,0.3); font-size: 12px;">
-                    OS Pro Version 2.1<br>All changes auto-saved
-                </div>
-            </div>
-        </div>
-
-        <!-- Экран блокировки -->
-        <div class="lock-screen" id="lockScreen" onclick="unlockScreen()">
-            <div class="lock-clock" id="lockClock">12:00</div>
-            <div class="lock-date" id="lockDate">Понедельник, 1 января</div>
-            <div class="swipe-hint">Нажмите или свайпните вверх</div>
-        </div>
-
-        <!-- Динамический Остров -->
-        <div class="dynamic-island" id="dynamicIsland" onclick="toggleIsland()">
-            <div style="width: 10px; height: 10px; background: rgba(255,255,255,0.2); border-radius: 50%;"></div>
-            <div class="island-content">
-                <span>🎵 Музыка на паузе</span>
-                <span style="color: #ff3b30; font-size: 18px;">▶</span>
-            </div>
-        </div>
-
-        <!-- Статус бар -->
-        <div class="status-bar" onclick="toggleControlCenter()">
-            <div id="clock">12:00</div>
-            <div class="status-right">
-                <svg id="wifiIcon" class="status-icon" viewBox="0 0 24 24"><path d="M12,3C6.95,3,2.27,5.06,0,8.51l12,14.65l12-14.65C21.73,5.06,17.05,3,12,3z"></path></svg>
-                <div class="battery-level"><div class="battery-fill" id="batteryFill"></div></div>
-            </div>
-        </div>
-
-        <!-- Пункт управления (Свайп/клик по часам) -->
-        <div class="control-center" id="controlCenter">
-            <h2 style="color:white; text-align:center;">Control Center</h2>
-            
-            <div class="brightness-slider-container">
-                <span style="color:white;">☀️</span>
-                <input type="range" min="0" max="80" value="0" class="brightness-slider" id="brightnessSlider" oninput="changeBrightness(this.value)">
-            </div>
-
-            <div class="cc-row">
-                <div class="cc-block" onclick="changeTheme()">
-                    <span style="font-size: 24px; margin-bottom: 5px;">🎨</span>
-                    <b>Сменить Тему</b>
-                </div>
-                <div class="cc-block" onclick="toggleDND()" id="dndBtn">
-                    <span style="font-size: 24px; margin-bottom: 5px;">🌙</span>
-                    <b>Не беспокоить</b>
-                </div>
-            </div>
-            
-            <div class="cc-block" onclick="toggleControlCenter()" style="margin-top: auto; padding: 15px;">Скрыть ⬆️</div>
-        </div>
-
-        <!-- Экран поиска (Spotlight) -->
-        <div class="search-screen" id="searchScreen">
-            <input type="text" class="search-input" placeholder="Поиск приложений, файлов, WEB..." onblur="closeSearch()">
-        </div>
-
-        <!-- Контейнер приложений -->
-        <div class="apps-container">
-            <div class="apps-grid" id="appsGrid">
-    
-                <!-- Виджет -->
-                <div class="widget" style="grid-column: 1 / -1; width: 100%;">
-                    <h2 id="greetText">Привет!</h2>
-                    <p id="weatherText">Добро пожаловать в UniOS.</p>
-                </div>
-
-                <!-- Иконки -->
-                <div class="app-link" draggable="true" data-app="music.html">
-                    <div class="app-icon" style="background: linear-gradient(135deg, #2a1f3b, #2c1a3b);"><img src="https://cdn-icons-png.flaticon.com/512/2995/2995101.png" alt="Music"></div>
-                    <span class="app-name">Music</span>
-                </div>
-
-                <div class="app-link" draggable="true" data-app="gallary.html">
-                    <div class="app-icon" style="background: linear-gradient(135deg, #202020, #535255);"><img src="https://i.imgur.com/y0KSO6o.png" alt="gallary"></div>
-                    <span class="app-name">Gallary</span>
-                </div>
-
-                <!-- ДОБАВЛЕНО: VIDEO -->
-                <div class="app-link" draggable="true" data-app="video.html">
-                    <div class="app-icon" style="background: linear-gradient(135deg, #313435, #212831);"><img src="https://i.imgur.com/49xujFD.png" alt="Video"></div>
-                    <span class="app-name">Video</span>
-                </div>
-                <!-- ДОБАВЛЕНО: ROLEPLAY -->
-                <div class="app-link" draggable="true" data-app="roleplay.html">
-                    <div class="app-icon" style="background: #ffffff;"><img src="https://i.imgur.com/fV31ULs.png" alt="Roleplay"></div>
-                    <span class="app-name">Roleplay</span>
-                </div>
-
-                <div class="app-link" draggable="true" data-app="docai.html">
-                    <div class="app-icon" style="background: linear-gradient(135deg, #214874, #1d3353);"><img src="https://i.imgur.com/aL3ohto.png" alt="docai.html"></div>
-                    <span class="app-name">WordAI</span>
-                    <div class="badge">3</div>
-                </div>
-
-                <div class="app-link" draggable="true" data-app="message.html">
-                    <div class="app-icon" style="background: linear-gradient(135deg, #000000, #071815);"><img src="https://i.imgur.com/FMB6egQ.png" alt="message.html"></div>
-                    <span class="app-name">Messanger</span>
-                    <div class="badge">2</div>
-                </div>
-
-                <div class="app-link" draggable="true" data-app="docsint.html">
-                    <div class="app-icon" style="background: linear-gradient(135deg, #214874, #1d3353);"><img src="https://i.imgur.com/0foXhiu.png" alt="docai.html"></div>
-                    <span class="app-name">WordAI-beta</span>
-                    <div class="badge">3</div>
-                </div>
-
-                <div class="app-link" draggable="true" data-app="imgenerate.html">
-                    <div class="app-icon" style="background: linear-gradient(135deg, #214874, #1d3353);"><img src="https://i.imgur.com/LqBHnxz.png" alt="imgenerate.html"></div>
-                    <span class="app-name">IMG</span>
-                    <div class="badge">2</div>
-                </div>
-
-                <div class="app-link" draggable="true" data-app="game.html">
-                    <div class="app-icon" style="background: linear-gradient(135deg, #fceabb, #f8b500);"><img src="https://i.imgur.com/4Uk0ui7.png" alt="2048"></div>
-                    <span class="app-name">Tetris</span>
-                    <div class="badge">3</div>
-                </div>
-
-                <div class="app-link" draggable="true" data-app="amefly.html">
-                    <div class="app-icon" style="background: linear-gradient(135deg, #0f0e0c, #0e0d0b);"><img src="https://i.imgur.com/gm4JVRe.png" alt="amefly"></div>
-                    <span class="app-name">Block Blast</span>
-                </div>
-
-                <div class="app-link" draggable="true" data-app="browser.html">
-                    <div class="app-icon" style="background: #ffffff;"><img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX"></div>
-                    <span class="app-name">Browser</span>
-                </div>
-                
-                <div class="app-link" draggable="true" data-app="information.html">
-                    <div class="app-icon system" style="background: #444;"><img src="https://i.imgur.com/tpFK0jG.png" alt="Info"></div>
-                    <span class="app-name">About</span>
-                </div>
-
-                <!-- ДОБАВЛЕНО: ANSWER -->
-                <div class="app-link" draggable="true" data-app="answer.html">
-                    <div class="app-icon system" style="background: #444;"><img src="https://i.imgur.com/YuKDHK7.png" alt="Q&A"></div>
-                    <span class="app-name">Q&A</span>
-                    <div class="badge" style="background: #34c759;">1</div>
-                </div>
-
-                <div class="app-link" draggable="true" data-app="paint.html">
-                    <div class="app-icon system" style="background: #444;"><img src="https://i.imgur.com/YEP4VPq.png" alt="Paint"></div>
-                    <span class="app-name">Paint</span>
-                </div>
-
-                <div class="app-link" draggable="true" onclick="openSettings()">
-                    <div class="app-icon system" style="background: #8e8e93;">
-                        <img src="https://i.imgur.com/GBoIt5y.png" alt="Settings" style="width: 70%; height: 70%;">
-                    </div>
-                    <span class="app-name">Settings</span>
-                </div>
-            </div>
-            
-            <!-- Кнопка Поиска -->
-            <div class="search-pill" onclick="openSearch()">
-                🔍 Поиск
-            </div>
-        </div>
-
-        <!-- Док панель -->
-        <div class="dock">
-            <div class="app-link" onclick="openApp('ai.html')">
-                <div class="app-icon" style="background: rgb(27, 26, 26);"><img src="https://i.imgur.com/Nqii4LI.png" alt="AI"></div>
-                <span class="app-name">AI Core</span>
-            </div>
-
-            <div class="app-link" onclick="openApp('agent.html')">
-                <div class="app-icon" style="background: #2b2b2b;"><img src="https://i.imgur.com/HTTz55C.png" alt="Agent"></div>
-                <span class="app-name">Agent</span>
-            </div>
-
-            <div class="app-link" onclick="openApp('googleweb.html')">
-                <div class="app-icon" style="background: white;"><img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google"></div>
-                <span class="app-name">Google</span>
-            </div>
-
-            <div class="app-link" onclick="openApp('note.html')">
-                <div class="app-icon" style="background: linear-gradient(135deg, #202020, #535255);"><img src="https://i.imgur.com/GcjfCTh.png" alt="Note"></div>
-                <span class="app-name">Note Pro</span>
-            </div>
+            <button class="boot-btn" id="boot-btn">BOOT PORTAL</button>
         </div>
     </div>
 
+    <!-- Главная сетка навигации -->
+    <div class="app-container" id="app">
+        
+        <!-- Левая панель с Нимбом и Трезубцем -->
+        <header class="sidebar-visualizer">
+            <div class="brand-header">
+                <h1 id="brand-title">A.E.G.I.S // SHARK & ANGEL</h1>
+                <p>ATLANTIS CELESTIAL NAVIGATOR</p>
+            </div>
+
+            <!-- Сюда встраивается Canvas со сложной математической анимацией Нимба и Трезубца -->
+            <div class="artifact-container">
+                <canvas id="artifact-canvas"></canvas>
+            </div>
+
+            <!-- Блок телеметрии -->
+            <div class="telemetry-panel">
+                <div class="telemetry-item">
+                    ALTITUDE (HEAVEN)
+                    <span id="telemetry-alt">+12,400 M</span>
+                </div>
+                <div class="telemetry-item">
+                    DEPTH (ATLANTIS)
+                    <span id="telemetry-depth">-9,850 M</span>
+                </div>
+                <div class="telemetry-item">
+                    SYSTEM INTEGRITY
+                    <span id="telemetry-integrity">99.98%</span>
+                </div>
+                <div class="telemetry-item">
+                    CELESTIAL SYNC
+                    <span id="telemetry-sync">ACTIVE</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Правая панель с кнопками перехода на другие сайты -->
+        <main class="links-hub">
+            <nav class="grid-container">
+                
+                <a href="note.html" class="nav-card" data-sound="0">
+                    <div class="card-bg"></div>
+                    <div class="card-header">
+                        <span class="card-num">01 // NOTE</span>
+                        <!-- Иконка нимба Канаты -->
+                        <svg class="card-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 5 L58 38 L95 50 L58 62 L50 95 L42 62 L5 50 L42 38 Z" fill="none" stroke="var(--color-kanata)" stroke-width="3"/>
+                            <circle cx="50" cy="50" r="15" stroke="var(--color-kanata)" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title" data-scramble>CELESTIAL NOTE</div>
+                        <p class="card-desc">Personal records & stellar memory logs.</p>
+                    </div>
+                </a>
+
+                <a href="ai.html" class="nav-card" data-sound="1">
+                    <div class="card-bg"></div>
+                    <div class="card-header">
+                        <span class="card-num">02 // COG</span>
+                        <!-- Трезубец Гуры -->
+                        <svg class="card-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 90 L50 30 M32 35 C35 55, 65 55, 68 35 M32 35 L32 15 L36 24 L32 35 Z M68 35 L68 15 L64 24 L68 35 Z M50 30 L50 10" stroke="var(--color-gura)" stroke-width="4" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title" data-scramble>DIVINE ORACLE [AI]</div>
+                        <p class="card-desc">Cognitive artificial intelligence nexus.</p>
+                    </div>
+                </a>
+
+                <a href="agent.html" class="nav-card" data-sound="2">
+                    <div class="card-bg"></div>
+                    <div class="card-header">
+                        <span class="card-num">03 // AGT</span>
+                        <svg class="card-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 90 L50 30 M32 35 C35 55, 65 55, 68 35" stroke="var(--color-gura)" stroke-width="4" stroke-linecap="round"/>
+                            <path d="M50 5 L58 38 L95 50" stroke="var(--color-kanata)" stroke-width="3"/>
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title" data-scramble>ABYSSAL AGENT</div>
+                        <p class="card-desc">Deep-sea automated operations.</p>
+                    </div>
+                </a>
+
+                <a href="music.html" class="nav-card" data-sound="3">
+                    <div class="card-bg"></div>
+                    <div class="card-header">
+                        <span class="card-num">04 // AUD</span>
+                        <svg class="card-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 5 L58 38 L95 50 L58 62 L50 95 L42 62 L5 50 L42 38 Z" fill="none" stroke="var(--color-kanata)" stroke-width="3"/>
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title" data-scramble>SIREN MUSIC</div>
+                        <p class="card-desc">Sonic tracks and tidal acoustics.</p>
+                    </div>
+                </a>
+
+                <a href="roleplay.html" class="nav-card" data-sound="4">
+                    <div class="card-bg"></div>
+                    <div class="card-header">
+                        <span class="card-num">05 // SIM</span>
+                        <svg class="card-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 90 L50 30 M32 35 C35 55, 65 55, 68 35 M32 35 L32 15 L36 24 L32 35 Z M68 35 L68 15 L64 24 L68 35 Z M50 30 L50 10" stroke="var(--color-gura)" stroke-width="4" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title" data-scramble>VIRTUAL ROLEPLAY</div>
+                        <p class="card-desc">Roleplaying sandbox & narrative matrices.</p>
+                    </div>
+                </a>
+
+                <a href="tetirs.html" class="nav-card" data-sound="5">
+                    <div class="card-bg"></div>
+                    <div class="card-header">
+                        <span class="card-num">06 // GEO</span>
+                        <svg class="card-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 5 L58 38 L95 50 L58 62 L50 95 L42 62 L5 50 L42 38 Z" fill="none" stroke="var(--color-kanata)" stroke-width="3"/>
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title" data-scramble>SKY TETRIS</div>
+                        <p class="card-desc">Celestial geometry grid alignment.</p>
+                    </div>
+                </a>
+
+                <a href="blockblast.html" class="nav-card" data-sound="6">
+                    <div class="card-bg"></div>
+                    <div class="card-header">
+                        <span class="card-num">07 // BST</span>
+                        <svg class="card-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 90 L50 30 M32 35 C35 55, 65 55, 68 35" stroke="var(--color-gura)" stroke-width="4" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title" data-scramble>BLOCK BLAST</div>
+                        <p class="card-desc">High-yield explosive block dynamics.</p>
+                    </div>
+                </a>
+
+                <a href="gallary.html" class="nav-card" data-sound="7">
+                    <div class="card-bg"></div>
+                    <div class="card-header">
+                        <span class="card-num">08 // VIS</span>
+                        <svg class="card-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="15" stroke="var(--color-kanata)" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title" data-scramble>OCEAN GALLARY</div>
+                        <p class="card-desc">Visual art database & archival snapshots.</p>
+                    </div>
+                </a>
+
+                <a href="Q&A.html" class="nav-card" data-sound="8">
+                    <div class="card-bg"></div>
+                    <div class="card-header">
+                        <span class="card-num">09 // INT</span>
+                        <svg class="card-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 5 L58 38 L95 50 L58 62 L50 95 L42 62 L5 50 L42 38 Z" fill="none" stroke="var(--color-kanata)" stroke-width="3"/>
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title" data-scramble>HALO Q&A</div>
+                        <p class="card-desc">Interactive query-response protocols.</p>
+                    </div>
+                </a>
+
+                <a href="paint.html" class="nav-card" data-sound="9">
+                    <div class="card-bg"></div>
+                    <div class="card-header">
+                        <span class="card-num">10 // ART</span>
+                        <svg class="card-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 90 L50 30 M32 35 C35 55, 65 55, 68 35 M32 35 L32 15" stroke="var(--color-gura)" stroke-width="4" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title" data-scramble>ASTRAL PAINT</div>
+                        <p class="card-desc">Creative digital matrix & raw canvas.</p>
+                    </div>
+                </a>
+
+                <a href="about.html" class="nav-card" data-sound="9">
+                    <div class="card-bg"></div>
+                    <div class="card-header">
+                        <span class="card-num">11 // ART</span>
+                        <svg class="card-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 5 L58 38 L95 50 L58 62 L50 95 L42 62 L5 50 L42 38 Z" fill="none" stroke="var(--color-kanata)" stroke-width="3"/>
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title" data-scramble>ABOUT THIS ASTRA</div>
+                        <p class="card-desc">Creative digital matrix & raw canvas.</p>
+                    </div>
+                </a>
+
+            </nav>
+        </main>
+    </div>
+
     <script>
-        // Функция тактильного отклика
-        function vibrate(ms) { if ("vibrate" in navigator) navigator.vibrate(ms); }
-
-        // ЧАСЫ И ВИДЖЕТ
-        function updateTime() {
-            const now = new Date();
-            const hs = now.getHours().toString().padStart(2, '0');
-            const ms = now.getMinutes().toString().padStart(2, '0');
-            document.getElementById('clock').textContent = `${hs}:${ms}`;
-            document.getElementById('lockClock').textContent = `${hs}:${ms}`;
-            document.getElementById('lockDate').textContent = now.toLocaleDateString('ru-RU', { weekday: 'long', month: 'long', day: 'numeric' });
-            
-            const greet = document.getElementById('greetText');
-            if (now.getHours() < 12) greet.textContent = 'Доброе утро!';
-            else if (now.getHours() < 18) greet.textContent = 'Добрый день!';
-            else greet.textContent = 'Добрый вечер!';
-        }
-        setInterval(updateTime, 1000); updateTime();
-
-        // РАЗБЛОКИРОВКА
-        function unlockScreen() {
-            const lock = document.getElementById('lockScreen');
-            lock.style.transform = 'translateY(-100%) scale(1.1)';
-            lock.style.opacity = '0';
-            setTimeout(() => lock.style.display = 'none', 600);
-            vibrate(50);
-        }
-
-        // ОТКРЫТИЕ ПРИЛОЖЕНИЯ
-        function openApp(url) {
-            vibrate(15);
-            document.getElementById('transitionOverlay').classList.add('active');
-            setTimeout(() => window.location.href = url, 400); 
-        }
-// --- ЛОГИКА DRAG & DROP И КЛИКОВ ПО ПРИЛОЖЕНИЯМ ---
-const appsGrid = document.getElementById('appsGrid');
-let dragSource = null;
-let clickTimer = null;
-let isDragging = false;
-
-// Инициализация событий для всех иконок
-function initAppIcons() {
-    const apps = document.querySelectorAll('.app-link[draggable="true"]');
-    
-    apps.forEach(app => {
-        // Логика клика / долгого нажатия (Умный Haptic Touch)
-        app.addEventListener('pointerdown', (e) => {
-            isDragging = false;
-            clickTimer = setTimeout(() => {
-                showContextMenu(e);
-                vibrate([30, 50, 30]);
-            }, 600);
-        });
-
-        app.addEventListener('pointerup', (e) => {
-            clearTimeout(clickTimer);
-            if (!isDragging && !document.getElementById('contextOverlay').style.opacity.includes('1')) {
-                const url = app.getAttribute('data-app');
-                if (url) openApp(url);
+        /* ==========================================
+           1. СИНТЕЗАТОР ЗВУКА (Web Audio API)
+           ========================================== */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
             }
-        });
-
-        app.addEventListener('pointermove', () => {
-            clearTimeout(clickTimer); // Отменяем контекстное меню, если палец поехал
-        });
-
-        // HTML5 Drag & Drop Логика
-        app.addEventListener('dragstart', (e) => {
-            clearTimeout(clickTimer);
-            isDragging = true;
-            dragSource = app;
-            e.dataTransfer.effectAllowed = 'move';
-            
-            // Задержка для красивой анимации отрыва
-            setTimeout(() => app.classList.add('dragging'), 0);
-            vibrate(15);
-        });
-
-        app.addEventListener('dragover', (e) => {
-            e.preventDefault(); // Необходимо для разрешения drop
-            e.dataTransfer.dropEffect = 'move';
-            
-            const target = e.target.closest('.app-link');
-            if (target && target !== dragSource) {
-                target.classList.add('over');
+            init() {
+                if (this.ctx) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.startHum();
             }
-        });
+            startHum() {
+                // Низкочастотный глубоководный гул
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const filter = this.ctx.createBiquadFilter();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(41.2, this.ctx.currentTime); // E1
+                
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(80, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+            }
+            playPowerOn() {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const filter = this.ctx.createBiquadFilter();
+                const gain = this.ctx.createGain();
 
-        app.addEventListener('dragleave', (e) => {
-            const target = e.target.closest('.app-link');
-            if (target) target.classList.remove('over');
-        });
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(60, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 1.2);
 
-        app.addEventListener('drop', (e) => {
-            e.stopPropagation();
-            const target = e.target.closest('.app-link');
-            
-            if (dragSource !== target && target) {
-                // Логика перестановки элементов в DOM
-                const allApps = [...appsGrid.querySelectorAll('.app-link')];
-                const sourceIndex = allApps.indexOf(dragSource);
-                const targetIndex = allApps.indexOf(target);
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(300, now);
+                filter.frequency.exponentialRampToValueAtTime(3500, now + 1.2);
+                filter.Q.setValueAtTime(2.0, now);
 
-                if (sourceIndex < targetIndex) {
-                    target.parentNode.insertBefore(dragSource, target.nextSibling);
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.exponentialRampToValueAtTime(0.18, now + 0.3);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(now + 1.3);
+            }
+            playHover(index) {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                // Пентатоника Eb Major для приятного ангельского звучания
+                const scale = [311.13, 349.23, 392.00, 466.16, 523.25, 622.25];
+                const freq = scale[index % scale.length];
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now);
+                osc.frequency.exponentialRampToValueAtTime(freq * 0.98, now + 0.2);
+
+                gain.gain.setValueAtTime(0.07, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(now + 0.3);
+            }
+            playClick() {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
+
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(now + 0.2);
+            }
+        }
+        const sfx = new SoundEngine();
+
+        /* ==========================================
+           2. ЗАГРУЗЧИК И ВЫЗОВ СЕТИ (BOOT)
+           ========================================== */
+        window.addEventListener('DOMContentLoaded', () => {
+            const progress = document.getElementById('boot-progress');
+            const btn = document.getElementById('boot-btn');
+            const overlay = document.getElementById('boot-overlay');
+            const app = document.getElementById('app');
+
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                    btn.classList.add('visible');
                 } else {
-                    target.parentNode.insertBefore(dragSource, target);
+                    width += Math.random() * 8;
+                    progress.style.width = Math.min(width, 100) + '%';
                 }
-                vibrate(20);
-                saveGridOrder(); // Опционально: сохранение позиции
-            }
-            if (target) target.classList.remove('over');
-        });
+            }, 80);
 
-        app.addEventListener('dragend', () => {
-            dragSource.classList.remove('dragging');
-            document.querySelectorAll('.app-link').forEach(el => el.classList.remove('over'));
-            isDragging = false;
-        });
-    });
-}
-
-// Сохранение порядка иконок в localStorage
-function saveGridOrder() {
-    const apps = [...appsGrid.querySelectorAll('.app-link')].map(app => app.getAttribute('data-app') || 'settings');
-    localStorage.setItem('unios_grid', JSON.stringify(apps));
-}
-
-// Запуск инициализации после загрузки
-initAppIcons();
-
-        function showContextMenu(e) {
-            const overlay = document.getElementById('contextOverlay');
-            const menu = document.getElementById('contextMenu');
-            overlay.style.display = 'block';
-            
-            // Позиционируем меню рядом с курсором/пальцем
-            let x = e.clientX || (e.touches && e.touches[0].clientX) || window.innerWidth/2;
-            let y = e.clientY || (e.touches && e.touches[0].clientY) || window.innerHeight/2;
-            
-            if (y > window.innerHeight - 200) y -= 150; // Чтобы не ушло за нижний край
-            if (x > window.innerWidth - 200) x -= 100;
-            
-            menu.style.left = x + 'px';
-            menu.style.top = (y + 20) + 'px';
-
-            setTimeout(() => {
-                overlay.style.opacity = '1';
-                menu.style.transform = 'scale(1)';
-                menu.style.opacity = '1';
-            }, 10);
-        }
-
-        function closeContextMenu() {
-            const overlay = document.getElementById('contextOverlay');
-            const menu = document.getElementById('contextMenu');
-            overlay.style.opacity = '0';
-            menu.style.transform = 'scale(0.8)';
-            menu.style.opacity = '0';
-            setTimeout(() => overlay.style.display = 'none', 300);
-        }
-
-        // DYNAMIC ISLAND
-        function toggleIsland() {
-            document.getElementById('dynamicIsland').classList.toggle('expanded');
-            vibrate(20);
-        }
-
-        // ПУНКТ УПРАВЛЕНИЯ
-        let ccOpen = false;
-        function toggleControlCenter() {
-            const cc = document.getElementById('controlCenter');
-            ccOpen = !ccOpen;
-            cc.classList.toggle('active');
-            vibrate(20);
-        }
-
-        // ЯРКОСТЬ
-        function changeBrightness(val) {
-            // val от 0 до 80. Мы затемняем от 0 до 0.8 opacity черного цвета
-            document.getElementById('brightnessOverlay').style.background = `rgba(0,0,0,${val/100})`;
-        }
-
-        // СМЕНА ТЕМЫ (С сохранением)
-        const themes =['theme-grid', 'theme-aurora'];
-        let currentTheme = localStorage.getItem('os_theme') || 0;
-        document.getElementById('wallpaper').className = `wallpaper ${themes[currentTheme]}`;
-
-        function changeTheme() {
-            currentTheme = (parseInt(currentTheme) + 1) % themes.length;
-            document.getElementById('wallpaper').className = `wallpaper ${themes[currentTheme]}`;
-            localStorage.setItem('os_theme', currentTheme);
-            vibrate(30);
-            toggleControlCenter();
-        }
-
-        // НЕ БЕСПОКОИТЬ
-        let dnd = false;
-        function toggleDND() {
-            dnd = !dnd;
-            const badges = document.querySelectorAll('.badge');
-            badges.forEach(b => b.style.display = dnd ? 'none' : 'flex');
-            document.getElementById('dndBtn').style.background = dnd ? '#5e5ce6' : 'var(--glass-bg)';
-            vibrate([20, 30, 20]);
-        }
-
-        // ПОИСК (SPOTLIGHT)
-        function openSearch() {
-            document.getElementById('searchScreen').classList.add('active');
-            setTimeout(() => document.querySelector('.search-input').focus(), 300);
-        }
-        function closeSearch() {
-            document.getElementById('searchScreen').classList.remove('active');
-        }
-
-        // PARALLAX EFFECT (Реакция на мышь и гироскоп)
-        const wallpaper = document.getElementById('wallpaper');
-        // Для ПК
-        document.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth - 0.5) * 20; // 20px сдвиг
-            const y = (e.clientY / window.innerHeight - 0.5) * 20;
-            wallpaper.style.transform = `translate(${-x}px, ${-y}px)`;
-        });
-        // Для Телефона
-        window.addEventListener("deviceorientation", (e) => {
-            const x = e.gamma || 0; // Наклон влево-вправо
-            const y = e.beta || 0;  // Наклон вперед-назад
-            // Ограничиваем угол
-            const moveX = Math.max(-20, Math.min(20, x/2));
-            const moveY = Math.max(-20, Math.min(20, (y-45)/2));
-            wallpaper.style.transform = `translate(${-moveX}px, ${-moveY}px)`;
-        });
-
-        // БАТАРЕЯ И СЕТЬ
-        if ('getBattery' in navigator) {
-            navigator.getBattery().then(bat => {
-                const upd = () => {
-                    document.getElementById('batteryFill').style.width = (bat.level * 100) + '%';
-                    document.getElementById('batteryFill').style.background = bat.charging ? '#34c759' : (bat.level<=0.2 ? '#ff3b30' : 'white');
-                };
-                upd(); bat.addEventListener('levelchange', upd); bat.addEventListener('chargingchange', upd);
+            btn.addEventListener('click', () => {
+                sfx.init();
+                sfx.playPowerOn();
+                overlay.classList.add('fade-out');
+                app.classList.add('loaded');
             });
-        }
-        window.addEventListener('online', () => document.getElementById('wifiIcon').style.opacity = '1');
-        window.addEventListener('offline', () => document.getElementById('wifiIcon').style.opacity = '0.2');
+        });
 
-        // --- ЛОГИКА НАСТРОЕК (ОСНОВНОЕ ЯДРО) ---
-        
-        // 1. Открытие / Закрытие
-        function openSettings() {
-            document.getElementById('settingsApp').classList.add('active');
-            vibrate(20);
-        }
-        
-        function closeSettings() {
-            document.getElementById('settingsApp').classList.remove('active');
-            vibrate(10);
-        }
-
-        // 2. Перехват оригинальной функции вибрации для её отключения
-        const originalVibrate = vibrate;
-        vibrate = function(ms) {
-            if (document.getElementById('set-haptic').checked) {
-                originalVibrate(ms);
+        /* ==========================================
+           3. ТЕКСТОВЫЙ ГЛИТЧ (Text Scramble)
+           ========================================== */
+        class TextScrambler {
+            constructor(el) {
+                this.el = el;
+                this.chars = '!<>-_\\/[]{}—=+*^?#________';
+                this.originalText = el.innerText;
+                this.update = this.update.bind(this);
             }
-        };
-
-        // 3. Главная функция применения и сохранения настроек
-        function applySettings() {
-            const config = {
-                iconSize: document.getElementById('set-icon-size').value,
-                dockStyle: document.getElementById('set-dock-style').value,
-                hideBadges: document.getElementById('set-badges').checked,
-                disableParallax: document.getElementById('set-parallax').checked,
-                haptics: document.getElementById('set-haptic').checked,
-                disableAnimations: document.getElementById('set-animations').checked
-            };
-
-            // Применяем размер иконок (меняем корневую CSS переменную)
-            document.documentElement.style.setProperty('--icon-size', config.iconSize + 'px');
-
-            // Применяем классы к body (меняют отображение через CSS)
-            document.body.classList.toggle('hide-badges', config.hideBadges);
-            document.body.classList.toggle('no-parallax', config.disableParallax);
-            document.body.classList.toggle('no-animations', config.disableAnimations);
-
-            // Настройка док-панели
-            document.body.classList.remove('dock-dark', 'dock-hidden');
-            if (config.dockStyle === 'dark') document.body.classList.add('dock-dark');
-            if (config.dockStyle === 'hidden') document.body.classList.add('dock-hidden');
-
-            // Сохраняем в кэш
-            localStorage.setItem('os_settings', JSON.stringify(config));
-            
-            // Легкий клик при переключении ползунков
-            vibrate(10);
-        }
-
-        // 4. Загрузка настроек при старте приложения
-        function loadSettings() {
-            const saved = localStorage.getItem('os_settings');
-            if (saved) {
-                const config = JSON.parse(saved);
-                
-                // Восстанавливаем состояния UI переключателей
-                document.getElementById('set-icon-size').value = config.iconSize || 60;
-                document.getElementById('set-dock-style').value = config.dockStyle || 'glass';
-                document.getElementById('set-badges').checked = config.hideBadges || false;
-                document.getElementById('set-parallax').checked = config.disableParallax || false;
-                document.getElementById('set-haptic').checked = config.haptics !== false;
-                document.getElementById('set-animations').checked = config.disableAnimations || false;
-                
-                // Применяем их
-                applySettings();
+            scramble() {
+                const oldText = this.el.innerText;
+                const length = Math.max(oldText.length, this.originalText.length);
+                this.queue = [];
+                for (let i = 0; i < length; i++) {
+                    const from = oldText[i] || '';
+                    const to = this.originalText[i] || '';
+                    const start = Math.floor(Math.random() * 20);
+                    const end = start + Math.floor(Math.random() * 20);
+                    this.queue.push({ from, to, start, end, char: '' });
+                }
+                cancelAnimationFrame(this.frameId);
+                this.frame = 0;
+                this.update();
+            }
+            update() {
+                let output = '';
+                let complete = 0;
+                for (let i = 0, n = this.queue.length; i < n; i++) {
+                    let { from, to, start, end, char } = this.queue[i];
+                    if (this.frame >= end) {
+                        complete++;
+                        output += to;
+                    } else if (this.frame >= start) {
+                        if (!char || Math.random() < 0.28) {
+                            char = this.chars[Math.floor(Math.random() * this.chars.length)];
+                            this.queue[i].char = char;
+                        }
+                        output += `<span class="scramble-char">${char}</span>`;
+                    } else {
+                        output += from;
+                    }
+                }
+                this.el.innerHTML = output;
+                if (complete < this.queue.length) {
+                    this.frameId = requestAnimationFrame(this.update);
+                    this.frame++;
+                }
             }
         }
-        
-        // Запускаем загрузку сразу после инициализации
-        loadSettings();
 
+        /* ==========================================
+           4. ИНТЕРАКТИВНЫЙ ФОН (Canvas Engine)
+           ========================================== */
+        class CanvasEngine {
+            constructor() {
+                this.canvas = document.getElementById('bg-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.particles = [];
+                this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+                this.cursorTrail = Array(10).fill({x: 0, y: 0});
+                
+                this.resize();
+                this.initParticles();
+                
+                window.addEventListener('resize', () => this.resize());
+                window.addEventListener('mousemove', (e) => {
+                    this.mouse.targetX = e.clientX;
+                    this.mouse.targetY = e.clientY;
+                    
+                    // Обновление физического курсора на DOM
+                    const cursor = document.getElementById('cursor');
+                    if (cursor) {
+                        cursor.style.left = e.clientX + 'px';
+                        cursor.style.top = e.clientY + 'px';
+                    }
+                });
+
+                this.loop = this.loop.bind(this);
+                requestAnimationFrame(this.loop);
+            }
+            resize() {
+                const dpr = window.devicePixelRatio || 1;
+                this.canvas.width = window.innerWidth * dpr;
+                this.canvas.height = window.innerHeight * dpr;
+                this.ctx.scale(dpr, dpr);
+            }
+            initParticles() {
+                // Создание морских пузырей и небесных звезд
+                for (let i = 0; i < 40; i++) {
+                    this.particles.push({
+                        x: Math.random() * window.innerWidth,
+                        y: Math.random() * window.innerHeight,
+                        size: Math.random() * 4 + 1.5,
+                        speed: Math.random() * 0.8 + 0.2,
+                        type: Math.random() > 0.5 ? 'bubble' : 'star',
+                        alpha: Math.random() * 0.5 + 0.2
+                    });
+                }
+            }
+            loop() {
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                
+                this.ctx.clearRect(0, 0, w, h);
+                
+                // Прорисовка плавного градиента от неба к бездне
+                const grad = this.ctx.createLinearGradient(0, 0, 0, h);
+                grad.addColorStop(0, '#0c1b33'); // Kanata Sky/Space
+                grad.addColorStop(0.5, '#051121');
+                grad.addColorStop(1, '#010c14'); // Gura Deep Sea
+                this.ctx.fillStyle = grad;
+                this.ctx.fillRect(0, 0, w, h);
+
+                // Плавное следование курсора (LERP)
+                this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.15;
+                this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.15;
+
+                // Отрисовка интерактивных частиц
+                this.particles.forEach(p => {
+                    if (p.type === 'bubble') {
+                        p.y -= p.speed;
+                        if (p.y < -10) p.y = h + 10;
+                    } else {
+                        p.y += p.speed * 0.5;
+                        p.x -= p.speed * 0.2;
+                        if (p.y > h + 10) p.y = -10;
+                        if (p.x < -10) p.x = w + 10;
+                    }
+
+                    // Отталкивание частиц от мыши
+                    const dx = p.x - this.mouse.targetX;
+                    const dy = p.y - this.mouse.targetY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 100) {
+                        const force = (100 - dist) / 100;
+                        p.x += (dx / dist) * force * 5;
+                        p.y += (dy / dist) * force * 5;
+                    }
+
+                    this.ctx.save();
+                    this.ctx.globalAlpha = p.alpha;
+                    this.ctx.beginPath();
+                    if (p.type === 'bubble') {
+                        this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        this.ctx.strokeStyle = '#00ffcc';
+                        this.ctx.stroke();
+                    } else {
+                        // Маленькие 4-конечные звездочки (Нимб Канаты в миниатюре)
+                        this.ctx.translate(p.x, p.y);
+                        for(let i=0; i<4; i++) {
+                            this.ctx.rotate(Math.PI/4);
+                            this.ctx.lineTo(p.size * 1.5, 0);
+                            this.ctx.rotate(Math.PI/4);
+                            this.ctx.lineTo(p.size * 0.4, 0);
+                        }
+                        this.ctx.fillStyle = '#b1cffc';
+                        this.ctx.fill();
+                    }
+                    this.ctx.restore();
+                });
+
+                // Трейл за курсором в стиле жидкого свечения
+                this.cursorTrail.unshift({x: this.mouse.targetX, y: this.mouse.targetY});
+                this.cursorTrail.pop();
+
+                this.ctx.save();
+                for (let i = 0; i < this.cursorTrail.length; i++) {
+                    const pt = this.cursorTrail[i];
+                    const size = (1 - i / this.cursorTrail.length) * 8;
+                    const opacity = 1 - i / this.cursorTrail.length;
+                    this.ctx.beginPath();
+                    this.ctx.arc(pt.x, pt.y, size, 0, Math.PI * 2);
+                    this.ctx.fillStyle = `rgba(0, 255, 204, ${opacity * 0.3})`;
+                    this.ctx.fill();
+                }
+                this.ctx.restore();
+
+                requestAnimationFrame(this.loop);
+            }
+        }
+
+        /* ==========================================
+           5. АНИМАЦИЯ НИМБА И ТРЕЗУБЦА (Artifact Visualizer)
+           ========================================== */
+        class ArtifactVisualizer {
+            constructor() {
+                this.canvas = document.getElementById('artifact-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.angle = 0;
+                this.mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                this.canvas.addEventListener('mousemove', (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.mouse.tx = e.clientX - rect.left - rect.width / 2;
+                    this.mouse.ty = e.clientY - rect.top - rect.height / 2;
+                });
+
+                this.loop = this.loop.bind(this);
+                requestAnimationFrame(this.loop);
+            }
+            resize() {
+                const dpr = window.devicePixelRatio || 1;
+                const size = this.canvas.parentElement.clientWidth;
+                this.canvas.width = size * dpr;
+                this.canvas.height = size * dpr;
+                this.canvas.style.width = size + 'px';
+                this.canvas.style.height = size + 'px';
+                this.ctx.scale(dpr, dpr);
+            }
+            loop() {
+                const size = this.canvas.width / (window.devicePixelRatio || 1);
+                const half = size / 2;
+                this.ctx.clearRect(0, 0, size, size);
+
+                this.mouse.x += (this.mouse.tx - this.mouse.x) * 0.08;
+                this.mouse.y += (this.mouse.ty - this.mouse.y) * 0.08;
+                this.angle += 0.006 + (Math.abs(this.mouse.x) * 0.0001);
+
+                const px = this.mouse.x * 0.15;
+                const py = this.mouse.y * 0.15;
+
+                // Технологические декоративные кольца
+                this.drawCyberRing(half + px * 0.3, half + py * 0.3, 110, this.angle * 0.4, [5, 20, 2, 40]);
+                this.drawCyberRing(half + px * 0.5, half + py * 0.5, 130, -this.angle * 0.2, [2, 10]);
+
+                // 1. Отрисовка Трезубца Gawr Gura (на заднем плане)
+                this.drawTrident(half + px * 0.8, half + py * 0.8, 110, -Math.PI / 6 + Math.sin(this.angle) * 0.05);
+
+                // 2. Отрисовка Нимба Amane Kanata (на переднем плане с наложением)
+                this.drawKanataHalo(half + px * 1.2, half + py * 1.2, 70, -this.angle * 1.5);
+
+                requestAnimationFrame(this.loop);
+            }
+            drawCyberRing(x, y, r, angle, dash) {
+                this.ctx.save();
+                this.ctx.translate(x, y);
+                this.ctx.rotate(angle);
+                this.ctx.strokeStyle = 'rgba(0, 255, 204, 0.18)';
+                this.ctx.setLineDash(dash);
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, r, 0, Math.PI * 2);
+                this.ctx.stroke();
+                this.ctx.restore();
+            }
+            drawKanataHalo(x, y, r, angle) {
+                // Точная геометрия оригинального нимба-сюрикена Амане Канаты
+                this.ctx.save();
+                this.ctx.translate(x, y);
+                this.ctx.rotate(angle);
+
+                // Внешнее свечение
+                this.ctx.shadowColor = 'rgba(177, 207, 252, 0.9)';
+                this.ctx.shadowBlur = 20;
+
+                // Отрисовка 4-конечного заостренного нимба
+                this.ctx.beginPath();
+                for (let i = 0; i < 4; i++) {
+                    const a = (i * Math.PI) / 2;
+                    this.ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+                    const nextA = a + Math.PI / 4;
+                    this.ctx.lineTo(Math.cos(nextA) * (r * 0.45), Math.sin(nextA) * (r * 0.45));
+                }
+                this.ctx.closePath();
+
+                const grad = this.ctx.createRadialGradient(0, 0, 5, 0, 0, r);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.5, '#b1cffc');
+                grad.addColorStop(1, '#a084e8');
+                this.ctx.fillStyle = grad;
+                this.ctx.fill();
+
+                // Полое сквозное круглое отверстие внутри нимба
+                this.ctx.shadowBlur = 0;
+                this.ctx.globalCompositeOperation = 'destination-out';
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, r * 0.33, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                // Окантовка выреза
+                this.ctx.globalCompositeOperation = 'source-over';
+                this.ctx.strokeStyle = '#ffffff';
+                this.ctx.lineWidth = 1.5;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, r * 0.33, 0, Math.PI * 2);
+                this.ctx.stroke();
+
+                this.ctx.restore();
+            }
+            drawTrident(x, y, len, angle) {
+                this.ctx.save();
+                this.ctx.translate(x, y);
+                this.ctx.rotate(angle);
+
+                this.ctx.shadowColor = '#00ffcc';
+                this.ctx.shadowBlur = 15;
+
+                const grad = this.ctx.createLinearGradient(0, -len * 0.6, 0, len * 0.6);
+                grad.addColorStop(0, '#00ffff');
+                grad.addColorStop(0.5, '#007ca8');
+                grad.addColorStop(1, '#002b49');
+
+                this.ctx.strokeStyle = grad;
+                this.ctx.lineWidth = 3.5;
+                this.ctx.lineCap = 'round';
+
+                // Древко трезубца
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, len * 0.6);
+                this.ctx.lineTo(0, -len * 0.2);
+                this.ctx.stroke();
+
+                // Изогнутая основа зубьев
+                this.ctx.beginPath();
+                this.ctx.moveTo(-len * 0.25, -len * 0.15);
+                this.ctx.quadraticCurveTo(0, -len * 0.05, len * 0.25, -len * 0.15);
+                this.ctx.stroke();
+
+                // Центральный зубец (лезвие)
+                this.ctx.beginPath();
+                this.ctx.moveTo(-len * 0.04, -len * 0.15);
+                this.ctx.lineTo(0, -len * 0.55);
+                this.ctx.lineTo(len * 0.04, -len * 0.15);
+                this.ctx.closePath();
+                this.ctx.fillStyle = grad;
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                // Боковые зубья с зазубринами вовнутрь
+                this.ctx.beginPath();
+                this.ctx.moveTo(-len * 0.25, -len * 0.15);
+                this.ctx.quadraticCurveTo(-len * 0.3, -len * 0.42, -len * 0.2, -len * 0.48);
+                this.ctx.lineTo(-len * 0.15, -len * 0.35);
+                this.ctx.quadraticCurveTo(-len * 0.19, -len * 0.22, -len * 0.16, -len * 0.15);
+                this.ctx.stroke();
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(len * 0.25, -len * 0.15);
+                this.ctx.quadraticCurveTo(len * 0.3, -len * 0.42, len * 0.2, -len * 0.48);
+                this.ctx.lineTo(len * 0.15, -len * 0.35);
+                this.ctx.quadraticCurveTo(len * 0.19, -len * 0.22, len * 0.16, -len * 0.15);
+                this.ctx.stroke();
+
+                this.ctx.restore();
+            }
+        }
+
+        /* ==========================================
+           6. ИНТЕРАКТИВ И ГЛИТЧ (Interaction Matrix)
+           ========================================== */
+        class PortalController {
+            constructor() {
+                this.scramblers = [];
+                this.initScramble();
+                this.initMagnetism();
+                this.initSystemTelem();
+                this.initGlitchTrigger();
+            }
+            initScramble() {
+                const targets = document.querySelectorAll('[data-scramble]');
+                targets.forEach(target => {
+                    const scrambler = new TextScrambler(target);
+                    this.scramblers.push({ el: target, instance: scrambler });
+                    
+                    target.closest('.nav-card').addEventListener('mouseenter', () => {
+                        scrambler.scramble();
+                    });
+                });
+            }
+            initMagnetism() {
+                const cards = document.querySelectorAll('.nav-card');
+                cards.forEach(card => {
+                    // Интерактивное воспроизведение звука на ховер и клик
+                    const soundIdx = parseInt(card.getAttribute('data-sound'), 10);
+                    card.addEventListener('mouseenter', () => sfx.playHover(soundIdx));
+                    card.addEventListener('click', () => sfx.playClick());
+
+                    card.addEventListener('mousemove', (e) => {
+                        const rect = card.getBoundingClientRect();
+                        const x = e.clientX - rect.left - rect.width / 2;
+                        const y = e.clientY - rect.top - rect.height / 2;
+
+                        card.style.transform = `translate(${x * 0.15}px, ${y * 0.15}px) scale(1.02)`;
+
+                        const bg = card.querySelector('.card-bg');
+                        bg.style.background = `radial-gradient(circle at ${e.clientX - rect.left}px ${e.clientY - rect.top}px, rgba(0, 255, 204, 0.1) 0%, transparent 70%)`;
+                    });
+
+                    card.addEventListener('mouseleave', () => {
+                        card.style.transform = 'translate(0px, 0px) scale(1)';
+                        const bg = card.querySelector('.card-bg');
+                        bg.style.background = 'none';
+                    });
+                });
+            }
+            initSystemTelem() {
+                // Обновление симулируемых параметров телеметрии в реальном времени
+                const altitude = document.getElementById('telemetry-alt');
+                const depth = document.getElementById('telemetry-depth');
+                const integrity = document.getElementById('telemetry-integrity');
+
+                setInterval(() => {
+                    const altVal = (12400 + (Math.random() - 0.5) * 50).toFixed(0);
+                    const depthVal = (-9850 + (Math.random() - 0.5) * 30).toFixed(0);
+                    const integrityVal = (99.9 + Math.random() * 0.08).toFixed(2);
+
+                    altitude.innerText = `+${altVal} M`;
+                    depth.innerText = `${depthVal} M`;
+                    integrity.innerText = `${integrityVal}%`;
+                }, 1200);
+            }
+            initGlitchTrigger() {
+                const disp = document.getElementById('displacement-map');
+                const title = document.getElementById('brand-title');
+                
+                // Периодический физический глитч интерфейса через SVG Displacement Map
+                setInterval(() => {
+                    if (Math.random() < 0.6) {
+                        let frames = 0;
+                        const maxFrames = 10;
+                        
+                        document.body.classList.add('screen-glitch-active');
+                        
+                        const animate = () => {
+                            if (frames < maxFrames) {
+                                const scale = Math.random() > 0.4 ? Math.floor(Math.random() * 30) : 0;
+                                disp.setAttribute('scale', scale);
+                                frames++;
+                                requestAnimationFrame(animate);
+                            } else {
+                                disp.setAttribute('scale', '0');
+                                document.body.classList.remove('screen-glitch-active');
+                            }
+                        };
+                        animate();
+                    }
+                }, 5000);
+            }
+        }
+
+        // Инициализация скриптовой экосистемы
+        new CanvasEngine();
+        new ArtifactVisualizer();
+        new PortalController();
     </script>
 </body>
 </html>

@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AETHER OS v4.1 — Absolute Layout</title>
+    
+    <!-- Подключение шрифтов -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Тема: NIGHT (Базовая) */
+        :root {
+            --bg-body: #050506;
+            --screen-bg: #0b0b0d;
+            --text-primary: #d4d4d8;
+            --text-secondary: #71717a;
+            --border-color: rgba(255, 255, 255, 0.05);
+            --card-bg: rgba(255, 255, 255, 0.01);
+            --icon-bg: #121215;
+            
+            --font-mono: 'Space Grotesk', sans-serif;
+            --font-serif: 'Playfair Display', serif;
+            
+            --font-display: var(--font-mono);
+            --font-widget: var(--font-mono);
+            
+            --phone-width: 395px;
+            --phone-height: 840px;
+        }
+
+        /* Тема: DAY */
+        :root.theme-day {
+            --bg-body: #1c1c1e;
+            --screen-bg: #eae5da; /* Матовая теплая бумага */
+            --text-primary: #1e1e20; /* Мягкие угольные чернила */
+            --text-secondary: #7e7a72;
+            --border-color: rgba(0, 0, 0, 0.08);
+            --card-bg: rgba(0, 0, 0, 0.02);
+            --icon-bg: #dfd9cc;
+            
+            --font-display: var(--font-serif);
+            --font-widget: var(--font-serif);
+        }
+
+        /* Защита от системного синего выделения */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent !important;
+            -webkit-focus-ring-color: transparent !important;
+            outline: none !important;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            background-color: var(--bg-body);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.8s ease;
+        }
+
+        /* Оборонительная структура фрейма телефона */
+        .phone-wrapper {
+            width: 100%;
+            height: 100%;
+            max-width: var(--phone-width);
+            max-height: var(--phone-height);
+            background-color: var(--screen-bg);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.95);
+            transition: background-color 0.8s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @media (min-width: 901px) {
+            .phone-wrapper {
+                border-radius: 44px;
+                border: 1px solid rgba(255, 255, 255, 0.12);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .phone-wrapper {
+                max-width: 100% !important;
+                max-height: 100% !important;
+                height: 100dvh;
+                border: none;
+                border-radius: 0;
+            }
+        }
+
+        /* Внутренний контейнер с жесткими ограничениями */
+        .phone-inner {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Защита от вылетания элементов */
+            position: relative;
+            padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 12px) 16px;
+        }
+
+        /* Оптический занавес переходов (Rack Focus) */
+        .shutter-glass {
+            position: absolute;
+            inset: 0;
+            background: rgba(8, 8, 10, 0.05);
+            backdrop-filter: blur(0px);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .shutter-glass.triggered {
+            opacity: 1;
+            backdrop-filter: blur(24px);
+            background: rgba(8, 8, 10, 0.6);
+            pointer-events: auto;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--text-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Векторный фон */
+        .bg-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            opacity: 0.04;
+            pointer-events: none;
+        }
+
+        /* Позиционирование статус-бара */
+        .status-bar {
+            flex-shrink: 0; /* Запрет сжатия */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            z-index: 10;
+        }
+
+        .status-center {
+            width: 50px;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+            transition: background-color 0.4s;
+        }
+
+        .phone-wrapper:hover .status-center {
+            background-color: var(--text-primary);
+        }
+
+        /* Spotlight поиск */
+        .search-container {
+            flex-shrink: 0;
+            margin-top: 1rem;
+            z-index: 15;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .search-input:focus {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: var(--text-primary);
+        }
+
+        /* Виджет часов */
+        .clock-widget {
+            flex-shrink: 0;
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            z-index: 10;
+        }
+
+        .clock-time {
+            font-family: var(--font-widget);
+            font-size: 3.4rem;
+            font-weight: 400;
+            line-height: 1;
+            color: var(--text-primary);
+            letter-spacing: -1.5px;
+            transition: font-family 0.6s ease;
+        }
+
+        .clock-date {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        /* Скролл-контейнер приложений с защитой от переполнения */
+        .apps-scroll-view {
+            flex: 1 1 0%; /* Занимает все свободное пространство */
+            min-height: 0; /* Важнейшее свойство для защиты Flexbox от переполнения */
+            overflow-y: auto;
+            scrollbar-width: none;
+            margin: 1.2rem 0;
+            z-index: 10;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .apps-scroll-view::-webkit-scrollbar {
+            display: none;
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding-bottom: 10px; /* Отступ в конце списка */
+        }
+
+        /* Карточка приложения */
+        .app-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 112px;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.35s, background-color 0.35s;
+            will-change: transform;
+        }
+
+        .app-card:active {
+            transform: scale(0.95); /* Мягкое прожатие кнопки */
+        }
+
+        .app-card:hover {
+            border-color: var(--text-primary);
+        }
+
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .app-index {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        .app-icon-container {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background-color: var(--icon-bg);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s, color 0.4s, border-color 0.4s;
+        }
+
+        .app-icon-container svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.5;
+        }
+
+        .app-card:hover .app-icon-container {
+            transform: scale(1.05) rotate(2deg);
+            background-color: var(--text-primary);
+            color: var(--screen-bg);
+            border-color: var(--text-primary);
+        }
+
+        .app-name {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+            transition: font-family 0.6s ease;
+        }
+
+        /* Нижняя панель */
+        .phone-dock {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            z-index: 10;
+        }
+
+        .dock-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .dock-btn {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            padding: 12px 0;
+            font-size: 0.65rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: var(--font-mono);
+        }
+
+        .dock-btn:hover {
+            background-color: var(--text-primary);
+            color: var(--screen-bg);
+            border-color: var(--text-primary);
+        }
+
+        .home-bar {
+            width: 80px;
+            height: 4px;
+            background-color: var(--text-secondary);
+            opacity: 0.2;
+            border-radius: 2px;
+            margin: 0 auto;
+        }
+
+        /* Исключение багов верстки на сверхмалых экранах */
+        @media (max-height: 740px) {
+            .clock-widget { margin-top: 0.4rem !important; }
+            .clock-time { font-size: 2.4rem !important; }
+            .apps-scroll-view { margin: 0.6rem 0 !important; }
+            .app-card { height: 95px !important; padding: 10px !important; }
+            .app-icon-container { width: 30px !important; height: 30px !important; }
+            .app-icon-container svg { width: 16px !important; height: 16px !important; }
+            .app-name { font-size: 0.8rem !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-wrapper" id="phone">
+        
+        <!-- Затвор глубины резкости -->
+        <div class="shutter-glass" id="shutter">
+            <div class="spinner"></div>
+        </div>
+
+        <div class="phone-inner">
+            
+            <!-- Векторный фон -->
+            <canvas class="bg-canvas" id="spaceCanvas"></canvas>
+
+            <!-- Статус-Бар -->
+            <header class="status-bar">
+                <span>AETHER METAMORPHOSIS</span>
+                <div class="status-center"></div>
+                <span id="live-clock">00:00</span>
+            </header>
+
+            <!-- Поиск-Фильтр -->
+            <div class="search-container">
+                <input type="text" id="spotlight" class="search-input" placeholder="[ ФИЛЬТР ПРИЛОЖЕНИЙ ]" autocomplete="off">
+            </div>
+
+            <!-- Часы -->
+            <div class="clock-widget">
+                <div class="clock-time" id="clock">12:00</div>
+                <div class="clock-date" id="date">MON // 24 MAY</div>
+            </div>
+
+            <!-- Вертикальная скролл-зона -->
+            <div class="apps-scroll-view" id="scroll-view">
+                <div class="apps-grid">
+                    
+                    <a href="./aether.html" class="app-card" data-freq="520">
+                        <div class="app-header">
+                            <span class="app-index">01</span>
+                            <div class="app-icon-container">
+                                <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                            </div>
+                        </div>
+                        <span class="app-name" data-scramble="AETHER">Aether</span>
+                    </a>
+
+                    <a href="./chronos.html" class="app-card" data-freq="580">
+                        <div class="app-header">
+                            <span class="app-index">02</span>
+                            <div class="app-icon-container">
+                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            </div>
+                        </div>
+                        <span class="app-name" data-scramble="CHRONOS">Chronos</span>
+                    </a>
+
+                    <a href="./vortex.html" class="app-card" data-freq="640">
+                        <div class="app-header">
+                            <span class="app-index">03</span>
+                            <div class="app-icon-container">
+                                <svg viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6a6 6 0 0 1 6 6M12 8a4 4 0 0 1 4 4"/></svg>
+                            </div>
+                        </div>
+                        <span class="app-name" data-scramble="VORTEX">Vortex</span>
+                    </a>
+
+                    <a href="./neural.html" class="app-card" data-freq="700">
+                        <div class="app-header">
+                            <span class="app-index">04</span>
+                            <div class="app-icon-container">
+                                <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                            </div>
+                        </div>
+                        <span class="app-name" data-scramble="NEURAL">Neural</span>
+                    </a>
+
+                    <a href="./zenith.html" class="app-card" data-freq="760">
+                        <div class="app-header">
+                            <span class="app-index">05</span>
+                            <div class="app-icon-container">
+                                <svg viewBox="0 0 24 24"><polygon points="3 20 9 3 15 20 3 20"/><polygon points="9 20 15 3 21 20 9 20"/></svg>
+                            </div>
+                        </div>
+                        <span class="app-name" data-scramble="ZENITH">Zenith</span>
+                    </a>
+
+                    <a href="./crypta.html" class="app-card" data-freq="820">
+                        <div class="app-header">
+                            <span class="app-index">06</span>
+                            <div class="app-icon-container">
+                                <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            </div>
+                        </div>
+                        <span class="app-name" data-scramble="CRYPTA">Crypta</span>
+                    </a>
+
+                    <a href="./horizon.html" class="app-card" data-freq="880">
+                        <div class="app-header">
+                            <span class="app-index">07</span>
+                            <div class="app-icon-container">
+                                <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                            </div>
+                        </div>
+                        <span class="app-name" data-scramble="HORIZON">Horizon</span>
+                    </a>
+
+                    <a href="./echo.html" class="app-card" data-freq="940">
+                        <div class="app-header">
+                            <span class="app-index">08</span>
+                            <div class="app-icon-container">
+                                <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14H11v-2h2zm0-4H11V7h2z"/></svg>
+                            </div>
+                        </div>
+                        <span class="app-name" data-scramble="ECHO">Echo</span>
+                    </a>
+
+                    <a href="./monolith.html" class="app-card" data-freq="400">
+                        <div class="app-header">
+                            <span class="app-index">09</span>
+                            <div class="app-icon-container">
+                                <svg viewBox="0 0 24 24"><polygon points="12 2 2 22 22 22 12 2"/></svg>
+                            </div>
+                        </div>
+                        <span class="app-name" data-scramble="MONOLITH">Monolith</span>
+                    </a>
+
+                    <a href="./index.html" class="app-card" data-freq="480">
+                        <div class="app-header">
+                            <span class="app-index">11</span>
+                            <div class="app-icon-container">
+                                <svg viewBox="0 0 24 24"><path d="M5 3h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2z"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
+                            </div>
+                        </div>
+                        <span class="app-name" data-scramble="telephone">telephone</span>
+                    </a>
+
+                    <a href="./spectrum.html" class="app-card" data-freq="520">
+                        <div class="app-header">
+                            <span class="app-index">12</span>
+                            <div class="app-icon-container">
+                                <svg viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/></svg>
+                            </div>
+                        </div>
+                        <span class="app-name" data-scramble="SPECTRUM">Spectrum</span>
+                    </a>
+
+                </div>
+            </div>
+
+            <!-- Док -->
+            <footer class="phone-dock">
+                <div class="dock-grid">
+                    <button class="dock-btn" id="btn-sound">SOUND ON</button>
+                    <button class="dock-btn" id="btn-theme">DAY OS</button>
+                    <button class="dock-btn" id="btn-reset">RESET</button>
+                </div>
+                <div class="home-bar"></div>
+            </footer>
+
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================
+           1. АКУСТИЧЕСКОЕ TAPTIC ЯДРО
+           ========================================== */
+        class HapticCore {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (this.ctx) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            // Имитация тактильного импульса Apple Taptic Engine
+            playTapticEngine() {
+                if (!this.enabled) return;
+                this.init();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+
+                this.triggerPulse(120, 0.015);
+                setTimeout(() => this.triggerPulse(90, 0.012), 12);
+            }
+
+            // Звук шага физического диска скролла (трещотка)
+            playDialTick() {
+                if (!this.enabled) return;
+                this.init();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+
+                this.triggerPulse(160, 0.005);
+            }
+
+            triggerPulse(freq, duration) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration + 0.01);
+            }
+        }
+
+        const sound = new HapticCore();
+
+
+        /* ==========================================
+           2. ИНТЕРФЕЙСНЫЙ ВЕКТОРНЫЙ ФОН (Canvas)
+           ========================================== */
+        const canvas = document.getElementById('spaceCanvas');
+        const canvasCtx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        let shift = 0;
+        function render() {
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const isDay = document.documentElement.classList.contains('theme-day');
+            canvasCtx.strokeStyle = isDay ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.02)';
+            canvasCtx.lineWidth = 1;
+
+            shift += 0.003;
+
+            for (let i = -100; i < canvas.height + 100; i += 32) {
+                canvasCtx.beginPath();
+                for (let x = 0; x < canvas.width; x++) {
+                    const y = i + Math.sin(x * 0.007 + shift * 5) * 8;
+                    if (x === 0) canvasCtx.moveTo(x, y);
+                    else canvasCtx.lineTo(x, y);
+                }
+                canvasCtx.stroke();
+            }
+            requestAnimationFrame(render);
+        }
+        render();
+
+
+        /* ==========================================
+           3. ТЕКСТОВЫЙ СКРАМБЛЕР
+           ========================================== */
+        class Scrambler {
+            constructor(el) {
+                this.el = el;
+                this.original = el.getAttribute('data-scramble');
+                this.chars = 'X-[]_*+#/';
+                this.frame = 0;
+                this.queue = [];
+            }
+
+            run() {
+                const len = this.original.length;
+                this.queue = [];
+                for (let i = 0; i < len; i++) {
+                    const to = this.original[i];
+                    const start = Math.floor(Math.random() * 8);
+                    const end = start + Math.floor(Math.random() * 10);
+                    this.queue.push({ to, start, end, char: '' });
+                }
+                this.frame = 0;
+                this.update();
+            }
+
+            update() {
+                let output = '';
+                let complete = 0;
+                for (let i = 0; i < this.queue.length; i++) {
+                    let { to, start, end, char } = this.queue[i];
+                    if (this.frame >= end) {
+                        complete++;
+                        output += to;
+                    } else if (this.frame >= start) {
+                        if (!char || Math.random() < 0.25) {
+                            char = this.chars[Math.floor(Math.random() * this.chars.length)];
+                            this.queue[i].char = char;
+                        }
+                        output += `<span style="opacity: 0.5;">${char}</span>`;
+                    } else {
+                        output += to;
+                    }
+                }
+                this.el.innerHTML = output;
+                if (complete < this.queue.length) {
+                    requestAnimationFrame(() => this.update());
+                    this.frame++;
+                }
+            }
+        }
+
+
+        /* ==========================================
+           4. ТАКТИЛЬНОЕ УПРАВЛЕНИЕ И СИСТЕМА
+           ========================================== */
+        
+        // Время и дата
+        function refreshClock() {
+            const clockEl = document.getElementById('clock');
+            const liveClockEl = document.getElementById('live-clock');
+            const dateEl = document.getElementById('date');
+            const now = new Date();
+
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            clockEl.textContent = `${h}:${m}`;
+            liveClockEl.textContent = `${h}:${m}`;
+
+            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            dateEl.textContent = `${days[now.getDay()]} // ${now.getDate()} ${months[now.getMonth()]}`;
+        }
+        setInterval(refreshClock, 1000);
+        refreshClock();
+
+        // Скрамблинг по ховеру
+        document.querySelectorAll('.app-name').forEach(name => {
+            const sc = new Scrambler(name);
+            name.parentElement.addEventListener('mouseenter', () => {
+                sc.run();
+                sound.playDialTick();
+            });
+        });
+
+        // Трещотка на скролле списков
+        const scrollView = document.getElementById('scroll-view');
+        let lastScrollTop = 0;
+
+        scrollView.addEventListener('scroll', () => {
+            const currentScroll = scrollView.scrollTop;
+            if (Math.abs(currentScroll - lastScrollTop) > 28) {
+                sound.playDialTick();
+                lastScrollTop = currentScroll;
+            }
+        });
+
+        // Spotlight поиск по сетке
+        const spotlight = document.getElementById('spotlight');
+        const appCards = document.querySelectorAll('.app-card');
+
+        spotlight.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+
+            appCards.forEach(card => {
+                const name = card.querySelector('.app-name').getAttribute('data-scramble').toLowerCase();
+                if (name.includes(query)) {
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                } else {
+                    card.style.opacity = '0.08';
+                    card.style.pointerEvents = 'none';
+                }
+            });
+        });
+
+        // Кинематографическая глубина фокуса (Rack Focus Shutter)
+        const shutter = document.getElementById('shutter');
+        appCards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.getAttribute('href');
+
+                sound.playTapticEngine();
+                shutter.classList.add('triggered');
+
+                setTimeout(() => {
+                    window.location.href = url;
+                }, 600);
+            });
+        });
+
+        // Логика док-панели
+        const btnSound = document.getElementById('btn-sound');
+        btnSound.addEventListener('click', () => {
+            sound.enabled = !sound.enabled;
+            btnSound.textContent = sound.enabled ? 'SOUND ON' : 'MUTE';
+            if (sound.enabled) sound.playTapticEngine();
+        });
+
+        const btnTheme = document.getElementById('btn-theme');
+        let dark = true;
+        btnTheme.addEventListener('click', () => {
+            dark = !dark;
+            sound.playTapticEngine();
+            if (!dark) {
+                document.documentElement.classList.add('theme-day');
+                btnTheme.textContent = 'NIGHT OS';
+            } else {
+                document.documentElement.classList.remove('theme-day');
+                btnTheme.textContent = 'DAY OS';
+            }
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            spotlight.value = '';
+            spotlight.dispatchEvent(new Event('input'));
+            scrollView.scrollTo({ top: 0, behavior: 'smooth' });
+            if (!dark) btnTheme.click();
+            if (!sound.enabled) btnSound.click();
+            sound.playTapticEngine();
+        });
+    </script>
+</body>
+<!-- PREMIUM CELESTIAL SEA NAV DOCK (Kanata x Gura Theme)                    -->
+<!-- ======================================================================= -->
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+  
+    :root {
+      --primary-sky: #00E5FF;
+      --primary-heaven: #a78bfa;
+      --gold-halo: #FFE082;
+      --deep-ocean: #081020;
+      --neon-blue: #00f0ff;
+      --neon-purple: #bd00ff;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    }
+  
+    /* Враппер плавающей кнопки */
+    .fab-wrapper {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      z-index: 999999;
+      width: 68px;
+      height: 68px;
+      pointer-events: none;
+      will-change: transform;
+      filter: drop-shadow(0 10px 30px rgba(0, 229, 255, 0.25));
+    }
+  
+    /* Основная круглая кнопка (Триггер) */
+    .fab-button {
+      pointer-events: auto;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(20, 30, 55, 0.9) 0%, rgba(8, 12, 24, 0.95) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(0, 229, 255, 0.3);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      box-shadow: 
+        0 0 20px rgba(0, 229, 255, 0.15),
+        inset 0 1px 2px rgba(255, 255, 255, 0.2);
+      transition: 
+        border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.2s ease;
+      touch-action: none;
+      overflow: visible;
+    }
+  
+    .fab-button:active {
+      cursor: grabbing;
+      transform: scale(0.95);
+    }
+  
+    /* Анимация и свечение при наведении */
+    .fab-button:hover {
+      border-color: var(--primary-sky);
+      box-shadow: 
+        0 0 30px rgba(0, 229, 255, 0.4),
+        0 0 15px rgba(167, 139, 250, 0.3),
+        inset 0 1px 4px rgba(255, 255, 255, 0.4);
+    }
+  
+    /* Стилизация SVG Эмблемы (Нимб + Трезубец) */
+    .emblem-svg {
+      width: 110%;
+      height: 110%;
+      position: absolute;
+      transform: scale(1);
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  
+    /* Вращение нимба Канаты */
+    .emblem-halo {
+      transform-origin: 50px 18px;
+      animation: haloRotate 12s linear infinite;
+    }
+  
+    /* Покачивание крыльев */
+    .emblem-wings path {
+      transform-origin: 50px 52px;
+      animation: wingBreathe 4s ease-in-out infinite alternate;
+    }
+  
+    .emblem-wings path:nth-child(even) {
+      animation-delay: -2s;
+    }
+  
+    @keyframes haloRotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  
+    @keyframes wingBreathe {
+      0% { transform: scale(0.96) rotate(-2deg); }
+      100% { transform: scale(1.02) rotate(2deg); }
+    }
+  
+    /* Эффект при открытом состоянии */
+    .fab-wrapper.open .fab-button {
+      border-color: var(--primary-heaven);
+      box-shadow: 0 0 40px rgba(167, 139, 250, 0.5);
+    }
+  
+    .fab-wrapper.open .emblem-svg {
+      transform: rotate(45deg) scale(0.9);
+    }
+  
+    /* Глобальный Док навигации */
+    .global-dock {
+      position: absolute;
+      top: 50%;
+      right: calc(100% + 20px);
+      transform: translateY(-50%) scale(0.9) translateX(30px);
+      transform-origin: right center;
+  
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: rgba(6, 11, 25, 0.75);
+      backdrop-filter: blur(24px) saturate(140%);
+      -webkit-backdrop-filter: blur(24px) saturate(140%);
+      border: 1px solid rgba(0, 229, 255, 0.15);
+      border-radius: 24px;
+      box-shadow: 
+        0 30px 60px rgba(0, 4, 16, 0.8),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  
+      max-width: calc(100vw - 120px);
+      overflow-x: auto;
+      scrollbar-width: none;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: 
+        transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+        visibility 0.4s;
+    }
+  
+    .global-dock::-webkit-scrollbar { display: none; }
+  
+    /* Фоновый интерактивный холст */
+    .dock-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 24px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+  
+    /* Позиционирование выезжающих панелей */
+    .fab-wrapper.open .global-dock {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(-50%) scale(1) translateX(0);
+    }
+  
+    .fab-wrapper.is-left .global-dock {
+      right: auto;
+      left: calc(100% + 20px);
+      transform-origin: left center;
+      transform: translateY(-50%) scale(0.9) translateX(-30px);
+    }
+    .fab-wrapper.is-left.open .global-dock {
+      transform: translateY(-50%) scale(1) translateX(0);
+    }
+  
+    .fab-wrapper.is-up .global-dock {
+      flex-direction: column;
+      right: 50%;
+      top: auto;
+      bottom: calc(100% + 20px);
+      transform-origin: bottom center;
+      transform: translateX(50%) scale(0.9) translateY(30px);
+      max-height: calc(100vh - 120px);
+      max-width: none;
+      overflow-y: auto;
+    }
+    .fab-wrapper.is-up.open .global-dock {
+      transform: translateX(50%) scale(1) translateY(0);
+    }
+  
+    .fab-wrapper.is-down .global-dock {
+      flex-direction: column;
+      right: 50%;
+      bottom: auto;
+      top: calc(100% + 20px);
+      transform-origin: top center;
+      transform: translateX(50%) scale(0.9) translateY(-30px);
+      max-height: calc(100vh - 120px);
+      max-width: none;
+      overflow-y: auto;
+    }
+    .fab-wrapper.is-down.open .global-dock {
+      transform: translateX(50%) scale(1) translateY(0);
+    }
+  
+    /* Элементы меню навигации */
+    .dock-item {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 14px;
+      color: rgba(255, 255, 255, 0.65);
+      text-decoration: none;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+  
+    /* Эффект наведения с деформацией глитча */
+    .dock-item:hover {
+      color: #fff;
+      background: rgba(0, 229, 255, 0.08);
+      border-color: rgba(0, 229, 255, 0.2);
+      box-shadow: 0 4px 15px rgba(0, 229, 255, 0.1);
+      filter: url(#glitch-distortion);
+    }
+  
+    .dock-item.active {
+      color: #fff;
+      background: rgba(167, 139, 250, 0.15);
+      border-color: rgba(167, 139, 250, 0.3);
+      box-shadow: 
+        0 4px 20px rgba(167, 139, 250, 0.2),
+        inset 0 0 12px rgba(167, 139, 250, 0.1);
+    }
+  
+    /* Стилизация иконок */
+    .dock-icon-wrapper {
+      position: relative;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  
+    .dock-icon {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.4));
+      pointer-events: none;
+      user-select: none;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+  
+    .dock-item:hover .dock-icon {
+      transform: scale(1.18) rotate(5deg);
+    }
+  
+    .dock-text {
+      font-family: 'Space Grotesk', sans-serif;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+    }
+  
+    /* Хвост-индикатор для активного пункта */
+    .dock-item.active::after {
+      content: "";
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12px;
+      height: 3px;
+      background: var(--primary-heaven);
+      border-radius: 4px;
+      box-shadow: 0 0 8px var(--primary-heaven);
+    }
+  
+    /* Адаптивность для мобильных экранов */
+    @media (max-width: 768px) {
+      .fab-wrapper {
+        bottom: 20px;
+        right: 20px;
+        width: 58px;
+        height: 58px;
+      }
+      
+      .global-dock {
+        padding: 8px;
+        gap: 6px;
+        border-radius: 20px;
+        max-width: calc(100vw - 80px);
+      }
+  
+      .dock-canvas {
+        border-radius: 20px;
+      }
+  
+      .dock-item {
+        padding: 10px;
+        border-radius: 12px;
+      }
+  
+      .dock-text {
+        display: none;
+      }
+  
+      .dock-icon {
+        width: 26px;
+        height: 26px;
+      }
+  
+      .dock-item.active::after {
+        bottom: -1px;
+      }
+    }
+  
+    @media (prefers-reduced-motion: reduce) {
+      .emblem-halo, .emblem-wings path {
+        animation: none !important;
+      }
+      .fab-wrapper, .global-dock {
+        transition: none !important;
+      }
+    }
+  </style>
+  
+  <!-- SVG Фильтры глитча и деформации воды -->
+  <svg style="position: absolute; width: 0; height: 0;" width="0" height="0">
+    <defs>
+      <filter id="glitch-distortion">
+        <feTurbulence type="fractalNoise" baseFrequency="0.08 0.85" numOctaves="1" result="wave" />
+        <feDisplacementMap in="SourceGraphic" in2="wave" scale="0" xChannelSelector="R" yChannelSelector="G" id="displacement-map" />
+      </filter>
+    </defs>
+  </svg>
+  
+  <div class="fab-wrapper" id="fabWrapper">
+    <!-- Кнопка-герб с Нимбом Канаты и Трезубцем Гуры -->
+    <button class="fab-button" id="fabToggleBtn" title="Навигация" aria-label="Открыть меню навигации">
+      <svg class="emblem-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Золотой градиент Нимба -->
+          <linearGradient id="haloGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FFE57F" />
+            <stop offset="100%" stop-color="#FFC107" />
+          </linearGradient>
+          <!-- Сине-бирюзовый градиент Трезубца -->
+          <linearGradient id="tridentGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#00E5FF" />
+            <stop offset="100%" stop-color="#0057b8" />
+          </linearGradient>
+          <filter id="glow-heavy" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="3.5" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+  
+        <!-- Декоративные волны (Gura Style) -->
+        <path d="M25,75 C35,68 40,80 50,75 C60,70 65,82 75,75" stroke="rgba(0, 229, 255, 0.35)" stroke-width="2" stroke-linecap="round"/>
+  
+        <!-- Легкие Ангельские Крылья (Kanata Style) -->
+        <g class="emblem-wings" stroke="rgba(255, 255, 255, 0.45)" stroke-width="1.5" fill="none">
+          <!-- Левое -->
+          <path d="M38,54 C26,45 14,48 10,60 C13,68 25,66 36,59" />
+          <!-- Правое -->
+          <path d="M62,54 C74,45 86,48 90,60 C87,68 75,66 64,59" />
+        </g>
+  
+        <!-- Легендарный Трезубец Гуры -->
+        <g class="emblem-trident" filter="url(#glow-heavy)">
+          <path d="M50,82 L50,34" stroke="url(#tridentGrad)" stroke-width="3" stroke-linecap="round"/>
+          <!-- Рога трезубца -->
+          <path d="M42,44 C42,51 45,53 50,53 C55,53 58,51 58,44" fill="none" stroke="url(#tridentGrad)" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Зубья -->
+          <path d="M42,45 L42,35 L40,37" fill="none" stroke="url(#tridentGrad)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M58,45 L58,35 L60,37" fill="none" stroke="url(#tridentGrad)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M50,34 L50,26" fill="none" stroke="url(#tridentGrad)" stroke-width="2.5" stroke-linecap="round"/>
+        </g>
+  
+        <!-- Звездный Нимб Канаты (Вращается отдельно) -->
+        <g class="emblem-halo" filter="url(#glow-heavy)">
+          <!-- Эллипс-основание -->
+          <ellipse cx="50" cy="18" rx="16" ry="5" fill="none" stroke="url(#haloGrad)" stroke-width="1.8" opacity="0.85"/>
+          <!-- Каноничный четырёхконечный нимб-звезда -->
+          <path d="M50,6 L52.5,14 L60.5,18 L52.5,22 L50,30 L47.5,22 L39.5,18 L47.5,14 Z" fill="url(#haloGrad)"/>
+        </g>
+      </svg>
+    </button>
+  
+    <!-- Меню навигации с динамическим холстом -->
+    <nav class="global-dock" id="globalDock" aria-label="Ссылки навигации">
+      <canvas class="dock-canvas" id="dockCanvas"></canvas>
+      
+      <a href="index.html" class="dock-item">
+        <div class="dock-icon-wrapper"><img src="https://i.imgur.com/tpFK0jG.png" alt="Menu" class="dock-icon" /></div>
+        <span class="dock-text">Menu</span>
+      </a>
+      <a href="ai.html" class="dock-item">
+        <div class="dock-icon-wrapper"><img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon" /></div>
+        <span class="dock-text">AI</span>
+      </a>
+      <a href="agent.html" class="dock-item">
+        <div class="dock-icon-wrapper"><img src="https://i.imgur.com/HTTz55C.png" alt="Agent" class="dock-icon" /></div>
+        <span class="dock-text">Agent</span>
+      </a>
+      <a href="game.html" class="dock-item">
+        <div class="dock-icon-wrapper"><img src="https://i.imgur.com/4Uk0ui7.png" alt="Music" class="dock-icon" /></div>
+        <span class="dock-text">Tetris</span>
+      </a>
+      <a href="note.html" class="dock-item">
+        <div class="dock-icon-wrapper"><img src="https://i.imgur.com/GcjfCTh.png" alt="Note" class="dock-icon" /></div>
+        <span class="dock-text">Note</span>
+      </a>
+      <a href="googleweb.html" class="dock-item">
+        <div class="dock-icon-wrapper"><img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="dock-icon" /></div>
+        <span class="dock-text">Google</span>
+      </a>
+      <a href="browser.html" class="dock-item">
+        <div class="dock-icon-wrapper"><img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX" class="dock-icon" /></div>
+        <span class="dock-text">SearX</span>
+      </a>
+    </nav>
+  </div>
+  
+  <!-- ======================================================================= -->
+  <!-- FRONTEND ENGINE (JavaScript)                                           -->
+  <!-- ======================================================================= -->
+  <script>
+    /**
+     * Контроллер глитч-эффектов на основе деформации SVG.
+     */
+    class GlitchEngine {
+      constructor() {
+        this.map = document.getElementById('displacement-map');
+        this.isGlitching = false;
+      }
+  
+      trigger() {
+        if (this.isGlitching) return;
+        this.isGlitching = true;
+        let start = null;
+  
+        const animate = (timestamp) => {
+          if (!start) start = timestamp;
+          const progress = timestamp - start;
+  
+          if (progress < 150) {
+            // Интенсивный глитч на взлете
+            const scale = Math.sin(progress * 0.1) * 14;
+            this.map.setAttribute('scale', Math.abs(scale));
+            requestAnimationFrame(animate);
+          } else {
+            this.map.setAttribute('scale', '0');
+            this.isGlitching = false;
+          }
+        };
+  
+        requestAnimationFrame(animate);
+      }
+    }
+  
+    /**
+     * Procedural Dynamic Canvas Background.
+     * Отрисовывает звездное небо Канаты и морские глубины Гуры в реальном времени.
+     */
+    class CanvasBackground {
+      constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.stars = [];
+        this.time = 0;
+        this.dpr = window.devicePixelRatio || 1;
+  
+        this.resize();
+        this.initStars();
+        this.animate = this.animate.bind(this);
+        requestAnimationFrame(this.animate);
+      }
+  
+      resize() {
+        const parent = this.canvas.parentElement;
+        this.width = parent.offsetWidth;
+        this.height = parent.offsetHeight;
+        this.canvas.width = this.width * this.dpr;
+        this.canvas.height = this.height * this.dpr;
+        this.ctx.scale(this.dpr, this.dpr);
+      }
+  
+      initStars() {
+        this.stars = Array.from({ length: 15 }, () => ({
+          x: Math.random() * this.width,
+          y: Math.random() * this.height,
+          size: Math.random() * 1.5 + 0.5,
+          alpha: Math.random(),
+          speed: 0.01 + Math.random() * 0.02
+        }));
+      }
+  
+      animate() {
+        this.time += 0.02;
+        this.ctx.clearRect(0, 0, this.width, this.height);
+  
+        // 1. Рисуем космические звезды (Небеса)
+        this.stars.forEach(star => {
+          star.alpha += star.speed;
+          if (star.alpha > 1 || star.alpha < 0) star.speed = -star.speed;
+          this.ctx.fillStyle = `rgba(167, 139, 250, ${Math.max(0, star.alpha)})`;
+          this.ctx.beginPath();
+          this.ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+          this.ctx.fill();
+        });
+  
+        // 2. Рисуем интерактивные синусоидальные волны (Океан)
+        this.ctx.strokeStyle = 'rgba(0, 229, 255, 0.12)';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        for (let x = 0; x <= this.width; x += 5) {
+          const y = this.height * 0.8 + Math.sin(x * 0.05 + this.time) * 4;
+          if (x === 0) this.ctx.moveTo(x, y);
+          else this.ctx.lineTo(x, y);
+        }
+        this.ctx.stroke();
+  
+        requestAnimationFrame(this.animate);
+      }
+    }
+  
+    /**
+     * Главный движок управления док-панелью.
+     */
+     class CelestialSeaDock {
+      constructor() {
+        this.wrapper = document.getElementById("fabWrapper");
+        this.btn = document.getElementById("fabToggleBtn");
+        this.dock = document.getElementById("globalDock");
+  
+        // Безопасно связываем с глобальным аудио-движком терминала
+        this.synth = window.sound || { playChime() {}, playBubble() {} }; 
+        
+        this.glitch = new GlitchEngine();
+        this.bg = new CanvasBackground("dockCanvas");
+        // ...
+  
+        // Физика Lerp (сглаживание перемещения)
+        this.pos = { currentX: 0, currentY: 0, targetX: 0, targetY: 0 };
+        this.isDragging = false;
+        this.hasMoved = false;
+        this.dragOffset = { x: 0, y: 0 };
+  
+        this.initEvents();
+        this.initActiveLink();
+        this.snapToInitial();
+      }
+  
+      snapToInitial() {
+        // Инициализируем стартовую позицию в правом нижнем углу
+        const initialX = window.innerWidth - 98; // 30px offset + 68px width
+        const initialY = window.innerHeight - 98;
+        this.pos.currentX = this.pos.targetX = initialX;
+        this.pos.currentY = this.pos.targetY = initialY;
+        this.updateDOMPosition();
+      }
+  
+      initActiveLink() {
+        let path = window.location.pathname.split("/").pop();
+        if (!path) path = "index.html";
+        document.querySelectorAll(".dock-item").forEach(item => {
+          if (item.getAttribute("href") === path) {
+            item.classList.add("active");
+          }
+        });
+      }
+  
+      initEvents() {
+        // Клик по кнопке
+        this.btn.addEventListener("click", (e) => {
+          if (this.hasMoved) {
+            e.preventDefault();
+            return;
+          }
+          this.toggleDock();
+        });
+  
+        // Drag events
+        this.btn.addEventListener("mousedown", (e) => this.dragStart(e));
+        this.btn.addEventListener("touchstart", (e) => this.dragStart(e), { passive: true });
+  
+        window.addEventListener("mousemove", (e) => this.dragMove(e));
+        window.addEventListener("touchmove", (e) => this.dragMove(e), { passive: false });
+  
+        window.addEventListener("mouseup", () => this.dragEnd());
+        window.addEventListener("touchend", () => this.dragEnd());
+  
+        // Закрытие по клику вне
+        document.addEventListener("click", (e) => {
+          if (!this.wrapper.contains(e.target) && this.wrapper.classList.contains("open")) {
+            this.wrapper.classList.remove("open");
+            this.synth.playBubble();
+          }
+        });
+  
+        // Resize observer
+        window.addEventListener("resize", () => {
+          this.bg.resize();
+          this.keepInBounds();
+        });
+  
+        // Глитч при наведении на пункты меню
+        document.querySelectorAll('.dock-item').forEach(item => {
+          item.addEventListener('mouseenter', () => {
+            this.glitch.trigger();
+            this.synth.playChime();
+          });
+        });
+      }
+  
+      toggleDock() {
+        this.updateDockDirection();
+        const isOpen = this.wrapper.classList.toggle("open");
+        if (isOpen) {
+          this.synth.playChime();
+        } else {
+          this.synth.playBubble();
+        }
+      }
+  
+      dragStart(e) {
+        this.isDragging = true;
+        this.hasMoved = false;
+  
+        // Получаем текущие координаты из объекта положения
+        const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+  
+        this.dragOffset.x = clientX - this.pos.currentX;
+        this.dragOffset.y = clientY - this.pos.currentY;
+  
+        this.wrapper.style.willChange = "transform";
+      }
+  
+      dragMove(e) {
+        if (!this.isDragging) return;
+  
+        const clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+  
+        const targetX = clientX - this.dragOffset.x;
+        const targetY = clientY - this.dragOffset.y;
+  
+        // Лимиты экрана
+        const maxLeft = window.innerWidth - this.wrapper.offsetWidth;
+        const maxTop = window.innerHeight - this.wrapper.offsetHeight;
+  
+        this.pos.targetX = Math.max(0, Math.min(targetX, maxLeft));
+        this.pos.targetY = Math.max(0, Math.min(targetY, maxTop));
+  
+        if (Math.abs(this.pos.targetX - this.pos.currentX) > 4 || Math.abs(this.pos.targetY - this.pos.currentY) > 4) {
+          this.hasMoved = true;
+          if (e.cancelable) e.preventDefault();
+        }
+  
+        this.updatePhysics();
+      }
+  
+      dragEnd() {
+        if (!this.isDragging) return;
+        this.isDragging = false;
+        this.wrapper.style.willChange = "auto";
+        this.keepInBounds();
+      }
+  
+      /**
+       * Сглаживание движения с использованием LERP (Linear Interpolation).
+       * Дает благородное "тяжелое" скольжение виджета.
+       */
+      updatePhysics() {
+        if (!this.isDragging && Math.abs(this.pos.targetX - this.pos.currentX) < 0.1 && Math.abs(this.pos.targetY - this.pos.currentY) < 0.1) {
+          return;
+        }
+  
+        const lerpFactor = this.isDragging ? 0.25 : 0.15;
+        this.pos.currentX += (this.pos.targetX - this.pos.currentX) * lerpFactor;
+        this.pos.currentY += (this.pos.targetY - this.pos.currentY) * lerpFactor;
+  
+        this.updateDOMPosition();
+        this.updateDockDirection();
+  
+        if (this.isDragging) {
+          requestAnimationFrame(() => this.updatePhysics());
+        }
+      }
+  
+      updateDOMPosition() {
+        this.wrapper.style.left = `${this.pos.currentX}px`;
+        this.wrapper.style.top = `${this.pos.currentY}px`;
+        this.wrapper.style.bottom = "auto";
+        this.wrapper.style.right = "auto";
+      }
+  
+      updateDockDirection() {
+        const rect = this.wrapper.getBoundingClientRect();
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+  
+        this.wrapper.classList.remove("is-left", "is-up", "is-down");
+  
+        const dockWidth = this.dock.scrollWidth;
+        const gap = 20;
+  
+        const spaceLeft = rect.left;
+        const spaceRight = screenWidth - rect.right;
+        const spaceTop = rect.top;
+        const spaceBottom = screenHeight - rect.bottom;
+  
+        if (spaceRight >= dockWidth + gap) {
+          this.wrapper.classList.add("is-left"); // Открывается вправо
+        } else if (spaceLeft < dockWidth + gap) {
+          // Вертикальный фоллбек, если по бокам места нет
+          if (spaceTop > spaceBottom) {
+            this.wrapper.classList.add("is-up");
+          } else {
+            this.wrapper.classList.add("is-down");
+          }
+        }
+      }
+  
+      keepInBounds() {
+        const maxLeft = window.innerWidth - this.wrapper.offsetWidth;
+        const maxTop = window.innerHeight - this.wrapper.offsetHeight;
+  
+        this.pos.targetX = Math.max(10, Math.min(this.pos.targetX, maxLeft - 10));
+        this.pos.targetY = Math.max(10, Math.min(this.pos.targetY, maxTop - 10));
+        
+        this.updatePhysics();
+      }
+    }
+  
+    // Запуск интерфейса после загрузки DOM
+    document.addEventListener("DOMContentLoaded", () => {
+      window.celestialSea = new CelestialSeaDock();
+    });
+  </script>
+</html>

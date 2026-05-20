@@ -1,0 +1,2178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A.E.G.I.S. // Ocean-Sky Terminal Codex</title>
+  <style>
+    /* --- FONTS & STYLING SCALES --- */
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Share+Tech+Mono&family=Syne:wght@700;800&display=swap');
+
+    :root {
+      /* Palette mapping (Dynamic theme variables shifted by JS) */
+      --theme-primary: #00e5ff;
+      --theme-primary-rgb: 0, 229, 255;
+      --theme-sec: #ffd700;
+      --theme-sec-rgb: 255, 215, 0;
+      --theme-bg-dark: #040914;
+      --theme-card-bg: rgba(6, 15, 34, 0.7);
+      --theme-border: rgba(0, 229, 255, 0.15);
+      --font-title: 'Syne', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'Share Tech Mono', monospace;
+      
+      --glitch-intensity: 0;
+    }
+
+    /* Core Document Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--theme-bg-dark);
+      color: #e2f1f5;
+      font-family: var(--font-body);
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(4, 9, 20, 0.9);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--theme-primary);
+      border-radius: 2px;
+    }
+
+    /* --- PROCEDURAL OVERLAYS --- */
+    #backgroundCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Scanlines effect */
+    body::before {
+      content: " ";
+      display: block;
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      z-index: 999;
+      background-size: 100% 4px, 6px 100%;
+      pointer-events: none;
+    }
+
+    /* Custom Cursor */
+    .custom-cursor {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      background: #ffffff;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10000;
+      transform: translate(-50%, -50%);
+      mix-blend-mode: difference;
+    }
+
+    .cursor-trail {
+      position: fixed;
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--theme-primary);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: width 0.2s, height 0.2s, border-color 0.4s;
+    }
+
+    @media (hover: none) {
+      .custom-cursor, .cursor-trail { display: none !important; }
+    }
+
+    /* --- SPLASH / INTERACTION GESTURE LOCK --- */
+    .splash-screen {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: radial-gradient(circle at center, #07162c 0%, #02060d 100%);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .splash-content {
+      text-align: center;
+      max-width: 600px;
+      padding: 2rem;
+      z-index: 2;
+    }
+
+    .splash-logo-container {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      margin-bottom: 2rem;
+    }
+
+    .halo-wrapper {
+      width: 100px;
+      height: 100px;
+      animation: spin-halo 15s linear infinite;
+    }
+
+    .trident-wrapper {
+      width: 100px;
+      height: 100px;
+      animation: bounce-trident 4s ease-in-out infinite;
+    }
+
+    .splash-title {
+      font-family: var(--font-title);
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 800;
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+      margin-bottom: 0.5rem;
+      letter-spacing: -1px;
+    }
+
+    .splash-subtitle {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: var(--theme-primary);
+      letter-spacing: 5px;
+      margin-bottom: 2.5rem;
+    }
+
+    .splash-btn {
+      background: transparent;
+      border: 1px solid var(--theme-primary);
+      color: #ffffff;
+      padding: 1rem 2.5rem;
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      letter-spacing: 2px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .splash-btn:hover {
+      background: var(--theme-primary);
+      color: var(--theme-bg-dark);
+      box-shadow: 0 0 25px rgba(0, 229, 255, 0.6);
+    }
+
+    /* --- TERMINAL INTERFACE LAYOUT --- */
+    .terminal-layout {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 1700px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100vh;
+      min-height: 700px;
+    }
+
+    @media (max-width: 1100px) {
+      .terminal-layout {
+        height: auto;
+        grid-template-rows: auto auto auto;
+      }
+    }
+
+    /* --- HEADER --- */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--theme-border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .logo-block {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header-logo-svg {
+      width: 40px;
+      height: 40px;
+    }
+
+    .header-title-section h1 {
+      font-family: var(--font-title);
+      font-size: 1.6rem;
+      background: linear-gradient(45deg, #ffffff, var(--theme-primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .header-title-section p {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .system-status {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .status-metric {
+      text-align: right;
+    }
+
+    .status-metric label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.4);
+      display: block;
+    }
+
+    .status-metric span {
+      font-family: var(--font-mono);
+      font-weight: bold;
+      font-size: 1rem;
+      color: var(--theme-primary);
+    }
+
+    /* --- CORE WORKSPACE GRID --- */
+    .workspace {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 2rem;
+      overflow: hidden;
+    }
+
+    @media (max-width: 1100px) {
+      .workspace {
+        grid-template-columns: 1fr;
+        overflow: visible;
+      }
+    }
+
+    /* Sidebar - 12 Module Index List */
+    .module-sidebar {
+      background: var(--theme-card-bg);
+      border: 1px solid var(--theme-border);
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    .sidebar-title {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      padding: 1rem;
+      border-bottom: 1px solid var(--theme-border);
+      background: rgba(255,255,255,0.02);
+      display: flex;
+      justify-content: space-between;
+      letter-spacing: 1px;
+    }
+
+    .module-nav {
+      overflow-y: auto;
+      flex: 1;
+      padding: 0.5rem;
+    }
+
+    .module-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.4rem;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      background: rgba(255,255,255,0.01);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .module-item:hover {
+      background: rgba(var(--theme-primary-rgb), 0.05);
+      border-color: rgba(var(--theme-primary-rgb), 0.3);
+      transform: translateX(4px);
+    }
+
+    .module-item.active {
+      background: rgba(var(--theme-primary-rgb), 0.12);
+      border-color: var(--theme-primary);
+      box-shadow: 0 0 15px rgba(var(--theme-primary-rgb), 0.15);
+    }
+
+    .item-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .item-filename {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    .item-alias {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.55);
+      margin-top: 2px;
+    }
+
+    .item-badge {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .module-item.active .item-badge {
+      background: rgba(var(--theme-primary-rgb), 0.2);
+      border-color: var(--theme-primary);
+      color: var(--theme-primary);
+    }
+
+    /* Main Showcase Stage */
+    .showcase-stage {
+      display: grid;
+      grid-template-columns: 45% 55%;
+      gap: 1.5rem;
+      background: var(--theme-card-bg);
+      border: 1px solid var(--theme-border);
+      border-radius: 4px;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      position: relative;
+    }
+
+    @media (max-width: 768px) {
+      .showcase-stage {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Stage Left - Procedural Graphic Viewport */
+    .viewport-left {
+      position: relative;
+      border-right: 1px solid var(--theme-border);
+      background: radial-gradient(circle at center, rgba(var(--theme-primary-rgb), 0.05) 0%, rgba(0,0,0,0) 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      min-height: 350px;
+    }
+
+    .canvas-overlay-viewport {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0; left: 0;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .svg-container {
+      width: 75%;
+      height: 75%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2;
+    }
+
+    .svg-container svg {
+      width: 100%;
+      height: 100%;
+      max-width: 320px;
+      filter: drop-shadow(0 0 15px rgba(var(--theme-primary-rgb), 0.4));
+    }
+
+    /* Stage Right - Comprehensive technical logs */
+    .viewport-right {
+      padding: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow-y: auto;
+    }
+
+    .module-tag {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--theme-primary);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .module-tag::before {
+      content: " ";
+      display: block;
+      width: 6px;
+      height: 6px;
+      background: var(--theme-primary);
+      border-radius: 50%;
+    }
+
+    .main-title {
+      font-family: var(--font-title);
+      font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      color: #ffffff;
+      text-shadow: 0 0 15px rgba(255,255,255,0.08);
+    }
+
+    .desc-box {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: rgba(226, 241, 245, 0.8);
+      margin-bottom: 1.5rem;
+    }
+
+    .functionality-list-container {
+      border-top: 1px dashed var(--theme-border);
+      padding-top: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .function-title {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--theme-primary);
+      margin-bottom: 0.75rem;
+      letter-spacing: 1px;
+    }
+
+    .function-description {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.5;
+    }
+
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      border-top: 1px solid var(--theme-border);
+      padding-top: 1.5rem;
+    }
+
+    .metric-card {
+      background: rgba(255,255,255,0.01);
+      border: 1px solid rgba(var(--theme-primary-rgb), 0.1);
+      padding: 0.75rem;
+      border-radius: 2px;
+      text-align: center;
+    }
+
+    .metric-card label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.4);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .metric-card span {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    .control-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+    }
+
+    .glitch-btn {
+      background: transparent;
+      border: 1px solid var(--theme-border);
+      color: var(--theme-primary);
+      padding: 0.5rem 1.2rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+
+    .glitch-btn:hover {
+      background: rgba(var(--theme-primary-rgb), 0.1);
+      box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.2);
+    }
+
+    /* --- FOOTER MAP --- */
+    .app-footer {
+      border-top: 1px solid var(--theme-border);
+      padding-top: 1rem;
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .footer-credit a {
+      color: var(--theme-primary);
+      text-decoration: none;
+    }
+
+    /* --- PROCEDURAL TRANSITIONS / GLITCH ANIMS --- */
+    @keyframes spin-halo {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes bounce-trident {
+      0%, 100% { transform: translateY(0) rotate(0); }
+      50% { transform: translateY(-10px) rotate(3deg); }
+    }
+
+    /* Active Glitch State (Applied globally for short bursts on transition) */
+    .glitch-active {
+      animation: screen-vibration 0.25s linear;
+    }
+
+    @keyframes screen-vibration {
+      0% { transform: translate(0, 0) skew(0deg); filter: hue-rotate(0deg); }
+      20% { transform: translate(-3px, 2px) skew(-1deg); filter: hue-rotate(90deg); }
+      40% { transform: translate(3px, -2px) skew(1deg); filter: hue-rotate(180deg); }
+      60% { transform: translate(-2px, -1px) skew(-2deg); filter: hue-rotate(270deg); }
+      80% { transform: translate(2px, 2px) skew(2deg); filter: hue-rotate(360deg); }
+      100% { transform: translate(0, 0) skew(0deg); filter: hue-rotate(0deg); }
+    }
+
+    .text-scramble-active {
+      font-family: var(--font-mono) !important;
+    }
+
+    /* CSS variable transitioning helper */
+    body, .cursor-trail, .showcase-stage, .module-sidebar, .module-item, .metric-card {
+      transition: border-color 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  </style>
+</head>
+<body class="theme-abyss">
+
+  <!-- SVG noise vector overlay for aesthetic grain -->
+  <svg style="display:none;">
+    <filter id="noise-filter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" result="noise" />
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.04 0" />
+      <feComposite operator="in" in2="SourceGraphic" />
+    </filter>
+  </svg>
+
+  <canvas id="backgroundCanvas"></canvas>
+  <div class="custom-cursor" id="customCursor"></div>
+  <div class="cursor-trail" id="cursorTrail"></div>
+
+  <!-- Splash Screen -->
+  <div class="splash-screen" id="splashScreen">
+    <div class="splash-content">
+      <div class="splash-logo-container">
+        <!-- Celestial Star Halo (Kanata) -->
+        <svg class="halo-wrapper" viewBox="-120 -120 240 240">
+          <circle r="85" fill="none" stroke="rgba(255, 215, 0, 0.3)" stroke-width="2" stroke-dasharray="10 5" />
+          <circle r="65" fill="none" stroke="rgba(0, 229, 255, 0.4)" stroke-width="1" />
+          <path d="M 0,-70 Q 15,-15 70,0 Q 15,15 0,70 Q -15,15 -70,0 Q -15,-15 0,-70 Z" fill="rgba(255, 215, 0, 0.15)" stroke="#ffd700" stroke-width="3" />
+          <circle r="15" fill="none" stroke="#00e5ff" stroke-width="2" />
+          <path d="M -25,0 L 25,0 M 0,-25 L 0,25" stroke="#00e5ff" stroke-width="2" />
+        </svg>
+
+        <!-- Divine Trident (Gura) -->
+        <svg class="trident-wrapper" viewBox="0 0 100 300">
+          <rect x="47" y="120" width="6" height="170" rx="3" fill="#00e5ff" opacity="0.8" />
+          <rect x="44" y="140" width="12" height="4" fill="#ffd700" />
+          <rect x="44" y="240" width="12" height="4" fill="#ffd700" />
+          <path d="M 30,120 Q 50,132 70,120 L 66,110 Q 50,118 34,110 Z" fill="#00e5ff" />
+          <path d="M 45,115 L 50,15 L 55,115 Z" fill="#00e5ff" />
+          <path d="M 50,35 L 50,105" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.8" />
+          <path d="M 32,113 Q 12,85 18,35 Q 22,65 37,105 Z" fill="#00e5ff" />
+          <path d="M 68,113 Q 88,85 82,35 Q 78,65 63,105 Z" fill="#00e5ff" />
+        </svg>
+      </div>
+      <h1 class="splash-title">A.E.G.I.S.</h1>
+      <p class="splash-subtitle">ALTITUDE & DEPTH OPERATIVE</p>
+      <button class="splash-btn" id="startBtn">SYNC TERMINAL</button>
+    </div>
+  </div>
+
+  <!-- Main System UI -->
+  <div class="terminal-layout" id="mainLayout" style="display: none;">
+    <header class="app-header">
+      <div class="logo-block">
+        <svg class="header-logo-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="var(--theme-primary)" stroke-width="1.5" />
+          <circle cx="50" cy="50" r="35" fill="none" stroke="var(--theme-sec)" stroke-width="1" stroke-dasharray="5 3" />
+          <path d="M 50,20 L 50,80 M 20,50 L 80,50" stroke="var(--theme-primary)" stroke-width="1" />
+        </svg>
+        <div class="header-title-section">
+          <h1>A.E.G.I.S. WEB CODEX</h1>
+          <p>TIDE-SKY INTEGRATION REGISTRY // VER 4.0.26</p>
+        </div>
+      </div>
+      <div class="system-status">
+        <div class="status-metric">
+          <label>CELESTIAL CORRELATION</label>
+          <span id="heavenStat" class="text-gold">KANATA.v4</span>
+        </div>
+        <div class="status-metric">
+          <label>ABYSSAL TELEMETRY</label>
+          <span id="abyssStat" class="text-cyan">GURA.v1</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <!-- 12 Modules Sidebar -->
+      <aside class="module-sidebar">
+        <div class="sidebar-title">
+          <span>REGISTRY ARCHIVE</span>
+          <span class="blink" style="color: var(--theme-primary);">[12 NODES]</span>
+        </div>
+        <nav class="module-nav" id="moduleNav"></nav>
+      </aside>
+
+      <!-- Active Stage -->
+      <section class="showcase-stage" id="showcaseStage">
+        <!-- Procedural Art Visualizer -->
+        <div class="viewport-left" id="stageViewport">
+          <canvas class="canvas-overlay-viewport" id="cardOverlayCanvas"></canvas>
+          <div class="svg-container" id="stageSVG">
+            <!-- Dynamic Module Vectors Render here -->
+          </div>
+        </div>
+
+        <!-- System Parameters Logs -->
+        <div class="viewport-right">
+          <div>
+            <div class="module-tag" id="stageTag">PROTOCOL: ABYSS</div>
+            <h2 class="main-title" id="stageTitle">Portal Gateway</h2>
+            <div class="desc-box" id="stageDesc">
+              Файл инициализации структуры. Разворачивает основные точки соприкосновения сетевых структур и морских глубин.
+            </div>
+            
+            <div class="functionality-list-container">
+              <div class="function-title">ФУНКЦИОНАЛЬНОЕ НАЗНАЧЕНИЕ (HTML CORE)</div>
+              <p class="function-description" id="stageFunction">
+                Загружает корневые скрипты ядра, соединяет удаленные WebSockets и строит интерактивный интерфейс горизонта.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <div class="metrics-row">
+              <div class="metric-card">
+                <label>ОТКЛИК ИДЕНТИФИКАТОРА</label>
+                <span id="metricSpeed">12ms</span>
+              </div>
+              <div class="metric-card">
+                <label>УРОВЕНЬ СИНХРОНИЗАЦИИ</label>
+                <span id="metricIntegration">99%</span>
+              </div>
+              <div class="metric-card">
+                <label>УРОВЕНЬ ЗАЩИТЫ</label>
+                <span id="metricSecurity">Divine</span>
+              </div>
+            </div>
+
+            <div class="control-actions">
+              <button class="glitch-btn" id="simulateGlitchBtn">ИМИТИРОВАТЬ СБОЙ</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <div>SYSTEM CODE: CELESTIAL-OCEAN INTEGRITY VALIDATED</div>
+      <div class="footer-credit">A.E.G.I.S. // DESIGNED DIRECTLY FOR OBSERVATION</div>
+      <div>MAY 2026 // EPOCH 4.0</div>
+    </footer>
+  </div>
+
+  <script>
+    /* --- LIGHTWEIGHT WEB AUDIO SYNTHESIZED DESIGN --- */
+    class SoundSynth {
+      constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+      }
+      init() {
+        if (this.ctx) return;
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+        this.masterGain.connect(this.ctx.destination);
+      }
+      playChime() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // Beautiful Pentatonic Ascending C
+        const chosenNote = notes[Math.floor(Math.random() * notes.length)];
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(chosenNote, now);
+        
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.15, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+        
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 1.6);
+      }
+      playBubble() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.14);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      }
+      playGlitch() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const bufferSize = this.ctx.sampleRate * 0.08; // Short 80ms white noise spike
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1400;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        noise.start(now);
+      }
+    }
+
+    const sound = new SoundSynth();
+window.sound = sound; // Экспортируем в глобальную область видимости
+
+    /* --- BACKGROUND PARTICLE CANVAS (60FPS TARGET) --- */
+    class InteractiveCanvas {
+      constructor() {
+        this.canvas = document.getElementById('backgroundCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.particles = [];
+        this.waves = [];
+        this.glitchFrameCount = 0;
+        this.width = 0;
+        this.height = 0;
+        this.dpr = window.devicePixelRatio || 1;
+        this.init();
+        this.bindEvents();
+        this.animate();
+      }
+
+      init() {
+        this.resize();
+        this.generateParticles();
+      }
+
+      resize() {
+        this.width = window.innerWidth;
+        this.height = window.innerHeight;
+        this.canvas.width = this.width * this.dpr;
+        this.canvas.height = this.height * this.dpr;
+        this.ctx.scale(this.dpr, this.dpr);
+      }
+
+      generateParticles() {
+        this.particles = [];
+        // Heavens side (Golden orbits drifting right)
+        for (let i = 0; i < 35; i++) {
+          this.particles.push({
+            x: Math.random() * this.width,
+            y: Math.random() * (this.height * 0.4),
+            r: Math.random() * 2.5 + 0.5,
+            vx: Math.random() * 0.3 - 0.1,
+            vy: Math.random() * 0.2 + 0.1,
+            alpha: Math.random() * 0.5 + 0.3,
+            type: 'star'
+          });
+        }
+        // Abyss side (Turquoise rising bubbles)
+        for (let i = 0; i < 45; i++) {
+          this.particles.push({
+            x: Math.random() * this.width,
+            y: this.height * 0.4 + Math.random() * (this.height * 0.6),
+            r: Math.random() * 5 + 1.5,
+            vx: Math.random() * 0.4 - 0.2,
+            vy: -(Math.random() * 0.6 + 0.3),
+            alpha: Math.random() * 0.6 + 0.2,
+            type: 'bubble',
+            oscillationSpeed: Math.random() * 0.05 + 0.01,
+            oscillationWidth: Math.random() * 2 + 0.5,
+            phase: Math.random() * Math.PI
+          });
+        }
+      }
+
+      bindEvents() {
+        window.addEventListener('resize', () => {
+          this.resize();
+          this.generateParticles();
+        });
+      }
+
+      triggerGlitch() {
+        this.glitchFrameCount = 18;
+      }
+
+      animate() {
+        requestAnimationFrame(() => this.animate());
+
+        // Dynamic background filling based on active theme
+        const isHeavens = document.body.classList.contains('theme-heavens');
+        const color1 = isHeavens ? '#0d1021' : '#030812';
+        const color2 = isHeavens ? '#04050d' : '#020408';
+
+        this.ctx.fillStyle = color2;
+        this.ctx.fillRect(0, 0, this.width, this.height);
+
+        // Render soft glow grids
+        this.ctx.strokeStyle = isHeavens ? 'rgba(255, 215, 0, 0.03)' : 'rgba(0, 229, 255, 0.02)';
+        this.ctx.lineWidth = 1;
+        const gridSize = 80;
+        for (let x = 0; x < this.width; x += gridSize) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(x, 0);
+          this.ctx.lineTo(x, this.height);
+          this.ctx.stroke();
+        }
+        for (let y = 0; y < this.height; y += gridSize) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, y);
+          this.ctx.lineTo(this.width, y);
+          this.ctx.stroke();
+        }
+
+        // Particle rendering loop
+        this.particles.forEach((p) => {
+          if (p.type === 'star') {
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.y > this.height) p.y = 0;
+            if (p.x > this.width) p.x = 0;
+            if (p.x < 0) p.x = this.width;
+
+            // Draw glowing stars
+            this.ctx.fillStyle = `rgba(255, 215, 0, ${p.alpha})`;
+            this.ctx.beginPath();
+            this.ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            this.ctx.fill();
+          } else {
+            // Bubble physics (wobbly ascension)
+            p.y += p.vy;
+            p.phase += p.oscillationSpeed;
+            p.x += Math.sin(p.phase) * p.oscillationWidth * 0.1;
+
+            if (p.y < 0) {
+              p.y = this.height;
+              p.x = Math.random() * this.width;
+            }
+
+            this.ctx.strokeStyle = `rgba(0, 229, 255, ${p.alpha})`;
+            this.ctx.lineWidth = 1.2;
+            this.ctx.beginPath();
+            this.ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            this.ctx.stroke();
+          }
+        });
+
+        // Trigger dynamic glitch visual mutations on Canvas
+        if (this.glitchFrameCount > 0) {
+          this.glitchFrameCount--;
+          for (let i = 0; i < 5; i++) {
+            const gy = Math.random() * this.height;
+            const gh = Math.random() * 25 + 5;
+            const shift = Math.random() * 40 - 20;
+            this.ctx.drawImage(this.canvas, 0, gy * this.dpr, this.width * this.dpr, gh * this.dpr, shift, gy, this.width, gh);
+          }
+        }
+      }
+    }
+
+    /* --- TEXT SCRAMBLER EFFECT CLASS --- */
+    class TextScrambler {
+      constructor(el) {
+        this.el = el;
+        this.chars = '!<>-_\\/[]{}—=+*^?#________';
+        this.update = this.update.bind(this);
+      }
+      setText(newText) {
+        const oldText = this.el.innerText;
+        const length = Math.max(oldText.length, newText.length);
+        const promise = new Promise((resolve) => this.resolve = resolve);
+        this.queue = [];
+        for (let i = 0; i < length; i++) {
+          const from = oldText[i] || '';
+          const to = newText[i] || '';
+          const start = Math.floor(Math.random() * 25);
+          const end = start + Math.floor(Math.random() * 25);
+          this.queue.push({ from, to, start, end });
+        }
+        cancelAnimationFrame(this.frameId);
+        this.frame = 0;
+        this.update();
+        return promise;
+      }
+      update() {
+        let output = '';
+        let complete = 0;
+        for (let i = 0, n = this.queue.length; i < n; i++) {
+          let { from, to, start, end, char } = this.queue[i];
+          if (this.frame >= end) {
+            complete++;
+            output += to;
+          } else if (this.frame >= start) {
+            if (!char || Math.random() < 0.28) {
+              char = this.chars[Math.floor(Math.random() * this.chars.length)];
+              this.queue[i].char = char;
+            }
+            output += `<span class="text-scramble-active" style="color:var(--theme-primary);">${char}</span>`;
+          } else {
+            output += from;
+          }
+        }
+        this.el.innerHTML = output;
+        if (complete === this.queue.length) {
+          this.resolve();
+        } else {
+          this.frame++;
+          this.frameId = requestAnimationFrame(this.update);
+        }
+      }
+    }
+
+    /* --- 12 MODULE DATA ARCHIVE --- */
+    const modulesData = [
+      {
+        id: 'index.html',
+        name: 'index.html',
+        title: 'Врата Контакта',
+        type: 'heavens',
+        desc: 'Корневой файл инициализации системы. Стыкует потоки данных с орбиты со спутниковыми маяками на дне океана, выстраивая каркас интерфейса.',
+        functionality: 'Загружает основные CSS-переменные, определяет приоритеты отрисовки, проверяет кэш сессий и открывает приветственный порт.',
+        metrics: { speed: '12ms', integration: '100%', security: 'Divine' },
+        icon: 'gateway'
+      },
+      {
+        id: 'dashboard.html',
+        name: 'dashboard.html',
+        title: 'Акустический Сонар',
+        type: 'abyss',
+        desc: 'Консоль оперативного слежения. Непрерывно сканирует глубинные каналы данных и сопоставляет их с воздушными потоками телеметрии.',
+        functionality: 'Строит динамические графики активности трафика, фиксирует аномалии на сетке эхолокатора и выводит данные на дашборд.',
+        metrics: { speed: '35ms', integration: '94%', security: 'High' },
+        icon: 'sonar'
+      },
+      {
+        id: 'auth.html',
+        name: 'auth.html',
+        title: 'Сакральное Рукопожатие',
+        type: 'heavens',
+        desc: 'Система авторизации и проверки подписей. Использует сложную структуру звездного нимба для расшифровки сеансовых ключей.',
+        functionality: 'Проводит криптографическую проверку хэшей доступа, координирует токены авторизации и блокирует внешнее проникновение.',
+        metrics: { speed: '48ms', integration: '100%', security: 'Absolute' },
+        icon: 'auth'
+      },
+      {
+        id: 'database.html',
+        name: 'database.html',
+        title: 'Синапс Приливов',
+        type: 'abyss',
+        desc: 'Главный накопитель локальных баз данных, структурирующий потоки информации в соответствии с графиком приливов и отливов.',
+        functionality: 'Организует локальное хранение данных в IndexedDB, синхронизирует списки модулей и проводит автоматическую чистку устаревших логов.',
+        metrics: { speed: '20ms', integration: '89%', security: 'Aqueous' },
+        icon: 'database'
+      },
+      {
+        id: 'chat.html',
+        name: 'chat.html',
+        title: 'Эхо-Камера Глубин',
+        type: 'abyss',
+        desc: 'Модуль общения в реальном времени. Векторизует текстовые сигналы по аналогии со сверхзвуковыми волнами подводной связи.',
+        functionality: 'Обеспечивает непрерывное соединение WebSocket, поддерживает каналы обратной связи и сжимает текстовые фреймы.',
+        metrics: { speed: '8ms', integration: '92%', security: 'Cryptic' },
+        icon: 'chat'
+      },
+      {
+        id: 'settings.html',
+        name: 'settings.html',
+        title: 'Эфирный Калибратор',
+        type: 'heavens',
+        desc: 'Интерфейс тонкой настройки. Позволяет вручную изменять баланс световых волн, объем аудиопотока и частоту колебания эфира.',
+        functionality: 'Модифицирует стили приложения на лету, управляет плотностью генеративного фонового холста и калибрует звуковые синтезаторы.',
+        metrics: { speed: '5ms', integration: '100%', security: 'Secure' },
+        icon: 'settings'
+      },
+      {
+        id: 'billing.html',
+        name: 'billing.html',
+        title: 'Жемчужный Реестр',
+        type: 'abyss',
+        desc: 'Протокол финансового аудита. Учитывает условные токены обмена и жемчужные резервы на глубинных узлах с защитой от изменения транзакций.',
+        functionality: 'Создает защищенные квитанции, шифрует сессионные платежные векторы и генерирует наглядные таблицы расходов.',
+        metrics: { speed: '110ms', integration: '87%', security: 'Vaulted' },
+        icon: 'billing'
+      },
+      {
+        id: 'profile.html',
+        name: 'profile.html',
+        title: 'Вектор Души',
+        type: 'heavens',
+        desc: 'Персональная карточка пользователя. Формирует уникальную интерактивную аватар-карту, обрамленную символикой крыльев и акульих зубов.',
+        functionality: 'Собирает и рендерит достижения пользователя, координирует аватар-векторы и хранит личную карту калибровки.',
+        metrics: { speed: '15ms', integration: '95%', security: 'Protected' },
+        icon: 'profile'
+      },
+      {
+        id: 'terminal.html',
+        name: 'terminal.html',
+        title: 'Консоль Бездны',
+        type: 'abyss',
+        desc: 'Прямой командный интерфейс для взаимодействия с низкоуровневой системной оболочкой. Только для сертифицированных инженеров.',
+        functionality: 'Интерпретирует команды ввода, отображает карту системных трассировок и возвращает технические статус-коды процессов.',
+        metrics: { speed: '2ms', integration: '98%', security: 'Overlord' },
+        icon: 'terminal'
+      },
+      {
+        id: 'monitor.html',
+        name: 'monitor.html',
+        title: 'Гидро-Маяк Телеметрии',
+        type: 'abyss',
+        desc: 'Модуль мониторинга стабильности. Отправляет эхо-запросы для оценки задержек и визуализирует потери пакетов.',
+        functionality: 'Проводит фоновые пинги узлов раз в секунду, строит векторную сетку откликов и предупреждает о потере сетевых мостов.',
+        metrics: { speed: '14ms', integration: '96%', security: 'Internal' },
+        icon: 'monitor'
+      },
+      {
+        id: 'reports.html',
+        name: 'reports.html',
+        title: 'Хроники Вознесения',
+        type: 'heavens',
+        desc: 'Архиватор системных отчетов. Собирает накопленную статистику использования и упаковывает её в элегантные экспортируемые свитки.',
+        functionality: 'Формирует отчеты производительности в SVG, подготавливает файлы отладки к скачиванию и строит итоговые годовые таблицы.',
+        metrics: { speed: '75ms', integration: '91%', security: 'Archival' },
+        icon: 'reports'
+      },
+      {
+        id: 'docs.html',
+        name: 'docs.html',
+        title: 'Навигационные Карты API',
+        type: 'heavens',
+        desc: 'Раздел технической документации. Объясняет архитектурные связи интерфейса, формулы волн Canvas и частоты аудиогенератора.',
+        functionality: 'Обеспечивает мгновенный локальный поиск, подсвечивает синтаксис примеров и строит карту взаимосвязей модулей.',
+        metrics: { speed: '18ms', integration: '100%', security: 'Public' },
+        icon: 'docs'
+      }
+    ];
+
+    /* --- PROCEDURAL SVG GRAPHICS ENGINE --- */
+    function getModuleSVG(type, iconName) {
+      const colorPrimary = type === 'heavens' ? '#ffd700' : '#00e5ff';
+      const colorSec = type === 'heavens' ? '#00e5ff' : '#ffd700';
+
+      const templates = {
+        gateway: `
+          <svg viewBox="-100 -100 200 200">
+            <circle r="80" fill="none" stroke="${colorPrimary}" stroke-width="1.5" stroke-dasharray="8 4" />
+            <circle r="45" fill="none" stroke="${colorSec}" stroke-width="1" />
+            <path d="M 0,-60 Q 12,-12 60,0 Q 12,12 0,60 Q -12,12 -60,0 Q -12,-12 0,-60 Z" fill="rgba(var(--theme-primary-rgb), 0.1)" stroke="${colorPrimary}" stroke-width="2.5" />
+            <path d="M -2,40 L 2,40 L 2,-15 L -2,-15 Z" fill="${colorSec}" />
+            <path d="M -15,10 Q 0,15 15,10 L 12,5 Q 0,10 -12,5 Z" fill="${colorSec}" />
+            <circle cx="0" cy="0" r="8" fill="none" stroke="#ffffff" stroke-width="2" />
+          </svg>
+        `,
+        sonar: `
+          <svg viewBox="-100 -100 200 200">
+            <circle r="90" fill="none" stroke="${colorPrimary}" stroke-width="1" opacity="0.3"/>
+            <circle r="60" fill="none" stroke="${colorPrimary}" stroke-width="1.5" opacity="0.6"/>
+            <circle r="30" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <line x1="-95" y1="0" x2="95" y2="0" stroke="${colorPrimary}" stroke-width="1" opacity="0.5" />
+            <line x1="0" y1="-95" x2="0" y2="95" stroke="${colorPrimary}" stroke-width="1" opacity="0.5" />
+            <path d="M 0,0 L 60,-60" stroke="${colorSec}" stroke-width="2" stroke-linecap="round" />
+            <circle cx="60" cy="-60" r="4" fill="#ffffff" />
+            <circle cx="-30" cy="20" r="5" fill="${colorPrimary}" opacity="0.8" />
+          </svg>
+        `,
+        auth: `
+          <svg viewBox="-100 -100 200 200">
+            <path d="M -50,-50 L 50,-50 L 50,20 Q 50,60 0,85 Q -50,60 -50,20 Z" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <path d="M 0,-35 Q 8,-8 35,0 Q 8,8 0,35 Q -8,8 -35,0 Q -8,-8 0,-35 Z" fill="none" stroke="${colorSec}" stroke-width="2" />
+            <circle cx="0" cy="0" r="10" fill="none" stroke="#ffffff" stroke-width="1.5" />
+          </svg>
+        `,
+        database: `
+          <svg viewBox="-100 -100 200 200">
+            <rect x="-60" y="-70" width="120" height="25" rx="3" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <rect x="-60" y="-25" width="120" height="25" rx="3" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <rect x="-60" y="20" width="120" height="25" rx="3" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <circle cx="-40" cy="-57" r="4" fill="${colorSec}" />
+            <circle cx="-40" cy="-12" r="4" fill="${colorSec}" />
+            <circle cx="-40" cy="33" r="4" fill="${colorSec}" />
+            <line x1="-15" y1="-57" x2="40" y2="-57" stroke="#ffffff" stroke-width="2" />
+            <line x1="-15" y1="-12" x2="25" y2="-12" stroke="#ffffff" stroke-width="2" />
+            <line x1="-15" y1="33" x2="35" y2="33" stroke="#ffffff" stroke-width="2" />
+          </svg>
+        `,
+        chat: `
+          <svg viewBox="-100 -100 200 200">
+            <path d="M -70,-50 Q 0,-70 70,-50 Q 80,0 70,50 Q 0,70 -40,55 L -75,70 L -65,35 Q -80,0 -70,-50 Z" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <path d="M -40,-10 L 40,-10 M -25,10 L 25,10" stroke="${colorSec}" stroke-width="3" stroke-linecap="round" />
+            <circle cx="0" cy="30" r="3" fill="#ffffff" />
+          </svg>
+        `,
+        settings: `
+          <svg viewBox="-100 -100 200 200">
+            <circle r="40" fill="none" stroke="${colorPrimary}" stroke-width="3" />
+            <circle r="15" fill="none" stroke="${colorSec}" stroke-width="1.5" />
+            <!-- Cog Teeth -->
+            <path d="M 0,-40 L 0,-52 M 0,40 L 0,52 M -40,0 L -52,0 M 40,0 L 52,0 M -28,-28 L -37,-37 M 28,28 L 37,37 M -28,28 L -37,37 M 28,-28 L 37,-37" stroke="${colorPrimary}" stroke-width="5" stroke-linecap="round" />
+            <circle r="65" fill="none" stroke="${colorSec}" stroke-width="1" stroke-dasharray="10 6" />
+          </svg>
+        `,
+        billing: `
+          <svg viewBox="-100 -100 200 200">
+            <path d="M -60,30 Q 0,-70 60,30 Q 35,45 0,35 Q -35,45 -60,30 Z" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <circle cx="0" cy="10" r="16" fill="rgba(var(--theme-primary-rgb), 0.1)" stroke="${colorSec}" stroke-width="2" />
+            <path d="M 0,-15 Q -15,10 -35,30 M 0,-15 Q 15,10 35,30 M 0,-15 L 0,35" stroke="${colorPrimary}" stroke-width="1" opacity="0.6" />
+          </svg>
+        `,
+        profile: `
+          <svg viewBox="-100 -100 200 200">
+            <!-- Angelic wings vector profile -->
+            <path d="M -10,-40 Q -50,-80 -80,-30 Q -60,10 -10,10" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <path d="M 10,-40 Q 50,-80 80,-30 Q 60,10 10,10" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <!-- Center Shield -->
+            <polygon points="0,-50 35,-15 25,35 0,55 -25,35 -35,-15" fill="none" stroke="${colorSec}" stroke-width="2" />
+            <!-- Shark teeth graphics inside shield -->
+            <polygon points="-15,-5 0,-15 15,-5 10,-2 -10,-2" fill="${colorPrimary}" />
+          </svg>
+        `,
+        terminal: `
+          <svg viewBox="-100 -100 200 200">
+            <rect x="-70" y="-55" width="140" height="110" rx="4" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <path d="M -55,-25 L -35,-15 L -55,-5" fill="none" stroke="${colorSec}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            <line x1="-25" y1="-5" x2="-5" y2="-5" stroke="#ffffff" stroke-width="3" />
+            <circle cx="50" cy="40" r="3" fill="${colorPrimary}" />
+          </svg>
+        `,
+        monitor: `
+          <svg viewBox="-100 -100 200 200">
+            <path d="M -90,0 L -50,0 L -35,-45 L -15,55 L 10,-25 L 25,15 L 40,0 L 90,0" fill="none" stroke="${colorPrimary}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="-15" cy="55" r="5" fill="#ffffff" />
+            <circle cx="-35" cy="-45" r="5" fill="#ffffff" />
+            <circle cx="10" cy="-25" r="4" fill="${colorSec}" />
+          </svg>
+        `,
+        reports: `
+          <svg viewBox="-100 -100 200 200">
+            <path d="M -50,-65 L 25,-65 L 55,-35 L 55,65 Q 55,75 45,75 L -50,75 Q -60,75 -60,65 L -60,-55 Q -60,-65 -50,-65 Z" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <path d="M 25,-65 L 25,-35 L 55,-35" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <line x1="-35" y1="-20" x2="15" y2="-20" stroke="${colorSec}" stroke-width="2" />
+            <line x1="-35" y1="5" x2="35" y2="5" stroke="#ffffff" stroke-width="2" />
+            <line x1="-35" y1="30" x2="25" y2="30" stroke="#ffffff" stroke-width="2" />
+          </svg>
+        `,
+        docs: `
+          <svg viewBox="-100 -100 200 200">
+            <circle r="75" fill="none" stroke="${colorPrimary}" stroke-width="2" />
+            <path d="M 0,-75 L 0,75 M -75,0 L 75,0" stroke="${colorPrimary}" stroke-width="1" opacity="0.4" />
+            <!-- Compass needle star -->
+            <polygon points="0,-65 15,0 0,15 -15,0" fill="${colorSec}" />
+            <polygon points="0,65 15,0 0,-15 -15,0" fill="none" stroke="${colorPrimary}" stroke-width="1.5" />
+            <circle r="8" fill="#ffffff" />
+          </svg>
+        `
+      };
+
+      return templates[iconName] || templates.gateway;
+    }
+
+    /* --- APP LOGIC INTERACTION CONTROLLER --- */
+    class OperationalApp {
+      constructor() {
+        this.navContainer = document.getElementById('moduleNav');
+        this.stageTag = document.getElementById('stageTag');
+        this.stageTitle = document.getElementById('stageTitle');
+        this.stageDesc = document.getElementById('stageDesc');
+        this.stageFunction = document.getElementById('stageFunction');
+        this.stageSVG = document.getElementById('stageSVG');
+        
+        this.metricSpeed = document.getElementById('metricSpeed');
+        this.metricIntegration = document.getElementById('metricIntegration');
+        this.metricSecurity = document.getElementById('metricSecurity');
+        
+        this.scramblerTitle = new TextScrambler(this.stageTitle);
+        this.scramblerDesc = new TextScrambler(this.stageDesc);
+        this.scramblerFunction = new TextScrambler(this.stageFunction);
+
+        this.activeModule = null;
+        this.canvasEngine = new InteractiveCanvas();
+        this.init();
+      }
+
+      init() {
+        // Build 12 file directories
+        modulesData.forEach((mod) => {
+          const item = document.createElement('div');
+          item.className = 'module-item';
+          item.dataset.id = mod.id;
+          item.innerHTML = `
+            <div class="item-meta">
+              <span class="item-filename">${mod.name}</span>
+              <span class="item-alias">${mod.title}</span>
+            </div>
+            <span class="item-badge" style="color: ${mod.type === 'heavens' ? '#ffd700' : '#00e5ff'}">
+              ${mod.type === 'heavens' ? 'SKY' : 'ABYSS'}
+            </span>
+          `;
+          
+          item.addEventListener('click', () => this.selectModule(mod.id));
+          this.navContainer.appendChild(item);
+        });
+
+        // Event listener for custom manual glitching
+        document.getElementById('simulateGlitchBtn').addEventListener('click', () => {
+          this.triggerSystemGlitch();
+        });
+
+        // Set default view on load
+        this.selectModule('index.html', true);
+      }
+
+      selectModule(id, preventSound = false) {
+        if (this.activeModule && this.activeModule.id === id) return;
+        
+        const mod = modulesData.find((m) => m.id === id);
+        this.activeModule = mod;
+
+        // Visual switching of side menu active state
+        document.querySelectorAll('.module-item').forEach((item) => {
+          item.classList.toggle('active', item.dataset.id === id);
+        });
+
+        // Update Theme Stylesheets dynamically
+        if (mod.type === 'heavens') {
+          document.body.className = 'theme-heavens';
+          document.documentElement.style.setProperty('--theme-primary', '#ffd700');
+          document.documentElement.style.setProperty('--theme-primary-rgb', '255, 215, 0');
+          document.documentElement.style.setProperty('--theme-border', 'rgba(255, 215, 0, 0.15)');
+          if (!preventSound) sound.playChime();
+        } else {
+          document.body.className = 'theme-abyss';
+          document.documentElement.style.setProperty('--theme-primary', '#00e5ff');
+          document.documentElement.style.setProperty('--theme-primary-rgb', '0, 229, 255');
+          document.documentElement.style.setProperty('--theme-border', 'rgba(0, 229, 255, 0.15)');
+          if (!preventSound) sound.playBubble();
+        }
+
+        // Apply visual glitch transitions to stage container
+        const stage = document.getElementById('showcaseStage');
+        stage.classList.add('glitch-active');
+        setTimeout(() => stage.classList.remove('glitch-active'), 300);
+
+        // Run Text Scrambler
+        this.stageTag.innerText = `PROTOCOL: ${mod.type.toUpperCase()}`;
+        this.scramblerTitle.setText(mod.title);
+        this.scramblerDesc.setText(mod.desc);
+        this.scramblerFunction.setText(mod.functionality);
+
+        // Update technical metric boards
+        this.metricSpeed.innerText = mod.metrics.speed;
+        this.metricIntegration.innerText = mod.metrics.integration;
+        this.metricSecurity.innerText = mod.metrics.security;
+
+        // Render vector SVG shape
+        this.stageSVG.innerHTML = getModuleSVG(mod.type, mod.icon);
+      }
+
+      triggerSystemGlitch() {
+        sound.playGlitch();
+        this.canvasEngine.triggerGlitch();
+        
+        const stage = document.getElementById('showcaseStage');
+        stage.classList.add('glitch-active');
+        setTimeout(() => stage.classList.remove('glitch-active'), 400);
+
+        // Temp random change in telemetry panel numbers
+        const oldSpeed = this.metricSpeed.innerText;
+        this.metricSpeed.innerText = 'ERR_0x0';
+        setTimeout(() => this.metricSpeed.innerText = oldSpeed, 500);
+      }
+    }
+
+    /* --- INITIALIZATION GESTURE BINDING --- */
+    const startBtn = document.getElementById('startBtn');
+    startBtn.addEventListener('click', () => {
+      sound.init();
+      sound.playChime();
+
+      const splash = document.getElementById('splashScreen');
+      splash.style.opacity = '0';
+      splash.style.transform = 'scale(1.05)';
+      
+      setTimeout(() => {
+        splash.style.display = 'none';
+        document.getElementById('mainLayout').style.display = 'grid';
+        // Start main application shell logic
+        window.AEGIS_APP = new OperationalApp();
+      }, 1000);
+    });
+
+    /* --- MODERN CURSOR LAG INTERPOLATION --- */
+    const cursor = document.getElementById('customCursor');
+    const trail = document.getElementById('cursorTrail');
+    let mX = 0, mY = 0;
+    let tX = 0, tY = 0;
+
+    window.addEventListener('mousemove', (e) => {
+      mX = e.clientX;
+      mY = e.clientY;
+      cursor.style.transform = `translate3d(${mX}px, ${mY}px, 0)`;
+    });
+
+    function lerpTrail() {
+      // Smooth non-linear trailing physics (Lerp)
+      tX += (mX - tX) * 0.15;
+      tY += (mY - tY) * 0.15;
+      trail.style.transform = `translate3d(${tX}px, ${tY}px, 0)`;
+      requestAnimationFrame(lerpTrail);
+    }
+    lerpTrail();
+  </script>
+</body>
+<!-- PREMIUM CELESTIAL SEA NAV DOCK (Kanata x Gura Theme)                    -->
+<!-- ======================================================================= -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+
+  :root {
+    --primary-sky: #00E5FF;
+    --primary-heaven: #a78bfa;
+    --gold-halo: #FFE082;
+    --deep-ocean: #081020;
+    --neon-blue: #00f0ff;
+    --neon-purple: #bd00ff;
+    --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  }
+
+  /* Враппер плавающей кнопки */
+  .fab-wrapper {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 999999;
+    width: 68px;
+    height: 68px;
+    pointer-events: none;
+    will-change: transform;
+    filter: drop-shadow(0 10px 30px rgba(0, 229, 255, 0.25));
+  }
+
+  /* Основная круглая кнопка (Триггер) */
+  .fab-button {
+    pointer-events: auto;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(20, 30, 55, 0.9) 0%, rgba(8, 12, 24, 0.95) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(0, 229, 255, 0.3);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    box-shadow: 
+      0 0 20px rgba(0, 229, 255, 0.15),
+      inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    transition: 
+      border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.2s ease;
+    touch-action: none;
+    overflow: visible;
+  }
+
+  .fab-button:active {
+    cursor: grabbing;
+    transform: scale(0.95);
+  }
+
+  /* Анимация и свечение при наведении */
+  .fab-button:hover {
+    border-color: var(--primary-sky);
+    box-shadow: 
+      0 0 30px rgba(0, 229, 255, 0.4),
+      0 0 15px rgba(167, 139, 250, 0.3),
+      inset 0 1px 4px rgba(255, 255, 255, 0.4);
+  }
+
+  /* Стилизация SVG Эмблемы (Нимб + Трезубец) */
+  .emblem-svg {
+    width: 110%;
+    height: 110%;
+    position: absolute;
+    transform: scale(1);
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Вращение нимба Канаты */
+  .emblem-halo {
+    transform-origin: 50px 18px;
+    animation: haloRotate 12s linear infinite;
+  }
+
+  /* Покачивание крыльев */
+  .emblem-wings path {
+    transform-origin: 50px 52px;
+    animation: wingBreathe 4s ease-in-out infinite alternate;
+  }
+
+  .emblem-wings path:nth-child(even) {
+    animation-delay: -2s;
+  }
+
+  @keyframes haloRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes wingBreathe {
+    0% { transform: scale(0.96) rotate(-2deg); }
+    100% { transform: scale(1.02) rotate(2deg); }
+  }
+
+  /* Эффект при открытом состоянии */
+  .fab-wrapper.open .fab-button {
+    border-color: var(--primary-heaven);
+    box-shadow: 0 0 40px rgba(167, 139, 250, 0.5);
+  }
+
+  .fab-wrapper.open .emblem-svg {
+    transform: rotate(45deg) scale(0.9);
+  }
+
+  /* Глобальный Док навигации */
+  .global-dock {
+    position: absolute;
+    top: 50%;
+    right: calc(100% + 20px);
+    transform: translateY(-50%) scale(0.9) translateX(30px);
+    transform-origin: right center;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: rgba(6, 11, 25, 0.75);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid rgba(0, 229, 255, 0.15);
+    border-radius: 24px;
+    box-shadow: 
+      0 30px 60px rgba(0, 4, 16, 0.8),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+    max-width: calc(100vw - 120px);
+    overflow-x: auto;
+    scrollbar-width: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: 
+      transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      visibility 0.4s;
+  }
+
+  .global-dock::-webkit-scrollbar { display: none; }
+
+  /* Фоновый интерактивный холст */
+  .dock-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 24px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+  }
+
+  /* Позиционирование выезжающих панелей */
+  .fab-wrapper.open .global-dock {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(-50%) scale(1) translateX(0);
+  }
+
+  .fab-wrapper.is-left .global-dock {
+    right: auto;
+    left: calc(100% + 20px);
+    transform-origin: left center;
+    transform: translateY(-50%) scale(0.9) translateX(-30px);
+  }
+  .fab-wrapper.is-left.open .global-dock {
+    transform: translateY(-50%) scale(1) translateX(0);
+  }
+
+  .fab-wrapper.is-up .global-dock {
+    flex-direction: column;
+    right: 50%;
+    top: auto;
+    bottom: calc(100% + 20px);
+    transform-origin: bottom center;
+    transform: translateX(50%) scale(0.9) translateY(30px);
+    max-height: calc(100vh - 120px);
+    max-width: none;
+    overflow-y: auto;
+  }
+  .fab-wrapper.is-up.open .global-dock {
+    transform: translateX(50%) scale(1) translateY(0);
+  }
+
+  .fab-wrapper.is-down .global-dock {
+    flex-direction: column;
+    right: 50%;
+    bottom: auto;
+    top: calc(100% + 20px);
+    transform-origin: top center;
+    transform: translateX(50%) scale(0.9) translateY(-30px);
+    max-height: calc(100vh - 120px);
+    max-width: none;
+    overflow-y: auto;
+  }
+  .fab-wrapper.is-down.open .global-dock {
+    transform: translateX(50%) scale(1) translateY(0);
+  }
+
+  /* Элементы меню навигации */
+  .dock-item {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 14px;
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+
+  /* Эффект наведения с деформацией глитча */
+  .dock-item:hover {
+    color: #fff;
+    background: rgba(0, 229, 255, 0.08);
+    border-color: rgba(0, 229, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 229, 255, 0.1);
+    filter: url(#glitch-distortion);
+  }
+
+  .dock-item.active {
+    color: #fff;
+    background: rgba(167, 139, 250, 0.15);
+    border-color: rgba(167, 139, 250, 0.3);
+    box-shadow: 
+      0 4px 20px rgba(167, 139, 250, 0.2),
+      inset 0 0 12px rgba(167, 139, 250, 0.1);
+  }
+
+  /* Стилизация иконок */
+  .dock-icon-wrapper {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dock-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.4));
+    pointer-events: none;
+    user-select: none;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .dock-item:hover .dock-icon {
+    transform: scale(1.18) rotate(5deg);
+  }
+
+  .dock-text {
+    font-family: 'Space Grotesk', sans-serif;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+
+  /* Хвост-индикатор для активного пункта */
+  .dock-item.active::after {
+    content: "";
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 3px;
+    background: var(--primary-heaven);
+    border-radius: 4px;
+    box-shadow: 0 0 8px var(--primary-heaven);
+  }
+
+  /* Адаптивность для мобильных экранов */
+  @media (max-width: 768px) {
+    .fab-wrapper {
+      bottom: 20px;
+      right: 20px;
+      width: 58px;
+      height: 58px;
+    }
+    
+    .global-dock {
+      padding: 8px;
+      gap: 6px;
+      border-radius: 20px;
+      max-width: calc(100vw - 80px);
+    }
+
+    .dock-canvas {
+      border-radius: 20px;
+    }
+
+    .dock-item {
+      padding: 10px;
+      border-radius: 12px;
+    }
+
+    .dock-text {
+      display: none;
+    }
+
+    .dock-icon {
+      width: 26px;
+      height: 26px;
+    }
+
+    .dock-item.active::after {
+      bottom: -1px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .emblem-halo, .emblem-wings path {
+      animation: none !important;
+    }
+    .fab-wrapper, .global-dock {
+      transition: none !important;
+    }
+  }
+</style>
+
+<!-- SVG Фильтры глитча и деформации воды -->
+<svg style="position: absolute; width: 0; height: 0;" width="0" height="0">
+  <defs>
+    <filter id="glitch-distortion">
+      <feTurbulence type="fractalNoise" baseFrequency="0.08 0.85" numOctaves="1" result="wave" />
+      <feDisplacementMap in="SourceGraphic" in2="wave" scale="0" xChannelSelector="R" yChannelSelector="G" id="displacement-map" />
+    </filter>
+  </defs>
+</svg>
+
+<div class="fab-wrapper" id="fabWrapper">
+  <!-- Кнопка-герб с Нимбом Канаты и Трезубцем Гуры -->
+  <button class="fab-button" id="fabToggleBtn" title="Навигация" aria-label="Открыть меню навигации">
+    <svg class="emblem-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Золотой градиент Нимба -->
+        <linearGradient id="haloGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFE57F" />
+          <stop offset="100%" stop-color="#FFC107" />
+        </linearGradient>
+        <!-- Сине-бирюзовый градиент Трезубца -->
+        <linearGradient id="tridentGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#00E5FF" />
+          <stop offset="100%" stop-color="#0057b8" />
+        </linearGradient>
+        <filter id="glow-heavy" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="3.5" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      <!-- Декоративные волны (Gura Style) -->
+      <path d="M25,75 C35,68 40,80 50,75 C60,70 65,82 75,75" stroke="rgba(0, 229, 255, 0.35)" stroke-width="2" stroke-linecap="round"/>
+
+      <!-- Легкие Ангельские Крылья (Kanata Style) -->
+      <g class="emblem-wings" stroke="rgba(255, 255, 255, 0.45)" stroke-width="1.5" fill="none">
+        <!-- Левое -->
+        <path d="M38,54 C26,45 14,48 10,60 C13,68 25,66 36,59" />
+        <!-- Правое -->
+        <path d="M62,54 C74,45 86,48 90,60 C87,68 75,66 64,59" />
+      </g>
+
+      <!-- Легендарный Трезубец Гуры -->
+      <g class="emblem-trident" filter="url(#glow-heavy)">
+        <path d="M50,82 L50,34" stroke="url(#tridentGrad)" stroke-width="3" stroke-linecap="round"/>
+        <!-- Рога трезубца -->
+        <path d="M42,44 C42,51 45,53 50,53 C55,53 58,51 58,44" fill="none" stroke="url(#tridentGrad)" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Зубья -->
+        <path d="M42,45 L42,35 L40,37" fill="none" stroke="url(#tridentGrad)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M58,45 L58,35 L60,37" fill="none" stroke="url(#tridentGrad)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M50,34 L50,26" fill="none" stroke="url(#tridentGrad)" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+
+      <!-- Звездный Нимб Канаты (Вращается отдельно) -->
+      <g class="emblem-halo" filter="url(#glow-heavy)">
+        <!-- Эллипс-основание -->
+        <ellipse cx="50" cy="18" rx="16" ry="5" fill="none" stroke="url(#haloGrad)" stroke-width="1.8" opacity="0.85"/>
+        <!-- Каноничный четырёхконечный нимб-звезда -->
+        <path d="M50,6 L52.5,14 L60.5,18 L52.5,22 L50,30 L47.5,22 L39.5,18 L47.5,14 Z" fill="url(#haloGrad)"/>
+      </g>
+    </svg>
+  </button>
+
+  <!-- Меню навигации с динамическим холстом -->
+  <nav class="global-dock" id="globalDock" aria-label="Ссылки навигации">
+    <canvas class="dock-canvas" id="dockCanvas"></canvas>
+    
+    <a href="index.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://i.imgur.com/tpFK0jG.png" alt="Menu" class="dock-icon" /></div>
+      <span class="dock-text">Menu</span>
+    </a>
+    <a href="ai.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://i.imgur.com/Nqii4LI.png" alt="AI" class="dock-icon" /></div>
+      <span class="dock-text">AI</span>
+    </a>
+    <a href="agent.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://i.imgur.com/HTTz55C.png" alt="Agent" class="dock-icon" /></div>
+      <span class="dock-text">Agent</span>
+    </a>
+    <a href="game.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://i.imgur.com/4Uk0ui7.png" alt="Music" class="dock-icon" /></div>
+      <span class="dock-text">Tetris</span>
+    </a>
+    <a href="note.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://i.imgur.com/GcjfCTh.png" alt="Note" class="dock-icon" /></div>
+      <span class="dock-text">Note</span>
+    </a>
+    <a href="googleweb.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" alt="Google" class="dock-icon" /></div>
+      <span class="dock-text">Google</span>
+    </a>
+    <a href="browser.html" class="dock-item">
+      <div class="dock-icon-wrapper"><img src="https://cdn-icons-png.flaticon.com/512/3003/3003511.png" alt="SearX" class="dock-icon" /></div>
+      <span class="dock-text">SearX</span>
+    </a>
+  </nav>
+</div>
+
+<!-- ======================================================================= -->
+<!-- FRONTEND ENGINE (JavaScript)                                           -->
+<!-- ======================================================================= -->
+<script>
+  /**
+   * Контроллер глитч-эффектов на основе деформации SVG.
+   */
+  class GlitchEngine {
+    constructor() {
+      this.map = document.getElementById('displacement-map');
+      this.isGlitching = false;
+    }
+
+    trigger() {
+      if (this.isGlitching) return;
+      this.isGlitching = true;
+      let start = null;
+
+      const animate = (timestamp) => {
+        if (!start) start = timestamp;
+        const progress = timestamp - start;
+
+        if (progress < 150) {
+          // Интенсивный глитч на взлете
+          const scale = Math.sin(progress * 0.1) * 14;
+          this.map.setAttribute('scale', Math.abs(scale));
+          requestAnimationFrame(animate);
+        } else {
+          this.map.setAttribute('scale', '0');
+          this.isGlitching = false;
+        }
+      };
+
+      requestAnimationFrame(animate);
+    }
+  }
+
+  /**
+   * Procedural Dynamic Canvas Background.
+   * Отрисовывает звездное небо Канаты и морские глубины Гуры в реальном времени.
+   */
+  class CanvasBackground {
+    constructor(canvasId) {
+      this.canvas = document.getElementById(canvasId);
+      this.ctx = this.canvas.getContext('2d');
+      this.stars = [];
+      this.time = 0;
+      this.dpr = window.devicePixelRatio || 1;
+
+      this.resize();
+      this.initStars();
+      this.animate = this.animate.bind(this);
+      requestAnimationFrame(this.animate);
+    }
+
+    resize() {
+      const parent = this.canvas.parentElement;
+      this.width = parent.offsetWidth;
+      this.height = parent.offsetHeight;
+      this.canvas.width = this.width * this.dpr;
+      this.canvas.height = this.height * this.dpr;
+      this.ctx.scale(this.dpr, this.dpr);
+    }
+
+    initStars() {
+      this.stars = Array.from({ length: 15 }, () => ({
+        x: Math.random() * this.width,
+        y: Math.random() * this.height,
+        size: Math.random() * 1.5 + 0.5,
+        alpha: Math.random(),
+        speed: 0.01 + Math.random() * 0.02
+      }));
+    }
+
+    animate() {
+      this.time += 0.02;
+      this.ctx.clearRect(0, 0, this.width, this.height);
+
+      // 1. Рисуем космические звезды (Небеса)
+      this.stars.forEach(star => {
+        star.alpha += star.speed;
+        if (star.alpha > 1 || star.alpha < 0) star.speed = -star.speed;
+        this.ctx.fillStyle = `rgba(167, 139, 250, ${Math.max(0, star.alpha)})`;
+        this.ctx.beginPath();
+        this.ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        this.ctx.fill();
+      });
+
+      // 2. Рисуем интерактивные синусоидальные волны (Океан)
+      this.ctx.strokeStyle = 'rgba(0, 229, 255, 0.12)';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      for (let x = 0; x <= this.width; x += 5) {
+        const y = this.height * 0.8 + Math.sin(x * 0.05 + this.time) * 4;
+        if (x === 0) this.ctx.moveTo(x, y);
+        else this.ctx.lineTo(x, y);
+      }
+      this.ctx.stroke();
+
+      requestAnimationFrame(this.animate);
+    }
+  }
+
+  /**
+   * Главный движок управления док-панелью.
+   */
+   class CelestialSeaDock {
+    constructor() {
+      this.wrapper = document.getElementById("fabWrapper");
+      this.btn = document.getElementById("fabToggleBtn");
+      this.dock = document.getElementById("globalDock");
+
+      // Безопасно связываем с глобальным аудио-движком терминала
+      this.synth = window.sound || { playChime() {}, playBubble() {} }; 
+      
+      this.glitch = new GlitchEngine();
+      this.bg = new CanvasBackground("dockCanvas");
+      // ...
+
+      // Физика Lerp (сглаживание перемещения)
+      this.pos = { currentX: 0, currentY: 0, targetX: 0, targetY: 0 };
+      this.isDragging = false;
+      this.hasMoved = false;
+      this.dragOffset = { x: 0, y: 0 };
+
+      this.initEvents();
+      this.initActiveLink();
+      this.snapToInitial();
+    }
+
+    snapToInitial() {
+      // Инициализируем стартовую позицию в правом нижнем углу
+      const initialX = window.innerWidth - 98; // 30px offset + 68px width
+      const initialY = window.innerHeight - 98;
+      this.pos.currentX = this.pos.targetX = initialX;
+      this.pos.currentY = this.pos.targetY = initialY;
+      this.updateDOMPosition();
+    }
+
+    initActiveLink() {
+      let path = window.location.pathname.split("/").pop();
+      if (!path) path = "index.html";
+      document.querySelectorAll(".dock-item").forEach(item => {
+        if (item.getAttribute("href") === path) {
+          item.classList.add("active");
+        }
+      });
+    }
+
+    initEvents() {
+      // Клик по кнопке
+      this.btn.addEventListener("click", (e) => {
+        if (this.hasMoved) {
+          e.preventDefault();
+          return;
+        }
+        this.toggleDock();
+      });
+
+      // Drag events
+      this.btn.addEventListener("mousedown", (e) => this.dragStart(e));
+      this.btn.addEventListener("touchstart", (e) => this.dragStart(e), { passive: true });
+
+      window.addEventListener("mousemove", (e) => this.dragMove(e));
+      window.addEventListener("touchmove", (e) => this.dragMove(e), { passive: false });
+
+      window.addEventListener("mouseup", () => this.dragEnd());
+      window.addEventListener("touchend", () => this.dragEnd());
+
+      // Закрытие по клику вне
+      document.addEventListener("click", (e) => {
+        if (!this.wrapper.contains(e.target) && this.wrapper.classList.contains("open")) {
+          this.wrapper.classList.remove("open");
+          this.synth.playBubble();
+        }
+      });
+
+      // Resize observer
+      window.addEventListener("resize", () => {
+        this.bg.resize();
+        this.keepInBounds();
+      });
+
+      // Глитч при наведении на пункты меню
+      document.querySelectorAll('.dock-item').forEach(item => {
+        item.addEventListener('mouseenter', () => {
+          this.glitch.trigger();
+          this.synth.playChime();
+        });
+      });
+    }
+
+    toggleDock() {
+      this.updateDockDirection();
+      const isOpen = this.wrapper.classList.toggle("open");
+      if (isOpen) {
+        this.synth.playChime();
+      } else {
+        this.synth.playBubble();
+      }
+    }
+
+    dragStart(e) {
+      this.isDragging = true;
+      this.hasMoved = false;
+
+      // Получаем текущие координаты из объекта положения
+      const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+      const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+
+      this.dragOffset.x = clientX - this.pos.currentX;
+      this.dragOffset.y = clientY - this.pos.currentY;
+
+      this.wrapper.style.willChange = "transform";
+    }
+
+    dragMove(e) {
+      if (!this.isDragging) return;
+
+      const clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+      const clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+
+      const targetX = clientX - this.dragOffset.x;
+      const targetY = clientY - this.dragOffset.y;
+
+      // Лимиты экрана
+      const maxLeft = window.innerWidth - this.wrapper.offsetWidth;
+      const maxTop = window.innerHeight - this.wrapper.offsetHeight;
+
+      this.pos.targetX = Math.max(0, Math.min(targetX, maxLeft));
+      this.pos.targetY = Math.max(0, Math.min(targetY, maxTop));
+
+      if (Math.abs(this.pos.targetX - this.pos.currentX) > 4 || Math.abs(this.pos.targetY - this.pos.currentY) > 4) {
+        this.hasMoved = true;
+        if (e.cancelable) e.preventDefault();
+      }
+
+      this.updatePhysics();
+    }
+
+    dragEnd() {
+      if (!this.isDragging) return;
+      this.isDragging = false;
+      this.wrapper.style.willChange = "auto";
+      this.keepInBounds();
+    }
+
+    /**
+     * Сглаживание движения с использованием LERP (Linear Interpolation).
+     * Дает благородное "тяжелое" скольжение виджета.
+     */
+    updatePhysics() {
+      if (!this.isDragging && Math.abs(this.pos.targetX - this.pos.currentX) < 0.1 && Math.abs(this.pos.targetY - this.pos.currentY) < 0.1) {
+        return;
+      }
+
+      const lerpFactor = this.isDragging ? 0.25 : 0.15;
+      this.pos.currentX += (this.pos.targetX - this.pos.currentX) * lerpFactor;
+      this.pos.currentY += (this.pos.targetY - this.pos.currentY) * lerpFactor;
+
+      this.updateDOMPosition();
+      this.updateDockDirection();
+
+      if (this.isDragging) {
+        requestAnimationFrame(() => this.updatePhysics());
+      }
+    }
+
+    updateDOMPosition() {
+      this.wrapper.style.left = `${this.pos.currentX}px`;
+      this.wrapper.style.top = `${this.pos.currentY}px`;
+      this.wrapper.style.bottom = "auto";
+      this.wrapper.style.right = "auto";
+    }
+
+    updateDockDirection() {
+      const rect = this.wrapper.getBoundingClientRect();
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
+      this.wrapper.classList.remove("is-left", "is-up", "is-down");
+
+      const dockWidth = this.dock.scrollWidth;
+      const gap = 20;
+
+      const spaceLeft = rect.left;
+      const spaceRight = screenWidth - rect.right;
+      const spaceTop = rect.top;
+      const spaceBottom = screenHeight - rect.bottom;
+
+      if (spaceRight >= dockWidth + gap) {
+        this.wrapper.classList.add("is-left"); // Открывается вправо
+      } else if (spaceLeft < dockWidth + gap) {
+        // Вертикальный фоллбек, если по бокам места нет
+        if (spaceTop > spaceBottom) {
+          this.wrapper.classList.add("is-up");
+        } else {
+          this.wrapper.classList.add("is-down");
+        }
+      }
+    }
+
+    keepInBounds() {
+      const maxLeft = window.innerWidth - this.wrapper.offsetWidth;
+      const maxTop = window.innerHeight - this.wrapper.offsetHeight;
+
+      this.pos.targetX = Math.max(10, Math.min(this.pos.targetX, maxLeft - 10));
+      this.pos.targetY = Math.max(10, Math.min(this.pos.targetY, maxTop - 10));
+      
+      this.updatePhysics();
+    }
+  }
+
+  // Запуск интерфейса после загрузки DOM
+  document.addEventListener("DOMContentLoaded", () => {
+    window.celestialSea = new CelestialSeaDock();
+  });
+</script>
+</html>

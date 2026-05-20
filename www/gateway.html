@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURUM // PORTAL</title>
+    <style>
+        :root {
+            --gold-raw: 212, 175, 55;
+            --gold-light: #f3e7c4;
+            --gold-mid: #d4af37;
+            --gold-dark: #aa7c11;
+            --gold-shadow: rgba(212, 175, 55, 0.15);
+            --obsidian: #08080a;
+            --obsidian-card: #111115;
+            --font-sans: 'Cinzel Decorative', 'Cinzel', 'Playfair Display', 'Helvetica Neue', sans-serif;
+            --font-mono: 'Space Mono', 'Courier New', monospace;
+            --transition-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--obsidian);
+            color: var(--gold-light);
+            font-family: var(--font-sans);
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        /* Procedural Noise Overlay */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.015'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        canvas#bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Custom Cursor styling */
+        #custom-cursor {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background-color: var(--gold-mid);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+            transition: width 0.3s var(--transition-smooth), height 0.3s var(--transition-smooth), background-color 0.3s;
+        }
+
+        #custom-cursor-ring {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(var(--gold-raw), 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 998;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s var(--transition-smooth), height 0.3s var(--transition-smooth), border-color 0.3s;
+        }
+
+        /* Layout */
+        header {
+            position: relative;
+            z-index: 5;
+            padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 6vw, 6rem);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(var(--gold-raw), 0.08);
+        }
+
+        .logo {
+            font-size: clamp(1.2rem, 2vw, 1.8rem);
+            font-weight: 800;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--gold-mid);
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* Glitch Effect Core */
+        .glitch-text {
+            position: relative;
+            display: inline-block;
+        }
+
+        .glitch-text::before,
+        .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--obsidian);
+            clip: rect(0, 0, 0, 0);
+        }
+
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 #ff00c6;
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+        }
+
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 #00ffe0, 0 1px #d4af37;
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+
+        main {
+            position: relative;
+            z-index: 5;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: clamp(2rem, 5vw, 5rem) clamp(1rem, 6vw, 6rem);
+            width: 100%;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .portal-gate {
+            width: 100%;
+            text-align: center;
+            margin-bottom: clamp(3rem, 6vw, 6rem);
+        }
+
+        .title-container {
+            margin-bottom: 2.5rem;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 4.5rem);
+            font-weight: 300;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 0 0 30px rgba(var(--gold-raw), 0.2);
+            line-height: 1.1;
+        }
+
+        h1 span {
+            color: var(--gold-mid);
+            display: block;
+            font-weight: 900;
+            letter-spacing: 0.25em;
+            margin-top: 0.5rem;
+        }
+
+        /* Custom URL Input area */
+        .nav-input-container {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+            background: rgba(17, 17, 21, 0.6);
+            border: 1px solid rgba(var(--gold-raw), 0.15);
+            padding: 4px;
+            border-radius: 4px;
+            transition: border-color 0.4s var(--transition-smooth), box-shadow 0.4s var(--transition-smooth);
+            backdrop-filter: blur(8px);
+        }
+
+        .nav-input-container:focus-within {
+            border-color: var(--gold-mid);
+            box-shadow: 0 0 25px var(--gold-shadow);
+        }
+
+        .nav-input-wrapper {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 1rem 1.5rem;
+            color: var(--gold-light);
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            letter-spacing: 0.05em;
+        }
+
+        .nav-input::placeholder {
+            color: rgba(var(--gold-raw), 0.4);
+        }
+
+        .nav-submit {
+            background: linear-gradient(135deg, var(--gold-mid), var(--gold-dark));
+            color: var(--obsidian);
+            border: none;
+            font-family: var(--font-sans);
+            font-weight: 900;
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: transform 0.2s var(--transition-smooth), filter 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-submit:hover {
+            transform: scale(1.02);
+            filter: brightness(1.1);
+        }
+
+        /* Site Grid */
+        .grid-container {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .site-card {
+            background: rgba(17, 17, 21, 0.45);
+            border: 1px solid rgba(var(--gold-raw), 0.1);
+            border-radius: 4px;
+            padding: 2.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: border-color 0.5s var(--transition-smooth), transform 0.5s var(--transition-smooth);
+            backdrop-filter: blur(6px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 200px;
+        }
+
+        .site-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(var(--gold-raw), 0.08) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+
+        .site-card:hover::before {
+            opacity: 1;
+        }
+
+        .site-card:hover {
+            border-color: rgba(var(--gold-raw), 0.4);
+            transform: translateY(-5px);
+        }
+
+        .site-card-num {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--gold-dark);
+            letter-spacing: 0.1em;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .site-card-title {
+            font-size: 1.4rem;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            color: #fff;
+            margin-bottom: 0.75rem;
+            transition: color 0.3s;
+        }
+
+        .site-card:hover .site-card-title {
+            color: var(--gold-light);
+        }
+
+        .site-card-desc {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: rgba(var(--gold-raw), 0.5);
+            line-height: 1.5;
+            margin-bottom: 2rem;
+        }
+
+        .site-card-action {
+            display: flex;
+            align-items: center;
+            font-size: 0.75rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--gold-mid);
+            font-weight: 700;
+        }
+
+        .site-card-action svg {
+            margin-left: 0.5rem;
+            transition: transform 0.3s var(--transition-smooth);
+            stroke: var(--gold-mid);
+        }
+
+        .site-card:hover .site-card-action svg {
+            transform: translateX(5px);
+        }
+
+        /* Footer styling */
+        footer {
+            position: relative;
+            z-index: 5;
+            padding: 2rem clamp(1rem, 6vw, 6rem);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(var(--gold-raw), 0.08);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: rgba(var(--gold-raw), 0.4);
+            letter-spacing: 0.15em;
+        }
+
+        /* Screen Warp Overlay animation */
+        .warp-transition {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, var(--gold-light) 0%, var(--gold-mid) 40%, var(--obsidian) 100%);
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            mix-blend-mode: color-dodge;
+            transition: opacity 0.8s var(--transition-smooth);
+        }
+
+        .warp-active .warp-transition {
+            opacity: 1;
+        }
+
+        /* Animations */
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(15px, 9999px, 66px, 0); }
+            5% { clip: rect(42px, 9999px, 55px, 0); }
+            10% { clip: rect(12px, 9999px, 85px, 0); }
+            15% { clip: rect(77px, 9999px, 22px, 0); }
+            20% { clip: rect(3px, 9999px, 94px, 0); }
+            25% { clip: rect(63px, 9999px, 12px, 0); }
+            30% { clip: rect(85px, 9999px, 40px, 0); }
+            35% { clip: rect(10px, 9999px, 75px, 0); }
+            40% { clip: rect(50px, 9999px, 5px, 0); }
+            45% { clip: rect(92px, 9999px, 63px, 0); }
+            50% { clip: rect(27px, 9999px, 81px, 0); }
+            55% { clip: rect(6px, 9999px, 34px, 0); }
+            60% { clip: rect(73px, 9999px, 90px, 0); }
+            65% { clip: rect(18px, 9999px, 47px, 0); }
+            70% { clip: rect(59px, 9999px, 15px, 0); }
+            75% { clip: rect(31px, 9999px, 79px, 0); }
+            80% { clip: rect(88px, 9999px, 53px, 0); }
+            85% { clip: rect(4px, 9999px, 28px, 0); }
+            90% { clip: rect(67px, 9999px, 92px, 0); }
+            95% { clip: rect(35px, 9999px, 11px, 0); }
+            100% { clip: rect(50px, 9999px, 70px, 0); }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(85px, 9999px, 5px, 0); }
+            5% { clip: rect(3px, 9999px, 92px, 0); }
+            10% { clip: rect(61px, 9999px, 14px, 0); }
+            15% { clip: rect(28px, 9999px, 77px, 0); }
+            20% { clip: rect(93px, 9999px, 42px, 0); }
+            25% { clip: rect(10px, 9999px, 65px, 0); }
+            30% { clip: rect(74px, 9999px, 18px, 0); }
+            35% { clip: rect(49px, 9999px, 83px, 0); }
+            40% { clip: rect(12px, 9999px, 31px, 0); }
+            45% { clip: rect(81px, 9999px, 95px, 0); }
+            50% { clip: rect(55px, 9999px, 23px, 0); }
+            55% { clip: rect(8px, 9999px, 70px, 0); }
+            60% { clip: rect(67px, 9999px, 51px, 0); }
+            65% { clip: rect(34px, 9999px, 89px, 0); }
+            70% { clip: rect(90px, 9999px, 12px, 0); }
+            75% { clip: rect(15px, 9999px, 59px, 0); }
+            80% { clip: rect(53px, 9999px, 35px, 0); }
+            85% { clip: rect(78px, 9999px, 80px, 0); }
+            90% { clip: rect(22px, 9999px, 47px, 0); }
+            95% { clip: rect(63px, 9999px, 91px, 0); }
+            100% { clip: rect(40px, 9999px, 10px, 0); }
+        }
+
+        /* Accessbility */
+        @media (prefers-reduced-motion: reduce) {
+            .glitch-text::before, .glitch-text::after, canvas#bg-canvas, .site-card {
+                animation: none !important;
+                transition: none !important;
+                transform: none !important;
+            }
+        }
+
+        @media (hover: none) {
+            #custom-cursor, #custom-cursor-ring {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="noise-overlay"></div>
+    <div class="warp-transition" id="warp-overlay"></div>
+    <div id="custom-cursor"></div>
+    <div id="custom-cursor-ring"></div>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <header>
+        <div class="logo glitch-text" data-text="AURUM" id="home-logo">AURUM</div>
+        <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--gold-mid);">[ CORE v2.6 ]</div>
+    </header>
+
+    <main>
+        <section class="portal-gate">
+            <div class="title-container">
+                <h1 class="glitch-text" data-text="TRANSCEND LIMITS">
+                    TRANSCEND LIMITS
+                    <span>THE GOLDEN GATEWAY</span>
+                </h1>
+            </div>
+
+            <div class="nav-input-container">
+                <form id="warp-form" class="nav-input-wrapper">
+                    <input type="text" id="target-url" class="nav-input" placeholder="Введите URL-координаты (напр. google.com)..." autocomplete="off" spellcheck="false" required>
+                    <button type="submit" class="nav-submit" id="warp-btn">WARP</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="grid-container" id="destinations-grid">
+            <!-- Cards will be populated dynamically -->
+        </section>
+    </main>
+
+    <footer>
+        <div>DESIGNED BY ELITE DEV</div>
+        <div id="system-time">COORDINATES: L-00.00 / R-00.00</div>
+    </footer>
+
+    <script>
+        // --- DATA ---
+        const DESTINATIONS = [
+            { id: "01", name: "Google", desc: "Главный поисковый шлюз всемирной паутины.", url: "https://google.com" },
+            { id: "02", name: "GitHub", desc: "Хранилище сингулярного кода человечества.", url: "https://github.com" },
+            { id: "03", name: "Wikipedia", desc: "Общая база воспоминаний и накопленных данных.", url: "https://wikipedia.org" },
+            { id: "04", name: "YouTube", desc: "Потоковый видео-сервер визуальных архивов.", url: "https://youtube.com" }
+        ];
+
+        // --- AUDIO SYNTH ENGINE ---
+        class SoundSynth {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (this.ctx) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            // High-end digital click sound
+            playClick() {
+                this.init();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.15);
+
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            // High-pitched synth chime for hover states
+            playHover() {
+                this.init();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1500, this.ctx.currentTime + 0.08);
+
+                gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            // Glitchy warp sound effect
+            playWarp() {
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, now);
+                osc.frequency.exponentialRampToValueAtTime(1800, now + 0.8);
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(now + 0.8);
+            }
+        }
+
+        const synth = new SoundSynth();
+
+        // --- CANVAS PROCEDURAL ENGINE ---
+        class CanvasEngine {
+            constructor() {
+                this.canvas = document.getElementById('bg-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.particles = [];
+                this.mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+                this.pixelRatio = window.devicePixelRatio || 1;
+
+                this.init();
+                this.resize();
+                this.bindEvents();
+                this.loop();
+            }
+
+            init() {
+                this.mouse.x = window.innerWidth / 2;
+                this.mouse.y = window.innerHeight / 2;
+                this.mouse.targetX = this.mouse.x;
+                this.mouse.targetY = this.mouse.y;
+
+                this.generateParticles();
+            }
+
+            generateParticles() {
+                this.particles = [];
+                const maxParticles = 90;
+                for (let i = 0; i < maxParticles; i++) {
+                    this.particles.push({
+                        x: Math.random() * window.innerWidth,
+                        y: Math.random() * window.innerHeight,
+                        baseX: Math.random() * window.innerWidth,
+                        baseY: Math.random() * window.innerHeight,
+                        size: Math.random() * 2 + 0.5,
+                        angle: Math.random() * Math.PI * 2,
+                        speed: Math.random() * 0.4 + 0.1,
+                        distance: Math.random() * 120 + 30,
+                        alpha: Math.random() * 0.5 + 0.1
+                    });
+                }
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth * this.pixelRatio;
+                this.canvas.height = window.innerHeight * this.pixelRatio;
+                this.ctx.scale(this.pixelRatio, this.pixelRatio);
+            }
+
+            bindEvents() {
+                window.addEventListener('resize', () => {
+                    this.resize();
+                    this.generateParticles();
+                });
+
+                window.addEventListener('mousemove', (e) => {
+                    this.mouse.targetX = e.clientX;
+                    this.mouse.targetY = e.clientY;
+                });
+            }
+
+            loop() {
+                // Lerp mouse coordinates for smooth 60fps tracking
+                this.mouse.x += (this.mouse.targetX - this.mouse.x) * 0.08;
+                this.mouse.y += (this.mouse.targetY - this.mouse.y) * 0.08;
+
+                this.ctx.fillStyle = 'rgba(8, 8, 10, 0.15)'; // Trail effect
+                this.ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+                // Draw central vortex attractor
+                this.ctx.beginPath();
+                this.ctx.arc(this.mouse.x, this.mouse.y, 4, 0, Math.PI * 2);
+                this.ctx.fillStyle = `rgba(212, 175, 55, 0.3)`;
+                this.ctx.shadowBlur = 15;
+                this.ctx.shadowColor = `rgba(212, 175, 55, 0.5)`;
+                this.ctx.fill();
+
+                this.particles.forEach((p) => {
+                    // Spiral around mouse cursor dynamically
+                    p.angle += p.speed * 0.02;
+                    const targetX = this.mouse.x + Math.cos(p.angle) * p.distance;
+                    const targetY = this.mouse.y + Math.sin(p.angle) * p.distance;
+
+                    p.x += (targetX - p.x) * 0.04;
+                    p.y += (targetY - p.y) * 0.04;
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    this.ctx.fillStyle = `rgba(243, 231, 196, ${p.alpha})`;
+                    this.ctx.shadowBlur = 0;
+                    this.ctx.fill();
+
+                    // Web / neural connections based on proximity
+                    this.particles.forEach((p2) => {
+                        const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                        if (dist < 80) {
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(p.x, p.y);
+                            this.ctx.lineTo(p2.x, p2.y);
+                            this.ctx.strokeStyle = `rgba(212, 175, 55, ${(1 - dist / 80) * 0.07})`;
+                            this.ctx.lineWidth = 0.5;
+                            this.ctx.stroke();
+                        }
+                    });
+                });
+
+                requestAnimationFrame(() => this.loop());
+            }
+        }
+
+        // --- INTERACTIVE CONTROLLER ---
+        class InteractionController {
+            constructor() {
+                this.cursor = document.getElementById('custom-cursor');
+                this.cursorRing = document.getElementById('custom-cursor-ring');
+                this.warpForm = document.getElementById('warp-form');
+                this.targetUrlInput = document.getElementById('target-url');
+                this.overlay = document.getElementById('warp-overlay');
+                this.grid = document.getElementById('destinations-grid');
+
+                this.mouse = { x: 0, y: 0, ringX: 0, ringY: 0 };
+
+                this.init();
+            }
+
+            init() {
+                this.renderGrid();
+                this.bindEvents();
+                this.animateCursor();
+                this.startClock();
+            }
+
+            renderGrid() {
+                DESTINATIONS.forEach(site => {
+                    const card = document.createElement('div');
+                    card.className = 'site-card';
+                    card.setAttribute('data-url', site.url);
+                    card.innerHTML = `
+                        <div>
+                            <span class="site-card-num">${site.id} // SHIELDED_GATE</span>
+                            <h3 class="site-card-title">${site.name}</h3>
+                            <p class="site-card-desc">${site.desc}</p>
+                        </div>
+                        <div class="site-card-action">
+                            <span>Войти в поток</span>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </div>
+                    `;
+
+                    // Mouse relative coordinates for glowing effect
+                    card.addEventListener('mousemove', (e) => {
+                        const rect = card.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        card.style.setProperty('--mouse-x', `${x}px`);
+                        card.style.setProperty('--mouse-y', `${y}px`);
+                    });
+
+                    card.addEventListener('mouseenter', () => {
+                        synth.playHover();
+                        this.cursor.style.transform = 'translate(-50%, -50%) scale(2)';
+                        this.cursorRing.style.borderColor = 'var(--gold-light)';
+                    });
+
+                    card.addEventListener('mouseleave', () => {
+                        this.cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+                        this.cursorRing.style.borderColor = 'rgba(var(--gold-raw), 0.3)';
+                    });
+
+                    card.addEventListener('click', () => {
+                        this.initiateWarp(site.url);
+                    });
+
+                    this.grid.appendChild(card);
+                });
+            }
+
+            bindEvents() {
+                window.addEventListener('mousemove', (e) => {
+                    this.mouse.x = e.clientX;
+                    this.mouse.y = e.clientY;
+                });
+
+                // Interaction hooks for synth trigger
+                document.querySelectorAll('input, button, .logo').forEach(el => {
+                    el.addEventListener('mouseenter', () => synth.playHover());
+                    el.addEventListener('click', () => synth.playClick());
+                });
+
+                // Intercept custom URL form
+                this.warpForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    let url = this.targetUrlInput.value.trim();
+                    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                        url = 'https://' + url;
+                    }
+                    this.initiateWarp(url);
+                });
+
+                // Home logo glitch click
+                document.getElementById('home-logo').addEventListener('click', () => {
+                    this.initiateWarp('index.html');
+                });
+            }
+
+            animateCursor() {
+                const step = () => {
+                    // Ring lagging behind cursor (Lerp)
+                    this.mouse.ringX += (this.mouse.x - this.mouse.ringX) * 0.15;
+                    this.mouse.ringY += (this.mouse.y - this.mouse.ringY) * 0.15;
+
+                    this.cursor.style.left = `${this.mouse.x}px`;
+                    this.cursor.style.top = `${this.mouse.y}px`;
+
+                    this.cursorRing.style.left = `${this.mouse.ringX}px`;
+                    this.cursorRing.style.top = `${this.mouse.ringY}px`;
+
+                    requestAnimationFrame(step);
+                };
+                requestAnimationFrame(step);
+            }
+
+            initiateWarp(url) {
+                synth.playWarp();
+                document.body.classList.add('warp-active');
+                
+                // Perform micro-glitch during transit
+                let counter = 0;
+                const interval = setInterval(() => {
+                    document.body.style.filter = counter % 2 === 0 ? 'invert(1) hue-rotate(180deg) contrast(2)' : 'none';
+                    counter++;
+                    if (counter > 5) {
+                        clearInterval(interval);
+                        document.body.style.filter = 'none';
+                    }
+                }, 40);
+
+                setTimeout(() => {
+                    window.location.href = url;
+                }, 800);
+            }
+
+            startClock() {
+                const element = document.getElementById('system-time');
+                setInterval(() => {
+                    const clock = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                    element.innerHTML = `TEMPORAL COORDINATES: ${clock}`;
+                }, 1000);
+            }
+        }
+
+        // --- INITIALIZATION ---
+        window.addEventListener('DOMContentLoaded', () => {
+            new CanvasEngine();
+            new InteractionController();
+        });
+    </script>
+</body>
+</html>
