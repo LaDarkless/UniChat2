@@ -4211,6 +4211,22 @@
           return "<i class='bx bx-file' style='color: #94a3b8; font-size: 24px;'></i>"; // Иконка по умолчанию
       }
 
+      // Определение режима синтаксиса по расширению файла для CodeMirror
+      function getSyntaxMode(filename) {
+          if (!filename) return "markdown";
+          const name = filename.toLowerCase();
+          
+          if (name.endsWith('.html') || name.endsWith('.htm')) return "htmlmixed";
+          if (name.endsWith('.css')) return "css";
+          if (name.endsWith('.js')) return "javascript";
+          if (name.endsWith('.json')) return "application/json";
+          if (name.endsWith('.md')) return "markdown";
+          if (name.endsWith('.xml')) return "xml";
+          if (name.endsWith('.py')) return "python";
+          
+          return "markdown"; // Резервный режим по умолчанию
+      }
+
       function resetActiveFolder() {
           activeFolderId = null;
           renderNotesList(searchInput.value);
