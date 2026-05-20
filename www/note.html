@@ -1938,9 +1938,9 @@
       /* === ЗАПРЕТ ВЫДЕЛЕНИЯ ТОЛЬКО ДЛЯ СЕНСОРНЫХ ЭКРАНОВ (СМАРТФОНЫ) === */
       @media (hover: none) and (pointer: coarse) {
         .note-title-list, .brand, .pane-header, .ai-message, .note-item {
-          user-select: none;
-          -webkit-user-select: none;
-          -webkit-touch-callout: none; /* Блокирует системное меню iOS/Android */
+          user-select: none !important;
+          -webkit-user-select: none !important;
+          -webkit-touch-callout: none !important; /* Блокирует системное меню iOS/Android */
         }
       }
 
@@ -1967,8 +1967,7 @@
       }
 
       /* === ЗАПРЕТ ВЫДЕЛЕНИЯ ТЕКСТА (ГЛОБАЛЬНО ДЛЯ ВСЕХ УСТРОЙСТВ) === */
-      /* ВНИМАНИЕ: Убрали .ai-message отсюда, чтобы текст в чате можно было выделять! */
-      .note-title-list, .brand, .pane-header, .note-item {
+      .note-title-list, .brand, .pane-header, .note-item, .ai-message {
         user-select: none !important;
         -webkit-user-select: none !important;
         -webkit-touch-callout: none !important;
@@ -3066,6 +3065,22 @@
       </aside>
 
     </main> <!-- Закрывает .main -->
+
+    <!-- МОДАЛКА ДЛЯ ВЫДЕЛЕНИЯ ТЕКСТА ЧАТА -->
+    <div class="modal-overlay" id="textSelectModal" onclick="if (event.target === this) this.classList.remove('active');">
+      <div class="modal" style="max-width: 600px;">
+        <h2 style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 10px; margin-bottom: 15px;">
+          <span style="font-size: 16px;"><i class='bx bx-text'></i> Выделение текста</span>
+          <button class="btn-icon" onclick="document.getElementById('textSelectModal').classList.remove('active')"><i class='bx bx-x'></i></button>
+        </h2>
+        <div class="selectable-text-content" id="selectableChatText">
+          <!-- Текст сообщения будет тут -->
+        </div>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 10px;">
+          Выделите нужный фрагмент текста. Он автоматически добавится в качестве цитаты к вашему запросу ИИ.
+        </p>
+      </div>
+    </div>
 
     <!-- НАСТРОЙКИ -->
     <div
@@ -4639,8 +4654,18 @@
           return finalTitle;
       }
 
-      // СТАРЫЙ БАГОВАННЫЙ БЛОК УДАЛЕН.
-      // ЗДЕСЬ ТЕПЕРЬ ЛОГИКА ОТРИСОВКИ ПУТЕЙ (ХЛЕБНЫЕ КРОШКИ)
+      // ГЕНЕРАТОР ПОЛНЫХ ПУТЕЙ ФАЙЛОВ ДЛЯ ИИ
+      window.getFullPath = function(item) {
+          if (!item) return "Корень";
+          let path = item.title;
+          let curr = notes.find(n => n.id === item.parentId);
+          while (curr) {
+              path = curr.title + " / " + path;
+              curr = notes.find(n => n.id === curr.parentId);
+          }
+          return "Корень / " + path;
+      };
+
       window.setActiveFolder = function(folderId) {
           activeFolderId = folderId;
           renderNotesList(searchInput.value);
@@ -4791,6 +4816,48 @@
       window.hideChatContextMenu = function() {
         const menu = document.getElementById('dynamicChatMenu');
         if (menu) menu.remove(); // Жестко удаляем из DOM при закрытии
+      };
+
+      // ФУНКЦИИ ДЛЯ ЧАТА ИИ
+      window.handleChatSelectText = function() {
+          if (!window.targetMessageNode) return;
+          const rawText = window.targetMessageNode.getAttribute('data-raw') || window.targetMessageNode.innerText;
+          
+          const contentBox = document.getElementById('selectableChatText');
+          contentBox.innerHTML = marked.parse(rawText);
+          
+          document.getElementById('textSelectModal').classList.add('active');
+          window.hideChatContextMenu();
+      };
+
+      window.handleChatCopy = function() {
+          if (!window.targetMessageNode) return;
+          const rawText = window.targetMessageNode.getAttribute('data-raw') || window.targetMessageNode.innerText;
+          
+          navigator.clipboard.writeText(rawText).then(() => {
+              const btn = document.querySelector('#dynamicChatMenu button:nth-child(2)');
+              if(btn) btn.innerHTML = "<i class='bx bx-check'></i> Скопировано!";
+              setTimeout(() => window.hideChatContextMenu(), 1000);
+          }).catch(err => {
+              alert("Не удалось скопировать: " + err);
+          });
+      };
+
+      window.handleChatDelete = function() {
+          if (!window.targetMessageNode) return;
+          if (confirm("Удалить это сообщение?")) {
+              const chatArea = document.getElementById("aiChatHistory");
+              const index = Array.from(chatArea.children).indexOf(window.targetMessageNode);
+              if (index > -1) {
+                  aiChatHistory.splice(index, 1);
+                  saveAIChat();
+              }
+              window.targetMessageNode.style.opacity = '0';
+              setTimeout(() => {
+                  window.targetMessageNode.remove();
+              }, 300);
+          }
+          window.hideChatContextMenu();
       };
 
       // 1. ОТРИСОВКА МЕНЮ ДЛЯ ЗАМЕТОК
@@ -5920,33 +5987,73 @@ function setTheme(e, hex, rgb) {
       // ЛОГИКА ОТОБРАЖЕНИЯ ВЫДЕЛЕННОГО ТЕКСТА (UI)
       // ==========================================
       function updateSelectionUI() {
-        let selectedText = "";
+        let editorSelectedText = "";
 
         // Умная проверка: откуда брать выделение (из IDE или из обычного текстовика)
         if (isIdeMode && typeof ideEditor !== 'undefined') {
-            selectedText = ideEditor.getSelection();
+            editorSelectedText = ideEditor.getSelection();
         } else {
             const start = editor.selectionStart;
             const end = editor.selectionEnd;
-            selectedText = start !== end ? editor.value.substring(start, end) : "";
+            editorSelectedText = start !== end ? editor.value.substring(start, end) : "";
         }
 
         const previewBox = document.getElementById("aiSelectionPreview");
         const previewText = document.getElementById("aiSelectionText");
         const aiInput = document.getElementById("aiInput");
 
-        if (selectedText) {
-          // Если текст выделен
-          previewText.textContent = '"' + selectedText.replace(/\n/g, " ") + '"'; // Убираем переносы строк
+        if (editorSelectedText) {
+          previewText.textContent = '"' + editorSelectedText.replace(/\n/g, " ") + '"';
           previewBox.classList.add("show");
           aiInput.placeholder = "Спросите что-то о выделенном тексте...";
         } else {
-          // Если выделения нет
           previewBox.classList.remove("show");
-          const activeBtn = document.querySelector('.ai-mode-btn.active');
-          if (activeBtn) setAIMode(currentAIMode, activeBtn); // Возвращаем обычный плейсхолдер
+        }
+
+        // --- ЛОГИКА ДЛЯ ВЫДЕЛЕНИЯ ТЕКСТА ЧАТА ---
+        let chatSelectedText = "";
+        const selection = window.getSelection();
+        if (selection && selection.toString().trim() !== "") {
+            let node = selection.anchorNode;
+            let isChatContext = false;
+            while (node && node !== document.body) {
+                if (node.id === 'selectableChatText' || node.id === 'aiChatHistory') {
+                    isChatContext = true;
+                    break;
+                }
+                node = node.parentNode;
+            }
+            if (isChatContext) {
+                chatSelectedText = selection.toString().trim();
+            }
+        }
+
+        const chatPreviewBox = document.getElementById("aiChatSelectionPreview");
+        const chatPreviewText = document.getElementById("aiChatSelectionText");
+
+        if (chatSelectedText) {
+            window.chatSelectedText = chatSelectedText;
+            chatPreviewText.textContent = '"' + chatSelectedText.replace(/\n/g, " ") + '"';
+            chatPreviewBox.classList.add("show");
+            if (!editorSelectedText) {
+                aiInput.placeholder = "Вопрос по цитате из чата...";
+            }
+        }
+
+        if (!editorSelectedText && !window.chatSelectedText) {
+            const activeBtn = document.querySelector('.ai-mode-btn.active');
+            if (activeBtn) setAIMode(currentAIMode, activeBtn);
         }
       }
+
+      window.clearChatSelectionContext = function() {
+        window.chatSelectedText = "";
+        const box = document.getElementById("aiChatSelectionPreview");
+        if (box) box.classList.remove("show");
+        window.getSelection().removeAllRanges();
+        updateSelectionUI();
+        document.getElementById("aiInput").focus();
+      };
 
       function clearSelectionContext() {
         if (isIdeMode && typeof ideEditor !== 'undefined') {
@@ -5972,8 +6079,8 @@ function setTheme(e, hex, rgb) {
 
       // Отслеживаем выделение текста в реальном времени
       document.addEventListener("selectionchange", () => {
-        // Обновляем плашку только если панель ИИ сейчас открыта
-        if (document.body.classList.contains("ai-open")) {
+        // Обновляем плашку только если панель ИИ сейчас открыта или открыта модалка
+        if (document.body.classList.contains("ai-open") || (document.getElementById('textSelectModal') && document.getElementById('textSelectModal').classList.contains('active'))) {
           updateSelectionUI();
         }
       });
@@ -6802,12 +6909,25 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
                   <div class="wd-inline-patch" style="border-color: #3b82f6;" id="patch_container_create_${actionIndex}">
                      <div class="wd-patch-actions" style="background: rgba(59, 130, 246, 0.1); justify-content: space-between;">
                         <span style="color: #60a5fa; font-weight: 600; font-family: var(--font-ui); font-size: 13px;">
-                           <i class='bx bx-file-blank'></i> Будет создана заметка: "${action.title || 'Новая заметка'}"
+                           <i class='bx bx-file-blank'></i> Будет создан файл: "${action.title || 'Новый файл'}"
                         </span>
                         <button class="wd-patch-btn" id="btn_exclude_create_${actionIndex}" onclick="togglePatchExclude('create_${actionIndex}')"><i class='bx bx-block'></i> Отменить</button>
                      </div>
                      <div class="wd-patch-view">
                         <div class="wd-line added"><span class="wd-prefix">+</span><span class="wd-text">${(action.content || "").replace(/</g, "&lt;")}</span></div>
+                     </div>
+                  </div>
+                `;
+            }
+            // 1.1 ЕСЛИ ИИ ХОЧЕТ СОЗДАТЬ ПАПКУ
+            else if (action.type === "CREATE_FOLDER") {
+                resultHTML += `
+                  <div class="wd-inline-patch" style="border-color: #eab308;" id="patch_container_create_folder_${actionIndex}">
+                     <div class="wd-patch-actions" style="background: rgba(234, 179, 8, 0.1); justify-content: space-between;">
+                        <span style="color: #facc15; font-weight: 600; font-family: var(--font-ui); font-size: 13px;">
+                           <i class='bx bx-folder-plus'></i> Будет создана папка: "${action.title}"
+                        </span>
+                        <button class="wd-patch-btn" id="btn_exclude_create_folder_${actionIndex}" onclick="togglePatchExclude('create_folder_${actionIndex}')"><i class='bx bx-block'></i> Отменить</button>
                      </div>
                   </div>
                 `;
@@ -7058,8 +7178,8 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
              const container = document.getElementById(`patch_container_delete_all_${actionIndex}`);
              if (container && container.dataset.excluded === "true") action.type = "IGNORE";
           }
-          else if (action.type === "CREATE_NOTE") {
-             const container = document.getElementById(`patch_container_create_${actionIndex}`);
+          else if (action.type === "CREATE_FOLDER") {
+             const container = document.getElementById(`patch_container_create_folder_${actionIndex}`);
              if (container && container.dataset.excluded === "true") action.type = "IGNORE";
           }
         });
@@ -7133,15 +7253,40 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             }
             else if (action.type === "CREATE_NOTE") {
               const uniqueId = Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9);
+              
+              // Адаптация: ИИ может указать folderId
+              let targetFolderId = action.folderId ? action.folderId : (activeFolderId || null);
+              // Защита: Если ИИ передал ID, который не существует или это не папка, кидаем в корень
+              if (targetFolderId && !notes.find(n => n.id === targetFolderId && n.type === 'folder')) {
+                  targetFolderId = null;
+              }
+
               const newNote = { 
                   id: uniqueId, 
-                  // Добавили activeFolderId || null
-                  title: getUniqueTitle(action.title || "Новая заметка", null, activeFolderId || null),
+                  title: getUniqueTitle(action.title || "Новый файл", null, targetFolderId),
                   content: action.content || "# ", 
-                  date: new Date().toLocaleDateString() 
+                  date: new Date().toLocaleDateString(),
+                  type: 'file',
+                  parentId: targetFolderId
               };
               notes.push(newNote); 
               switchNote(newNote.id);
+            }
+            else if (action.type === "CREATE_FOLDER") {
+              let targetFolderId = action.parentId ? action.parentId : (activeFolderId || null);
+              if (targetFolderId && !notes.find(n => n.id === targetFolderId && n.type === 'folder')) {
+                  targetFolderId = null;
+              }
+
+              const newFolder = {
+                  id: "folder-" + Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9),
+                  title: getUniqueTitle(action.title || "Новая папка", null, targetFolderId),
+                  type: 'folder',
+                  parentId: targetFolderId,
+                  isOpen: true,
+                  date: new Date().toLocaleDateString()
+              };
+              notes.push(newFolder);
             }
             else if (action.type === "DELETE_NOTE") {
               if (notes.length > 1) { 
@@ -7330,24 +7475,49 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
               }
           }
 
-          // 2. Create Note (Создать)
-          const createRegex = /<create(?:\s+title=["']?([^"'>]+)["']?)?>([\s\S]*?)<\/create>/gi;
+          // 2. Улучшенный Create Note (Создать файл в указанной папке)
+          const createRegex = /<create([^>]*)>([\s\S]*?)<\/create>/gi;
           let match;
           while ((match = createRegex.exec(finalContent)) !== null) {
-              let title = match[1] || "Новая заметка";
+              let attrs = match[1];
+              let tMatch = attrs.match(/title=["']([^"']+)["']/i);
+              let fMatch = attrs.match(/folderId=["']([^"']+)["']/i);
+              
+              let title = tMatch ? tMatch[1] : "Новый файл";
+              let folderId = fMatch ? fMatch[1] : null;
               let content = match[2].trim().replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '');
-              actionData.actions.push({ type: "CREATE_NOTE", title: title, content: content });
+              
+              actionData.actions.push({ type: "CREATE_NOTE", title: title, folderId: folderId, content: content });
               actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-file-blank' style='color:#3b82f6'></i> **Создан файл:** ${title}\n`);
           }
 
-          // Проверка на оборванный тег <create>
-          const unclosedCreateRegex = /<create(?:\s+title=["']?([^"'>]+)["']?)?>([\s\S]*)$/i;
+          const unclosedCreateRegex = /<create([^>]*)>([\s\S]*)$/i;
           const unclosedCreateMatch = finalContent.match(unclosedCreateRegex);
           if (unclosedCreateMatch && !finalContent.includes('</create>')) {
-              let title = unclosedCreateMatch[1] || "Новая заметка";
+              let attrs = unclosedCreateMatch[1];
+              let tMatch = attrs.match(/title=["']([^"']+)["']/i);
+              let fMatch = attrs.match(/folderId=["']([^"']+)["']/i);
+              
+              let title = tMatch ? tMatch[1] : "Новый файл";
+              let folderId = fMatch ? fMatch[1] : null;
               let content = unclosedCreateMatch[2].trim().replace(/^```[a-z]*\n/i, '').replace(/\n```$/i, '');
-              actionData.actions.push({ type: "CREATE_NOTE", title: title, content: content });
+              
+              actionData.actions.push({ type: "CREATE_NOTE", title: title, folderId: folderId, content: content });
               actionData.reply = actionData.reply.replace(unclosedCreateMatch[0], `\n> <i class='bx bx-error' style='color:#ef4444'></i> **Создан незавершенный файл:** ${title}\n*(Напишите ИИ "продолжай")*\n`);
+          }
+
+          // 2.5 Create Folder (Создать папку)
+          const createFolderRegex = /<create_folder([^>]*)\/?>/gi;
+          while ((match = createFolderRegex.exec(finalContent)) !== null) {
+              let attrs = match[1];
+              let tMatch = attrs.match(/title=["']([^"']+)["']/i);
+              let pMatch = attrs.match(/parentId=["']([^"']+)["']/i);
+              
+              let title = tMatch ? tMatch[1] : "Новая папка";
+              let parentId = pMatch ? pMatch[1] : null;
+              
+              actionData.actions.push({ type: "CREATE_FOLDER", title: title, parentId: parentId });
+              actionData.reply = actionData.reply.replace(match[0], `\n> <i class='bx bx-folder-plus' style='color:#eab308'></i> **Создана папка:** ${title}\n`);
           }
 
           // 3. Update Note (Полная перезапись файла)
@@ -7621,14 +7791,15 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
         const uiAttachedNotes = notes.filter(n => window.aiAttachedNotes.has(n.id));
         const allContextNotes = [...new Set([...textMentionedNotes, ...uiAttachedNotes])];
         
-        const notesDirectory = notes.map(n => ({ id: n.id, title: n.title }));
+        // Даем ИИ оглавление со структурой путей
+        const notesDirectory = notes.map(n => ({ id: n.id, type: n.type, path: window.getFullPath(n) }));
         const baseAllowed = new Set([...allContextNotes]);
         const activeNote = notes.find(n => n.id === activeId);
         if (activeNote) baseAllowed.add(activeNote);
         
         // --- АВТОМАТИЧЕСКИ ПОДТЯГИВАЕМ СВЯЗАННЫЕ ФАЙЛЫ ---
         const depResolution = window.resolveDependencies(Array.from(baseAllowed));
-        const workspaceDB = depResolution.notes.map(n => ({ id: n.id, title: n.title, content: window.formatNoteWithLines(n.content) }));
+        const workspaceDB = depResolution.notes.map(n => ({ id: n.id, path: window.getFullPath(n), content: window.formatNoteWithLines(n.content) }));
         const graphContext = depResolution.graphText;
         
         const textAccessRule = `\n\n[ПРАВА ДОСТУПА] Оглавление базы: ${JSON.stringify(notesDirectory)}. Если нужно содержимое других файлов, попроси пользователя прикрепить их через @.`;
@@ -7753,7 +7924,7 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
 
         // ОБНОВЛЕНО: Подставляем liveSiteContext и terminalContext в промпты
         if (currentAIMode === "agent") {
-          systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. Твоя задача — писать код и управлять файлами.
+          systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. Твоя задача — писать код и управлять файлами/папками.
 
 АБСОЛЮТНЫЕ ПРАВИЛА (ИСПОЛЬЗУЙ ТОЛЬКО ЭТИ XML-ТЕГИ, НИКАКОГО JSON):
 1. Изменить часть кода (Системный Поиск и Замена):
@@ -7762,16 +7933,14 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
   <replace>новый код БЕЗ НОМЕРОВ СТРОК</replace>
 </edit>
 
-КРИТИЧЕСКИ ВАЖНО: В базу файлов добавлены номера строк для твоей ориентации (например " 12 | код"). 
-НО внутри тегов <find> и <replace> ты ОБЯЗАН писать АБСОЛЮТНО ЧИСТЫЙ КОД без этих номеров и префиксов! Иначе система не сможет применить патч!
-
 2. Перезаписать весь файл целиком: <update id="ID_ФАЙЛА">весь код</update>
-3. Создать файл: <create title="Имя">код</create>
-4. Удалить: <delete id="ID_ФАЙЛА" />
-5. План задач: <roadmap>- [ ] Шаг 1\n- [ ] Шаг 2</roadmap>
-6. АБСОЛЮТНО ВСЕГДА вноси изменения точечно (через <edit>). Никогда не переписывай файл полностью (<update>), если только тебя об этом прямо не попросили, чтобы экономить токены.
+3. Создать файл: <create title="Имя" folderId="ID_ПАПКИ_ИЛИ_ПУСТО_ДЛЯ_КОРНЯ">код</create>
+4. Создать папку: <create_folder title="Имя" parentId="ID_РОДИТЕЛЯ_ИЛИ_ПУСТО_ДЛЯ_КОРНЯ" />
+5. Удалить элемент: <delete id="ID_ЭЛЕМЕНТА" />
+6. План задач: <roadmap>- [ ] Шаг 1\n- [ ] Шаг 2</roadmap>
+7. АБСОЛЮТНО ВСЕГДА вноси изменения точечно (через <edit>). Никогда не переписывай файл полностью (<update>), если только тебя об этом прямо не попросили, чтобы экономить токены.
 
-ОБЯЗАТЕЛЬНО используй точные ID файлов из оглавления:
+ОБЯЗАТЕЛЬНО используй точные ID файлов и папок из оглавления:
 ${JSON.stringify(notesDirectory)}` + textAccessRule;
           
 currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ (с номерами строк):\n${JSON.stringify(workspaceDB)}\n${graphContext}АКТИВНАЯ ЗАМЕТКА ID: ${activeId}\n${selectionContext}${mentionedNotesContext ? "\nПОЛЬЗОВАТЕЛЬ ПРИКРЕПИЛ ФАЙЛЫ:\n" + mentionedNotesContext : ""}${liveSiteContext}${terminalContext}\nЗапрос: ${userText}`;
@@ -7934,13 +8103,13 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
             const statusMsgDiv = renderMessageUI("bot", "", -1);
             updateMessageUI(statusMsgDiv, `<i class='bx bx-loader-alt bx-spin' style='color: #f59e0b;'></i> Выполняю _"${currentTask}"_...`, "", -1);
 
-            // Собираем актуальный контекст
-            const notesDirectory = notes.map(n => ({ id: n.id, title: n.title }));
+            // Собираем актуальный контекст (С УЧЕТОМ ПУТЕЙ)
+            const notesDirectory = notes.map(n => ({ id: n.id, type: n.type, path: window.getFullPath(n) }));
             const baseAllowedNotes = Array.from(new Set([activeId, ...window.aiAttachedNotes])).map(id => notes.find(n=>n.id===id)).filter(Boolean);
             
             // Подтягиваем связанные файлы!
             const depResolution = window.resolveDependencies(baseAllowedNotes);
-            const workspaceDB = depResolution.notes.map(n => ({ id: n.id, title: n.title, content: window.formatNoteWithLines(n.content) }));
+            const workspaceDB = depResolution.notes.map(n => ({ id: n.id, path: window.getFullPath(n), content: window.formatNoteWithLines(n.content) }));
             const graphContext = depResolution.graphText;
 
             // СИСТЕМНЫЙ ПРОМПТ ДЛЯ КАЖДОГО ШАГА ROADMAP
@@ -7948,15 +8117,16 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
 ВНИМАНИЕ: Ты ОБЯЗАН внести изменения в код, используя XML-теги.
 
 ПРАВИЛА ИСПОЛЬЗОВАНИЯ ТЕГОВ:
-1. Точечная правка (Укажи старый код и новый):
+1. Точечная правка:
 <edit id="ID_ФАЙЛА">
   <find>точный старый код</find>
   <replace>новый код</replace>
 </edit>
 2. Перезаписать весь файл целиком: <update id="ID_ФАЙЛА">весь код</update>
-3. Создать новый файл: <create title="Имя">код</create>
+3. Создать файл: <create title="Имя" folderId="ID_ПАПКИ_ИЛИ_ПУСТО">код</create>
+4. Создать папку: <create_folder title="Имя" parentId="ID_РОДИТЕЛЯ_ИЛИ_ПУСТО" />
 
-ОБЯЗАТЕЛЬНО используй точные ID файлов из оглавления: ${JSON.stringify(notesDirectory)}`;
+ОБЯЗАТЕЛЬНО используй точные ID файлов и папок из оглавления: ${JSON.stringify(notesDirectory)}`;
 
             const messages = [
               { role: "system", content: stepSystemPrompt },
