@@ -246,6 +246,7 @@
         #artifact-canvas {
             max-width: 100%;
             max-height: 100%;
+            display: block;
         }
 
         /* Информационная панель телеметрии */
@@ -1050,7 +1051,13 @@
             }
             resize() {
                 const dpr = Math.min(window.devicePixelRatio || 1, 2);
-                const size = this.canvas.parentElement.clientWidth;
+                const parent = this.canvas.parentElement;
+                
+                // Рассчитываем размер по минимальной стороне родительского контейнера,
+                // чтобы холст оставался строго квадратным и не выходил за рамки высоты на мобильных устройствах
+                const size = Math.min(parent.clientWidth, parent.clientHeight || 300);
+                
+                this.dpr = dpr;
                 this.canvas.width = size * dpr;
                 this.canvas.height = size * dpr;
                 this.canvas.style.width = size + 'px';
@@ -1058,7 +1065,8 @@
                 this.ctx.scale(dpr, dpr);
             }
             loop() {
-                const size = this.canvas.width / (window.devicePixelRatio || 1);
+                // Избегаем рассинхронизации координат, используя сохраненный dpr вместо window.devicePixelRatio
+                const size = this.canvas.width / (this.dpr || 1);
                 const half = size / 2;
                 this.ctx.clearRect(0, 0, size, size);
 
@@ -1069,15 +1077,23 @@
                 const px = this.mouse.x * 0.15;
                 const py = this.mouse.y * 0.15;
 
+                // Пропорционально масштабируем элементы под текущий размер холста,
+                // чтобы графика не обрезалась на экранах с малой высотой
+                const scaleFactor = size > 0 ? size / 300 : 1;
+                const ring1Rad = 110 * scaleFactor;
+                const ring2Rad = 130 * scaleFactor;
+                const tridentLen = 110 * scaleFactor;
+                const haloRad = 70 * scaleFactor;
+
                 // Технологические декоративные кольца
-                this.drawCyberRing(half + px * 0.3, half + py * 0.3, 110, this.angle * 0.4, [5, 20, 2, 40]);
-                this.drawCyberRing(half + px * 0.5, half + py * 0.5, 130, -this.angle * 0.2, [2, 10]);
+                this.drawCyberRing(half + px * 0.3, half + py * 0.3, ring1Rad, this.angle * 0.4, [5, 20, 2, 40]);
+                this.drawCyberRing(half + px * 0.5, half + py * 0.5, ring2Rad, -this.angle * 0.2, [2, 10]);
 
                 // 1. Отрисовка Трезубца Gawr Gura (на заднем плане)
-                this.drawTrident(half + px * 0.8, half + py * 0.8, 110, -Math.PI / 6 + Math.sin(this.angle) * 0.05);
+                this.drawTrident(half + px * 0.8, half + py * 0.8, tridentLen, -Math.PI / 6 + Math.sin(this.angle) * 0.05);
 
                 // 2. Отрисовка Нимба Amane Kanata (на переднем плане с наложением)
-                this.drawKanataHalo(half + px * 1.2, half + py * 1.2, 70, -this.angle * 1.5);
+                this.drawKanataHalo(half + px * 1.2, half + py * 1.2, haloRad, -this.angle * 1.5);
 
                 requestAnimationFrame(this.loop);
             }
