@@ -1535,6 +1535,9 @@ const { data, error } = await supabaseClient.from('profiles').select('*').eq('fi
       this.canvas.width = this.width * this.dpr;
       this.canvas.height = this.height * this.dpr;
       this.ctx.scale(this.dpr, this.dpr);
+      
+      // Перегенерируем звезды, чтобы они гармонично заполнили новые границы экрана
+      this.initStars();
     }
 
     initStars() {

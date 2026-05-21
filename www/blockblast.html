@@ -34,21 +34,14 @@
       }
 
       :root {
-        --bg-color: #0f172a;
-        --grid-bg: rgba(255, 255, 255, 0.05);
-        --cell-bg: rgba(255, 255, 255, 0.03);
-        --cell-border: rgba(255, 255, 255, 0.08);
+        --bg-color: #0b0f19;
+        --grid-bg: rgba(15, 23, 42, 0.6);
+        --cell-bg: rgba(255, 255, 255, 0.02);
+        --cell-border: rgba(255, 255, 255, 0.05);
         --text-main: #f8fafc;
-        --text-muted: #94a3b8;
+        --text-muted: #64748b;
         --primary: #3b82f6;
-        --cell-size: calc((100vw - 32px) / 8); /* Responsive cell size */
-      }
-
-      /* Responsive max size for larger screens (tablets) */
-      @media (min-width: 500px) {
-        :root {
-          --cell-size: 50px;
-        }
+        --cell-size: clamp(34px, 10.5vw, 54px); /* Адаптивный размер ячеек под любые экраны */
       }
 
       * {
@@ -62,30 +55,33 @@
 
       body {
         font-family: "Poppins", sans-serif;
-        background: radial-gradient(circle at top, #1e293b, var(--bg-color));
+        background: radial-gradient(circle at top, #151e33, var(--bg-color));
         color: var(--text-main);
-        height: 100vh;
-        height: 100dvh; /* For modern mobile browsers */
+        min-height: 100vh;
+        min-height: 100dvh;
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: space-between;
         overflow: hidden;
-        touch-action: none; /* Prevents pull-to-refresh and scrolling */
+        touch-action: none;
+        padding-bottom: env(safe-area-inset-bottom);
       }
 
       /* HEADER */
       .header {
         width: 100%;
-        max-width: 500px;
-        padding: 20px 20px 10px;
+        max-width: 480px;
+        padding: 24px 20px 10px;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        z-index: 10;
       }
 
       .score-board {
         display: flex;
-        gap: 20px;
+        gap: 24px;
       }
 
       .score-box {
@@ -94,44 +90,53 @@
       }
 
       .score-label {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-muted);
         text-transform: uppercase;
-        font-weight: 600;
-        letter-spacing: 1px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
       }
 
       .score-value {
-        font-size: 28px;
+        font-size: 32px;
         font-weight: 800;
-        line-height: 1.2;
+        line-height: 1.1;
+        background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
 
       .high-score-value {
-        color: #fbbf24;
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
 
       .btn-restart {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
-        padding: 10px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 12px;
         cursor: pointer;
         display: flex;
         justify-content: center;
         align-items: center;
-        transition: all 0.2s;
-        backdrop-filter: blur(10px);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        backdrop-filter: blur(12px);
+      }
+
+      .btn-restart:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
       }
 
       .btn-restart:active {
-        transform: scale(0.9);
-        background: rgba(255, 255, 255, 0.2);
+        transform: scale(0.92);
       }
 
       .btn-restart svg {
-        width: 24px;
-        height: 24px;
+        width: 22px;
+        height: 22px;
         fill: var(--text-main);
       }
 
@@ -142,75 +147,115 @@
         justify-content: center;
         align-items: center;
         width: 100%;
+        padding: 10px;
       }
 
       .grid {
         display: grid;
         grid-template-columns: repeat(8, var(--cell-size));
         grid-template-rows: repeat(8, var(--cell-size));
-        gap: 2px;
+        gap: 3px;
         background: var(--grid-bg);
-        padding: 4px;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        padding: 8px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 
+          0 24px 48px rgba(0, 0, 0, 0.7),
+          0 0 40px rgba(59, 130, 246, 0.05),
+          inset 0 1px 1px rgba(255, 255, 255, 0.05);
+        position: relative;
+        backdrop-filter: blur(8px);
       }
 
       .cell {
         width: var(--cell-size);
         height: var(--cell-size);
         background: var(--cell-bg);
-        border-radius: 6px;
-        transition: background 0.1s;
+        border-radius: 8px;
+        border: 1px solid var(--cell-border);
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+        transition: background 0.15s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
       .cell.highlight {
-        background: rgba(255, 255, 255, 0.2) !important;
+        background: rgba(255, 255, 255, 0.12) !important;
+        border-color: rgba(255, 255, 255, 0.3);
       }
 
-      /* BLOCKS */
+      /* BLOCKS WITH 3D GLOSS EFFECT */
       .block {
-        border-radius: 6px;
-        box-shadow:
-          inset 0 0 0 2px rgba(255, 255, 255, 0.2),
-          inset 2px 2px 5px rgba(255, 255, 255, 0.3),
-          inset -2px -2px 5px rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
         width: 100%;
         height: 100%;
-        animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        animation: popIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      .block::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 50%;
+        background: linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
+        pointer-events: none;
+      }
+
+      @keyframes popIn {
+        0% { transform: scale(0.7); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
       }
 
       /* TRAY (SPAWN AREA) */
       .tray {
         width: 100%;
-        height: 180px;
+        height: 160px;
         display: flex;
         justify-content: space-evenly;
         align-items: center;
-        padding-bottom: 30px;
-        max-width: 500px;
+        padding-bottom: 24px;
+        max-width: 480px;
+        z-index: 10;
       }
 
       .shape-container {
-        width: 80px;
-        height: 80px;
+        width: 90px;
+        height: 90px;
         display: flex;
         justify-content: center;
         align-items: center;
         position: relative;
+        background: rgba(255,255,255,0.01);
+        border-radius: 12px;
+        border: 1px dashed rgba(255,255,255,0.03);
+        transition: all 0.2s;
       }
 
       .shape-preview {
         display: grid;
         gap: 2px;
-        transition: transform 0.2s;
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
       .shape-preview .preview-block {
-        width: calc(var(--cell-size) * 0.6);
-        height: calc(var(--cell-size) * 0.6);
-        border-radius: 4px;
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+        width: calc(var(--cell-size) * 0.55);
+        height: calc(var(--cell-size) * 0.55);
+        border-radius: 5px;
+        border: 1.5px solid rgba(255, 255, 255, 0.1);
+        position: relative;
+        overflow: hidden;
+      }
+      .shape-preview .preview-block::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 50%;
+        background: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+      }
+
+      .shape-container.empty {
+        border: none;
+        background: none;
       }
 
       .shape-container.empty .shape-preview {
@@ -223,16 +268,25 @@
         pointer-events: none;
         z-index: 1000;
         display: grid;
-        gap: 2px;
-        transform: scale(1.1); /* Slightly larger while dragging */
-        filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.5));
+        gap: 3px;
+        transform: scale(1.1);
+        filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.6));
+        opacity: 0.95;
       }
 
       .dragging .drag-block {
         width: var(--cell-size);
         height: var(--cell-size);
-        border-radius: 6px;
-        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        position: relative;
+        overflow: hidden;
+      }
+      .dragging .drag-block::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 50%;
+        background: linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
       }
 
       /* GAME OVER MODAL */
@@ -242,55 +296,89 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(5px);
+        background: rgba(4, 8, 16, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         display: none;
         justify-content: center;
         align-items: center;
         z-index: 2000;
         opacity: 0;
-        transition: opacity 0.3s;
+        transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
       .modal {
-        background: var(--bg-color);
+        background: rgba(15, 23, 42, 0.95);
         padding: 40px;
-        border-radius: 20px;
+        border-radius: 24px;
         text-align: center;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-        transform: translateY(20px);
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        box-shadow: 
+          0 30px 60px rgba(0, 0, 0, 0.8),
+          0 0 50px rgba(59, 130, 246, 0.15);
+        transform: translateY(30px) scale(0.9);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        max-width: 90%;
+        width: 360px;
       }
 
       .modal h2 {
-        font-size: 32px;
-        margin-bottom: 10px;
-        color: #f8fafc;
+        font-size: 30px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
 
       .modal p {
         color: var(--text-muted);
-        margin-bottom: 30px;
-        font-size: 18px;
+        margin-bottom: 32px;
+        font-size: 16px;
       }
 
       .btn-primary {
         background: var(--primary);
         color: #fff;
         border: none;
-        padding: 15px 40px;
-        border-radius: 30px;
-        font-size: 18px;
-        font-weight: 600;
+        padding: 14px 36px;
+        border-radius: 16px;
+        font-size: 16px;
+        font-weight: 700;
         font-family: inherit;
         cursor: pointer;
-        transition: background 0.2s;
-        box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+      }
+
+      .btn-primary:hover {
+        background: #2563eb;
+        box-shadow: 0 12px 28px rgba(59, 130, 246, 0.5);
       }
 
       .btn-primary:active {
-        transform: scale(0.95);
+        transform: scale(0.96);
+      }
+
+      /* PARTICLES */
+      .particle {
+        position: absolute;
+        pointer-events: none;
+        z-index: 500;
+        opacity: 1;
+        mix-blend-mode: screen;
+        animation: particleFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      @keyframes particleFade {
+        0% {
+          transform: translate(0, 0) scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(var(--tx), var(--ty)) scale(0);
+          opacity: 0;
+        }
       }
 
       .super-combo-img {
@@ -303,7 +391,7 @@
         top: 50%;
         transform: translate(-50%, -50%) scale(0);
         z-index: 3000;
-        pointer-events: none; /* Чтобы не мешала нажимать */
+        pointer-events: none;
         box-shadow:
           0 15px 35px rgba(0, 0, 0, 0.8),
           0 0 20px var(--primary);
@@ -312,102 +400,69 @@
       }
 
       @keyframes superComboPop {
-        0% {
-          transform: translate(-50%, -50%) scale(0) rotate(-15deg);
-          opacity: 0;
-        }
-        15% {
-          transform: translate(-50%, -50%) scale(1.2) rotate(10deg);
-          opacity: 1;
-        }
-        30% {
-          transform: translate(-50%, -50%) scale(1) rotate(-5deg);
-          opacity: 1;
-        }
-        85% {
-          transform: translate(-50%, -50%) scale(1) rotate(0deg);
-          opacity: 1;
-        }
-        100% {
-          transform: translate(-50%, -50%) scale(1.3);
-          opacity: 0;
-        } /* Убрали blur, оставили чистое исчезновение */
+        0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; }
+        15% { transform: translate(-50%, -50%) scale(1.2) rotate(10deg); opacity: 1; }
+        30% { transform: translate(-50%, -50%) scale(1) rotate(-5deg); opacity: 1; }
+        85% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(1.3); opacity: 0; }
       }
 
       @keyframes clearLine {
-        0% {
-          transform: scale(1);
-          opacity: 1;
-          filter: brightness(1);
-        }
-        50% {
-          transform: scale(1.1);
-          opacity: 0.8;
-          filter: brightness(2);
-        }
-        100% {
-          transform: scale(0);
-          opacity: 0;
-          filter: brightness(1);
-        }
+        0% { transform: scale(1); opacity: 1; filter: brightness(1); }
+        50% { transform: scale(1.15); opacity: 0.8; filter: brightness(2); }
+        100% { transform: scale(0); opacity: 0; filter: brightness(1); }
       }
 
       .clearing {
-        animation: clearLine 0.3s forwards;
+        animation: clearLine 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
 
       .combo-text {
         position: absolute;
         color: #fff;
-        font-size: 24px;
-        font-weight: bold;
-        text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+        font-size: 32px;
+        font-weight: 800;
+        text-shadow: 0 0 15px rgba(59, 130, 246, 0.6), 0 5px 10px rgba(0,0,0,0.5);
         pointer-events: none;
         z-index: 100;
-        animation: floatUp 1s forwards;
+        animation: floatUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
 
       @keyframes floatUp {
-        0% {
-          transform: translateY(0) scale(1);
-          opacity: 1;
-        }
-        100% {
-          transform: translateY(-50px) scale(1.5);
-          opacity: 0;
-        }
+        0% { transform: translate(-50%, 0) scale(0.8); opacity: 1; }
+        100% { transform: translate(-50%, -80px) scale(1.3); opacity: 0; }
       }
 
-      /* Эффект тряски сетки */
+      /* Grid Shake */
       @keyframes shakeGrid {
         0% { transform: translate(0, 0); }
-        20% { transform: translate(-3px, 2px); }
-        40% { transform: translate(3px, -2px); }
-        60% { transform: translate(-3px, -2px); }
-        80% { transform: translate(3px, 2px); }
+        20% { transform: translate(-4px, 3px); }
+        40% { transform: translate(4px, -3px); }
+        60% { transform: translate(-4px, -3px); }
+        80% { transform: translate(4px, 3px); }
         100% { transform: translate(0, 0); }
       }
 
       .grid.shake {
-        animation: shakeGrid 0.3s ease-in-out;
+        animation: shakeGrid 0.35s ease-in-out;
       }
 
-      /* Вылетающие очки */
+      /* Floating points */
       .floating-points {
         position: absolute;
-        color: #fbbf24; /* Золотой цвет */
-        font-size: 28px;
-        font-weight: 800;
-        text-shadow: 0 5px 15px rgba(0,0,0,0.8), 0 0 10px #f59e0b;
+        color: #fbbf24;
+        font-size: 32px;
+        font-weight: 900;
+        text-shadow: 0 5px 15px rgba(0,0,0,0.8), 0 0 15px #f59e0b;
         pointer-events: none;
         z-index: 1000;
-        animation: floatPointsAnim 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        animation: floatPointsAnim 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
 
       @keyframes floatPointsAnim {
         0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-        20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-        100% { transform: translate(-50%, -100px) scale(1); opacity: 0; }
+        20% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+        100% { transform: translate(-50%, -120px) scale(0.9); opacity: 0; }
       }
     </style>
   </head>
@@ -474,11 +529,15 @@
         c8: "#ec4899", // Pink
       };
 
-      // Defining Shapes (relative coordinates: [row, col])
+      // Defining Shapes with size category (relative coordinates: [row, col])
       const SHAPES_DATA = [
-        // 1x1
-        { coords: [[0, 0]], color: COLORS.c5, cols: 1, rows: 1 },
-        // 2x2
+        // === SMALL (1-2 cells) ===
+        { coords: [[0, 0]], color: COLORS.c5, cols: 1, rows: 1, type: 'small' }, // 1x1
+        { coords: [[0, 0], [0, 1]], color: COLORS.c4, cols: 2, rows: 1, type: 'small' }, // Horizontal 1x2
+        { coords: [[0, 0], [1, 0]], color: COLORS.c6, cols: 1, rows: 2, type: 'small' }, // Vertical 2x1
+
+        // === MEDIUM (3-4 cells) ===
+        // Square 2x2
         {
           coords: [
             [0, 0],
@@ -489,152 +548,106 @@
           color: COLORS.c3,
           cols: 2,
           rows: 2,
+          type: 'medium'
         },
-        // 3x3
+        // Lines 1x3 / 3x1
+        { coords: [[0, 0], [0, 1], [0, 2]], color: COLORS.c4, cols: 3, rows: 1, type: 'medium' },
+        { coords: [[0, 0], [1, 0], [2, 0]], color: COLORS.c6, cols: 1, rows: 3, type: 'medium' },
+
+        // Small Corners (3 cells)
+        { coords: [[0, 0], [1, 0], [1, 1]], color: COLORS.c2, cols: 2, rows: 2, type: 'medium' },
+        { coords: [[0, 1], [1, 0], [1, 1]], color: COLORS.c2, cols: 2, rows: 2, type: 'medium' },
+        { coords: [[0, 0], [0, 1], [1, 0]], color: COLORS.c2, cols: 2, rows: 2, type: 'medium' },
+        { coords: [[0, 0], [0, 1], [1, 1]], color: COLORS.c2, cols: 2, rows: 2, type: 'medium' },
+
+        // Z-Shapes & S-Shapes (4 cells)
+        { coords: [[0, 0], [0, 1], [1, 1], [1, 2]], color: COLORS.c1, cols: 3, rows: 2, type: 'medium' }, // Z horizontal
+        { coords: [[0, 1], [0, 2], [1, 0], [1, 1]], color: COLORS.c1, cols: 3, rows: 2, type: 'medium' }, // S horizontal
+        { coords: [[0, 0], [1, 0], [1, 1], [2, 1]], color: COLORS.c1, cols: 2, rows: 3, type: 'medium' }, // Z vertical
+        { coords: [[0, 1], [1, 0], [1, 1], [2, 0]], color: COLORS.c1, cols: 2, rows: 3, type: 'medium' }, // S vertical
+
+        // T-Shapes (4 cells)
+        {
+          coords: [
+            [0, 1],
+            [1, 0],
+            [1, 1],
+            [1, 2],
+          ],
+          color: COLORS.c8,
+          cols: 3,
+          rows: 2,
+          type: 'medium'
+        },
         {
           coords: [
             [0, 0],
             [0, 1],
             [0, 2],
-            [1, 0],
             [1, 1],
-            [1, 2],
+          ],
+          color: COLORS.c8,
+          cols: 3,
+          rows: 2,
+          type: 'medium'
+        },
+        {
+          coords: [
+            [0, 0],
+            [1, 0],
             [2, 0],
+            [1, 1],
+          ],
+          color: COLORS.c8,
+          cols: 2,
+          rows: 3,
+          type: 'medium'
+        },
+        {
+          coords: [
+            [1, 0],
+            [0, 1],
+            [1, 1],
             [2, 1],
-            [2, 2],
+          ],
+          color: COLORS.c8,
+          cols: 2,
+          rows: 3,
+          type: 'medium'
+        },
+
+        // === LARGE (5+ cells) ===
+        // Lines 1x4, 1x5 / 4x1, 5x1
+        { coords: [[0, 0], [0, 1], [0, 2], [0, 3]], color: COLORS.c4, cols: 4, rows: 1, type: 'large' },
+        { coords: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]], color: COLORS.c4, cols: 5, rows: 1, type: 'large' },
+        { coords: [[0, 0], [1, 0], [2, 0], [3, 0]], color: COLORS.c6, cols: 1, rows: 4, type: 'large' },
+        { coords: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]], color: COLORS.c6, cols: 1, rows: 5, type: 'large' },
+
+        // Square 3x3
+        {
+          coords: [
+            [0, 0], [0, 1], [0, 2],
+            [1, 0], [1, 1], [1, 2],
+            [2, 0], [2, 1], [2, 2],
           ],
           color: COLORS.c1,
           cols: 3,
           rows: 3,
+          type: 'large'
         },
-        // Horizontal lines
+        // Plus / Cross shape (5 cells)
         {
           coords: [
-            [0, 0],
             [0, 1],
+            [1, 0], [1, 1], [1, 2],
+            [2, 1]
           ],
-          color: COLORS.c4,
-          cols: 2,
-          rows: 1,
-        },
-        {
-          coords: [
-            [0, 0],
-            [0, 1],
-            [0, 2],
-          ],
-          color: COLORS.c4,
+          color: COLORS.c3,
           cols: 3,
-          rows: 1,
-        },
-        {
-          coords: [
-            [0, 0],
-            [0, 1],
-            [0, 2],
-            [0, 3],
-          ],
-          color: COLORS.c4,
-          cols: 4,
-          rows: 1,
-        },
-        {
-          coords: [
-            [0, 0],
-            [0, 1],
-            [0, 2],
-            [0, 3],
-            [0, 4],
-          ],
-          color: COLORS.c4,
-          cols: 5,
-          rows: 1,
-        },
-        // Vertical lines
-        {
-          coords: [
-            [0, 0],
-            [1, 0],
-          ],
-          color: COLORS.c6,
-          cols: 1,
-          rows: 2,
-        },
-        {
-          coords: [
-            [0, 0],
-            [1, 0],
-            [2, 0],
-          ],
-          color: COLORS.c6,
-          cols: 1,
           rows: 3,
+          type: 'large'
         },
-        {
-          coords: [
-            [0, 0],
-            [1, 0],
-            [2, 0],
-            [3, 0],
-          ],
-          color: COLORS.c6,
-          cols: 1,
-          rows: 4,
-        },
-        {
-          coords: [
-            [0, 0],
-            [1, 0],
-            [2, 0],
-            [3, 0],
-            [4, 0],
-          ],
-          color: COLORS.c6,
-          cols: 1,
-          rows: 5,
-        },
-        // L-shapes small
-        {
-          coords: [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-          ],
-          color: COLORS.c2,
-          cols: 2,
-          rows: 2,
-        },
-        {
-          coords: [
-            [0, 1],
-            [1, 0],
-            [1, 1],
-          ],
-          color: COLORS.c2,
-          cols: 2,
-          rows: 2,
-        },
-        {
-          coords: [
-            [0, 0],
-            [0, 1],
-            [1, 0],
-          ],
-          color: COLORS.c2,
-          cols: 2,
-          rows: 2,
-        },
-        {
-          coords: [
-            [0, 0],
-            [0, 1],
-            [1, 1],
-          ],
-          color: COLORS.c2,
-          cols: 2,
-          rows: 2,
-        },
-        // L-shapes large (3x3 bounds)
+        // Large L-shapes (5 cells)
         {
           coords: [
             [0, 0],
@@ -646,6 +659,7 @@
           color: COLORS.c7,
           cols: 3,
           rows: 3,
+          type: 'large'
         },
         {
           coords: [
@@ -658,6 +672,7 @@
           color: COLORS.c7,
           cols: 3,
           rows: 3,
+          type: 'large'
         },
         {
           coords: [
@@ -670,6 +685,7 @@
           color: COLORS.c7,
           cols: 3,
           rows: 3,
+          type: 'large'
         },
         {
           coords: [
@@ -682,53 +698,107 @@
           color: COLORS.c7,
           cols: 3,
           rows: 3,
-        },
-        // T-shape
-        {
-          coords: [
-            [0, 1],
-            [1, 0],
-            [1, 1],
-            [1, 2],
-          ],
-          color: COLORS.c8,
-          cols: 3,
-          rows: 2,
-        },
-        {
-          coords: [
-            [0, 0],
-            [0, 1],
-            [0, 2],
-            [1, 1],
-          ],
-          color: COLORS.c8,
-          cols: 3,
-          rows: 2,
-        },
-        {
-          coords: [
-            [0, 0],
-            [1, 0],
-            [2, 0],
-            [1, 1],
-          ],
-          color: COLORS.c8,
-          cols: 2,
-          rows: 3,
-        },
-        {
-          coords: [
-            [1, 0],
-            [0, 1],
-            [1, 1],
-            [2, 1],
-          ],
-          color: COLORS.c8,
-          cols: 2,
-          rows: 3,
+          type: 'large'
         },
       ];
+
+      // --- WEB AUDIO API SYNTHESIZER ---
+      class SoundSynth {
+        constructor() {
+          this.ctx = null;
+        }
+        init() {
+          if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+        }
+        playBubble() {
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(550, this.ctx.currentTime + 0.12);
+          
+          gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+          
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.12);
+        }
+        playChime() {
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const playNote = (freq, delay, duration, vol) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + delay);
+            gain.gain.setValueAtTime(vol, now + delay);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + duration);
+            osc.start(now + delay);
+            osc.stop(now + delay + duration);
+          };
+          playNote(523.25, 0, 0.18, 0.04); 
+          playNote(659.25, 0.04, 0.22, 0.04); 
+          playNote(783.99, 0.08, 0.26, 0.04); 
+        }
+        playPlacement() {
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(280, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.1);
+          
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+          
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.1);
+        }
+        playClear() {
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          for (let i = 0; i < 4; i++) {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(350 + i * 120, now + i * 0.05);
+            gain.gain.setValueAtTime(0.06, now + i * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.25);
+            osc.start(now + i * 0.05);
+            osc.stop(now + i * 0.05 + 0.25);
+          }
+        }
+      }
+      window.sound = new SoundSynth();
+
+      // Активируем аудио-контекст при первом касании/клике игрока
+      function unlockAudio() {
+        if (window.sound) window.sound.init();
+        document.removeEventListener("touchstart", unlockAudio);
+        document.removeEventListener("mousedown", unlockAudio);
+      }
+      document.addEventListener("touchstart", unlockAudio, { passive: true });
+      document.addEventListener("mousedown", unlockAudio);
 
       // --- STATE ---
       let board = Array(GRID_SIZE)
@@ -752,11 +822,10 @@
       const gameOverModal = document.getElementById("gameOverModal");
       const finalScoreEl = document.getElementById("finalScore");
 
-      // --- БАЗА ДАННЫХ (Supabase) ---
+      // --- БАЗА ДАННЫХ (Supabase + LocalStorage Fallback) ---
       const SUPABASE_URL = 'https://qnklmktpzfphqynomsgw.supabase.co'; 
       const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFua2xta3RwemZwaHF5bm9tc2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzY1NzIsImV4cCI6MjA5MjQ1MjU3Mn0.gfyXStXf1zkmDHV0Q-4LDwb7Az4UNmSL0BkMMqp1SdA';
       
-      // ИЗМЕНЕНО: переименовали переменную в supabaseClient, чтобы не было конфликта с самой библиотекой
       const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
       const dbHelper = {
@@ -764,25 +833,43 @@
           return Promise.resolve();
         },
         saveHighScore: async function (score) {
-          // ИЗМЕНЕНО: используем supabaseClient
-          const { error } = await supabaseClient
-            .from('game_data')
-            .upsert({ id: 1, high_score: score });
-            
-          if (error) console.error("Ошибка сохранения в Supabase:", error);
+          localStorage.setItem("blockblast_highscore", score);
+          try {
+            if (supabaseClient) {
+              const { error } = await supabaseClient
+                .from('game_data')
+                .upsert({ id: 1, high_score: score });
+              if (error) console.warn("Supabase Sync warning:", error.message);
+            }
+          } catch (e) {
+            console.warn("Database sync offline. High score cached locally.");
+          }
         },
         getHighScore: async function () {
-          // ИЗМЕНЕНО: используем supabaseClient
-          const { data, error } = await supabaseClient
-            .from('game_data')
-            .select('high_score')
-            .eq('id', 1)
-            .single();
+          const localVal = parseInt(localStorage.getItem("blockblast_highscore")) || 0;
+          try {
+            if (supabaseClient) {
+              const { data, error } = await supabaseClient
+                .from('game_data')
+                .select('high_score')
+                .eq('id', 1)
+                .single();
 
-          if (error || !data) return 0;
-          return data.high_score;
+              if (!error && data) {
+                const cloudVal = parseInt(data.high_score) || 0;
+                const maxVal = Math.max(localVal, cloudVal);
+                if (maxVal > localVal) {
+                  localStorage.setItem("blockblast_highscore", maxVal);
+                }
+                return maxVal;
+              }
+            }
+          } catch (e) {
+            console.warn("Using offline high score.");
+          }
+          return localVal;
         },
-      };
+      };  
 
       // --- ИЗМЕНЕННАЯ ИНИЦИАЛИЗАЦИЯ ---
       async function init() {
@@ -846,82 +933,149 @@
         fillTray();
       }
 
-      // Вспомогательная функция для симуляции: ищет все доступные позиции для фигуры на конкретной доске
-      function getValidPositionsForBoard(testBoard, shape) {
-        let positions = [];
-        for (let r = 0; r < GRID_SIZE; r++) {
-          for (let c = 0; c < GRID_SIZE; c++) {
-            let fits = true;
-            for (let coord of shape.coords) {
-              const tr = r + coord[0];
-              const tc = c + coord[1];
-              if (
-                tr < 0 ||
-                tr >= GRID_SIZE ||
-                tc < 0 ||
-                tc >= GRID_SIZE ||
-                testBoard[tr][tc] !== null
-              ) {
-                fits = false;
-                break;
-              }
-            }
-            if (fits) positions.push({ r, c });
-          }
+      // --- ИНТЕЛЛЕКТУАЛЬНЫЙ АЛГОРИТМ ПРЕДЛОЖЕНИЯ ФИГУР ---
+
+      // Хелпер: проверка возможности разместить фигуру на виртуальной копии доски
+      function canPlaceOnBoard(tempBoard, shape, startRow, startCol) {
+        for (let coord of shape.coords) {
+          const r = startRow + coord[0];
+          const c = startCol + coord[1];
+          if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) return false;
+          if (tempBoard[r][c] !== null) return false;
         }
-        return positions;
+        return true;
       }
 
-      // Интеллектуальный генератор сета из 3 фигур
-      function generateSmartTray() {
-        const MAX_ATTEMPTS = 20; // Пытаемся найти идеальную комбинацию 20 раз
+      // Хелпер: симуляция установки фигуры с мгновенным расчетом очистки собранных линий
+      function simulatePlaceAndClear(tempBoard, shape, startRow, startCol) {
+        shape.coords.forEach((coord) => {
+          tempBoard[startRow + coord[0]][startCol + coord[1]] = "filled";
+        });
 
-        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-          // Создаем виртуальную копию текущей доски
-          let virtualBoard = board.map((row) => [...row]);
-          let generatedShapes = [];
-          let success = true;
-
-          for (let i = 0; i < 3; i++) {
-            // Находим все фигуры, которые влезут на виртуальную доску СЕЙЧАС
-            let possibleShapes = SHAPES_DATA.filter(
-              (shape) =>
-                getValidPositionsForBoard(virtualBoard, shape).length > 0,
-            );
-
-            if (possibleShapes.length === 0) {
-              success = false;
-              break; // Места больше нет, эта комбинация неудачна
-            }
-
-            // Берем случайную фигуру из возможных
-            let randomShape =
-              possibleShapes[Math.floor(Math.random() * possibleShapes.length)];
-            generatedShapes.push(randomShape);
-
-            // Находим все места, куда она влезает, и "ставим" её в виртуальную доску
-            let positions = getValidPositionsForBoard(
-              virtualBoard,
-              randomShape,
-            );
-            let randomPos =
-              positions[Math.floor(Math.random() * positions.length)];
-
-            randomShape.coords.forEach((coord) => {
-              virtualBoard[randomPos.r + coord[0]][randomPos.c + coord[1]] =
-                "filled";
-            });
-          }
-
-          // Если мы смогли поставить все 3 фигуры - ура, это решаемый сет!
-          if (success) {
-            return generatedShapes;
+        // Поиск заполненных рядов
+        let rowsToClear = [];
+        for (let r = 0; r < GRID_SIZE; r++) {
+          if (tempBoard[r].every((cell) => cell !== null)) {
+            rowsToClear.push(r);
           }
         }
 
-        // Если за 20 попыток идеальный сет не найден (доска почти забита),
-        // просто генерируем 3 минимальные фигуры, чтобы дать шанс выжить, либо игра завершится.
-        return [SHAPES_DATA[0], SHAPES_DATA[0], SHAPES_DATA[0]]; // Три кубика 1x1 как запасной вариант
+        // Поиск заполненных колонок
+        let colsToClear = [];
+        for (let c = 0; c < GRID_SIZE; c++) {
+          let full = true;
+          for (let r = 0; r < GRID_SIZE; r++) {
+            if (tempBoard[r][c] === null) {
+              full = false;
+              break;
+            }
+          }
+          if (full) colsToClear.push(c);
+        }
+
+        // Очистка
+        rowsToClear.forEach((r) => {
+          for (let c = 0; c < GRID_SIZE; c++) tempBoard[r][c] = null;
+        });
+        colsToClear.forEach((c) => {
+          for (let r = 0; r < GRID_SIZE; r++) tempBoard[r][c] = null;
+        });
+      }
+
+      // Проверка: существует ли хотя бы одна последовательность ходов для расстановки всех 3-х фигур?
+      function isSolvableSequence(shapes) {
+        // Перебираем все возможные варианты порядка установки (перестановки индексов 0, 1, 2)
+        const permutations = [
+          [0, 1, 2], [0, 2, 1],
+          [1, 0, 2], [1, 2, 0],
+          [2, 0, 1], [2, 1, 0]
+        ];
+
+        for (let perm of permutations) {
+          let tempBoard = board.map(row => [...row]);
+          let possible = true;
+
+          for (let idx of perm) {
+            const shape = shapes[idx];
+            let foundPos = null;
+
+            // Ищем первую попавшуюся валидную позицию для текущей фигуры
+            for (let r = 0; r < GRID_SIZE; r++) {
+              for (let c = 0; c < GRID_SIZE; c++) {
+                if (canPlaceOnBoard(tempBoard, shape, r, c)) {
+                  foundPos = { r, c };
+                  break;
+                }
+              }
+              if (foundPos) break;
+            }
+
+            // Если позиция найдена, ставим виртуально и очищаем линии
+            if (foundPos) {
+              simulatePlaceAndClear(tempBoard, shape, foundPos.r, foundPos.c);
+            } else {
+              possible = false;
+              break;
+            }
+          }
+
+          if (possible) return true; // Найдена решаемая последовательность!
+        }
+
+        return false;
+      }
+
+      // Генератор умного и честного пула из 3 фигур
+      function generateSmartTray() {
+        // Рассчитываем степень заполненности доски
+        let filledCells = 0;
+        for (let r = 0; r < GRID_SIZE; r++) {
+          for (let c = 0; c < GRID_SIZE; c++) {
+            if (board[r][c] !== null) filledCells++;
+          }
+        }
+        const fillRatio = filledCells / (GRID_SIZE * GRID_SIZE);
+
+        const smallShapes = SHAPES_DATA.filter(s => s.type === 'small');
+        const mediumShapes = SHAPES_DATA.filter(s => s.type === 'medium');
+        const largeShapes = SHAPES_DATA.filter(s => s.type === 'large');
+
+        const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+        const MAX_ATTEMPTS = 50;
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+          let candidates = [];
+
+          if (fillRatio >= 0.6) {
+            // Доска критически заполнена: предлагаем только спасительные легкие блоки (2 мелких, 1 средний)
+            candidates.push(getRandom(smallShapes));
+            candidates.push(getRandom(smallShapes));
+            candidates.push(getRandom(mediumShapes));
+          } else if (fillRatio >= 0.35) {
+            // Средняя нагрузка: балансируем риски (1 мелкий, 2 средних)
+            candidates.push(getRandom(smallShapes));
+            candidates.push(getRandom(mediumShapes));
+            candidates.push(getRandom(mediumShapes));
+          } else {
+            // Свободная доска: классическая связка (1 мелкий, 1 средний, 1 крупный)
+            candidates.push(getRandom(smallShapes));
+            candidates.push(getRandom(mediumShapes));
+            candidates.push(getRandom(largeShapes));
+          }
+
+          // Проверяем, решается ли этот сет на текущем поле
+          if (isSolvableSequence(candidates)) {
+            return candidates;
+          }
+        }
+
+        // Страховочный вариант (если за 50 попыток решаемый сет не сгенерирован):
+        // Предлагаем ультра-гибкие простые блоки для расчистки пространства
+        return [
+          getRandom(smallShapes),
+          getRandom(smallShapes),
+          getRandom(smallShapes)
+        ];
       }
 
       function fillTray() {
@@ -942,46 +1096,6 @@
         }
       }
 
-      function renderTrayShape(index) {
-        const container = trayContainers[index];
-        const shape = currentTray[index];
-        container.innerHTML = "";
-
-        if (!shape) {
-          container.classList.add("empty");
-          return;
-        }
-
-        container.classList.remove("empty");
-
-        const preview = document.createElement("div");
-        preview.className = "shape-preview";
-        preview.style.gridTemplateColumns = `repeat(${shape.cols}, 1fr)`;
-        preview.style.gridTemplateRows = `repeat(${shape.rows}, 1fr)`;
-
-        // Create grid for preview
-        for (let r = 0; r < shape.rows; r++) {
-          for (let c = 0; c < shape.cols; c++) {
-            const block = document.createElement("div");
-            // Check if coord exists in shape
-            const isFilled = shape.coords.some(
-              (coord) => coord[0] === r && coord[1] === c,
-            );
-            if (isFilled) {
-              block.className = "preview-block";
-              block.style.background = shape.color;
-            }
-            preview.appendChild(block);
-          }
-        }
-
-        container.appendChild(preview);
-
-        // Add events
-        container.onmousedown = (e) => startDrag(e, index);
-        container.ontouchstart = (e) => startDrag(e, index, true);
-      }
-
       // --- DRAG & DROP LOGIC ---
       function startDrag(e, index, isTouch = false) {
         if (!currentTray[index]) return;
@@ -991,7 +1105,7 @@
 
         dragItem = { shape: currentTray[index], index: index };
 
-        // Create dragging DOM element
+        // Создаем плавающий блок
         dragEl = document.createElement("div");
         dragEl.className = "dragging";
         dragEl.style.gridTemplateColumns = `repeat(${dragItem.shape.cols}, var(--cell-size))`;
@@ -1000,7 +1114,13 @@
         dragItem.shape.coords.forEach((coord) => {
           const block = document.createElement("div");
           block.className = "drag-block";
-          block.style.background = dragItem.shape.color;
+          block.style.background = `linear-gradient(135deg, ${dragItem.shape.color}dd, ${dragItem.shape.color})`;
+          block.style.borderColor = dragItem.shape.color;
+          block.style.boxShadow = `
+            0 8px 16px rgba(0,0,0,0.4),
+            inset 0 2px 2px rgba(255,255,255,0.4),
+            0 0 15px ${dragItem.shape.color}55
+          `;
           block.style.gridRowStart = coord[0] + 1;
           block.style.gridColumnStart = coord[1] + 1;
           dragEl.appendChild(block);
@@ -1008,17 +1128,54 @@
 
         document.body.appendChild(dragEl);
 
-        // Hide original in tray
+        // Снижаем непрозрачность оригинального слота
         trayContainers[index].style.opacity = "0.2";
 
-        // Calculate center offset
         const sWidth = dragItem.shape.cols * CELL_SIZE();
         const sHeight = dragItem.shape.rows * CELL_SIZE();
 
         dragOffset.x = sWidth / 2;
-        dragOffset.y = sHeight / 2;
+        
+        // На тач-устройствах выносим блок на 50px выше пальца, чтобы не загораживать обзор
+        if (isTouch) {
+          dragOffset.y = sHeight + 50; 
+        } else {
+          dragOffset.y = sHeight / 2;
+        }
 
         moveDragEl(clientX, clientY, isTouch);
+      }
+
+      function onDragEnd(e) {
+        if (!dragEl) return;
+
+        const isTouch = e.type.includes("touch");
+        const clientX = isTouch ? e.changedTouches[0].clientX : e.clientX;
+        const clientY = isTouch ? e.changedTouches[0].clientY : e.clientY;
+
+        const dropPos = getGridPosition(clientX, clientY);
+
+        clearHighlights();
+
+        if (dropPos && canPlace(dragItem.shape, dropPos.row, dropPos.col)) {
+          placeShape(dragItem.shape, dropPos.row, dropPos.col);
+          currentTray[dragItem.index] = null;
+          trayContainers[dragItem.index].innerHTML = "";
+          trayContainers[dragItem.index].classList.add("empty");
+          trayContainers[dragItem.index].style.opacity = "1";
+
+          checkLines();
+          fillTray();
+        } else {
+          // Возвращаем в слот
+          trayContainers[dragItem.index].style.opacity = "1";
+          if (window.sound) window.sound.playBubble();
+        }
+
+        // Удаление плавающего элемента
+        dragEl.remove();
+        dragEl = null;
+        dragItem = null;
       }
 
       function moveDragEl(clientX, clientY, isTouch) {
@@ -1042,45 +1199,6 @@
         const clientY = isTouch ? e.touches[0].clientY : e.clientY;
 
         moveDragEl(clientX, clientY, isTouch);
-      }
-
-      function onDragEnd(e) {
-        if (!dragEl) return;
-
-        const isTouch = e.type.includes("touch");
-        let clientX, clientY;
-
-        if (isTouch) {
-          clientX = e.changedTouches[0].clientX;
-          clientY = e.changedTouches[0].clientY + touchOffset;
-        } else {
-          clientX = e.clientX;
-          clientY = e.clientY;
-        }
-
-        const dropPos = getGridPosition(clientX, clientY);
-
-        clearHighlights();
-
-        if (dropPos && canPlace(dragItem.shape, dropPos.row, dropPos.col)) {
-          // Success
-          placeShape(dragItem.shape, dropPos.row, dropPos.col);
-          currentTray[dragItem.index] = null;
-          trayContainers[dragItem.index].innerHTML = "";
-          trayContainers[dragItem.index].classList.add("empty");
-          trayContainers[dragItem.index].style.opacity = "1";
-
-          checkLines();
-          fillTray();
-        } else {
-          // Return to tray
-          trayContainers[dragItem.index].style.opacity = "1";
-        }
-
-        // Cleanup
-        dragEl.remove();
-        dragEl = null;
-        dragItem = null;
       }
 
       // --- GRID MATH & LOGIC ---
@@ -1149,7 +1267,7 @@
       }
 
       function placeShape(shape, startRow, startCol) {
-        // Add points for placing (size of shape)
+        if (window.sound) window.sound.playPlacement();
         updateScore(shape.coords.length);
 
         shape.coords.forEach((coord) => {
@@ -1160,9 +1278,59 @@
           const cell = document.getElementById(`cell-${r}-${c}`);
           const block = document.createElement("div");
           block.className = "block";
-          block.style.background = shape.color;
+          block.style.background = `linear-gradient(135deg, ${shape.color}dd, ${shape.color})`;
+          block.style.borderColor = shape.color;
+          block.style.boxShadow = `
+            0 4px 8px rgba(0,0,0,0.4),
+            inset 0 2px 2px rgba(255,255,255,0.45),
+            0 0 12px ${shape.color}33
+          `;
           cell.appendChild(block);
         });
+      }
+
+      function renderTrayShape(index) {
+        const container = trayContainers[index];
+        const shape = currentTray[index];
+        container.innerHTML = "";
+
+        if (!shape) {
+          container.classList.add("empty");
+          return;
+        }
+
+        container.classList.remove("empty");
+
+        const preview = document.createElement("div");
+        preview.className = "shape-preview";
+        preview.style.gridTemplateColumns = `repeat(${shape.cols}, 1fr)`;
+        preview.style.gridTemplateRows = `repeat(${shape.rows}, 1fr)`;
+
+        for (let r = 0; r < shape.rows; r++) {
+          for (let c = 0; c < shape.cols; c++) {
+            const block = document.createElement("div");
+            const isFilled = shape.coords.some(
+              (coord) => coord[0] === r && coord[1] === c
+            );
+            if (isFilled) {
+              block.className = "preview-block";
+              block.style.background = `linear-gradient(135deg, ${shape.color}dd, ${shape.color})`;
+              block.style.borderColor = shape.color;
+              block.style.boxShadow = `
+                inset 0 1px 1.5px rgba(255,255,255,0.45),
+                0 2px 4px rgba(0,0,0,0.3)
+              `;
+            } else {
+              block.style.visibility = "hidden"; // Поддерживаем структуру сетки
+            }
+            preview.appendChild(block);
+          }
+        }
+
+        container.appendChild(preview);
+
+        container.onmousedown = (e) => startDrag(e, index);
+        container.ontouchstart = (e) => startDrag(e, index, true);
       }
 
       function spawnParticles(x, y, color) {
@@ -1230,7 +1398,9 @@
         const points = linesCount * 10 * linesCount;
         updateScore(points);
 
-        // --- ДОБАВЛЕНО: Тряска сетки ---
+        if (window.sound) window.sound.playClear();
+
+        // Тряска сетки при сгорании линий
         gridEl.classList.add("shake");
         setTimeout(() => gridEl.classList.remove("shake"), 300);
 
@@ -1240,7 +1410,6 @@
         }
 
         let cellsToClear = new Set();
-        // Собираем координаты для вылетающих очков (по центру экрана/сетки)
         const gridRect = gridEl.getBoundingClientRect();
         
         lines.forEach((line) => {
@@ -1253,32 +1422,29 @@
           }
         });
 
-        // --- ДОБАВЛЕНО: Анимация вылетающих очков ---
+        // Анимация вылетающих очков по центру сетки
         const pointsEl = document.createElement("div");
         pointsEl.className = "floating-points";
         pointsEl.textContent = `+${points}`;
         pointsEl.style.left = `${gridRect.left + gridRect.width / 2}px`;
         pointsEl.style.top = `${gridRect.top + gridRect.height / 2}px`;
         document.body.appendChild(pointsEl);
-        setTimeout(() => pointsEl.remove(), 1000);
+        setTimeout(() => pointsEl.remove(), 1100);
 
-        // Animate and clear
+        // Сбор координат и очистка блоков с анимацией и спавном частиц
         cellsToClear.forEach((id) => {
-        // ... (остальной код функции clearLines оставляешь без изменений) ...
           const [r, c] = id.split("-");
           const cell = document.getElementById(`cell-${r}-${c}`);
           const block = cell.firstChild;
 
           if (block) {
-            // Забираем координаты ячейки для спавна частиц
             const rect = cell.getBoundingClientRect();
-            const color = block.style.background;
+            const color = block.style.borderColor || '#3b82f6';
 
-            // Вызываем нашу новую крутую функцию!
             spawnParticles(
               rect.left + rect.width / 2,
               rect.top + rect.height / 2,
-              color,
+              color
             );
 
             block.classList.add("clearing");
@@ -1286,12 +1452,12 @@
           }
         });
 
-        // Wait for animation, then remove DOM elements and check Game Over
+        // Очищаем DOM элементы ячеек после завершения CSS анимации
         setTimeout(() => {
           cellsToClear.forEach((id) => {
             const [r, c] = id.split("-");
             const cell = document.getElementById(`cell-${r}-${c}`);
-            cell.innerHTML = "";
+            if (cell) cell.innerHTML = "";
           });
           checkGameOver();
         }, 300);
@@ -1377,7 +1543,6 @@
       // Start game
       init();
     </script>
-  </body>
   <!-- PREMIUM CELESTIAL SEA NAV DOCK (Kanata x Gura Theme)                    -->
 <!-- ======================================================================= -->
 <style>
@@ -1881,6 +2046,9 @@
       this.canvas.width = this.width * this.dpr;
       this.canvas.height = this.height * this.dpr;
       this.ctx.scale(this.dpr, this.dpr);
+      
+      // Перегенерируем звезды, чтобы они гармонично заполнили новые границы экрана
+      this.initStars();
     }
 
     initStars() {

@@ -5007,13 +5007,19 @@
           svg.style.left = "0";
           svg.style.width = "100%";
           svg.style.pointerEvents = "none"; // Запрещаем кликать по самим ниткам
-          svg.style.zIndex = "1"; // Прячем ПОД заметки
+          svg.style.zIndex = "1"; // Слой под карточками файлов
+          svg.style.willChange = "transform"; // GPU-ускорение анимации
           
-          // Добавляем CSS анимацию "бегущих данных"
+          // Добавляем CSS анимацию бегущих импульсов данных с неоновым свечением
           const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
           style.textContent = `
-              @keyframes dashFlow { to { stroke-dashoffset: -12; } }
-              .link-thread { animation: dashFlow 1s linear infinite; }
+              @keyframes pulseFlow { 
+                  to { stroke-dashoffset: -16; } 
+              }
+              .link-thread-pulse { 
+                  animation: pulseFlow 0.8s linear infinite; 
+                  filter: drop-shadow(0 0 3px var(--accent)) drop-shadow(0 0 1px var(--accent));
+              }
           `;
           svg.appendChild(style);
           list.appendChild(svg);
@@ -5054,27 +5060,38 @@
                   const parentRect = parentEl.getBoundingClientRect();
                   const childRect = childEl.getBoundingClientRect();
 
-                  // Рассчитываем центры иконок (примерно 26px от левого края)
-                  const iconX = 26;
+                  // Смещаем координату к левому краю карточек (14px), 
+                  // чтобы нити шли красивой иерархической шиной, не перекрывая иконки
+                  const iconX = 14;
                   const startY = parentRect.top - listRect.top + list.scrollTop + (parentRect.height / 2);
                   const endY = childRect.top - listRect.top + list.scrollTop + (childRect.height / 2);
 
-                  // Рисуем кривую Безье (выгибается влево за пределы текста)
-                  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                  const curveOffset = 5; // Левая точка изгиба
-                  
-                  const d = `M ${iconX} ${startY} C ${curveOffset} ${startY}, ${curveOffset} ${endY}, ${iconX} ${endY}`;
-                  
-                  path.setAttribute("d", d);
-                  path.setAttribute("stroke", "var(--accent)"); // Цвет нитки берется из активной темы
-                  path.setAttribute("stroke-width", "2.5");
-                  path.setAttribute("fill", "transparent");
-                  path.setAttribute("stroke-dasharray", "6 6"); // Пунктир
-                  path.style.opacity = "0.7";
-                  path.style.filter = "drop-shadow(0 0 5px var(--accent))"; // Неоновое свечение
-                  path.classList.add("link-thread");
-                  
-                  svg.appendChild(path);
+                  // Динамический расчет плавного изгиба в зависимости от удаленности файлов друг от друга
+                  const dy = Math.abs(endY - startY);
+                  const curveWidth = Math.min(24, 6 + dy * 0.1); 
+                  const controlX = iconX - curveWidth;
+
+                  const d = `M ${iconX} ${startY} C ${controlX} ${startY}, ${controlX} ${endY}, ${iconX} ${endY}`;
+
+                  // 1. Слой мягкого неонового ореола (задний план)
+                  const glowPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                  glowPath.setAttribute("d", d);
+                  glowPath.setAttribute("stroke", "var(--accent)");
+                  glowPath.setAttribute("stroke-width", "4.5");
+                  glowPath.setAttribute("fill", "transparent");
+                  glowPath.setAttribute("opacity", "0.15");
+                  svg.appendChild(glowPath);
+
+                  // 2. Слой бегущих световых импульсов (передний план)
+                  const pulsePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                  pulsePath.setAttribute("d", d);
+                  pulsePath.setAttribute("stroke", "var(--accent)");
+                  pulsePath.setAttribute("stroke-width", "1.5");
+                  pulsePath.setAttribute("fill", "transparent");
+                  pulsePath.setAttribute("stroke-dasharray", "4 12");
+                  pulsePath.setAttribute("opacity", "0.95");
+                  pulsePath.classList.add("link-thread-pulse");
+                  svg.appendChild(pulsePath);
               });
           });
       }
@@ -9626,6 +9643,9 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
       this.canvas.width = this.width * this.dpr;
       this.canvas.height = this.height * this.dpr;
       this.ctx.scale(this.dpr, this.dpr);
+      
+      // Перегенерируем звезды, чтобы они гармонично заполнили новые границы экрана
+      this.initStars();
     }
 
     initStars() {
