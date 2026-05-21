@@ -602,7 +602,7 @@
         gap: 4px;
       }
 
-      /* Карточки заметок в стиле редакционных сеток */
+      /* === КАРТОЧКИ ЗАМЕТОК (БАЗОВЫЙ КЛАСС И СЕТКА) === */
       .note-item {
         padding: clamp(10px, 1.5vh, 14px) clamp(12px, 1.2vw, 16px);
         background: rgba(255, 255, 255, 0.01);
@@ -615,24 +615,45 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        flex-shrink: 0; /* ЗАПРЕЩАЕМ СПЛЮЩИВАНИЕ, ПОЯВИТСЯ СКРОЛЛБАР */
+        flex-shrink: 0; /* Запрещает сжатие при появлении скроллбара */
       }
       
-      /* Подсветка папки при наведении файла (Drag & Drop) */
+      /* Состояние наведения */
+      .note-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.06);
+        transform: translateX(4px);
+      }
+
+      /* Активное/выделенное состояние карточки */
+      .note-item.active {
+        background: rgba(var(--accent-rgb), 0.15);
+        border-color: rgba(var(--accent-rgb), 0.4);
+      }
+      .note-item.active::before {
+        content: "";
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 3px;
+        background: var(--accent);
+      }
+
+      /* Подсветка папки во время Drag & Drop */
       .note-item.drag-over {
         border-color: var(--accent) !important;
         background: rgba(var(--accent-rgb), 0.2) !important;
         transform: scale(1.02);
       }
-      .note-item:hover {
-        background: rgba(255, 255, 255, 0.04);
-        border-color: rgba(255, 255, 255, 0.06);
-        transform: translateX(4px);
+
+      /* Внутренние элементы карточки */
+      .note-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
-      .note-item.active {
-        background: rgba(var(--accent-rgb), 0.08);
-        border-color: rgba(var(--accent-rgb), 0.25);
-      }
+
       .note-title-list {
         font-weight: 600;
         font-size: 14px;
@@ -641,9 +662,21 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+
       .note-date {
         font-size: 11px;
         color: var(--text-muted);
+      }
+
+      /* Иконка избранного (Звездочка) */
+      .fav-icon {
+        color: #f59e0b;
+        font-size: 14px;
+        display: none;
+        flex-shrink: 0;
+      }
+      .note-item.is-fav .fav-icon {
+        display: block;
       }
 
       /* ОСНОВНАЯ ЧАСТЬ */
@@ -812,6 +845,20 @@
       /* Когда включен режим Сайта */
       .show-web-mode #preview { display: none !important; }
       .show-web-mode #htmlPreviewFrame { display: block !important; }
+
+      /* Полноэкранный режим превью при запуске сайта */
+      .workspace.show-web-preview-full .editor-pane {
+        display: none !important;
+      }
+      .workspace.show-web-preview-full .preview-pane {
+        display: flex !important;
+        flex: 1 !important;
+        width: 100% !important;
+        height: 100% !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        position: relative !important;
+      }
 
       /* MARKDOWN СТИЛИ */
       #preview h1,
@@ -1919,21 +1966,6 @@
         .wd-footer { flex-direction: column; }
         .wd-footer .btn { width: 100%; justify-content: center; padding: 12px; }
       }
-      
-      .note-item {
-        padding: 12px 14px;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 10px;
-        cursor: pointer;
-        transition: 0.2s;
-        position: relative;
-        overflow: hidden;
-        border: 1px solid transparent;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        /* Удалили user-select отсюда тоже */
-      }
 
       /* === ЗАПРЕТ ВЫДЕЛЕНИЯ ТОЛЬКО ДЛЯ СЕНСОРНЫХ ЭКРАНОВ (СМАРТФОНЫ) === */
       @media (hover: none) and (pointer: coarse) {
@@ -1942,28 +1974,6 @@
           -webkit-user-select: none !important;
           -webkit-touch-callout: none !important; /* Блокирует системное меню iOS/Android */
         }
-      }
-
-      /* === ЛОГИКА КНОПОК В СПИСКЕ ЗАМЕТОК (ИЗБРАННОЕ И ДОЛГИЙ ТАП) === */
-      .note-item {
-        padding: 12px 14px;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 10px;
-        cursor: pointer;
-        transition: 0.2s;
-        position: relative;
-        overflow: hidden;
-        border: 1px solid transparent;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .note-info {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
       }
 
       /* === ЗАПРЕТ ВЫДЕЛЕНИЯ ТЕКСТА (ГЛОБАЛЬНО ДЛЯ ВСЕХ УСТРОЙСТВ) === */
@@ -1991,24 +2001,6 @@
         font-size: 14px;
         display: none;
       }
-      .note-item.is-fav .fav-icon {
-        display: block;
-      }
-      .note-item:hover {
-        background: rgba(255, 255, 255, 0.06);
-      }
-      .note-item.active {
-        background: rgba(var(--accent-rgb), 0.15);
-        border-color: rgba(var(--accent-rgb), 0.4);
-      }
-      .note-item.active::before {
-        content: "";
-        position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-        background: var(--accent);
-      }
-      .note-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
-      .fav-icon { color: #f59e0b; font-size: 14px; display: none; }
-      .note-item.is-fav .fav-icon { display: block; }
       
       /* === КОНТЕКСТНОЕ МЕНЮ ЗАМЕТОК === */
       .note-context-menu {
@@ -2768,7 +2760,7 @@
               </div>
           </div>
         </div>
-      </div> <!-- Добавлен этот закрывающий тег -->
+      </div>
 
       <div class="workspace" id="workspace">
         <div class="pane editor-pane">
@@ -2928,14 +2920,14 @@
                 <div class="ai-model-item" onclick="selectAIModel('claude-haiku-4-5', 'Claude Haiku 4.5')">
                   <span class="m-title">Claude Haiku 4.5</span><span class="m-desc">Молниеносная скорость</span>
                 </div>
-                <div class="ai-model-item" onclick="selectAIModel('gemini-3.5-flash', 'Gemini 3.5 Flash(p)')">
-                  <span class="m-title">Gemini 3.5 Flash</span><span class="m-desc">Новая сверхбыстрая модель Google (proxyapi)</span>
-                </div>
-                <div class="ai-model-item" onclick="selectAIModel('google/gemini-3.5-flash', 'Gemini 3.5 Flash')">
-                  <span class="m-title">Gemini 3.5 Flash</span><span class="m-desc">Новая сверхбыстрая модель Google</span>
+                <div class="ai-model-item" onclick="selectAIModel('gemini-3.5-flash', 'Gemini 3.5 Flash')">
+                  <span class="m-title">Gemini 3.5 Flash</span><span class="m-desc">Нативный API Google с полной поддержкой размышлений</span>
                 </div>
                 <div class="ai-model-item" onclick="selectAIModel('gemini-3.1-pro-preview', 'Gemini 3.1 Pro')">
                   <span class="m-title">Gemini 3.1 Pro</span><span class="m-desc">Модель Google с рассуждением</span>
+                </div>
+                <div class="ai-model-item" onclick="selectAIModel('openrouter/x-ai/grok-build-0.1', 'Grok-0.1')">
+                  <span class="m-title">Grok-build-0.1</span><span class="m-desc">Без цензуры (X/Twitter)</span>
                 </div>
                 <div class="ai-model-item" onclick="selectAIModel('openrouter/x-ai/grok-4.3', 'Grok-4.3')">
                   <span class="m-title">Grok-4.3</span><span class="m-desc">Без цензуры (X/Twitter)</span>
@@ -3100,6 +3092,7 @@
             <div class="color-dot" style="background: #f43f5e; color: #f43f5e" onclick="setTheme(event, '#f43f5e', '244, 63, 94')"></div>
             <div class="color-dot" style="background: #f59e0b; color: #f59e0b" onclick="setTheme(event, '#f59e0b', '245, 158, 11')"></div>
           </div>
+        </div> <!-- Закрываем .setting-group темы -->
 
         <div class="setting-group">
           <label>Шрифт текста</label>
@@ -3176,10 +3169,10 @@
             <option value="claude-opus-4-7">Claude Opus 4.7</option>
             <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
             <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
-            <option value="gemini-3.5-flash">Gemini 3.5 Flash(p)</option>
-            <option value="google/gemini-3.5-flash">Gemini 3.5 Flash</option>
+            <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
             <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
             <option value="openrouter/x-ai/grok-4.3">Grok-4.3</option>
+            <option value="openrouter/x-ai/grok-build-0.1">Grok-0.1</option>
           </select>
         </div>
 
@@ -3249,7 +3242,50 @@
           osc.start();
           osc.stop(this.ctx.currentTime + 0.13);
         }
+
+        // Синтез небесного колокольчика (chime)
+        playChime() {
+          this.init();
+          if (!this.ctx || this.ctx.state === 'suspended') return;
+          
+          const now = this.ctx.currentTime;
+          const freqs = [1200, 1500];
+          freqs.forEach((f, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, now + i * 0.05);
+            gain.gain.setValueAtTime(0.008, now + i * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.05 + 0.15);
+            osc.start(now + i * 0.05);
+            osc.stop(now + i * 0.05 + 0.16);
+          });
+        }
+
+        // Синтез мягкого звука поднимающегося пузырька (bubble)
+        playBubble() {
+          this.init();
+          if (!this.ctx || this.ctx.state === 'suspended') return;
+          
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.08);
+          
+          gain.gain.setValueAtTime(0.01, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.08);
+          
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.09);
+        }
       }
+
+      window.synth = new SoundSynth();
 
       class AmbientVisuals {
         constructor() {
@@ -3284,8 +3320,6 @@
           requestAnimationFrame(() => this.animate());
         }
       }
-
-      window.synth = new SoundSynth();
 
       // Навешиваем клики на интерактивные элементы
       document.addEventListener('click', (e) => {
@@ -3341,6 +3375,181 @@
       const editor = document.getElementById("editor");
       const preview = document.getElementById("preview");
       const titleInput = document.getElementById("noteTitle");
+
+      // === ДВИЖОК ЭМУЛЯЦИИ ФАЙЛОВОЙ СИСТЕМЫ (IDE PATH RESOLVER) ===
+      
+      // Получение абсолютного виртуального пути файла
+      function getNoteAbsolutePath(noteId) {
+          let note = notes.find(n => n.id === noteId);
+          if (!note) return "";
+          let pathParts = [note.title];
+          let parent = notes.find(n => n.id === note.parentId);
+          while (parent) {
+              pathParts.unshift(parent.title);
+              parent = notes.find(n => n.id === parent.parentId);
+          }
+          return pathParts.join("/");
+      }
+
+      // Резолвинг относительного пути (например, ../css/main.css) от текущего файла
+      function resolveRelativePath(currentNoteId, relativePath) {
+          let currentAbsPath = getNoteAbsolutePath(currentNoteId);
+          if (!currentAbsPath) return null;
+          
+          // Очищаем относительный путь от query-параметров (?...) и хэш-тегов (#...)
+          const cleanPath = relativePath.split('?')[0].split('#')[0];
+          
+          let currentDirParts = currentAbsPath.split("/");
+          currentDirParts.pop(); // Удаляем имя самого файла, оставляем только директорию
+          
+          // Если путь начинается со слэша, значит он абсолютный от корня проекта
+          if (cleanPath.startsWith("/")) {
+              currentDirParts = [];
+          }
+          
+          let relParts = cleanPath.split("/");
+          for (let part of relParts) {
+              if (part === "." || part === "") {
+                  continue;
+              } else if (part === "..") {
+                  // Предотвращаем выход за пределы корневой директории
+                  if (currentDirParts.length > 0) {
+                      currentDirParts.pop();
+                  }
+              } else {
+                  currentDirParts.push(part);
+              }
+          }
+          
+          let targetAbsPath = currentDirParts.join("/");
+          
+          // Ищем файл, абсолютный путь которого совпадает с вычисленным целевым
+          return notes.find(n => n.type === 'file' && getNoteAbsolutePath(n.id).toLowerCase() === targetAbsPath.toLowerCase());
+      }
+
+      // Карта активных Blob-ссылок для предотвращения утечек памяти
+      window.virtualBlobUrls = {};
+
+      function clearVirtualBlobs() {
+          for (let id in window.virtualBlobUrls) {
+              URL.revokeObjectURL(window.virtualBlobUrls[id]);
+          }
+          window.virtualBlobUrls = {};
+      }
+
+      // Получение или создание Blob URL для CSS/JS файлов с рекурсивным связыванием
+      function getOrCreateBlobUrl(noteId, visited = new Set()) {
+          if (window.virtualBlobUrls[noteId]) {
+              return window.virtualBlobUrls[noteId];
+          }
+          
+          const note = notes.find(n => n.id === noteId);
+          if (!note) return "";
+
+          let processedContent = "";
+          
+          if (note.title.toLowerCase().endsWith(".js")) {
+              processedContent = bundleJsModule(noteId, visited);
+          } else if (note.title.toLowerCase().endsWith(".css")) {
+              processedContent = bundleCssImports(noteId, visited);
+          } else {
+              processedContent = note.content;
+          }
+
+          const isCss = note.title.toLowerCase().endsWith(".css");
+          const mimeType = isCss ? "text/css" : "text/javascript";
+          const blob = new Blob([processedContent], { type: mimeType });
+          const blobUrl = URL.createObjectURL(blob);
+          
+          window.virtualBlobUrls[noteId] = blobUrl;
+          return blobUrl;
+      }
+
+      // Рекурсивный сборщик JS-импортов с поддержкой многострочных конструкций и side-effect импортов
+      function bundleJsModule(noteId, visited = new Set()) {
+          if (visited.has(noteId)) return ""; 
+          visited.add(noteId);
+
+          const note = notes.find(n => n.id === noteId);
+          if (!note) return "";
+
+          let code = note.content;
+          // Модернизированный RegExp, захватывающий как стандартные, так и многострочные деструктурированные импорты
+          const importRegex = /(?:import\s+[\s\S]*?from\s+['"]([^'"]+)['"]|import\s+['"]([^'"]+)['"])/g;
+
+          // Заменяем локальные относительные пути в импортах на сгенерированные Blob URL
+          code = code.replace(importRegex, (match, path1, path2) => {
+              const relPath = path1 || path2;
+              if (!relPath || relPath.startsWith("http://") || relPath.startsWith("https://")) {
+                  return match; 
+              }
+              const depNote = resolveRelativePath(noteId, relPath);
+              if (depNote) {
+                  const depBlobUrl = getOrCreateBlobUrl(depNote.id, visited);
+                  return match.replace(relPath, depBlobUrl);
+              }
+              return match;
+          });
+
+          return code;
+      }
+
+      // Рекурсивный сборщик CSS @import правил
+      function bundleCssImports(noteId, visited = new Set()) {
+          if (visited.has(noteId)) return "";
+          visited.add(noteId);
+
+          const note = notes.find(n => n.id === noteId);
+          if (!note) return "";
+
+          let css = note.content;
+          const importRegex = /@import\s+['"]([^'"]+)['"]\s*;/gi;
+
+          css = css.replace(importRegex, (match, relPath) => {
+              if (relPath.startsWith("http://") || relPath.startsWith("https://")) return match;
+              const depNote = resolveRelativePath(noteId, relPath);
+              if (depNote) {
+                  const depBlobUrl = getOrCreateBlobUrl(depNote.id, visited);
+                  return `@import "${depBlobUrl}";`;
+              }
+              return match;
+          });
+
+          return css;
+      }
+
+      // Авто-создание структуры вложенных папок по текстовому пути (для Агента ИИ)
+      function createNestedFoldersAndGetParentId(pathStr, rootParentId = null) {
+          const parts = pathStr.split("/");
+          if (parts.length <= 1) return { parentId: rootParentId, filename: pathStr };
+          
+          const filename = parts.pop();
+          let currentParentId = rootParentId;
+          
+          for (let folderName of parts) {
+              if (!folderName || folderName === "." || folderName === "..") continue;
+              
+              let existingFolder = notes.find(n => n.type === 'folder' && n.parentId === currentParentId && n.title.toLowerCase() === folderName.toLowerCase());
+              if (!existingFolder) {
+                  const newFolderId = "folder-" + Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9);
+                  existingFolder = {
+                      id: newFolderId,
+                      title: folderName,
+                      type: 'folder',
+                      parentId: currentParentId,
+                      isOpen: true,
+                      date: new Date().toLocaleDateString()
+                  };
+                  notes.push(existingFolder);
+                  currentParentId = newFolderId;
+              } else {
+                  currentParentId = existingFolder.id;
+              }
+          }
+          return { parentId: currentParentId, filename };
+      }
+
+      
       const searchInput = document.getElementById("searchInput");
 
       window.aiAttachedNotes = new Set();
@@ -3355,14 +3564,60 @@
       function setIdeModeByFilename(filename, cmInstance) {
           if (!filename || !cmInstance) return;
           const info = CodeMirror.findModeByFileName(filename);
+          const mimeMode = info ? (info.mime || info.mode) : "markdown";
+          const baseMode = info ? info.mode : "markdown";
           
+          const applyLintConfig = (targetMode) => {
+              // Единый обработчик для отправки обнаруженных ошибок в нашу панель
+              const onUpdate = function(annotationsNotSorted, annotations, cm) {
+                  if (typeof window.updateIdeConsole === "function") {
+                      window.updateIdeConsole(annotationsNotSorted);
+                  }
+              };
+
+              if (targetMode === "javascript") {
+                  cmInstance.setOption("lint", {
+                      options: { 
+                          esversion: 11, asi: true, devel: true, browser: true, 
+                          node: true, eqnull: true, boss: true 
+                      },
+                      onUpdateLinting: onUpdate
+                  });
+              } else if (targetMode === "css") {
+                  cmInstance.setOption("lint", {
+                      options: { 
+                          "ids": false, "box-model": false, "empty-rules": false, 
+                          "adjoining-classes": false, "important": false 
+                      },
+                      onUpdateLinting: onUpdate
+                  });
+                } else if (targetMode === "htmlmixed" || targetMode === "xml") {
+                  cmInstance.setOption("lint", {
+                      getAnnotations: window.customHtmlMixedLinter, // Принудительно подключаем наш мульти-линтер напрямую!
+                      options: { 
+                          rules: {
+                              "tagname-lowercase": false, 
+                              "attr-value-double-quotes": false, 
+                              "id-unique": true, 
+                              "style-disabled": false, 
+                              "doctype-first": false
+                          }
+                      },
+                      onUpdateLinting: onUpdate
+                  });
+              } else {
+                  cmInstance.setOption("lint", false); 
+              }
+          };
+
           if (info) {
-              // Если парсер языка еще не загружен в браузер — он скачается сам
               CodeMirror.requireMode(info.mode, () => {
-                  cmInstance.setOption("mode", info.mime || info.mode);
+                  cmInstance.setOption("mode", mimeMode);
+                  applyLintConfig(baseMode); // Передаем чистый базовый режим ('javascript', 'css', 'htmlmixed')
               });
           } else {
-              cmInstance.setOption("mode", "markdown"); // Резервный режим
+              cmInstance.setOption("mode", "markdown");
+              applyLintConfig("markdown");
           }
       }
 
@@ -3418,33 +3673,41 @@
         const pane = document.getElementById('previewPane');
         const btn = document.getElementById('webPreviewBtn');
         const consoleBtn = document.getElementById('consoleToggleBtn');
-        const screenshotBtn = document.getElementById('screenshotBtn'); // Наша кнопка
+        const screenshotBtn = document.getElementById('screenshotBtn'); 
         const status = document.getElementById('renderStatus');
         const ws = document.getElementById('workspace');
 
         if (isWebPreview) {
             pane.classList.add('show-web-mode');
+            
+            // Активируем полноэкранный класс для всего превью-контейнера
+            if (ws) {
+                ws.classList.add('show-web-preview-full');
+            }
+            
             btn.innerHTML = '<i class="bx bx-stop-circle" style="color: #ef4444;"></i>'; 
             btn.title = "Остановить сайт";
             consoleBtn.style.display = "block";
-            if (screenshotBtn) screenshotBtn.style.display = "block"; // Показываем
+            if (screenshotBtn) screenshotBtn.style.display = "block"; 
             status.textContent = "Live Server 🟢";
             status.style.color = "#3b82f6";
             
-            if (ws.classList.contains('live-mode')) {
-                ws.classList.remove('editing');
+            updateWebFrame(); 
+          } else {
+            pane.classList.remove('show-web-mode');
+            
+            if (ws) {
+                ws.classList.remove('show-web-preview-full');
             }
             
-            updateWebFrame(); 
-        } else {
-            pane.classList.remove('show-web-mode');
             btn.innerHTML = '<i class="bx bx-play-circle" style="color: #3b82f6;"></i>'; 
             btn.title = "Запустить код как Сайт";
             consoleBtn.style.display = "none";
-            if (screenshotBtn) screenshotBtn.style.display = "none"; // Скрываем
-            
-            if (ws.classList.contains('live-mode')) {
-                ws.classList.add('editing');
+            if (screenshotBtn) screenshotBtn.style.display = "none"; 
+
+            // Закрываем консоль, если она была открыта, восстанавливая сетку интерфейса
+            if (isWebConsoleOpen) {
+                toggleWebConsole();
             }
 
             const oldIframe = document.getElementById('htmlPreviewFrame');
@@ -3457,6 +3720,9 @@
 
             saveAndRender(isIdeMode ? ideEditor.getValue() : editor.value); 
         }
+
+        // Принудительно обновляем сетку приложения и сбрасываем мешающие классы
+        applySettings();
       }
 
       // Слушатель сообщений от iframe (Консоли)
@@ -3465,21 +3731,20 @@
               const { type, message } = e.data;
               window.siteConsoleLogs.push({ type, message });
               
-              // Если логов больше 50, удаляем старые, чтобы не засорять память ИИ
               if (window.siteConsoleLogs.length > 50) window.siteConsoleLogs.shift();
 
               const logsContainer = document.getElementById('webConsoleLogs');
+              if (!logsContainer) return; // Защита от Null Pointer Exception
+
               const line = document.createElement('div');
               line.className = `console-line ${type}`;
+              line.setAttribute('data-error-msg', message); // Безопасное сохранение без экранирования кавычек и переносов
               
               let htmlContent = `[${new Date().toLocaleTimeString()}] ${message.replace(/</g, "&lt;")}`;
               
-              // Если это ошибка, добавляем кнопку "Спросить ИИ"
               if (type === 'error') {
-                  const safeMsg = message.replace(/"/g, '&quot;').replace(/'/g, "\\'");
-                  htmlContent += `<button class="console-ask-ai-btn" onclick="window.askAIAboutError('${safeMsg}')"><i class='bx bx-bot'></i> Спросить ИИ</button>`;
+                  htmlContent += `<button class="console-ask-ai-btn" onclick="window.askAIAboutError(this.closest('.console-line').getAttribute('data-error-msg'))"><i class='bx bx-bot'></i> Спросить ИИ</button>`;
                   
-                  // Принудительно открываем консоль, если произошла ошибка
                   if (!isWebConsoleOpen && isWebPreview) {
                       toggleWebConsole();
                   }
@@ -3564,27 +3829,88 @@
         }
       };
 
+      // Вспомогательная функция поиска точки входа веб-приложения с учетом приоритета активного файла
+      function getWebEntryPoint() {
+          // 1. Если активный файл - это HTML, он ВСЕГДА является приоритетной точкой входа
+          const activeNote = notes.find(n => n.id === activeId);
+          if (activeNote && activeNote.type === 'file' && (activeNote.title.toLowerCase().endsWith(".html") || activeNote.title.toLowerCase().endsWith(".htm"))) {
+              return activeNote;
+          }
+
+          // 2. Если активный файл - не HTML, ищем index.html в той же папке (где лежит активный файл)
+          if (activeNote && activeNote.type === 'file') {
+              const sameFolderIndex = notes.find(n => n.type === 'file' && n.parentId === activeNote.parentId && n.title.toLowerCase() === "index.html");
+              if (sameFolderIndex) return sameFolderIndex;
+          }
+
+          // 3. Ищем index.html в корневом каталоге (parentId === null)
+          const rootIndex = notes.find(n => n.type === 'file' && n.title.toLowerCase() === "index.html" && n.parentId === null);
+          if (rootIndex) return rootIndex;
+          
+          // 4. Ищем любой другой index.html во всей виртуальной файловой системе
+          const anyIndex = notes.find(n => n.type === 'file' && n.title.toLowerCase() === "index.html");
+          if (anyIndex) return anyIndex;
+          
+          // 5. Ищем вообще любой HTML/HTM файл
+          const anyHtml = notes.find(n => n.type === 'file' && (n.title.toLowerCase().endsWith(".html") || n.title.toLowerCase().endsWith(".htm")));
+          if (anyHtml) return anyHtml;
+          
+          // 6. Резервный фолбэк на активный файл
+          return activeNote;
+      }
+
       function updateWebFrame() {
         if (!isWebPreview) return;
         
         try {
-            clearWebConsole(); // Очищаем консоль при перезапуске сайта
+            // Вместо жесткого затирания выводим разделитель сессий живого сервера
+            const logsContainer = document.getElementById('webConsoleLogs');
+            if (logsContainer && logsContainer.children.length > 0) {
+                const separator = document.createElement('div');
+                separator.style.cssText = "border-bottom: 1px dashed rgba(255, 255, 255, 0.15); margin: 10px 0; padding: 4px; text-align: center; font-size: 11px; color: var(--text-muted); opacity: 0.7;";
+                separator.innerHTML = `<i class='bx bx-refresh'></i> Перезапуск сайта (${new Date().toLocaleTimeString()})`;
+                logsContainer.appendChild(separator);
+                logsContainer.scrollTop = logsContainer.scrollHeight;
+            }
             const container = document.getElementById('previewPane');
             const oldIframe = document.getElementById('htmlPreviewFrame');
-            const currentCode = isIdeMode ? ideEditor.getValue() : editor.value;
+            
+            // Определяем точку входа
+            const entryNote = getWebEntryPoint();
+            if (!entryNote) return;
+
+            // Если пользователь редактирует сам файл точки входа, берем живое содержимое редактора, 
+            // в противном случае берём сохраненное содержимое из базы
+            let currentCode = entryNote.content;
+            if (entryNote.id === activeId) {
+                currentCode = isIdeMode ? ideEditor.getValue() : editor.value;
+            }
             
             const newIframe = document.createElement('iframe');
             newIframe.id = 'htmlPreviewFrame';
+            // Защищаем Quantum Notes от взлома и перенаправлений через sandbox
+            newIframe.sandbox = "allow-scripts allow-same-origin allow-forms allow-modals";
             
-            // ВАЖНО: Используем <\/script>, чтобы браузер не закрыл наш тег <script> раньше времени
             const consoleInterceptor = `
             <script>
               (function() {
                 const sendLog = (type, args) => {
                   try {
                     const msg = Array.from(args).map(a => {
+                      try {
                         if (a instanceof Error) return a.stack || a.message;
-                        return typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a);
+                        if (a instanceof HTMLElement) return a.outerHTML || a.tagName;
+                        if (typeof a === 'object' && a !== null) {
+                          try {
+                            return JSON.stringify(a, null, 2);
+                          } catch (jsonErr) {
+                            return Object.prototype.toString.call(a) + ' (Circular/Complex Object)';
+                          }
+                        }
+                        return String(a);
+                      } catch (mapErr) {
+                        return '[Serialization Error]';
+                      }
                     }).join(' ');
                     window.parent.postMessage({ source: 'web-preview-console', type, message: msg }, '*');
                   } catch(e) {}
@@ -3608,34 +3934,37 @@
             <\/script>
             `;
             
-            // АВТО-ФИКС: Интеллектуально превращаем скрипты пользователя в модули
+            // Интеллектуально превращаем скрипты пользователя в модули
             let processedCode = currentCode.replace(/<script(?![^>]*type=)([^>]*)>/gi, '<script type="module"$1>');
             
-            // МАГИЯ IDE: Виртуальная файловая система (Связка файлов)
-            const activeNote = notes.find(n => n.id === activeId);
-            if (activeNote && getSyntaxMode(activeNote.title) === "htmlmixed") {
-                
-                // 1. Подменяем внешние стили на встроенный <style>
-                processedCode = processedCode.replace(/<link[^>]*href=["']([^"']+\.css)["'][^>]*>/gi, (match, filename) => {
-                    const extNote = notes.find(n => n.title.toLowerCase() === filename.toLowerCase());
-                    if (extNote) {
-                        return `<style>\n/* Внедрено из ${filename} */\n${extNote.content}\n</style>`;
+            if (getSyntaxMode(entryNote.title) === "htmlmixed") {
+                // Очищаем старые Blob-линки перед сборкой
+                clearVirtualBlobs();
+
+                // 1. Подменяем внешние стили на динамические Blob-ссылки
+                processedCode = processedCode.replace(/<link[^>]*href=["']([^"']+)["'][^>]*>/gi, (match, relPath) => {
+                    if (relPath.startsWith("http://") || relPath.startsWith("https://")) return match;
+                    const depNote = resolveRelativePath(entryNote.id, relPath);
+                    if (depNote) {
+                        const blobUrl = getOrCreateBlobUrl(depNote.id);
+                        return match.replace(relPath, blobUrl);
                     }
                     return match;
                 });
 
-                // 2. Подменяем внешние скрипты на встроенный модуль
-                // Защита от HTML-парсера: используем <\/[s]cript> в регулярке и <\/script> в строке
-                processedCode = processedCode.replace(/<script[^>]*src=["']([^"']+\.js)["'][^>]*>[\s\S]*?<\/[s]cript>/gi, (match, filename) => {
-                    const extNote = notes.find(n => n.title.toLowerCase() === filename.toLowerCase());
-                    if (extNote) {
-                        return `<script type="module">\n/* Внедрено из ${filename} */\n${extNote.content}\n<\/script>`;
+                // 2. Подменяем внешние скрипты (используем более надежный RegExp без жесткой привязки к закрывающему тегу)
+                processedCode = processedCode.replace(/<script\b[^>]*src=["']([^"']+)["'][^>]*>/gi, (match, relPath) => {
+                    if (relPath.startsWith("http://") || relPath.startsWith("https://")) return match;
+                    const depNote = resolveRelativePath(entryNote.id, relPath);
+                    if (depNote) {
+                        const blobUrl = getOrCreateBlobUrl(depNote.id);
+                        return match.replace(relPath, blobUrl);
                     }
                     return match;
                 });
             }
 
-            // Внедряем скрипт-перехватчик перед обработанным кодом пользователя
+            // Внедряем скрипт-перехватчик перед кодом
             newIframe.srcdoc = consoleInterceptor + processedCode;
             
             if (oldIframe) {
@@ -3710,10 +4039,39 @@
               // === ВКЛЮЧАЕМ ЛИНТЕР И ПАНЕЛЬ ОШИБОК ===
               gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter", "CodeMirror-lint-markers"],
               lint: {
+                  options: {
+                      // Настройки для JSHint (JavaScript)
+                      esversion: 11,      // Поддержка стандартов ES6-ES11 (const, let, стрелочные функции, async/await)
+                      asi: true,          // Разрешить отсутствие точек с запятой
+                      devel: true,        // Игнорировать предупреждения на console.log, alert и т.д.
+                      browser: true,      // Доступ к стандартным браузерным API (window, document)
+                      node: true,         // Доступ к Node.js переменным (require, module)
+                      eqnull: true,       // Разрешить нестрогое сравнение с null (x == null)
+                      boss: true,         // Разрешить присваивание внутри условий (например, while (m = regex.exec(text)))
+
+                      // Настройки для CSSLint (CSS)
+                      "ids": false,                       // Разрешить использование селекторов по ID (#id)
+                      "box-model": false,                 // Игнорировать предупреждения при совмещении width и padding
+                      "adjoining-classes": false,         // Разрешить цепочки классов (.foo.bar)
+                      "important": false,                 // Разрешить использование директивы !important
+                      "universal-selector": false,        // Разрешить использование универсального селектора *
+                      "compatible-vendor-prefixes": false, // Не требовать устаревшие вендорные префиксы
+                      "duplicate-properties": false,      // Разрешить дублирование свойств для безопасных фолбэков
+                      "empty-rules": false,               // Не ругаться на пустые блоки стилей
+
+                      // Вложенный объект правил специально для парсера HTMLHint
+                      rules: {
+                          "tagname-lowercase": false,
+                          "attr-value-double-quotes": false,
+                          "doctype-first": false,             // Не требовать обязательный <!DOCTYPE html> в начале
+                          "spec-char-escape": false,          // Отключить принудительное экранирование спецсимволов (&, <, >) в тексте
+                          "id-unique": true,
+                          "style-disabled": false             // Разрешить использование тегов <style> внутри HTML-документа
+                      }
+                  },
                   // Эта функция срабатывает каждый раз, когда линтер находит ошибку
                   onUpdateLinting: function(annotationsNotSorted, annotations, cm) {
                       if (typeof window.updateIdeConsole === "function") {
-                          // ФИКС: Передаем ПЕРВЫЙ аргумент (annotationsNotSorted) - плоский список ошибок
                           window.updateIdeConsole(annotationsNotSorted);
                       }
                   }
@@ -3745,6 +4103,10 @@
                   }
               }
           });
+
+          // Привязываем скрытие вкладок к фокусу в CodeMirror
+          ideEditor.on("focus", hideMobileTabs);
+          ideEditor.on("blur", showMobileTabs);
 
           // 2. Восстанавливаем состояние режима IDE из памяти
           const cmWrapper = ideEditor.getWrapperElement();
@@ -4050,96 +4412,214 @@
           }
       };
 
-      window.updateIdeConsole = function(annotations) {
-          const consoleBox = document.getElementById("ideConsoleLogs"); 
-          const badge = document.getElementById("ideErrorBadge");
-          const btnIcon = document.getElementById("ideConsoleIcon");
-          
-          // 1. Берем чистый список ошибок (мы теперь передаем правильный аргумент)
-          const validErrors = (annotations || []).filter(err => err && (err.message || err.reason));
-          
-          // НОВОЕ: Сохраняем ошибки глобально, чтобы ИИ мог их прочитать по клику
-          window.currentIdeErrors = validErrors;
+      // ========================================================
+      // ПРОФЕССИОНАЛЬНЫЙ МУЛЬТИ-ЛИНТЕР ДЛЯ HTMLMIXED (КАК В VS CODE)
+      // ========================================================
+      window.customHtmlMixedLinter = function(text, options, cm) {
+          var found = [];
+          if (!cm) return found;
 
-          // 2. ЖИВОЙ БЕЙДЖ: Обновляем счетчик на кнопке с жуком в верхней панели
-          if (badge && btnIcon) {
-              if (validErrors.length > 0) {
-                  badge.textContent = validErrors.length;
-                  badge.style.display = "block";
-                  btnIcon.style.color = "#ef4444"; // Красим жука в красный
+          var lineCount = cm.lineCount();
+          var jsLines = [];
+          var cssLines = [];
+
+          // Проходим по каждой строке и разделяем их на виртуальные файлы JS и CSS
+          // опираясь на высокоточный лексический анализатор самого CodeMirror
+          for (var i = 0; i < lineCount; i++) {
+              var lineText = cm.getLine(i);
+              // Берем режим подсветки в конце строки (или в начале, если строка пустая)
+              var pos = CodeMirror.Pos(i, lineText.length > 0 ? lineText.length - 1 : 0);
+              var mode = cm.getModeAt(pos);
+              var modeName = mode.name;
+
+              if (modeName === "javascript") {
+                  jsLines.push(lineText);
+                  cssLines.push("");
+              } else if (modeName === "css") {
+                  jsLines.push("");
+                  cssLines.push(lineText);
               } else {
-                  badge.style.display = "none";
-                  btnIcon.style.color = ""; // Возвращаем стандартный цвет
+                  jsLines.push("");
+                  cssLines.push("");
               }
           }
 
-          // Если сама панель терминала не отрендерилась на экране - прерываем
-          if (!consoleBox) return;
-          consoleBox.innerHTML = "";
+          var paddedJs = jsLines.join("\n");
+          var paddedCss = cssLines.join("\n");
 
-          // 3. Если ошибок нет — выводим зеленую галочку
-          if (validErrors.length === 0) {
-              consoleBox.innerHTML = `
-                <div style="padding: 15px; color: #10b981; font-family: var(--font-ui); font-size: 13px; display: flex; align-items: center; gap: 8px;">
-                  <i class='bx bx-check-circle' style="font-size: 18px;"></i> Ошибок синтаксиса не найдено
-                </div>`;
-              return;
+          // 1. Проверка структуры HTML (HTMLHint)
+          if (window.HTMLHint) {
+              var htmlRules = options && options.rules ? options.rules : {
+                  "tagname-lowercase": false,
+                  "attr-value-double-quotes": false,
+                  "id-unique": true,
+                  "style-disabled": false,
+                  "doctype-first": false
+              };
+              var htmlMessages = window.HTMLHint.verify(text, htmlRules);
+              for (var m = 0; m < htmlMessages.length; m++) {
+                  var message = htmlMessages[m];
+                  var startLine = message.line - 1;
+                  var startChar = message.col - 1;
+                  found.push({
+                      from: CodeMirror.Pos(startLine, startChar),
+                      to: CodeMirror.Pos(startLine, startChar + 1),
+                      message: message.message,
+                      severity: message.type
+                  });
+              }
           }
 
-          // 4. Отрисовываем каждую ошибку (строка, колонка, причина)
-          validErrors.forEach(err => {
-              // CodeMirror считает строки с нуля, поэтому прибавляем +1
-              const line = err.from && typeof err.from.line !== 'undefined' ? err.from.line + 1 : "?";
-              const ch = err.from && typeof err.from.ch !== 'undefined' ? err.from.ch + 1 : "?";
-              const severity = err.severity || "error";
-              
-              // Безопасное экранирование текста ошибки (чтобы не сломать HTML панели)
-              const rawMsg = err.message || err.reason || "Синтаксическая ошибка";
-              const safeMsg = String(rawMsg).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          // 2. Проверка JavaScript (JSHint)
+          if (window.JSHINT && paddedJs.trim() !== "") {
+              var jsRules = { esversion: 11, asi: true, devel: true, browser: true, node: true, eqnull: true, boss: true };
+              window.JSHINT(paddedJs, jsRules);
+              var jsErrors = window.JSHINT.errors || [];
+              for (var j = 0; j < jsErrors.length; j++) {
+                  var err = jsErrors[j];
+                  if (!err) continue;
+                  
+                  var errLine = err.line - 1;
+                  var errChar = err.character - 1;
+                  found.push({
+                      from: CodeMirror.Pos(errLine, errChar),
+                      to: CodeMirror.Pos(errLine, errChar + 1),
+                      message: "[JS] " + err.reason,
+                      severity: err.code && err.code.startsWith("W") ? "warning" : "error"
+                  });
+              }
+          }
 
-              const errDiv = document.createElement("div");
-              errDiv.style.padding = "8px 15px";
-              errDiv.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
-              errDiv.style.fontFamily = "var(--font-code)";
-              errDiv.style.fontSize = "12px";
-              errDiv.style.display = "flex";
-              errDiv.style.gap = "10px";
-              errDiv.style.cursor = "pointer";
-              errDiv.style.transition = "0.2s";
-              
-              errDiv.onmouseover = () => errDiv.style.background = "rgba(255,255,255,0.05)";
-              errDiv.onmouseout = () => errDiv.style.background = "transparent";
+          // 3. Проверка CSS (CSSLint)
+          if (window.CSSLint && paddedCss.trim() !== "") {
+              var cssRules = { "ids": false, "box-model": false, "empty-rules": false, "adjoining-classes": false, "important": false };
+              var result = window.CSSLint.verify(paddedCss, cssRules);
+              var cssErrors = result.messages || [];
+              for (var k = 0; k < cssErrors.length; k++) {
+                  var err = cssErrors[k];
+                  if (!err) continue;
 
-              // УМНЫЙ КЛИК: прыгаем на строку с ошибкой
-              errDiv.onclick = () => {
-                  if (typeof ideEditor !== 'undefined' && err.from) {
-                      ideEditor.setCursor({line: err.from.line, ch: err.from.ch});
-                      ideEditor.focus();
-                      
-                      // Мигание красным фоном на секунду
-                      ideEditor.addLineClass(err.from.line, "background", "CodeMirror-activeline-background");
-                      setTimeout(() => {
-                          ideEditor.removeLineClass(err.from.line, "background", "CodeMirror-activeline-background");
-                      }, 1500);
+                  var errLine = err.line - 1;
+                  var errChar = err.col - 1;
+
+                  // Получаем текст строки, на которой произошла ошибка
+                  var lineText = cm.getLine(errLine) || "";
+
+                  // ФИЛЬТРАЦИЯ ЛОЖНЫХ СРАБАТЫВАНИЙ СТАРОГО СТАНДАРТА:
+                  // 1. Игнорируем синтаксические ошибки CSSLint на CSS-переменные (содержащие дефисы "--")
+                  if (lineText.indexOf("--") !== -1) continue;
+                  // 2. Игнорируем ошибки при чтении переменных через var()
+                  if (lineText.indexOf("var(") !== -1) continue;
+                  // 3. Игнорируем современные CSS-функции адаптивности
+                  if (lineText.indexOf("clamp(") !== -1 || lineText.indexOf("calc(") !== -1) continue;
+                  // 4. Игнорируем ложные синтаксические ошибки CSS-Grid (1fr, grid-template, grid-gap и т.д.)
+                  if (lineText.indexOf("1fr") !== -1 || lineText.indexOf("grid-") !== -1) continue;
+                  // 5. Игнорируем ложное предупреждение об импорте, возникающее из-за склейки тегов <style> в один поток
+                  if (err.message.indexOf("@import not allowed") !== -1) continue;
+
+                  found.push({
+                      from: CodeMirror.Pos(errLine, errChar),
+                      to: CodeMirror.Pos(errLine, errChar + 1),
+                      message: "[CSS] " + err.message,
+                      severity: err.type === "warning" ? "warning" : "error"
+                  });
+              }
+          }
+
+          return found;
+      };
+
+      // Переназначаем стандартный системный хелпер "html" на наш мульти-линтер
+      CodeMirror.registerHelper("lint", "html", window.customHtmlMixedLinter);
+
+      // Переменная для таймера задержки обновления линтера
+      let lintUpdateTimeout;
+
+      window.updateIdeConsole = function(annotations) {
+          // Сбрасываем предыдущий таймер, если пользователь продолжает печатать
+          clearTimeout(lintUpdateTimeout);
+
+          // Запускаем анализ только через 400 мс после того, как пользователь замолчал
+          lintUpdateTimeout = setTimeout(() => {
+              const consoleBox = document.getElementById("ideConsoleLogs"); 
+              const badge = document.getElementById("ideErrorBadge");
+              const btnIcon = document.getElementById("ideConsoleIcon");
+              
+              const validErrors = (annotations || []).filter(err => err && (err.message || err.reason));
+              
+              window.currentIdeErrors = validErrors;
+
+              if (badge && btnIcon) {
+                  if (validErrors.length > 0) {
+                      badge.textContent = validErrors.length;
+                      badge.style.display = "block";
+                      btnIcon.style.color = "#ef4444"; 
+                  } else {
+                      badge.style.display = "none";
+                      btnIcon.style.color = ""; 
                   }
-              };
+              }
 
-              // Иконка и цвет (желтый для warning, красный для error)
-              const icon = severity === "warning" 
-                  ? `<i class='bx bx-error' style="color: #fbbf24; font-size: 16px;"></i>` 
-                  : `<i class='bx bx-x-circle' style="color: #ef4444; font-size: 16px;"></i>`;
-              const color = severity === "warning" ? "#fbbf24" : "#ef4444";
+              if (!consoleBox) return;
+              consoleBox.innerHTML = "";
 
-              errDiv.innerHTML = `
-                  <div style="flex-shrink: 0; margin-top: 1px;">${icon}</div>
-                  <div style="flex: 1; color: #cbd5e1; line-height: 1.5;">
-                      <span style="color: ${color}; font-weight: 600;">Строка ${line}, Символ ${ch}:</span> 
-                      <span style="opacity: 0.9;">${safeMsg}</span>
-                  </div>
-              `;
+              if (validErrors.length === 0) {
+                  consoleBox.innerHTML = `
+                    <div style="padding: 15px; color: #10b981; font-family: var(--font-ui); font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                      <i class='bx bx-check-circle' style="font-size: 18px;"></i> Ошибок синтаксиса не найдено
+                    </div>`;
+                  return;
+              }
 
-              consoleBox.appendChild(errDiv);
-          });
+              validErrors.forEach(err => {
+                  const line = err.from && typeof err.from.line !== 'undefined' ? err.from.line + 1 : "?";
+                  const ch = err.from && typeof err.from.ch !== 'undefined' ? err.from.ch + 1 : "?";
+                  const severity = err.severity || "error";
+                  
+                  const rawMsg = err.message || err.reason || "Синтаксическая ошибка";
+                  const safeMsg = String(rawMsg).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+                  const errDiv = document.createElement("div");
+                  errDiv.style.padding = "8px 15px";
+                  errDiv.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+                  errDiv.style.fontFamily = "var(--font-code)";
+                  errDiv.style.fontSize = "12px";
+                  errDiv.style.display = "flex";
+                  errDiv.style.gap = "10px";
+                  errDiv.style.cursor = "pointer";
+                  errDiv.style.transition = "0.2s";
+                  
+                  errDiv.onmouseover = () => errDiv.style.background = "rgba(255,255,255,0.05)";
+                  errDiv.onmouseout = () => errDiv.style.background = "transparent";
+
+                  errDiv.onclick = () => {
+                      if (typeof ideEditor !== 'undefined' && err.from) {
+                          ideEditor.setCursor({line: err.from.line, ch: err.from.ch});
+                          ideEditor.focus();
+                          
+                          ideEditor.addLineClass(err.from.line, "background", "CodeMirror-activeline-background");
+                          setTimeout(() => {
+                              ideEditor.removeLineClass(err.from.line, "background", "CodeMirror-activeline-background");
+                          }, 1500);
+                      }
+                  };
+
+                  const icon = severity === "warning" 
+                      ? `<i class='bx bx-error' style="color: #fbbf24; font-size: 16px;"></i>` 
+                      : `<i class='bx bx-x-circle' style="color: #ef4444; font-size: 16px;"></i>`;
+                  const color = severity === "warning" ? "#fbbf24" : "#ef4444";
+
+                  errDiv.innerHTML = `
+                      <div style="flex-shrink: 0; margin-top: 1px;">${icon}</div>
+                      <div style="flex: 1; color: #cbd5e1; line-height: 1.5;">
+                          <span style="color: ${color}; font-weight: 600;">Строка ${line}, Символ ${ch}:</span> 
+                          <span style="opacity: 0.9;">${safeMsg}</span>
+                      </div>
+                  `;
+
+                  consoleBox.appendChild(errDiv);
+              });
+          }, 400); // 400 мс ожидания
       };
 
       // Функция переключения режимов
@@ -4544,7 +5024,8 @@
 
           notes.forEach(parentNote => {
               // Ищем зависимости только внутри HTML файлов
-              if (!parentNote.title.toLowerCase().endsWith('.html') && !parentNote.title.toLowerCase().endsWith('.htm')) return;
+              if (!parentNote.title || !parentNote.title.toLowerCase().endsWith('.html') && !parentNote.title.toLowerCase().endsWith('.htm')) return;
+              if (!parentNote.content) return; // Защита от пустых файлов
               
               const linkRegex = /<link[^>]*href=["']([^"']+\.css)["'][^>]*>/gi;
               const scriptRegex = /<script[^>]*src=["']([^"']+\.js)["'][^>]*>/gi;
@@ -4562,8 +5043,8 @@
               if (!parentEl) return;
 
               deps.forEach(depTitle => {
-                  // ФИЛЬТР: Соединяем только если файлы находятся в ОДНОЙ ПАПКЕ (Изоляция)
-                  const childNote = notes.find(n => n.title.toLowerCase() === depTitle && n.parentId === parentNote.parentId);
+                  // Соединяем файлы из ЛЮБЫХ папок, если путь к ним корректно разрешается
+                  const childNote = resolveRelativePath(parentNote.id, depTitle);
                   if (!childNote) return;
 
                   // Находим зависимый файл в DOM дереве
@@ -4724,82 +5205,6 @@
 
           crumbsContainer.innerHTML = html;
       };
-
-      // ==========================================
-      // НОВАЯ ЛОГИКА: КОНТЕКСТНОЕ МЕНЮ ЗАМЕТОК
-      // ==========================================
-      let targetNoteIdForMenu = null;
-      let noteLongPressTimer;
-      let isNoteLongPress = false;
-
-      window.showNoteContextMenu = function(x, y, noteId) {
-        window.ignoreMenuClickTime = Date.now() + 300; // <--- ДОБАВИТЬ ЭТО
-        targetNoteIdForMenu = noteId;
-        const note = notes.find(n => n.id === noteId);
-        const menuEl = document.getElementById('noteContextMenu'); 
-        if (!menuEl) return;
-        
-        const favBtn = document.getElementById('contextFavBtn');
-        if (favBtn) {
-            if (note && note.isFavorite) {
-                favBtn.innerHTML = "<i class='bx bxs-star' style='color:#f59e0b;'></i> Убрать из избранного";
-            } else {
-                favBtn.innerHTML = "<i class='bx bx-star'></i> В избранное";
-            }
-        }
-
-        // Больше никаких костылей с visibility, просто добавляем класс
-        menuEl.classList.add('show');
-        
-        // Вычисляем размеры меню
-        const menuRect = menuEl.getBoundingClientRect();
-        let posX = x, posY = y;
-        
-        // Не даем меню вылезти за края экрана
-        if (posX + menuRect.width > window.innerWidth) posX = window.innerWidth - menuRect.width - 10;
-        if (posY + menuRect.height > window.innerHeight) posY = window.innerHeight - menuRect.height - 10;
-
-        menuEl.style.left = `${posX}px`;
-        menuEl.style.top = `${posY}px`;
-      };
-
-      window.hideNoteContextMenu = function() {
-        const menuEl = document.getElementById('noteContextMenu');
-        if (menuEl) menuEl.classList.remove('show');
-      };
-
-      // =========================================================
-      // УПРАВЛЕНИЕ ЗАКРЫТИЕМ КОНТЕКСТНЫХ МЕНЮ
-      // =========================================================
-
-      window.hideNoteContextMenu = function() {
-        const menu = document.getElementById('noteContextMenu');
-        if (menu) menu.classList.remove('show');
-      };
-
-      window.hideChatContextMenu = function() {
-        const menu = document.getElementById('chatContextMenu');
-        if (menu) menu.classList.remove('show');
-      };
-
-      // ЖЕЛЕЗОБЕТОННОЕ ЗАКРЫТИЕ МЕНЮ ПРИ КЛИКЕ МИМО (ТОЛЬКО ЛЕВОЙ КНОПКОЙ)
-      document.addEventListener('mousedown', (e) => {
-        if (e.button === 2) return; // ПКМ вообще не триггерит закрытие
-        if (window.ignoreMenuClickTime && Date.now() < window.ignoreMenuClickTime) return; 
-
-        const noteMenu = document.getElementById('noteContextMenu');
-        const chatMenu = document.getElementById('chatContextMenu');
-
-        // Закрываем меню заметок, если клик был не по нему
-        if (noteMenu && noteMenu.classList.contains('show') && !noteMenu.contains(e.target)) {
-          window.hideNoteContextMenu();
-        }
-
-        // Закрываем меню чата, если клик был не по нему
-        if (chatMenu && chatMenu.classList.contains('show') && !chatMenu.contains(e.target)) {
-          window.hideChatContextMenu();
-        }
-      }, true);
 
       // =========================================================
       // БРОНЕБОЙНЫЕ КОНТЕКСТНЫЕ МЕНЮ (ГЕНЕРАЦИЯ ЧЕРЕЗ JS)
@@ -5336,19 +5741,21 @@
 
       // Скрытие мобильных вкладок при редактировании текста
       const mobileTabs = document.querySelector(".mobile-tabs");
-      editor.addEventListener("focus", () => {
+      const hideMobileTabs = () => {
         if (window.innerWidth <= 768 && mobileTabs) {
           mobileTabs.style.display = "none";
         }
-      });
-      editor.addEventListener("blur", () => {
+      };
+      const showMobileTabs = () => {
         if (window.innerWidth <= 768 && mobileTabs) {
-          // Небольшая задержка, чтобы табы не прыгали мгновенно
           setTimeout(() => {
             mobileTabs.style.display = "flex";
           }, 150);
         }
-      });
+      };
+
+      editor.addEventListener("focus", hideMobileTabs);
+      editor.addEventListener("blur", showMobileTabs);
 
       // ЛОГИКА ЕДИНОГО ОКНА (LIVE PREVIEW) вынесена отдельно!
       const workspace = document.getElementById("workspace");
@@ -5392,16 +5799,16 @@
           mInline = [];
         text = text.replace(/\$\$([\s\S]+?)\$\$/g, (m) => {
           mBlocks.push(m);
-          return `_M_B_${mBlocks.length - 1}_`;
+          return `%%M_B_${mBlocks.length - 1}%%`;
         });
         text = text.replace(/\$((?:\\.|[^$])+)\$/g, (m) => {
           mInline.push(m);
-          return `_M_I_${mInline.length - 1}_`;
+          return `%%M_I_${mInline.length - 1}%%`;
         });
 
         let html = marked.parse(text);
-        html = html.replace(/_M_B_(\d+)_/g, (m, i) => mBlocks[i]);
-        html = html.replace(/_M_I_(\d+)_/g, (m, i) => mInline[i]);
+        html = html.replace(/%%M_B_(\d+)%%/g, (m, i) => mBlocks[i]);
+        html = html.replace(/%%M_I_(\d+)%%/g, (m, i) => mInline[i]);
 
         preview.innerHTML = html;
 
@@ -5534,8 +5941,8 @@ function setTheme(e, hex, rgb) {
         aiModel: "gpt-5.5"
       };
 
-      // Новая функция для кнопок тем
-      function setLiveTheme(theme) {
+// Новая функция для кнопок тем
+function setLiveTheme(theme) {
         settings.liveTheme = theme;
         applySettings();
       }
@@ -5551,7 +5958,7 @@ function setTheme(e, hex, rgb) {
         applySettings();
       }
 
-      const originalApplySettings = function() {
+      function originalApplySettings() {
         localStorage.setItem("qn_settings", JSON.stringify(settings));
         const root = document.documentElement;
         root.style.setProperty("--font-text", settings.font);
@@ -5579,7 +5986,8 @@ function setTheme(e, hex, rgb) {
 
         const ws = document.getElementById("workspace");
         if (ws) {
-            if (settings.livePreview) ws.classList.add("live-mode");
+            // Активируем единое окно только если выключен режим запуска сайта (Web Preview)
+            if (settings.livePreview && !isWebPreview) ws.classList.add("live-mode");
             else {
                 ws.classList.remove("live-mode");
                 ws.classList.remove("editing");
@@ -5587,18 +5995,19 @@ function setTheme(e, hex, rgb) {
         }
 
         document.querySelectorAll(".color-dot").forEach((d) => {
-          if (d.style.color === settings.color) d.classList.add("active");
+          const styleAttr = d.getAttribute("style") || "";
+          if (styleAttr.includes(settings.color)) d.classList.add("active");
           else d.classList.remove("active");
         });
 
         // Запуск движка тем
         runLiveTheme(settings.liveTheme || "default");
-      };
+      }
 
-      let applySettings = function() {
+      function applySettings() {
         originalApplySettings();
         const modelMap = {
-          "local-deepseek-r1": "DeepSeek-R1 Local", // Добавили маппинг
+          "local-deepseek-r1": "DeepSeek-R1 Local",
           "gpt-5.5": "GPT-5.5",
           "gpt-5.4-mini": "GPT-5.4-mini",
           "gpt-5.4-nano": "GPT-5.4-nano",
@@ -5606,16 +6015,16 @@ function setTheme(e, hex, rgb) {
           "claude-opus-4-7": "Claude Opus 4.7",
           "claude-sonnet-4-6": "Claude Sonnet 4.6",
           "claude-haiku-4-5": "Claude Haiku 4.5",
-          "gemini-3.5-flash": "Gemini 3.5 Flash(p)",
-          "google/gemini-3.5-flash": "Gemini 3.5 Flash",
+          "gemini-3.5-flash": "Gemini 3.5 Flash",
           "gemini-3.1-pro-preview": "Gemini 3.1 Pro",
-          "openrouter/x-ai/grok-4.3": "Grok-4.3"
+          "openrouter/x-ai/grok-4.3": "Grok-4.3",
+          "openrouter/x-ai/grok-build-0.1": "Grok-0.1"
         };
         const label = document.getElementById("currentModelLabel");
         if (label && settings.aiModel) {
             label.textContent = modelMap[settings.aiModel] || settings.aiModel;
         }
-      };
+      }
 
       // ==========================================
       // ПРЕМИУМ ДВИЖОК ЖИВЫХ ТЕМ
@@ -5903,24 +6312,109 @@ function setTheme(e, hex, rgb) {
       });
 
       // ==========================================
-      // ДИНАМИЧЕСКОЕ МЕНЮ РАЗМЫШЛЕНИЙ
+      // ДИНАМИЧЕСКИЕ КОНФИГУРАЦИИ МЫШЛЕНИЯ ДЛЯ КАЖДОЙ МОДЕЛИ
       // ==========================================
-      function updateThinkingMenu(model) {
-        if (!model) return;
-        const isGrok = model.includes("grok");
-        const items = document.querySelectorAll('#aiThinkingMenu .ai-model-item');
+      const modelThinkingConfigs = {
+        "local-deepseek-r1": [
+            { value: "always", label: "Всегда включено", desc: "Локальный R1 всегда использует нативные рассуждения" }
+        ],
+        "gpt-5.5": [
+            { value: "off", label: "Отключено", desc: "Быстрый прямой ответ" },
+            { value: "low", label: "Низкий (Low)", desc: "Поверхностные рассуждения" },
+            { value: "medium", label: "Средний (Medium)", desc: "Сбалансированное обдумывание" },
+            { value: "high", label: "Высокий (High)", desc: "Глубокая логика" }
+        ],
+        "gpt-5.4-mini": [
+            { value: "off", label: "Отключено", desc: "Быстрый прямой ответ" },
+            { value: "low", label: "Низкий (Low)", desc: "Поверхностные рассуждения" },
+            { value: "medium", label: "Средний (Medium)", desc: "Сбалансированное обдумывание" },
+            { value: "high", label: "Высокий (High)", desc: "Глубокая логика" }
+        ],
+        "gpt-5.4-nano": [
+            { value: "not-supported", label: "Не поддерживается", desc: "Модель оптимизирована под скорость без CoT" }
+        ],
+        "claude-haiku-4-5": [
+            { value: "not-supported", label: "Не поддерживается", desc: "Модель оптимизирована под скорость без CoT" }
+        ],
+        "claude-sonnet-4-6": [
+            { value: "off", label: "Отключено", desc: "Обычный режим ответа" },
+            { value: "low", label: "Низкий (1024 токена)", desc: "Краткие размышления" },
+            { value: "medium", label: "Средний (2048 токенов)", desc: "Сбалансированное мышление" },
+            { value: "high", label: "Высокий (4096 токенов)", desc: "Глубокий анализ кода" },
+            { value: "xhigh", label: "Максимум (8192 токена)", desc: "Сложное проектирование" }
+        ],
+        "claude-opus-4-7": [
+            { value: "off", label: "Отключено", desc: "Обычный режим ответа" },
+            { value: "low", label: "Низкий (1024 токена)", desc: "Краткие размышления" },
+            { value: "medium", label: "Средний (2048 токенов)", desc: "Сбалансированное мышление" },
+            { value: "high", label: "Высокий (4096 токенов)", desc: "Глубокий анализ кода" },
+            { value: "xhigh", label: "Максимум (8192 токена)", desc: "Сложное проектирование" }
+        ],
+        "gemini-3.5-flash": [
+            { value: "off", label: "Минимальный (Minimal)", desc: "Быстрый прямой ответ" },
+            { value: "low", label: "Низкий (1024 токена)", desc: "Базовые размышления" },
+            { value: "medium", label: "Средний (2048 токенов)", desc: "Глубокий анализ" },
+            { value: "high", label: "Высокий (4096 токенов)", desc: "Предельная логика" }
+        ],
+        "gemini-3.1-pro-preview": [
+            { value: "off", label: "Минимальный (Minimal)", desc: "Быстрый прямой ответ" },
+            { value: "low", label: "Низкий (1024 токена)", desc: "Базовые размышления" },
+            { value: "medium", label: "Средний (2048 токенов)", desc: "Глубокий анализ" },
+            { value: "high", label: "Высокий (4096 токенов)", desc: "Предельная логика" }
+        ],
+        "openrouter/x-ai/grok-4.3": [
+            { value: "low", label: "Низкий (Low)", desc: "Поверхностный анализ" },
+            { value: "medium", label: "Средний (Medium)", desc: "Сбалансированное обдумывание" },
+            { value: "high", label: "Высокий (High)", desc: "Предельная логика" }
+        ],
+        "openrouter/x-ai/grok-build-0.1": [
+            { value: "low", label: "Низкий (Low)", desc: "Поверхностный анализ" },
+            { value: "medium", label: "Средний (Medium)", desc: "Сбалансированное обдумывание" },
+            { value: "high", label: "Высокий (High)", desc: "Предельная логика" }
+        ],
+        "qwen/qwen3-235b-a22b-2507": [
+            { value: "off", label: "Отключено", desc: "Быстрый ответ" },
+            { value: "low", label: "Низкий (Low)", desc: "Краткое планирование" },
+            { value: "high", label: "Высокий (High)", desc: "Полное рассуждение" }
+        ]
+      };
 
-        items.forEach(item => {
-            const mode = item.getAttribute('data-mode');
-            if (mode === "off") {
-                // Если это Grok, скрываем пункт "Off". Для остальных показываем.
-                item.style.display = isGrok ? "none" : "block";
-            }
+      function updateThinkingMenu(model) {
+        const menu = document.getElementById("aiThinkingMenu");
+        if (!menu) return;
+
+        const configs = modelThinkingConfigs[model] || [
+            { value: "off", label: "Отключено", desc: "Рассуждения отключены" }
+        ];
+
+        menu.innerHTML = "";
+        configs.forEach(cfg => {
+            const div = document.createElement("div");
+            div.className = "ai-model-item";
+            div.setAttribute("data-mode", cfg.value);
+            div.onclick = (e) => {
+                e.stopPropagation();
+                selectThinkingMode(cfg.value, cfg.label);
+            };
+            div.innerHTML = `
+                <span class="m-title">${cfg.label}</span>
+                <span class="m-desc">${cfg.desc}</span>
+            `;
+            menu.appendChild(div);
         });
 
-        // Если выбрана модель Grok, а размышления были отключены - принудительно ставим Low
-        if (isGrok && (settings.thinking === "off" || !settings.thinking)) {
-            selectThinkingMode("low", "Low");
+        const currentMode = settings.thinking || "off";
+        const isSupported = configs.some(cfg => cfg.value === currentMode);
+
+        if (!isSupported) {
+            const defaultCfg = configs[0];
+            selectThinkingMode(defaultCfg.value, defaultCfg.label);
+        } else {
+            const currentCfg = configs.find(cfg => cfg.value === currentMode);
+            const labelEl = document.getElementById("currentThinkingLabel");
+            if (labelEl && currentCfg) {
+                labelEl.textContent = currentCfg.label;
+            }
         }
       }
 
@@ -6667,19 +7161,31 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
                     return { role: m.role === "assistant" ? "assistant" : "user", content: newContent };
                 });
 
-                const isSonnet = rawModel.includes("sonnet");
+                const isThinkingModel = rawModel.includes("sonnet") || rawModel.includes("opus") || rawModel.includes("claude-sonnet") || rawModel.includes("claude-opus");
                 const body = {
                     model: rawModel,
-                    max_tokens: isSonnet ? 8192 : 4096,
-                    temperature: 1.0,
+                    max_tokens: 16384,
                     messages: anthropicMessages,
                     stream: true
                 };
                 
                 if (systemPrompt) body.system = systemPrompt;
-                if (effort !== "off") {
-                    if (isSonnet) body.thinking = { type: "enabled", budget_tokens: 4096 };
-                    else body.system = (body.system || "") + "\n\nПеред ответом обязательно подробно распиши ход своих мыслей, поместив их внутрь тегов <think>...</think>.";
+                if (effort !== "off" && effort !== "not-supported") {
+                    if (isThinkingModel) {
+                        let budget = 2048;
+                        if (effort === "low") budget = 1024;
+                        if (effort === "medium") budget = 2048;
+                        if (effort === "high") budget = 4096;
+                        if (effort === "xhigh") budget = 8192;
+                        
+                        body.thinking = { type: "enabled", budget_tokens: budget };
+                        body.temperature = 1.0; // Требуется Anthropic при включенном thinking
+                    } else {
+                        body.system = (body.system || "") + "\n\nПеред ответом обязательно подробно распиши ход своих мыслей, поместив их внутрь тегов <think>...</think>.";
+                        body.temperature = 0.5;
+                    }
+                } else {
+                    body.temperature = 0.5;
                 }
 
                 const res = await fetch("https://api.proxyapi.ru/anthropic/v1/messages", {
@@ -6723,42 +7229,101 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             // 2. ЛОГИКА ДЛЯ GOOGLE (GEMINI)
             // ========================================================
             else if (rawModel.includes("gemini") && !rawModel.startsWith("openrouter/")) {
-              let history = [];
+                let history = [];
                 let systemText = "";
 
                 messages.forEach(m => {
-                    if (m.role === "system") { systemText = `System Instructions:\n${m.content}\n\n`; return; }
+                    if (m.role === "system") { 
+                        systemText = m.content; 
+                        return; 
+                    }
                     const role = m.role === "assistant" ? "model" : "user";
                     
                     // АДАПТАЦИЯ КАРТИНОК ПОД ФОРМАТ GEMINI
                     const parts = [];
                     if (Array.isArray(m.content)) {
                         m.content.forEach(part => {
-                            if (part.type === "text") parts.push({ text: part.text });
+                            if (part.type === "text") parts.push({ text: part.text || "" });
                             if (part.type === "image_url") {
                                 const b64 = part.image_url.url.split(",")[1];
                                 parts.push({ inlineData: { mimeType: "image/jpeg", data: b64 } });
                             }
                         });
                     } else {
-                        parts.push({ text: m.content || "-" });
+                        parts.push({ text: m.content || "" });
                     }
 
-                    if (history.length > 0 && history[history.length - 1].role === role) history[history.length - 1].parts.push(...parts);
-                    else history.push({ role, parts });
+                    // Исключаем пустые элементы, вызывающие 400 ошибку
+                    const validParts = parts.filter(p => p.text !== "" || p.inlineData);
+                    if (validParts.length === 0) return;
+
+                    if (history.length > 0 && history[history.length - 1].role === role) {
+                        history[history.length - 1].parts.push(...validParts);
+                    } else {
+                        history.push({ role, parts: validParts });
+                    }
                 });
 
-                if (history.length === 0) history.push({ role: "user", parts: [{ text: systemText + "Начало диалога" }] });
-                else if (history[0].role === "model") history.unshift({ role: "user", parts: [{ text: systemText + "Начало диалога" }] });
-                else if (systemText) history[0].parts[0].text = systemText + history[0].parts[0].text;
+                // Гарантируем наличие хотя бы одного сообщения
+                if (history.length === 0) {
+                    history.push({ role: "user", parts: [{ text: "Привет" }] });
+                }
 
-                const body = { contents: history };
-                if (effort !== "off") body.generationConfig = { thinkingConfig: { thinkingLevel: effort.toUpperCase() } };
+                // Корректируем чередование ролей (user -> model -> user)
+                let cleanedHistory = [];
+                let expectedRole = "user";
+                history.forEach(item => {
+                    if (item.role === expectedRole) {
+                        cleanedHistory.push(item);
+                        expectedRole = expectedRole === "user" ? "model" : "user";
+                    } else {
+                        if (cleanedHistory.length > 0) {
+                            cleanedHistory[cleanedHistory.length - 1].parts.push(...item.parts);
+                        } else {
+                            item.role = "user";
+                            cleanedHistory.push(item);
+                            expectedRole = "model";
+                        }
+                    }
+                });
+
+                // Последняя реплика в диалоге должна принадлежать пользователю
+                if (cleanedHistory.length > 0 && cleanedHistory[cleanedHistory.length - 1].role === "model") {
+                    cleanedHistory.pop();
+                }
+
+                const body = { contents: cleanedHistory };
+
+                // Нативная отправка системного промпта
+                if (systemText) {
+                    body.systemInstruction = {
+                        parts: [{ text: systemText }]
+                    };
+                }
+
+                if (effort !== "off" && effort !== "not-supported") {
+                    let budget = 2048;
+                    if (effort === "low") budget = 1024;
+                    if (effort === "medium") budget = 2048;
+                    if (effort === "high" || effort === "xhigh") budget = 4096;
+
+                    body.generationConfig = {
+                        thinkingConfig: {
+                            thinkingBudget: budget
+                        }
+                    };
+                }
 
                 const cleanModel = rawModel.replace("google/", "").replace("gemini/", "");
-                const res = await fetch(`https://api.proxyapi.ru/google/v1beta/models/${cleanModel}:streamGenerateContent?alt=sse&key=${settings.apiKey}`, {
+                
+                // Передаем токен авторизации через заголовки без дублирования в строке запроса
+                const res = await fetch(`https://api.proxyapi.ru/google/v1beta/models/${cleanModel}:streamGenerateContent?alt=sse`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${settings.apiKey}`,
+                        "x-goog-api-key": settings.apiKey
+                    },
                     body: JSON.stringify(body),
                     signal: abortSignal
                 });
@@ -6776,13 +7341,23 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
                     const lines = buffer.split("\n");
                     buffer = lines.pop();
                     for (let line of lines) {
-                        if (line.startsWith("data:")) {
+                        if (line.trim().startsWith("data:")) {
                             const jsonStr = line.replace("data:", "").trim();
                             if (jsonStr === "[DONE]") continue;
                             try {
                                 const data = JSON.parse(jsonStr);
-                                const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                                if (txt) processDelta(txt, "");
+                                const parts = data.candidates?.[0]?.content?.parts;
+                                if (parts && Array.isArray(parts)) {
+                                    parts.forEach(part => {
+                                        if (part.text) {
+                                            if (part.thought) {
+                                                processDelta("", part.text); // Блок размышлений
+                                            } else {
+                                                processDelta(part.text, ""); // Обычный текст
+                                            }
+                                        }
+                                    });
+                                }
                             } catch (e) {}
                         }
                     }
@@ -6792,27 +7367,25 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             // 3. ЛОГИКА ДЛЯ OPENAI И OPENROUTER (СТАНДАРТ)
             // ========================================================
             else {
-                let apiUrl = "https://api.proxyapi.ru/openai/v1/chat/completions";
+                let apiUrl = "https://api.proxyapi.ru/openai/v1/chat/completions"; // Нативный OpenAI
                 let modelForApi = rawModel;
-                let isOpenRouter = false;
 
-                // Умная маршрутизация: перехватываем все модели с '/', которые не относятся к основным провайдерам
-                if (rawModel.startsWith("openrouter/")) { 
-                    isOpenRouter = true;
-                    apiUrl = "https://api.proxyapi.ru/openrouter/v1/chat/completions"; 
-                    modelForApi = rawModel.replace("openrouter/", ""); 
-                } else if (rawModel.includes("/") && !rawModel.startsWith("openai/") && !rawModel.startsWith("anthropic/") && !rawModel.startsWith("gemini/")) {
-                    isOpenRouter = true;
-                    apiUrl = "https://api.proxyapi.ru/openrouter/v1/chat/completions";
-                    modelForApi = rawModel; // Оставляем как есть, например: qwen/qwen3-235b-a22b-2507
-                } else if (rawModel.startsWith("openai/")) { 
-                    modelForApi = rawModel.replace("openai/", ""); 
+                if (rawModel.includes("/")) {
+                    // Все кросс-провайдерные запросы идут через единый совместимый шлюз
+                    apiUrl = "https://openai.api.proxyapi.ru/v1/chat/completions";
+                    modelForApi = rawModel;
+                } else if (rawModel.startsWith("gpt-") || rawModel.startsWith("o1-") || rawModel.startsWith("o3-")) {
+                    apiUrl = "https://api.proxyapi.ru/openai/v1/chat/completions";
                 }
 
                 const requestBody = { model: modelForApi, messages: messages, temperature: 1.0, stream: true };
                 
                 // Передаем параметр reasoning (Поддерживается в Grok и OpenAI)
-                if (effort !== "off") requestBody.reasoning_effort = effort;
+                if (effort !== "off" && effort !== "not-supported") {
+                    let oaiEffort = effort;
+                    if (oaiEffort === "xhigh") oaiEffort = "high"; // Ограничиваем до высокого
+                    requestBody.reasoning_effort = oaiEffort;
+                }
 
                 const res = await fetch(apiUrl, {
                     method: "POST",
@@ -6823,7 +7396,8 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
 
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
-                    throw new Error(`${isOpenRouter ? 'OpenRouter' : 'OpenAI'} Error: ${err.error?.message || res.status}`);
+                    const isOR = modelForApi.includes("/");
+                    throw new Error(`${isOR ? 'OpenRouter' : 'OpenAI'} Error: ${err.error?.message || res.status}`);
                 }
 
                 const reader = res.body.getReader();
@@ -7270,20 +7844,21 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
             else if (action.type === "CREATE_NOTE") {
               const uniqueId = Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9);
               
-              // Адаптация: ИИ может указать folderId
-              let targetFolderId = action.folderId ? action.folderId : (activeFolderId || null);
-              // Защита: Если ИИ передал ID, который не существует или это не папка, кидаем в корень
-              if (targetFolderId && !notes.find(n => n.id === targetFolderId && n.type === 'folder')) {
-                  targetFolderId = null;
+              let baseFolderId = action.folderId ? action.folderId : (activeFolderId || null);
+              if (baseFolderId && !notes.find(n => n.id === baseFolderId && n.type === 'folder')) {
+                  baseFolderId = null;
               }
+              
+              // Вычисляем и автоматически создаем структуру вложенных папок, если передан путь со слэшами
+              const { parentId, filename } = createNestedFoldersAndGetParentId(action.title || "Новый файл", baseFolderId);
 
               const newNote = { 
                   id: uniqueId, 
-                  title: getUniqueTitle(action.title || "Новый файл", null, targetFolderId),
+                  title: getUniqueTitle(filename, null, parentId),
                   content: action.content || "# ", 
                   date: new Date().toLocaleDateString(),
                   type: 'file',
-                  parentId: targetFolderId
+                  parentId: parentId
               };
               notes.push(newNote); 
               switchNote(newNote.id);
@@ -7466,16 +8041,32 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
 
       // Парсер XML-ответов от ИИ (Улучшенный и отказоустойчивый)
       window.parseAIResponseToActions = function(finalContent) {
-          let actionData = { actions: [], reply: finalContent };
+              let actionData = { actions: [], reply: finalContent };
 
-          // УМНЫЙ ПОИСК: Ищем по ID, затем по названию, иначе берем текущий открытый файл
-          const resolveNote = (idStr) => {
-              if (idStr) {
-                  let n = notes.find(n => n.id === idStr) || notes.find(n => n.title.trim().toLowerCase() === idStr.trim().toLowerCase());
-                  if (n) return n;
-              }
-              return notes.find(n => n.id === activeId);
-          };
+              // УМНЫЙ ПОИСК: Ищем по точечному ID, по абсолютному/относительному пути или по плоскому имени
+              const resolveNote = (idStr) => {
+                  if (idStr) {
+                      const trimmedId = idStr.trim().toLowerCase();
+                      
+                      // 1. Поиск по прямому уникальному ID
+                      let n = notes.find(n => n.id === idStr);
+                      if (n) return n;
+                      
+                      // 2. Поиск по абсолютному пути (например, js/app.js)
+                      let resolvedByPath = notes.find(node => {
+                          if (node.type !== 'file') return false;
+                          const absPath = getNoteAbsolutePath(node.id).toLowerCase();
+                          return absPath === trimmedId || absPath.endsWith("/" + trimmedId);
+                      });
+                      if (resolvedByPath) return resolvedByPath;
+
+                      // 3. Фолбэк на простое имя файла (например, app.js)
+                      let flatTitle = trimmedId.split("/").pop();
+                      let resolvedByFlat = notes.find(node => node.type === 'file' && node.title.toLowerCase() === flatTitle);
+                      if (resolvedByFlat) return resolvedByFlat;
+                  }
+                  return notes.find(n => n.id === activeId);
+              };
 
           // 1. Roadmap (План задач)
           const roadmapMatch = finalContent.match(/<roadmap>([\s\S]*?)<\/roadmap>/i);
@@ -7647,8 +8238,8 @@ if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
               if (deps.length > 0) {
                   const foundDeps = [];
                   deps.forEach(depTitle => {
-                      // ФИЛЬТР: Добавляем в контекст ИИ только файлы из ТОЙ ЖЕ ПАПКИ
-                      const depNote = notes.find(n => n.title.toLowerCase() === depTitle && n.parentId === note.parentId);
+                      // Добавляем в контекст ИИ связанные файлы из любых папок на основе относительных путей
+                      const depNote = resolveRelativePath(note.id, depTitle);
                       if (depNote) {
                           resultSet.add(depNote); // Добавляем файл в память ИИ
                           foundDeps.push(depNote.title);
@@ -8178,8 +8769,14 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
                 msgDiv.setAttribute("data-raw", rawText);
                 msgDiv.querySelector('.bot-markdown-content').innerHTML = marked.parse(rawText);
 
-                if (arrayIndex >= 0) {
-                   aiChatHistory[arrayIndex].content = rawText;
+                // Если индекс равен -1 (после генерации), динамически ищем его по содержанию задачи
+                let actualIndex = arrayIndex;
+                if (actualIndex < 0) {
+                    actualIndex = aiChatHistory.findIndex(m => m.role === "assistant" && m.content.includes(currentTask));
+                }
+
+                if (actualIndex >= 0) {
+                   aiChatHistory[actualIndex].content = rawText;
                    saveAIChat();
                 }
 
@@ -9080,15 +9677,15 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
       this.dock = document.getElementById("globalDock");
 
       // Безопасно связываем с глобальным аудио-движком терминала
-      this.synth = window.sound || { playChime() {}, playBubble() {} }; 
+      this.synth = window.synth || { playChime() {}, playBubble() {}, playClick() {}, playSoftHum() {} };
       
       this.glitch = new GlitchEngine();
       this.bg = new CanvasBackground("dockCanvas");
-      // ...
 
       // Физика Lerp (сглаживание перемещения)
       this.pos = { currentX: 0, currentY: 0, targetX: 0, targetY: 0 };
       this.isDragging = false;
+      this.isAnimating = false; // Контроль единого анимационного цикла
       this.hasMoved = false;
       this.dragOffset = { x: 0, y: 0 };
 
@@ -9181,6 +9778,9 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
       this.dragOffset.y = clientY - this.pos.currentY;
 
       this.wrapper.style.willChange = "transform";
+      
+      // Запускаем безопасный цикл анимации
+      this.startPhysicsLoop();
     }
 
     dragMove(e) {
@@ -9203,8 +9803,6 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
         this.hasMoved = true;
         if (e.cancelable) e.preventDefault();
       }
-
-      this.updatePhysics();
     }
 
     dragEnd() {
@@ -9214,25 +9812,37 @@ currentDocumentContext = `РАЗРЕШЕННЫЕ ДЛЯ ЧТЕНИЯ ФАЙЛЫ 
       this.keepInBounds();
     }
 
+    startPhysicsLoop() {
+      if (this.isAnimating) return;
+      this.isAnimating = true;
+      this.updatePhysics();
+    }
+
     /**
      * Сглаживание движения с использованием LERP (Linear Interpolation).
      * Дает благородное "тяжелое" скольжение виджета.
      */
     updatePhysics() {
-      if (!this.isDragging && Math.abs(this.pos.targetX - this.pos.currentX) < 0.1 && Math.abs(this.pos.targetY - this.pos.currentY) < 0.1) {
+      const distanceX = this.pos.targetX - this.pos.currentX;
+      const distanceY = this.pos.targetY - this.pos.currentY;
+
+      // Если перетаскивание завершено и объект достиг цели, выключаем цикл
+      if (!this.isDragging && Math.abs(distanceX) < 0.1 && Math.abs(distanceY) < 0.1) {
+        this.pos.currentX = this.pos.targetX;
+        this.pos.currentY = this.pos.targetY;
+        this.updateDOMPosition();
+        this.isAnimating = false;
         return;
       }
 
       const lerpFactor = this.isDragging ? 0.25 : 0.15;
-      this.pos.currentX += (this.pos.targetX - this.pos.currentX) * lerpFactor;
-      this.pos.currentY += (this.pos.targetY - this.pos.currentY) * lerpFactor;
+      this.pos.currentX += distanceX * lerpFactor;
+      this.pos.currentY += distanceY * lerpFactor;
 
       this.updateDOMPosition();
       this.updateDockDirection();
 
-      if (this.isDragging) {
-        requestAnimationFrame(() => this.updatePhysics());
-      }
+      requestAnimationFrame(() => this.updatePhysics());
     }
 
     updateDOMPosition() {
