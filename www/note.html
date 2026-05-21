@@ -2538,6 +2538,14 @@
       }
       .ai-extra-tool-item i { font-size: 16px; }
       .ai-extra-tool-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+      /* ПОЛНОЭКРАННЫЙ РЕЖИМ ПРЕВЬЮ ЗАПУЩЕННОГО САЙТА */
+      body.preview-fullscreen .sidebar {
+        display: none !important;
+      }
+      body.preview-fullscreen .menu-toggle {
+        display: none !important;
+      }
     </style>
 
     <!-- ================= IDE (CodeMirror) ================= -->
@@ -2712,6 +2720,11 @@
           <!-- КНОПКА ЗАПУСКА САЙТА (Самая важная) -->
           <button class="btn-icon" id="webPreviewBtn" title="Запустить код как Сайт" onclick="toggleWebPreview()">
             <i class="bx bx-play-circle" style="color: #3b82f6;"></i>
+          </button>
+
+          <!-- КНОПКА ПОЛНОЭКРАННОГО ПРОСМОТРА (Новая) -->
+          <button class="btn-icon" id="previewFullscreenBtn" title="Во весь экран" onclick="togglePreviewFullscreen()" style="display: none; color: #a78bfa;">
+            <i class="bx bx-fullscreen"></i>
           </button>
 
           <!-- КНОПКА СКРИНШОТА САЙТА ДЛЯ ИИ (Новая) -->
@@ -3626,6 +3639,24 @@
       let isWebConsoleOpen = false;
       window.siteConsoleLogs = []; // Хранилище логов для ИИ
 
+      window.togglePreviewFullscreen = function() {
+        const body = document.body;
+        const btn = document.getElementById("previewFullscreenBtn");
+        const isFullscreen = body.classList.toggle("preview-fullscreen");
+        
+        if (btn) {
+            if (isFullscreen) {
+                btn.innerHTML = "<i class='bx bx-exit-fullscreen'></i>";
+                btn.title = "Выйти из полноэкранного режима";
+                btn.style.color = "var(--accent)";
+            } else {
+                btn.innerHTML = "<i class='bx bx-fullscreen'></i>";
+                btn.title = "Полноэкранный режим";
+                btn.style.color = "#a78bfa";
+            }
+        }
+      };
+
       function toggleWebConsole() {
         isWebConsoleOpen = !isWebConsoleOpen;
         const consoleContainer = document.getElementById('webConsoleContainer');
@@ -3674,6 +3705,7 @@
         const btn = document.getElementById('webPreviewBtn');
         const consoleBtn = document.getElementById('consoleToggleBtn');
         const screenshotBtn = document.getElementById('screenshotBtn'); 
+        const fullscreenBtn = document.getElementById('previewFullscreenBtn'); 
         const status = document.getElementById('renderStatus');
         const ws = document.getElementById('workspace');
 
@@ -3689,6 +3721,7 @@
             btn.title = "Остановить сайт";
             consoleBtn.style.display = "block";
             if (screenshotBtn) screenshotBtn.style.display = "block"; 
+            if (fullscreenBtn) fullscreenBtn.style.display = "block"; 
             status.textContent = "Live Server 🟢";
             status.style.color = "#3b82f6";
             
@@ -3704,6 +3737,12 @@
             btn.title = "Запустить код как Сайт";
             consoleBtn.style.display = "none";
             if (screenshotBtn) screenshotBtn.style.display = "none"; 
+            if (fullscreenBtn) fullscreenBtn.style.display = "none"; 
+
+            // Сбрасываем полноэкранный режим при остановке сайта
+            if (document.body.classList.contains("preview-fullscreen")) {
+                window.togglePreviewFullscreen();
+            }
 
             // Закрываем консоль, если она была открыта, восстанавливая сетку интерфейса
             if (isWebConsoleOpen) {
@@ -3725,8 +3764,15 @@
         applySettings();
       }
 
-      // Слушатель сообщений от iframe (Консоли)
+      // Слушатель сообщений от iframe (Консоли и Навигации)
       window.addEventListener('message', function(e) {
+          if (e.data && e.data.source === 'web-preview-navigation') {
+              const targetNote = resolveRelativePath(activeId, e.data.href);
+              if (targetNote) {
+                  switchNote(targetNote.id);
+              }
+              return;
+          }
           if (e.data && e.data.source === 'web-preview-console') {
               const { type, message } = e.data;
               window.siteConsoleLogs.push({ type, message });
@@ -3734,11 +3780,11 @@
               if (window.siteConsoleLogs.length > 50) window.siteConsoleLogs.shift();
 
               const logsContainer = document.getElementById('webConsoleLogs');
-              if (!logsContainer) return; // Защита от Null Pointer Exception
+              if (!logsContainer) return;
 
               const line = document.createElement('div');
               line.className = `console-line ${type}`;
-              line.setAttribute('data-error-msg', message); // Безопасное сохранение без экранирования кавычек и переносов
+              line.setAttribute('data-error-msg', message);
               
               let htmlContent = `[${new Date().toLocaleTimeString()}] ${message.replace(/</g, "&lt;")}`;
               
@@ -3752,7 +3798,7 @@
 
               line.innerHTML = htmlContent;
               logsContainer.appendChild(line);
-              logsContainer.scrollTop = logsContainer.scrollHeight; // Автоскролл вниз
+              logsContainer.scrollTop = logsContainer.scrollHeight;
           }
       });
 
@@ -3894,6 +3940,37 @@
             const consoleInterceptor = `
             <script>
               (function() {
+                // Мок-полифилл для предотвращения SecurityError из-за заблокированного localStorage/sessionStorage в песочнице
+                try {
+                  window.localStorage;
+                } catch (e) {
+                  const storageMock = () => {
+                    let storage = {};
+                    return {
+                      setItem: (key, value) => { storage[key] = String(value); },
+                      getItem: (key) => key in storage ? storage[key] : null,
+                      removeItem: (key) => { delete storage[key]; },
+                      clear: () => { storage = {}; },
+                      key: (i) => Object.keys(storage)[i] || null,
+                      get length() { return Object.keys(storage).length; }
+                    };
+                  };
+                  Object.defineProperty(window, 'localStorage', { value: storageMock() });
+                  Object.defineProperty(window, 'sessionStorage', { value: storageMock() });
+                }
+
+                // Перехват кликов по относительным ссылкам <a> для навигации внутри виртуальной ФС Quantum Notes
+                window.addEventListener('click', function(e) {
+                  const anchor = e.target.closest('a');
+                  if (anchor) {
+                    const href = anchor.getAttribute('href');
+                    if (href && !href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                      e.preventDefault();
+                      window.parent.postMessage({ source: 'web-preview-navigation', href: href }, '*');
+                    }
+                  }
+                });
+
                 const sendLog = (type, args) => {
                   try {
                     const msg = Array.from(args).map(a => {
@@ -3934,34 +4011,65 @@
             <\/script>
             `;
             
-            // Интеллектуально превращаем скрипты пользователя в модули
-            let processedCode = currentCode.replace(/<script(?![^>]*type=)([^>]*)>/gi, '<script type="module"$1>');
+            let processedCode = currentCode;
             
             if (getSyntaxMode(entryNote.title) === "htmlmixed") {
-                // Очищаем старые Blob-линки перед сборкой
                 clearVirtualBlobs();
 
-                // 1. Подменяем внешние стили на динамические Blob-ссылки
-                processedCode = processedCode.replace(/<link[^>]*href=["']([^"']+)["'][^>]*>/gi, (match, relPath) => {
-                    if (relPath.startsWith("http://") || relPath.startsWith("https://")) return match;
-                    const depNote = resolveRelativePath(entryNote.id, relPath);
-                    if (depNote) {
-                        const blobUrl = getOrCreateBlobUrl(depNote.id);
-                        return match.replace(relPath, blobUrl);
+                // Парсим код с помощью DOMParser для точного сопоставления ссылок
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(currentCode, "text/html");
+
+                // 1. Обработка стилей <link rel="stylesheet">
+                doc.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && !href.startsWith("http://") && !href.startsWith("https://")) {
+                        const depNote = resolveRelativePath(entryNote.id, href);
+                        if (depNote) {
+                            link.setAttribute('href', getOrCreateBlobUrl(depNote.id));
+                        }
                     }
-                    return match;
                 });
 
-                // 2. Подменяем внешние скрипты (используем более надежный RegExp без жесткой привязки к закрывающему тегу)
-                processedCode = processedCode.replace(/<script\b[^>]*src=["']([^"']+)["'][^>]*>/gi, (match, relPath) => {
-                    if (relPath.startsWith("http://") || relPath.startsWith("https://")) return match;
-                    const depNote = resolveRelativePath(entryNote.id, relPath);
-                    if (depNote) {
-                        const blobUrl = getOrCreateBlobUrl(depNote.id);
-                        return match.replace(relPath, blobUrl);
+                // 2. Обработка внешних подключаемых скриптов <script src="...">
+                doc.querySelectorAll('script[src]').forEach(script => {
+                    const src = script.getAttribute('src');
+                    if (src && !src.startsWith("http://") && !src.startsWith("https://")) {
+                        const depNote = resolveRelativePath(entryNote.id, src);
+                        if (depNote) {
+                            script.setAttribute('src', getOrCreateBlobUrl(depNote.id));
+                        }
                     }
-                    return match;
                 });
+
+                // 3. Обработка медиаресурсов и картинок <img, audio, video, source>
+                doc.querySelectorAll('img, audio, video, source').forEach(el => {
+                    const src = el.getAttribute('src');
+                    if (src && !src.startsWith("http://") && !src.startsWith("https://") && !src.startsWith("data:")) {
+                        const depNote = resolveRelativePath(entryNote.id, src);
+                        if (depNote) {
+                            const mimeMap = {
+                                'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+                                'gif': 'image/gif', 'svg': 'image/svg+xml', 'webp': 'image/webp',
+                                'mp3': 'audio/mpeg', 'wav': 'audio/wav', 'ogg': 'audio/ogg',
+                                'mp4': 'video/mp4', 'webm': 'video/webm'
+                            };
+                            const ext = depNote.title.split('.').pop().toLowerCase();
+                            const mimeType = mimeMap[ext] || 'application/octet-stream';
+                            
+                            if (depNote.content.startsWith("data:")) {
+                                el.setAttribute('src', depNote.content);
+                            } else {
+                                const blob = new Blob([depNote.content], { type: mimeType });
+                                const blobUrl = URL.createObjectURL(blob);
+                                window.virtualBlobUrls[depNote.id] = blobUrl;
+                                el.setAttribute('src', blobUrl);
+                            }
+                        }
+                    }
+                });
+
+                processedCode = doc.documentElement.outerHTML;
             }
 
             // Внедряем скрипт-перехватчик перед кодом
@@ -4354,9 +4462,17 @@
       window.formatIdeCode = function() {
           if (!isIdeMode || typeof ideEditor === 'undefined') return;
           
-          const mode = ideEditor.getOption("mode");
+          const modeOption = ideEditor.getOption("mode");
           const currentValue = ideEditor.getValue();
           let formattedValue = currentValue;
+
+          // Приводим режим CodeMirror к единому строковому формату нижнего регистра
+          let normMode = "";
+          if (typeof modeOption === "string") {
+              normMode = modeOption.toLowerCase();
+          } else if (modeOption && typeof modeOption === "object") {
+              normMode = (modeOption.name || "").toLowerCase();
+          }
 
           // Настройки красоты кода
           const options = {
@@ -4368,12 +4484,12 @@
           };
 
           try {
-              if (mode === "htmlmixed" || mode === "xml") {
+              // Проверяем вхождение ключевых слов в MIME-тип или название режима
+              if (normMode.includes("html") || normMode.includes("xml")) {
                   formattedValue = html_beautify(currentValue, options);
-              } else if (mode === "css") {
+              } else if (normMode.includes("css")) {
                   formattedValue = css_beautify(currentValue, options);
-              } else if (mode === "javascript" || mode === "application/json" || mode === "json") {
-                  // Теперь форматирование сработает и для правильного JSON режима
+              } else if (normMode.includes("javascript") || normMode.includes("json") || normMode.includes("js")) {
                   formattedValue = js_beautify(currentValue, options);
               } else {
                   // Для Markdown и других языков (Python и т.д.) просто сбрасываем пробелы по краям
@@ -4388,7 +4504,7 @@
                   
                   ideEditor.setValue(formattedValue);
                   
-                  // Возвращаем фокус
+                  // Возвращаем фокус и прокрутку назад
                   ideEditor.setCursor(cursor);
                   ideEditor.scrollTo(scrollInfo.left, scrollInfo.top);
                   saveAndRender(formattedValue);
@@ -5102,8 +5218,12 @@
       }
 
       function switchNote(id) {
-        // ЕСЛИ БЫЛ ВКЛЮЧЕН ВЕБ-РЕЖИМ - ВЫКЛЮЧАЕМ ЕГО ПРИ СМЕНЕ ЗАМЕТКИ
-        if (isWebPreview) toggleWebPreview();
+        const note = notes.find((n) => n.id === id);
+        
+        // ЕСЛИ БЫЛ ВКЛЮЧЕН ВЕБ-РЕЖИМ - ВЫКЛЮЧАЕМ ЕГО ПРИ СМЕНЕ ЗАМЕТКИ, ТОЛЬКО ЕСЛИ НОВАЯ ЗАМЕТКА НЕ HTML
+        if (isWebPreview && note && !note.title.toLowerCase().endsWith(".html") && !note.title.toLowerCase().endsWith(".htm")) {
+            toggleWebPreview();
+        }
         
         // Премиальный звуковой отклик при открытии файла
         if (window.synth) {
@@ -5111,8 +5231,19 @@
         }
         
         activeId = id;
-        const note = notes.find((n) => n.id === id);
         if (note) {
+          // Автоматическая синхронизация активной директории
+          activeFolderId = note.parentId;
+          
+          // Рекурсивно раскрываем все родительские папки целевого файла для обновления дерева в сайдбаре
+          let parent = notes.find(n => n.id === note.parentId);
+          while (parent) {
+              if (parent.type === 'folder') {
+                  parent.isOpen = true;
+              }
+              parent = notes.find(n => n.id === parent.parentId);
+          }
+
           titleInput.value = note.title;
           
           // Синхронизируем текст в оба поля
