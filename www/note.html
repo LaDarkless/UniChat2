@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Quantum Notes | Pro Workspace</title>
+    <link rel="icon" href="data:," />
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,6 +26,10 @@
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- PDF.js & Mammoth.js для чтения PDF и Word документов на стороне клиента -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
     <!-- MathJax (LaTeX) -->
     <script>
@@ -1604,9 +1609,7 @@
             width: 450px;
             /* Широкое и удобное окно */
             height: 100vh;
-            background: rgba(12, 12, 14, 0.95);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
+            background: #000000 !important; /* Угольно-черный монолитный фон */
             border-left: 1px solid rgba(255, 255, 255, 0.08);
             transform: translateX(100%);
             transition: transform 0.3s ease;
@@ -1615,6 +1618,194 @@
             display: flex;
             flex-direction: column;
             box-shadow: -20px 0 50px rgba(0, 0, 0, 0.5);
+            overflow: hidden; /* Маскируем края свечения */
+        }
+
+        /* СЛОЙ 1: Хроматическое плазменное свечение (Аврора)
+           Плавное смещение спектра и мягкое покачивание тепла */
+           .ai-sidebar::before {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160%;
+            height: 180px;
+            background: radial-gradient(circle at 50% 100%, 
+                rgba(99, 102, 241, 0.35) 0%,   /* Indigo */
+                rgba(168, 85, 247, 0.2) 25%,   /* Violet */
+                rgba(236, 72, 153, 0.08) 55%,  /* Pink */
+                rgba(59, 130, 246, 0.03) 75%,  /* Soft Blue */
+                transparent 90%
+            );
+            filter: blur(40px);
+            pointer-events: none;
+            z-index: 1;
+            mix-blend-mode: screen;
+            animation: auroraMovement 8s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+            will-change: transform, opacity, filter;
+        }
+
+        /* СЛОЙ 2: Двухскоростная система искр с тепловым дрожанием воздуха
+           Сочетает быстрые фоновые микро-точки и медленные вытянутые передние треки */
+        .ai-sidebar::after {
+            content: '';
+            position: absolute;
+            bottom: -70px;
+            left: 50%;
+            transform: translate3d(-50%, 0, 0);
+            width: 150%;
+            height: 220px;
+            
+            background-image: 
+                /* --- ПЕРЕДНИЙ ПЛАН (Медленные вытянутые стреки, сетка 180x180px) --- */
+                radial-gradient(ellipse 1px 4px at 30px 50px, rgba(255, 255, 255, 0.95) 100%, transparent),
+                radial-gradient(ellipse 1.2px 6px at 120px 140px, rgba(244, 63, 94, 0.9) 100%, transparent),
+                radial-gradient(ellipse 1px 5px at 150px 30px, rgba(192, 132, 252, 0.8) 100%, transparent),
+                radial-gradient(ellipse 1.5px 7px at 75px 100px, rgba(255, 255, 255, 0.9) 100%, transparent),
+                
+                /* --- ЗАДНИЙ ПЛАН (Быстрые круглые микро-искры, сетка 120x120px) --- */
+                radial-gradient(circle 1px at 20px 30px, rgba(34, 211, 238, 0.8) 100%, transparent),
+                radial-gradient(circle 0.8px at 70px 15px, rgba(255, 255, 255, 0.9) 100%, transparent),
+                radial-gradient(circle 1.2px at 100px 85px, rgba(129, 140, 248, 0.7) 100%, transparent),
+                radial-gradient(circle 0.8px at 45px 95px, rgba(251, 191, 36, 0.8) 100%, transparent),
+                radial-gradient(circle 1px at 10px 110px, rgba(255, 255, 255, 0.6) 100%, transparent);
+
+            background-size: 
+                180px 180px, 180px 180px, 180px 180px, 180px 180px, /* Стреки */
+                120px 120px, 120px 120px, 120px 120px, 120px 120px, 120px 120px; /* Микро-искры */
+                
+            background-repeat: repeat;
+            
+            /* Маска для мягкого растворения частиц по мере их подъема */
+            -webkit-mask-image: linear-gradient(to top, transparent 10%, rgba(0,0,0,1) 40%, rgba(0,0,0,0.85) 70%, transparent 95%);
+            mask-image: linear-gradient(to top, transparent 10%, rgba(0,0,0,1) 40%, rgba(0,0,0,0.85) 70%, transparent 95%);
+            
+            pointer-events: none;
+            z-index: 2;
+            mix-blend-mode: screen;
+            
+            /* Два независимых потока анимации: физический подъем текстуры + покачивание холста */
+            animation: 
+                parallaxSparks 9s linear infinite,
+                thermalDraft 5s ease-in-out infinite alternate;
+            will-change: background-position, transform;
+        }
+
+        /* Медленный дрейф фонового свечения с мягким смещением цветового тона (hue-rotate) */
+        @keyframes auroraMovement {
+            0% {
+                opacity: 0.6;
+                transform: translateX(-50%) scale(0.92) skewX(-2deg);
+                filter: blur(40px) hue-rotate(0deg);
+            }
+            50% {
+                opacity: 0.9;
+                transform: translateX(-49%) scale(1.05) skewX(3deg);
+                filter: blur(35px) hue-rotate(15deg);
+            }
+            100% {
+                opacity: 0.7;
+                transform: translateX(-51%) scale(0.96) skewX(-1deg);
+                filter: blur(45px) hue-rotate(-10deg);
+            }
+        }
+
+        /* Двухскоростной параллакс:
+           - Задний план (120px) поднимается на -720px (ровно 6 циклов текстуры).
+           - Передний план (180px) поднимается на -360px (ровно 2 цикла текстуры, скорость в 2 раза ниже).
+           Оба слоя перезапускаются в один момент времени абсолютно бесшовно. */
+        @keyframes parallaxSparks {
+            0% {
+                background-position: 
+                    0px 0px, 0px 0px, 0px 0px, 0px 0px,
+                    0px 0px, 0px 0px, 0px 0px, 0px 0px, 0px 0px;
+            }
+            100% {
+                background-position: 
+                    /* Передний план (Медленный подъем на 360px) */
+                    0px -360px, 0px -360px, 0px -360px, 0px -360px,
+                    /* Задний план (Быстрый подъем на 720px) */
+                    0px -720px, 0px -720px, 0px -720px, 0px -720px, 0px -720px;
+            }
+        }
+
+        /* Симуляция тепловых потоков воздуха: 
+           Легкое покачивание всего холста с искрами по горизонтали и микро-мерцание яркости */
+        @keyframes thermalDraft {
+            0% {
+                transform: translate3d(-50%, 0, 0) scaleX(0.96);
+                filter: brightness(0.95);
+            }
+            50% {
+                transform: translate3d(-48%, -4px, 0) scaleX(1.04) skewX(0.8deg);
+                filter: brightness(1.15);
+            }
+            100% {
+                transform: translate3d(-52%, 2px, 0) scaleX(0.98) skewX(-0.8deg);
+                filter: brightness(0.9);
+            }
+        }
+
+        /* Анимация дыхания логотипа на приветственном экране */
+        @keyframes welcomeLogoBreathe {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(1.05);
+            }
+        }
+
+        .ai-input-area {
+            padding: 15px 20px 20px;
+            background: transparent !important; /* Делаем прозрачным для просвечивания нижнего неонового блика */
+            border-top: none !important;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            z-index: 5; /* Поверх фонового свечения */
+        }
+
+        /* Стилизация отступа под боковую аватарку для сообщений бота */
+        .ai-message.bot {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom-left-radius: 4px;
+            color: #e2e8f0;
+            margin-left: 42px !important; /* Отступ под аватарку слева */
+            position: relative;
+        }
+
+        /* Боковой контейнер аватарки ИИ */
+        .bot-avatar-gutter {
+            position: absolute;
+            left: -38px;
+            top: 2px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(20, 20, 25, 0.9);
+            border: 1.5px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Спокойное состояние во время активной генерации */
+        .bot-avatar-gutter.is-generating {
+            border-color: rgba(255, 255, 255, 0.25) !important;
+            background: rgba(255, 255, 255, 0.03) !important;
+            animation: none !important; /* Никакой пульсации масштаба и цвета */
+        }
+
+        @keyframes botGlowBreathe {
+            0% { box-shadow: 0 0 3px rgba(var(--accent-rgb), 0.2); transform: scale(1); }
+            100% { box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.7); transform: scale(1.08); }
         }
 
         body.ai-open .ai-sidebar {
@@ -1922,15 +2113,6 @@
             }
         }
 
-        .ai-input-area {
-            padding: 15px 20px 20px;
-            background: rgba(12, 12, 14, 0.95);
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
         /* Переключатель режимов (Agent, Plan, Ask) */
         .ai-mode-selector {
             display: flex;
@@ -1971,20 +2153,44 @@
             color: var(--accent);
         }
 
-        /* Красивая обертка для textarea */
+        /* Базовое состояние панели ввода (Pill Bar) с мягким контрастом */
         .ai-textarea-wrapper {
             position: relative;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 16px;
+            background: rgba(12, 12, 16, 0.72) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border-radius: 28px !important;
             display: flex;
-            align-items: flex-end;
-            transition: border-color 0.3s, box-shadow 0.3s;
+            flex-direction: column;
+            align-items: stretch;
+            padding: 4px !important;
+            backdrop-filter: blur(30px) !important;
+            -webkit-backdrop-filter: blur(30px) !important;
+            transition: 
+                border-color 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+                background-color 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            box-shadow: 
+                0 4px 30px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.01) !important;
         }
 
+        /* Фокусное состояние: многослойное органическое свечение */
         .ai-textarea-wrapper:focus-within {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+            background-color: rgba(8, 8, 11, 0.92) !important;
+            border-color: rgba(var(--accent-rgb), 0.4) !important;
+            
+            /* 
+               Физически корректный каскад теней:
+               1. Внутренний микро-контур (sharp highlight) для четкости границ
+               2. Плотный внутренний неоновый контур (core light)
+               3. Рассеянный полутон средней дальности (ambient glow)
+               4. Глубокая мягкая тень (drop shadow) для объема и отделения от интерфейса
+            */
+            box-shadow: 
+                0 0 0 1px rgba(var(--accent-rgb), 0.2),
+                0 0 12px 1px rgba(var(--accent-rgb), 0.15),
+                0 0 35px 6px rgba(var(--accent-rgb), 0.06),
+                0 16px 45px -12px rgba(0, 0, 0, 0.85) !important;
         }
 
         /* Стили для прикрепленных картинок */
@@ -2013,7 +2219,50 @@
         .attached-img-box img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain !important; /* Отображает картинку полностью без обрезки */
+            background: rgba(255, 255, 255, 0.02); /* Мягкий фон под незаполненными краями */
+        }
+
+        /* Стили для прикрепленных документов */
+        .attached-doc-box {
+            position: relative;
+            width: 140px;
+            height: 60px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            display: flex;
+            align-items: center;
+            padding: 8px 30px 8px 10px;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .attached-doc-box i {
+            font-size: 28px;
+            color: var(--accent);
+        }
+
+        .attached-doc-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .attached-doc-name {
+            font-size: 11px;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+        }
+
+        .attached-doc-size {
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-top: 2px;
         }
 
         .attached-img-remove {
@@ -2521,31 +2770,29 @@
             }
         }
 
-        /* === ЗАПРЕТ ВЫДЕЛЕНИЯ ТОЛЬКО ДЛЯ СЕНСОРНЫХ ЭКРАНОВ (СМАРТФОНЫ) === */
-        @media (hover: none) and (pointer: coarse) {
+/* === ЗАПРЕТ ВЫДЕЛЕНИЯ ТОЛЬКО ДЛЯ СЕНСОРНЫХ ЭКРАНОВ (СМАРТФОНЫ) === */
+@media (hover: none) and (pointer: coarse) {
 
-            .note-title-list,
-            .brand,
-            .pane-header,
-            .ai-message,
-            .note-item {
-                user-select: none !important;
-                -webkit-user-select: none !important;
-                -webkit-touch-callout: none !important;
-                /* Блокирует системное меню iOS/Android */
-            }
-        }
+.note-title-list,
+.brand,
+.pane-header,
+.note-item {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-touch-callout: none !important;
+    /* Блокирует системное меню iOS/Android */
+}
+}
 
-        /* === ЗАПРЕТ ВЫДЕЛЕНИЯ ТЕКСТА (ГЛОБАЛЬНО ДЛЯ ВСЕХ УСТРОЙСТВ) === */
-        .note-title-list,
-        .brand,
-        .pane-header,
-        .note-item,
-        .ai-message {
-            user-select: none !important;
-            -webkit-user-select: none !important;
-            -webkit-touch-callout: none !important;
-        }
+/* === ЗАПРЕТ ВЫДЕЛЕНИЯ ТЕКСТА (ГЛОБАЛЬНО ДЛЯ ВСЕХ УСТРОЙСТВ) === */
+.note-title-list,
+.brand,
+.pane-header,
+.note-item {
+user-select: none !important;
+-webkit-user-select: none !important;
+-webkit-touch-callout: none !important;
+}
 
         /* Отступ текста сообщений бота (чтобы текст не прилипал к краю) */
         .bot-markdown-content,
@@ -3361,13 +3608,217 @@
             color: #fff;
         }
 
-        /* ПОЛНОЭКРАННЫЙ РЕЖИМ ПРЕВЬЮ ЗАПУЩЕННОГО САЙТА */
+        /* Полноэкранный режим превью запущенного сайта */
         body.preview-fullscreen .sidebar {
             display: none !important;
         }
 
         body.preview-fullscreen .menu-toggle {
             display: none !important;
+        }
+
+        /* =======================================================================
+         УЛЬТРА-ПРОФЕССИОНАЛЬНЫЙ ДВУХСЛОЙНЫЙ НЕОНОВЫЙ КУРСОР (БЕЗ ТОЧЕК)
+         ======================================================================= */
+        
+        /* 1. Базовый курсор для абсолютно всех элементов (Предотвращает утечки на пустые зоны в файлах и списках) */
+        *, *::before, *::after {
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M2 2 L9 22 L12 13 L21 10 Z' fill='%23111115' stroke='%238b5cf6' stroke-width='3.5' stroke-linejoin='round'/%3E%3Cpath d='M2 2 L9 22 L12 13 L21 10 Z' fill='%23111115' stroke='%23ffffff' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 2 2, default !important;
+        }
+
+        /* 2. Состояние наведения (Razor-sharp неоново-бирюзовый указатель для интерактивных элементов) */
+        a, button, .btn, .btn-icon, .note-item, .t-menu-item, .ai-mode-btn, .toolbar-btn, 
+        .sheet-item, .color-dot, .theme-btn, .crumb, .dock-item, .fab-button, .ai-model-btn, 
+        .ai-model-item, .mention-item, .attached-img-remove, .selection-header button, 
+        .think-pulse, .ai-thinking-header, .console-ask-ai-btn, .search-btn, [draggable="true"] {
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M2 2 L9 22 L12 13 L21 10 Z' fill='%23111115' stroke='%2300E5FF' stroke-width='3.5' stroke-linejoin='round'/%3E%3Cpath d='M2 2 L9 22 L12 13 L21 10 Z' fill='%23111115' stroke='%23ffffff' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 2 2, pointer !important;
+        }
+
+        /* 3. Состояние ввода (Сбалансированная двухслойная каретка I-beam для кода и текстов) */
+        input, textarea, #editor, #preview, .CodeMirror, .CodeMirror-line, .CodeMirror-scroll, 
+        .note-title-input, .editor-search-input, #aiInput, .wd-textarea, .workspace.live-mode .preview-pane {
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 16 24' fill='none'%3E%3Cpath d='M4 4 H12 M8 4 V20 M4 20 H12' stroke='%23a78bfa' stroke-width='3.5' stroke-linecap='round' opacity='0.5'/%3E%3Cpath d='M4 4 H12 M8 4 V20 M4 20 H12' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") 8 12, text !important;
+        }
+
+        /* 4. Состояние зажатия клавиши мыши и перетаскивания (Rose-Red указатель) */
+        html:active, html:active *, body.cursor-pressed, body.cursor-pressed *,
+        body.cursor-dragging, body.cursor-dragging * {
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M4 4 L10 19 L12 12 L19 10 Z' fill='%23111115' stroke='%23f43f5e' stroke-width='3.5' stroke-linejoin='round'/%3E%3Cpath d='M4 4 L10 19 L12 12 L19 10 Z' fill='%23111115' stroke='%23ffffff' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 4 4, move !important;
+        }
+
+        /* Welcome Screen Gemini Style */
+        .ai-welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            height: 100%;
+            min-height: 380px;
+            text-align: center;
+            animation: fadeInWelcome 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+        }
+        .ai-welcome-logo-container {
+            margin-bottom: 24px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ai-welcome-title {
+            font-family: var(--font-ui);
+            font-size: 26px;
+            font-weight: 300;
+            color: #ffffff;
+            letter-spacing: -0.01em;
+            margin: 0;
+            opacity: 0.95;
+        }
+        @keyframes fadeInWelcome {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Угольно-черный фон чата как на скриншоте */
+        .ai-chat-area {
+            background: #000000 !important;
+        }
+        
+        #aiInput {
+            width: 100%;
+            background: transparent !important;
+            border: none !important;
+            color: #fff !important;
+            font-family: var(--font-ui) !important;
+            font-size: 14px !important;
+            padding: 12px 50px 12px 42px !important; /* Скорректировано: 50px под одну кнопку действия на правом краю */
+            resize: none !important;
+            outline: none !important;
+            min-height: 46px !important;
+            max-height: 140px !important;
+            line-height: 1.4 !important;
+        }
+        #aiInput::placeholder {
+            color: rgba(255, 255, 255, 0.35) !important;
+        }
+
+        /* Состояние активной записи голоса (Кнопка краснеет, волны бешено пульсируют) */
+        .gemini-action-btn.is-recording {
+            background: #ef4444 !important;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6) !important;
+            animation: geminiRecordPulse 1s infinite alternate ease-in-out !important;
+        }
+        .gemini-action-btn.is-recording .gemini-wave-bar {
+            background: #ffffff !important;
+        }
+        .gemini-action-btn.is-recording .gemini-wave-bar:nth-child(1) { animation-duration: 0.3s !important; }
+        .gemini-action-btn.is-recording .gemini-wave-bar:nth-child(2) { animation-duration: 0.3s !important; animation-delay: -0.1s !important; }
+        .gemini-action-btn.is-recording .gemini-wave-bar:nth-child(3) { animation-duration: 0.3s !important; animation-delay: -0.2s !important; }
+        .gemini-action-btn.is-recording .gemini-wave-bar:nth-child(4) { animation-duration: 0.3s !important; animation-delay: -0.05s !important; }
+
+        @keyframes geminiRecordPulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        /* Левый плюсик */
+        .gemini-plus-btn {
+            position: absolute;
+            left: 8px;
+            bottom: 6px;
+            background: transparent;
+            color: #a1a1aa;
+            border: none;
+            width: 34px;
+            height: 34px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s;
+            z-index: 10;
+        }
+        .gemini-plus-btn:hover {
+            color: #fff;
+            transform: scale(1.1);
+        }
+
+        /* Синяя круглая кнопка действия (Волна переходит в Стрелочку при вводе) */
+        .gemini-action-btn {
+            position: absolute;
+            right: 6px;
+            bottom: 4px;
+            background: #1d3d75 !important;
+            border-radius: 50% !important;
+            width: 38px !important;
+            height: 38px !important;
+            border: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            z-index: 10;
+            padding: 0 !important;
+        }
+        .gemini-action-btn:hover {
+            transform: scale(1.05) !important;
+            background: #2563eb !important;
+            box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+        }
+        .gemini-wave-container {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .gemini-wave-bar {
+            width: 2px;
+            background: #fff;
+            border-radius: 2px;
+            height: 12px;
+        }
+        .gemini-wave-bar:nth-child(1) { height: 8px; animation: geminiBreathe 1.2s infinite alternate ease-in-out; }
+        .gemini-wave-bar:nth-child(2) { height: 15px; animation: geminiBreathe 1.2s infinite alternate ease-in-out -0.4s; }
+        .gemini-wave-bar:nth-child(3) { height: 11px; animation: geminiBreathe 1.2s infinite alternate ease-in-out -0.8s; }
+        .gemini-wave-bar:nth-child(4) { height: 7px; animation: geminiBreathe 1.2s infinite alternate ease-in-out -0.2s; }
+
+        @keyframes geminiBreathe {
+            0% { transform: scaleY(0.5); }
+            100% { transform: scaleY(1.3); }
+        }
+
+        .gemini-send-icon {
+            font-size: 20px;
+            color: #fff;
+            display: none;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        /* Состояние набора текста (Волна скрывается, появляется стрелка) */
+        .gemini-action-btn.is-typing {
+            background: var(--accent) !important; /* Кнопка окрашивается в ваш текущий акцентный цвет темы! */
+        }
+        .gemini-action-btn.is-typing .gemini-wave-container {
+            display: none;
+        }
+        .gemini-action-btn.is-typing .gemini-send-icon {
+            display: block;
+        }
+
+        /* Жесткие рамки для предотвращения растягивания логотипов */
+        .welcome-model-logo {
+            width: 80px !important;
+            height: 80px !important;
+            max-width: 80px !important;
+            max-height: 80px !important;
+            object-fit: cover !important;
+            border-radius: 50% !important;
+            flex-shrink: 0 !important;
+            display: block !important;
+            margin: 0 auto !important;
         }
     </style>
 
@@ -3438,7 +3889,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/html-hint.min.js"></script>
 
     <!-- Emmet (Быстрый код) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/emmet/2.4.3/emmet.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/emmet-core@1.0.0/emmet.js"></script>
 
     <!-- === НОВЫЕ ПЛАГИНЫ ДЛЯ КОМФОРТА === -->
     <!-- 1. Сворачивание кода -->
@@ -3774,9 +4225,13 @@
                                 <span class="m-title">GPT-5.4-nano</span><span class="m-desc">Легкая и дешевая
                                     модель</span>
                             </div>
-                            <div class="ai-model-item" onclick="selectAIModel('qwen/qwen3-235b-a22b-2507', 'Qwen3')">
-                                <span class="m-title">Qwen3-235</span><span class="m-desc">Легкая и дешевая
-                                    модель</span>
+                            <div class="ai-model-item" onclick="selectAIModel('qwen/qwen3.7-max', 'Qwen3.7-max')">
+                                <span class="m-title">Qwen3.7 max</span><span class="m-desc">Последняя модель от
+                                    Qwen</span>
+                            </div>
+                            <div class="ai-model-item" onclick="selectAIModel('qwen/qwen3.5-plus-20260420', 'Qwen3.6-plus')">
+                                <span class="m-title">Qwen3.6 plus</span><span class="m-desc">PLUS Model by 
+                                    Alibaba</span>
                             </div>
                             <div class="ai-model-item" onclick="selectAIModel('claude-opus-4-7', 'Claude Opus 4.7')">
                                 <span class="m-title">Claude Opus 4.7</span><span class="m-desc">Мощная аналитика
@@ -3926,26 +4381,32 @@
                     <div class="selection-text" id="aiChatSelectionText" style="color: #e2e8f0;"></div>
                 </div>
 
-                <div class="ai-textarea-wrapper" style="flex-direction: column; align-items: stretch;">
+                <div class="ai-textarea-wrapper" style="flex-direction: column; align-items: stretch; position: relative;">
 
-                    <!-- Контейнер для отображения выбранных картинок -->
+                    <!-- Контейнер для отображения выбранных картинок и документов -->
                     <div class="ai-attached-images" id="aiAttachedImages"></div>
 
-                    <div style="display: flex; align-items: flex-end; width: 100%;">
-                        <!-- Скрытый инпут для файлов -->
-                        <input type="file" id="aiImageUpload" accept="image/jpeg, image/png, image/webp, image/gif"
-                            multiple style="display: none;" onchange="handleImageUpload(event)">
+                    <div style="display: flex; align-items: flex-end; width: 100%; position: relative;">
+                        <!-- Скрытый инпут для файлов (изображения + PDF + Word + TXT) -->
+                        <input type="file" id="aiFileUpload" accept="image/jpeg, image/png, image/webp, image/gif, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, text/plain, .docx, .txt, .md, .js, .css, .html, .json"
+                            multiple style="display: none;" onchange="handleAIFileUpload(event)">
 
-                        <!-- Кнопка прикрепления -->
-                        <button class="ai-attach-btn" onclick="document.getElementById('aiImageUpload').click()"
-                            title="Прикрепить картинку">
-                            <i class='bx bx-paperclip'></i>
+                        <!-- Левая кнопка "+" в стиле Gemini -->
+                        <button class="gemini-plus-btn" onclick="document.getElementById('aiFileUpload').click()" title="Прикрепить изображение или документ (PDF, DOCX, TXT)">
+                            <i class='bx bx-plus'></i>
                         </button>
 
-                        <textarea id="aiInput" placeholder="Plan, @ for context, / for commands..."
-                            onkeydown="handleAIEnter(event)"></textarea>
-                        <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIChat()">
-                            <i class='bx bx-up-arrow-alt'></i>
+                        <textarea id="aiInput" placeholder="Спросить Gemini..." onkeydown="handleAIEnter(event)"></textarea>
+
+                        <!-- Синяя круглая кнопка действия (Волна-Микрофон / Стрелочка-Отправить) -->
+                        <button class="gemini-action-btn" id="aiSendBtn" onclick="window.handleGeminiActionClick()" title="Голосовой ввод">
+                            <div class="gemini-wave-container">
+                                <div class="gemini-wave-bar"></div>
+                                <div class="gemini-wave-bar"></div>
+                                <div class="gemini-wave-bar"></div>
+                                <div class="gemini-wave-bar"></div>
+                            </div>
+                            <i class='bx bx-up-arrow-alt gemini-send-icon'></i>
                         </button>
                     </div>
                 </div>
@@ -4082,7 +4543,8 @@
                     <option value="gpt-5.5">GPT-5.5</option>
                     <option value="gpt-5.4-mini">GPT-5.4-mini</option>
                     <option value="gpt-5.4-nano">GPT-5.4-nano</option>
-                    <option value="qwen/qwen3-235b-a22b-2507">Qwen 3-235b</option>
+                    <option value="qwen/qwen3.7-max">Qwen 3.7 MAX</option>
+                    <option value="qwen/qwen3.5-plus-20260420">Qwen 3.6 plus</option>
                     <option value="claude-opus-4-7">Claude Opus 4.7</option>
                     <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
                     <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
@@ -4353,6 +4815,23 @@
 
         window.addEventListener('load', () => {
             new AmbientVisuals();
+            
+            // Отслеживание физического нажатия для кастомного курсора
+            window.addEventListener('mousedown', () => document.body.classList.add('cursor-pressed'));
+            window.addEventListener('mouseup', () => document.body.classList.remove('cursor-pressed'));
+            window.addEventListener('touchstart', () => document.body.classList.add('cursor-pressed'), {passive: true});
+            window.addEventListener('touchend', () => document.body.classList.remove('cursor-pressed'));
+            
+            // Предотвращение застревания курсора перетаскивания при сбросе/отмене
+            window.addEventListener('dragend', () => {
+                document.body.classList.remove('cursor-dragging');
+                // Очистка залипшего состояния drag-over у всех папок
+                document.querySelectorAll('.folder-item').forEach(el => el.classList.remove('drag-over'));
+            });
+            window.addEventListener('drop', () => {
+                document.body.classList.remove('cursor-dragging');
+                document.querySelectorAll('.folder-item').forEach(el => el.classList.remove('drag-over'));
+            });
         });
 
         // Инициализация Marked.js
@@ -4492,7 +4971,7 @@
             return code;
         }
 
-        // Рекурсивный сборщик CSS @import правил
+        // Рекурсивный сборщик CSS @import правил и локальных url() ресурсов
         function bundleCssImports(noteId, visited = new Set()) {
             if (visited.has(noteId)) return "";
             visited.add(noteId);
@@ -4501,14 +4980,43 @@
             if (!note) return "";
 
             let css = note.content;
+            
+            // 1. Обработка @import
             const importRegex = /@import\s+['"]([^'"]+)['"]\s*;/gi;
-
             css = css.replace(importRegex, (match, relPath) => {
                 if (relPath.startsWith("http://") || relPath.startsWith("https://")) return match;
                 const depNote = resolveRelativePath(noteId, relPath);
                 if (depNote) {
                     const depBlobUrl = getOrCreateBlobUrl(depNote.id, visited);
                     return `@import "${depBlobUrl}";`;
+                }
+                return match;
+            });
+
+            // 2. Обработка url(...) для картинок, иконок и шрифтов в CSS
+            const urlRegex = /url\(\s*['"]?([^'")]+)['"]?\s*\)/gi;
+            css = css.replace(urlRegex, (match, relPath) => {
+                if (relPath.startsWith("http://") || relPath.startsWith("https://") || relPath.startsWith("data:")) return match;
+                const depNote = resolveRelativePath(noteId, relPath);
+                if (depNote) {
+                    // Генерируем Blob URL для зависимого медиаресурса
+                    const ext = depNote.title.split('.').pop().toLowerCase();
+                    const mimeMap = {
+                        'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+                        'gif': 'image/gif', 'svg': 'image/svg+xml', 'webp': 'image/webp',
+                        'woff': 'font/woff', 'woff2': 'font/woff2', 'ttf': 'font/ttf'
+                    };
+                    const mimeType = mimeMap[ext] || 'application/octet-stream';
+                    
+                    let blobUrl;
+                    if (window.virtualBlobUrls[depNote.id]) {
+                        blobUrl = window.virtualBlobUrls[depNote.id];
+                    } else {
+                        const blob = new Blob([depNote.content], { type: mimeType });
+                        blobUrl = URL.createObjectURL(blob);
+                        window.virtualBlobUrls[depNote.id] = blobUrl;
+                    }
+                    return `url("${blobUrl}")`;
                 }
                 return match;
             });
@@ -4820,7 +5328,7 @@
         // === ФУНКЦИЯ: СДЕЛАТЬ СКРИНШОТ САЙТА И ОТПРАВИТЬ ИИ ===
         window.sendSiteScreenshotToAI = async function() {
             if (!isWebPreview) {
-                alert("Сначала запустите сайт (синяя кнопка Play)!");
+                alert("Сначала запустите сайт (синяя кнопка Play в панели инструментов)!");
                 return;
             }
 
@@ -4829,18 +5337,14 @@
             const originalIcon = btn.innerHTML;
 
             try {
-                // Визуально показываем, что идет процесс
                 btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i>";
-
                 const idoc = iframe.contentDocument || iframe.contentWindow.document;
 
-                // Фикс для html2canvas: если у body нет фона, делаем его белым (иначе скриншот будет прозрачно-черным)
                 const oldBg = idoc.body.style.backgroundColor;
                 if (!oldBg || oldBg === 'transparent' || oldBg === 'rgba(0, 0, 0, 0)') {
                     idoc.body.style.backgroundColor = '#ffffff';
                 }
 
-                // Делаем скриншот только внутренностей Iframe
                 const canvas = await html2canvas(idoc.body, {
                     useCORS: true,
                     logging: false,
@@ -4848,45 +5352,28 @@
                     windowHeight: iframe.clientHeight
                 });
 
-                // Возвращаем оригинальный фон
                 idoc.body.style.backgroundColor = oldBg;
-
-                // Конвертируем в base64 JPEG
                 const base64Data = canvas.toDataURL("image/jpeg", 0.8);
 
-                // Добавляем картинку в хранилище прикрепленных файлов ИИ
-                window.userAttachedImages.push(base64Data);
+                // Сохраняем как объект со скрытым системным текстом
+                window.userAttachedImages.push({
+                    base64: base64Data,
+                    hiddenPrompt: "[СИСТЕМНОЕ УВЕДОМЛЕНИЕ]: Пользователь прикрепил скриншот превью запущенного сайта (результат твоего кода). Внимательно проанализируй визуальный дизайн и вёрстку на этом скриншоте. Укажи на ошибки отображения, если они есть, и предложи исправления."
+                });
+
                 if (window.renderAttachedImagesUI) window.renderAttachedImagesUI();
 
-                // Открываем панель ИИ, если она была закрыта
-                if (!document.body.classList.contains("ai-open")) {
-                    toggleAISidebar();
-                }
+                if (!document.body.classList.contains("ai-open")) toggleAISidebar();
 
-                // Подготавливаем системный текст в поле ввода
-                const aiInput = document.getElementById("aiInput");
-                const contextMarker =
-                    `[СИСТЕМА]: Я прикрепил скриншот визуального превью сайта (результат твоего кода). Проанализируй его дизайн, вёрстку и укажи на ошибки отображения, если они есть.`;
-
-                if (aiInput.value.trim() === "") {
-                    aiInput.value = contextMarker + "\n\n";
-                } else {
-                    aiInput.value = aiInput.value.trim() + "\n\n" + contextMarker + "\n\n";
-                }
-
-                // Автоматически переключаем в режим 'ask' (вопрос-ответ)
                 const askBtn = document.querySelector('.ai-mode-btn[onclick*="ask"]');
                 if (askBtn) setAIMode('ask', askBtn);
 
-                // Фокусируем пользователя на поле ввода
-                aiInput.focus();
-                aiInput.selectionStart = aiInput.selectionEnd = aiInput.value.length;
+                document.getElementById("aiInput").focus();
 
             } catch (err) {
                 console.error("Ошибка при создании скриншота:", err);
                 alert("Не удалось сделать скриншот: " + err.message);
             } finally {
-                // Возвращаем иконку камеры
                 btn.innerHTML = originalIcon;
             }
         };
@@ -5120,6 +5607,17 @@
         // Таймер для отложенного сохранения
         let localStorageSaveTimeout;
 
+        // Дебаунс для отрисовки нитей связей во избежание Layout Thrashing
+        let drawThreadsTimeout;
+        function debouncedDrawThreads() {
+            clearTimeout(drawThreadsTimeout);
+            drawThreadsTimeout = setTimeout(() => {
+                if (typeof drawDependencyThreads === "function") {
+                    drawDependencyThreads();
+                }
+            }, 300); // Отрисовываем нити только через 300мс после окончания ввода
+        }
+
         // Единая функция сохранения и рендера превью (Обновлена!)
         function saveAndRender(textValue) {
             if (!activeId) return;
@@ -5134,10 +5632,8 @@
                 }, 500);
             }
 
-            // НОВОЕ: Живое обновление ниток (если дописали или стерли зависимость)
-            if (typeof drawDependencyThreads === "function") {
-                setTimeout(drawDependencyThreads, 50);
-            }
+            // Оптимизировано: перерисовка нитей перенесена в дебаунс-фильтр
+            debouncedDrawThreads();
 
             clearTimeout(window.renderTimeout);
 
@@ -5567,6 +6063,22 @@
             editor.addEventListener("input", (e) => {
                 if (!isIdeMode) saveAndRender(e.target.value);
             });
+
+            // Слежка за вводом ИИ чата (волна превращается в стрелку отправки)
+            const aiInput = document.getElementById("aiInput");
+            const sendBtn = document.getElementById("aiSendBtn");
+            if (aiInput && sendBtn) {
+                aiInput.placeholder = window.getModelPlaceholder(settings.aiModel);
+                aiInput.addEventListener("input", function() {
+                    if (this.value.trim() !== "") {
+                        sendBtn.classList.add("is-typing");
+                        sendBtn.title = "Отправить запрос (Ctrl+Enter)";
+                    } else {
+                        sendBtn.classList.remove("is-typing");
+                        sendBtn.title = "Голосовой ввод";
+                    }
+                });
+            }
         });
 
         // === ФУНКЦИЯ АВТО-ФОРМАТИРОВАНИЯ КОДА (BEAUTIFY) ===
@@ -6099,12 +6611,14 @@
                     // DRAG & DROP: Начинаем перетаскивание
                     div.draggable = true;
                     div.ondragstart = (e) => {
+                        document.body.classList.add('cursor-dragging');
                         e.dataTransfer.setData("text/plain", item.id);
                         e.dataTransfer.effectAllowed = "move";
                         setTimeout(() => div.style.opacity = "0.4", 10); // Визуальная прозрачность
                         e.stopPropagation();
                     };
                     div.ondragend = (e) => {
+                        document.body.classList.remove('cursor-dragging');
                         div.style.opacity = "1";
                     };
 
@@ -7384,7 +7898,8 @@
                 "gpt-5.5": "GPT-5.5",
                 "gpt-5.4-mini": "GPT-5.4-mini",
                 "gpt-5.4-nano": "GPT-5.4-nano",
-                "qwen/qwen3-235b-a22b-2507": "Qwen3",
+                "qwen/qwen3.7-max": "Qwen 3.7 MAX",
+                "qwen/qwen3.5-plus-20260420": "Qwen 3.6 plus",
                 "claude-opus-4-7": "Claude Opus 4.7",
                 "claude-sonnet-4-6": "Claude Sonnet 4.6",
                 "claude-haiku-4-5": "Claude Haiku 4.5",
@@ -7395,7 +7910,15 @@
             };
             const label = document.getElementById("currentModelLabel");
             if (label && settings.aiModel) {
-                label.textContent = modelMap[settings.aiModel] || settings.aiModel;
+                // Если префикс сохранен в настройках, но отсутствует в карте, ищем по базовой строке
+                let lookupKey = settings.aiModel;
+                if (lookupKey.startsWith("openrouter/") && !modelMap[lookupKey]) {
+                    const fallbackKey = lookupKey.substring("openrouter/".length);
+                    if (modelMap[fallbackKey]) {
+                        lookupKey = fallbackKey;
+                    }
+                }
+                label.textContent = modelMap[lookupKey] || settings.aiModel;
             }
         }
 
@@ -7717,9 +8240,14 @@
                     }
                 }
 
+                // 3.5 Загрузка прикрепленных документов
+                let dbDocs = await QuantumDB.getState("qn_attached_docs");
+                window.userAttachedDocs = dbDocs || [];
+
                 // 4. Инициализация интерфейса
                 applySettings();
                 renderNotesList();
+                renderAttachedImagesUI(); // Отображаем прикрепленные ранее документы
                 renderSavedChat();
                 switchNote(activeId);
 
@@ -7730,8 +8258,26 @@
         }
 
         // ПРИМЕНЯЕМ НАСТРОЙКИ И ЗАГРУЖАЕМ ЗАМЕТКИ ПРИ ЗАГРУЗКЕ САЙТА ЧЕРЕЗ INDEXEDDB
-        document.addEventListener("DOMContentLoaded", () => {
-            initQuantumNotesApp();
+        // Оптимизировано: Единая точка входа для предотвращения Race Condition
+        document.addEventListener("DOMContentLoaded", async () => {
+            // Ждем завершения синхронной инициализации CodeMirror, если она еще идет
+            const checkIdeReady = () => {
+                return new Promise((resolve) => {
+                    if (typeof ideEditor !== "undefined" && ideEditor) {
+                        resolve();
+                    } else {
+                        const interval = setInterval(() => {
+                            if (typeof ideEditor !== "undefined" && ideEditor) {
+                                clearInterval(interval);
+                                resolve();
+                            }
+                        }, 20);
+                    }
+                });
+            };
+            
+            await checkIdeReady();
+            await initQuantumNotesApp();
         });
 
         // ==========================================
@@ -7951,7 +8497,23 @@
                     desc: "Предельная логика"
                 }
             ],
-            "qwen/qwen3-235b-a22b-2507": [{
+            "qwen/qwen3.7-max": [{
+                    value: "off",
+                    label: "Отключено",
+                    desc: "Быстрый ответ"
+                },
+                {
+                    value: "low",
+                    label: "Низкий (Low)",
+                    desc: "Краткое планирование"
+                },
+                {
+                    value: "high",
+                    label: "Высокий (High)",
+                    desc: "Полное рассуждение"
+                }
+            ],
+            "qwen/qwen3.5-plus-20260420": [{
                     value: "off",
                     label: "Отключено",
                     desc: "Быстрый ответ"
@@ -8028,6 +8590,20 @@
 
             // ОБНОВЛЯЕМ МЕНЮ МЫШЛЕНИЯ ПРИ СМЕНЕ МОДЕЛИ
             updateThinkingMenu(modelValue);
+
+            // ОБНОВЛЯЕМ INPUT PLACEHOLDER И WELCOME SCREEN ПРИ СМЕНЕ МОДЕЛИ
+            const aiInput = document.getElementById("aiInput");
+            if (aiInput) aiInput.placeholder = window.getModelPlaceholder(modelValue);
+            
+            // Если в истории нет реальных сообщений пользователя (то есть на экране только приветствие)
+            const isWelcomeOnly = aiChatHistory.length === 0 || 
+                                  (aiChatHistory.length === 1 && aiChatHistory[0].role === "assistant" && !aiChatHistory[0].model);
+            
+            if (isWelcomeOnly) {
+                aiChatHistory = []; // Очищаем возможные заглушки
+                saveAIChat();
+                renderSavedChat(); // Полностью перерисовываем приветствие с новым логотипом!
+            }
         }
 
         // Подгружаем настройки при инициализации
@@ -8064,6 +8640,168 @@
                 err));
         }
 
+        // 1. Возвращает официальный логотип ИИ-модели для приветственного экрана
+        window.getWelcomeModelIcon = function(model) {
+            const m = (model || "").toLowerCase();
+            let src = "https://i.imgur.com/AjKG0wG.png"; // Gemini по умолчанию
+            let glowColor = "rgba(0, 229, 255, 0.6)";
+
+            if (m.includes("gemini")) {
+                src = "https://i.imgur.com/AjKG0wG.png";
+                glowColor = "rgba(0, 229, 255, 0.75)";
+            } else if (m.includes("gpt")) {
+                src = "https://i.imgur.com/a7vErEJ.png";
+                glowColor = "rgba(16, 185, 129, 0.75)";
+            } else if (m.includes("claude")) {
+                src = "https://i.imgur.com/G5aMSHJ.png";
+                glowColor = "rgba(217, 119, 6, 0.75)";
+            } else if (m.includes("qwen")) {
+                src = "https://i.imgur.com/KujSvat.png";
+                glowColor = "rgba(139, 92, 246, 0.75)";
+            } else if (m.includes("grok")) {
+                src = "https://i.imgur.com/NbLUthR.png";
+                glowColor = "rgba(255, 255, 255, 0.5)";
+            } else if (m.includes("deepseek")) {
+                src = "https://cdn-icons-png.flaticon.com/512/3003/3003511.png";
+                glowColor = "rgba(59, 130, 246, 0.75)";
+            }
+
+            return `
+            <img src="${src}" class="welcome-model-logo" style="width: 80px; height: 80px; object-fit: cover; border-radius: 50%; filter: drop-shadow(0 0 20px ${glowColor}); animation: welcomeLogoBreathe 3s infinite alternate ease-in-out; user-select: none;" />
+            `;
+        };
+
+        // 2. Возвращает плейсхолдер под имя конкретной модели
+        window.getModelPlaceholder = function(model) {
+            const m = (model || "").toLowerCase();
+            if (m.includes("gemini")) return "Спросить Gemini...";
+            if (m.includes("gpt")) return "Спросить GPT...";
+            if (m.includes("claude")) return "Спросить Claude...";
+            if (m.includes("deepseek")) return "Спросить DeepSeek...";
+            if (m.includes("qwen")) return "Спросить Qwen...";
+            if (m.includes("grok")) return "Спросить Grok...";
+            return "Спросить ИИ...";
+        };
+
+        // 3. Активация нативного SpeechRecognition для микрофона через объединенную кнопку действия
+        window.startSpeechRecognition = function() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Голосовой ввод не поддерживается вашим браузером.");
+                return;
+            }
+
+            // Если запись уже запущена, повторный клик останавливает процесс
+            if (window.activeSpeechRecognition) {
+                window.activeSpeechRecognition.stop();
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ru-RU';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            window.activeSpeechRecognition = recognition;
+
+            const actionBtn = document.getElementById("aiSendBtn");
+            if (actionBtn) {
+                actionBtn.classList.add("is-recording");
+                actionBtn.title = "Остановить запись голоса";
+            }
+
+            recognition.onresult = function(event) {
+                const speechResult = event.results[0][0].transcript;
+                const input = document.getElementById("aiInput");
+                if (input) {
+                    input.value = (input.value + " " + speechResult).trim();
+                    input.dispatchEvent(new Event("input"));
+                }
+            };
+
+            recognition.onspeechend = function() {
+                recognition.stop();
+            };
+
+            recognition.onend = function() {
+                window.activeSpeechRecognition = null;
+                if (actionBtn) {
+                    actionBtn.classList.remove("is-recording");
+                    actionBtn.title = "Голосовой ввод";
+                }
+            };
+
+            recognition.onerror = function() {
+                window.activeSpeechRecognition = null;
+                if (actionBtn) {
+                    actionBtn.classList.remove("is-recording");
+                    actionBtn.title = "Голосовой ввод";
+                }
+            };
+
+            recognition.start();
+        };
+
+        // Объединенный обработчик клика по кнопке действия
+        window.handleGeminiActionClick = function() {
+            const input = document.getElementById("aiInput");
+            if (input && input.value.trim() !== "") {
+                sendAIChat();
+            } else {
+                window.startSpeechRecognition();
+            }
+        };
+
+        // 4. Маленькие иконки брендов для сообщений в чате
+        window.getMiniModelIcon = function(model) {
+            const m = (model || "").toLowerCase();
+            let src = "https://i.imgur.com/AjKG0wG.png"; // Gemini по умолчанию
+            let glowColor = "rgba(0, 229, 255, 0.5)";
+
+            if (m.includes("gemini")) {
+                src = "https://i.imgur.com/AjKG0wG.png";
+                glowColor = "rgba(0, 229, 255, 0.6)";
+            } else if (m.includes("gpt")) {
+                src = "https://i.imgur.com/a7vErEJ.png";
+                glowColor = "rgba(16, 185, 129, 0.6)";
+            } else if (m.includes("claude")) {
+                src = "https://i.imgur.com/G5aMSHJ.png";
+                glowColor = "rgba(217, 119, 6, 0.6)";
+            } else if (m.includes("qwen")) {
+                src = "https://i.imgur.com/KujSvat.png";
+                glowColor = "rgba(139, 92, 246, 0.6)";
+            } else if (m.includes("grok")) {
+                src = "https://i.imgur.com/NbLUthR.png";
+                glowColor = "rgba(255, 255, 255, 0.4)";
+            } else if (m.includes("deepseek")) {
+                src = "https://cdn-icons-png.flaticon.com/512/3003/3003511.png";
+                glowColor = "rgba(59, 130, 246, 0.6)";
+            }
+
+            return `
+            <img src="${src}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; filter: drop-shadow(0 0 4px ${glowColor}); user-select: none;" />
+            `;
+        };
+
+        // 5. Дружелюбное отображение названия модели над сообщением
+        window.getFriendlyModelName = function(model) {
+            const modelMap = {
+                "local-deepseek-r1": "DeepSeek-R1 Local",
+                "gpt-5.5": "GPT-5.5 Pro",
+                "gpt-5.4-mini": "GPT-5.4 Mini",
+                "gpt-5.4-nano": "GPT-5.4 Nano",
+                "qwen/qwen3.7-max": "Qwen 3.7 MAX",
+                "qwen/qwen3.5-plus-20260420": "Qwen 3.6 Plus",
+                "claude-opus-4-7": "Claude Opus 4.7",
+                "claude-sonnet-4-6": "Claude Sonnet 4.6",
+                "claude-haiku-4-5": "Claude Haiku 4.5",
+                "gemini-3.5-flash": "Gemini 3.5 Flash",
+                "gemini-3.1-pro-preview": "Gemini 3.1 Pro",
+                "openrouter/x-ai/grok-4.3": "Grok-4.3",
+                "openrouter/x-ai/grok-build-0.1": "Grok-0.1"
+            };
+            return modelMap[model] || model || "Assistant";
+        };
+
         // 3. Функция отрисовки чата при открытии страницы
         function renderSavedChat() {
             const chatArea = document.getElementById("aiChatHistory");
@@ -8071,23 +8809,33 @@
 
             if (aiChatHistory.length === 0) {
                 chatArea.innerHTML = `
-            <div class="ai-message bot">
-              Привет! Я ваш ИИ-ассистент. Я могу анализировать текст, писать roadmap'ы и выполнять задачи прямо в редакторе.
-            </div>
-          `;
+                    <div class="ai-welcome-screen">
+                        <div class="ai-welcome-logo-container">
+                            ${window.getWelcomeModelIcon(settings.aiModel)}
+                        </div>
+                        <h1 class="ai-welcome-title">Начнём?</h1>
+                    </div
+                `;
                 return;
             }
 
             aiChatHistory.forEach((msg, index) => {
                 const uiRole = msg.role === "assistant" ? "bot" : "user";
-                const msgDiv = renderMessageUI(uiRole, msg.content, index);
+                // Передаем модель сообщения в рендер
+                const msgDiv = renderMessageUI(uiRole, msg.content, index, msg.model);
 
                 // Если это бот и у него сохранены мысли, отрисовываем их
-                if (uiRole === "bot" && msg.reasoning) {
-                    updateMessageUI(msgDiv, msg.content, msg.reasoning, index);
-                    // Убираем анимацию пульса у старых (сохраненных) сообщений
+                if (uiRole === "bot") {
+                    if (msg.reasoning) {
+                        updateMessageUI(msgDiv, msg.content, msg.reasoning, index);
+                    }
+                    // Снимаем анимацию пульса у старых (сохраненных) сообщений
                     const pulse = msgDiv.querySelector('.think-pulse');
                     if (pulse) pulse.remove();
+                    
+                    // Отключаем активное свечение генерации на аватарке
+                    const avatar = msgDiv.querySelector('.bot-avatar-gutter');
+                    if (avatar) avatar.classList.remove('is-generating');
                 }
             });
         }
@@ -8227,6 +8975,9 @@
         function clearAIChat() {
             aiChatHistory = [];
             saveAIChat(); // Сохраняем пустой массив
+            window.userAttachedDocs = []; // Очищаем прикрепленные документы при очистке истории чата
+            saveAttachedDocs();
+            renderAttachedImagesUI();
             renderSavedChat(); // Перерисовываем UI
         }
 
@@ -8295,34 +9046,137 @@
             }
         });
 
-        // === НОВАЯ ЛОГИКА: ЗАГРУЗКА ИЗОБРАЖЕНИЙ (VISION) ===
-        window.userAttachedImages = []; // Массив для хранения base64 картинок
+// === НОВАЯ ЛОГИКА: ЗАГРУЗКА ИЗОБРАЖЕНИЙ И ДОКУМЕНТОВ ===
+window.userAttachedImages = []; // Массив для хранения base64 картинок
+        window.userAttachedDocs = []; // Массив для хранения извлеченных документов
 
-        window.handleImageUpload = function(event) {
+        // Инициализация библиотеки PDF.js
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        }
+
+        window.handleAIFileUpload = async function(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
 
-            Array.from(files).forEach(file => {
-                // Проверяем размер (до 20МБ по докам, но для браузера лучше до 5МБ, чтобы не повесить вкладку)
-                if (file.size > 10 * 1024 * 1024) {
-                    alert(`Файл ${file.name} слишком большой. Выберите изображение до 10MB.`);
-                    return;
-                }
+            for (let file of Array.from(files)) {
+                const fileType = file.type;
+                const fileName = file.name.toLowerCase();
 
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const base64Data = e.target.result; // Это уже формат data:image/jpeg;base64,...
-                    window.userAttachedImages.push(base64Data);
-                    renderAttachedImagesUI();
-                };
-                reader.readAsDataURL(file);
-            });
+                // Изображения
+                if (fileType.startsWith("image/")) {
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert(`Файл ${file.name} слишком большой. Выберите изображение до 10MB.`);
+                        continue;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        window.userAttachedImages.push(e.target.result);
+                        renderAttachedImagesUI();
+                    };
+                    reader.readAsDataURL(file);
+                } 
+                // PDF файлы
+                else if (fileType === "application/pdf" || fileName.endsWith(".pdf")) {
+                    try {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const extractedText = await extractTextFromPDF(arrayBuffer);
+                        window.userAttachedDocs.push({
+                            id: "doc-" + Date.now() + "-" + Math.random().toString(36).substring(2, 7),
+                            name: file.name,
+                            type: "pdf",
+                            content: extractedText,
+                            size: file.size
+                        });
+                        saveAttachedDocs();
+                        renderAttachedImagesUI();
+                    } catch (err) {
+                        console.error("Ошибка парсинга PDF:", err);
+                        alert(`Не удалось прочитать PDF файл ${file.name}: ${err.message}`);
+                    }
+                } 
+                // Word файлы (DOCX)
+                else if (fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || fileName.endsWith(".docx")) {
+                    try {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const extractedText = await extractTextFromDocx(arrayBuffer);
+                        window.userAttachedDocs.push({
+                            id: "doc-" + Date.now() + "-" + Math.random().toString(36).substring(2, 7),
+                            name: file.name,
+                            type: "docx",
+                            content: extractedText,
+                            size: file.size
+                        });
+                        saveAttachedDocs();
+                        renderAttachedImagesUI();
+                    } catch (err) {
+                        console.error("Ошибка парсинга DOCX:", err);
+                        alert(`Не удалось прочитать Word файл ${file.name}: ${err.message}`);
+                    }
+                }
+                // Текстовые файлы (TXT, MD, JSON, CSS, JS, HTML и т.д.)
+                else if (fileType.startsWith("text/") || fileName.endsWith(".txt") || fileName.endsWith(".md") || fileName.endsWith(".json") || fileName.endsWith(".js") || fileName.endsWith(".css") || fileName.endsWith(".html")) {
+                    try {
+                        const extractedText = await extractTextFromTxt(file);
+                        window.userAttachedDocs.push({
+                            id: "doc-" + Date.now() + "-" + Math.random().toString(36).substring(2, 7),
+                            name: file.name,
+                            type: "txt",
+                            content: extractedText,
+                            size: file.size
+                        });
+                        saveAttachedDocs();
+                        renderAttachedImagesUI();
+                    } catch (err) {
+                        console.error("Ошибка чтения текстового файла:", err);
+                        alert(`Не удалось прочитать файл ${file.name}`);
+                    }
+                } else {
+                    alert(`Формат файла ${file.name} не поддерживается для анализа.`);
+                }
+            }
 
             event.target.value = ''; // Сбрасываем инпут
         };
 
+        async function extractTextFromPDF(arrayBuffer) {
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(" ");
+                fullText += pageText + "\n";
+            }
+            return fullText;
+        }
+
+        async function extractTextFromDocx(arrayBuffer) {
+            const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+            return result.value;
+        }
+
+        async function extractTextFromTxt(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsText(file);
+            });
+        }
+
+        function saveAttachedDocs() {
+            QuantumDB.saveState("qn_attached_docs", window.userAttachedDocs).catch(err => console.error("Ошибка сохранения прикрепленных доков:", err));
+        }
+
         window.removeAttachedImage = function(index) {
             window.userAttachedImages.splice(index, 1);
+            renderAttachedImagesUI();
+        };
+
+        window.removeAttachedDoc = function(index) {
+            window.userAttachedDocs.splice(index, 1);
+            saveAttachedDocs();
             renderAttachedImagesUI();
         };
 
@@ -8382,19 +9236,48 @@
             const container = document.getElementById("aiAttachedImages");
             container.innerHTML = "";
 
-            if (window.userAttachedImages.length > 0) {
+            const hasImages = window.userAttachedImages && window.userAttachedImages.length > 0;
+            const hasDocs = window.userAttachedDocs && window.userAttachedDocs.length > 0;
+
+            if (hasImages || hasDocs) {
                 container.classList.add("show");
-                window.userAttachedImages.forEach((item, index) => {
-                    // Поддерживаем как старые обычные строки, так и объекты со скрытым текстом
-                    const imgSrc = typeof item === 'string' ? item : item.base64;
-                    const box = document.createElement("div");
-                    box.className = "attached-img-box";
-                    box.innerHTML = `
-              <img src="${imgSrc}" alt="attached">
-              <button class="attached-img-remove" onclick="removeAttachedImage(${index})"><i class='bx bx-x'></i></button>
-            `;
-                    container.appendChild(box);
-                });
+                
+                // Отображение картинок
+                if (hasImages) {
+                    window.userAttachedImages.forEach((item, index) => {
+                        const imgSrc = typeof item === 'string' ? item : item.base64;
+                        const box = document.createElement("div");
+                        box.className = "attached-img-box";
+                        box.innerHTML = `
+                            <img src="${imgSrc}" alt="attached">
+                            <button class="attached-img-remove" onclick="removeAttachedImage(${index})"><i class='bx bx-x'></i></button>
+                        `;
+                        container.appendChild(box);
+                    });
+                }
+
+                // Отображение документов
+                if (hasDocs) {
+                    window.userAttachedDocs.forEach((doc, index) => {
+                        let iconClass = "bx-file";
+                        if (doc.type === "pdf") iconClass = "bxs-file-pdf";
+                        else if (doc.type === "docx") iconClass = "bxs-file-doc";
+                        else if (doc.type === "txt") iconClass = "bxs-file-txt";
+
+                        const kbSize = (doc.size / 1024).toFixed(1);
+                        const box = document.createElement("div");
+                        box.className = "attached-doc-box";
+                        box.innerHTML = `
+                            <i class='bx ${iconClass}'></i>
+                            <div class="attached-doc-info">
+                                <span class="attached-doc-name" title="${doc.name}">${doc.name}</span>
+                                <span class="attached-doc-size">${kbSize} KB</span>
+                            </div>
+                            <button class="attached-img-remove" onclick="removeAttachedDoc(${index})"><i class='bx bx-x'></i></button>
+                        `;
+                        container.appendChild(box);
+                    });
+                }
             } else {
                 container.classList.remove("show");
             }
@@ -8404,18 +9287,29 @@
         // 4. Единая функция добавления нового сообщения (записывает в массив и сохраняет)
         function addNewMessage(role, content) {
             const dbRole = role === "bot" ? "assistant" : "user";
-            aiChatHistory.push({
+            const msgObj = {
                 role: dbRole,
                 content: content
-            });
+            };
+            if (role === "bot") {
+                msgObj.model = settings.aiModel; // Сохраняем модель
+            }
+            aiChatHistory.push(msgObj);
             saveAIChat();
             const index = aiChatHistory.length - 1;
-            return renderMessageUI(role, content, index);
+            return renderMessageUI(role, content, index, settings.aiModel);
         }
 
         // 5. Чистая отрисовка UI
-        function renderMessageUI(role, content, arrayIndex) {
+        function renderMessageUI(role, content, arrayIndex, modelOverride = null) {
             const chatArea = document.getElementById("aiChatHistory");
+
+            // ЕСЛИ НА ЭКРАНЕ ВИСИТ СТАРТОВОЕ ПРИВЕТСТВИЕ — УДАЛЯЕМ ЕГО ПЕРЕД ВЫВОДОМ СООБЩЕНИЙ!
+            const welcomeScreen = chatArea.querySelector(".ai-welcome-screen");
+            if (welcomeScreen) {
+                welcomeScreen.remove();
+            }
+
             const msgDiv = document.createElement("div");
             msgDiv.className = `ai-message ${role}`;
             msgDiv.setAttribute("data-raw", content);
@@ -8450,11 +9344,40 @@
             msgDiv.ontouchend = () => clearTimeout(chatPressTimer);
 
             if (role === "bot") {
+                // Извлекаем точную модель
+                let messageModel = modelOverride;
+                if (!messageModel && arrayIndex !== undefined && arrayIndex !== -1 && aiChatHistory[arrayIndex]) {
+                    messageModel = aiChatHistory[arrayIndex].model;
+
+                    // УМНЫЙ ФОЛБЭК ДЛЯ СТАРОЙ ИСТОРИИ ЧАТА:
+                    // Если в базе нет сохраненной модели, сканируем текст на ключевые слова
+                    if (!messageModel) {
+                        const txt = (aiChatHistory[arrayIndex].content || "").toLowerCase();
+                        if (txt.includes("gpt")) messageModel = "gpt-5.5";
+                        else if (txt.includes("claude")) messageModel = "claude-sonnet-4-6";
+                        else if (txt.includes("qwen")) messageModel = "qwen/qwen3.7-max";
+                        else if (txt.includes("gemini")) messageModel = "gemini-3.5-flash";
+                        else if (txt.includes("grok")) messageModel = "openrouter/x-ai/grok-4.3";
+                    }
+                }
+                if (!messageModel) messageModel = settings.aiModel;
+
+                // Пульсация включается только у активно генерирующихся сообщений (index = -1)
+                const isGenerating = (arrayIndex === -1);
+
                 msgDiv.innerHTML = `
-            <div class="ai-thinking-container"></div>
-            <div class="bot-markdown-content"></div>
-            <div class="bot-actions-container"></div>
-          `;
+                    <div class="bot-avatar-gutter ${isGenerating ? 'is-generating' : ''}" id="avatar_${arrayIndex !== -1 ? arrayIndex : 'active'}">
+                        ${window.getMiniModelIcon(messageModel)}
+                    </div>
+                    <div class="bot-message-header" style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; opacity: 0.85; user-select: none;">
+                        <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
+                            ${window.getFriendlyModelName(messageModel)}
+                        </span>
+                    </div>
+                    <div class="ai-thinking-container"></div>
+                    <div class="bot-markdown-content"></div>
+                    <div class="bot-actions-container"></div>
+                `;
                 updateMessageUI(msgDiv, content, "", arrayIndex);
             } else {
                 msgDiv.innerHTML = marked.parse(content);
@@ -8626,13 +9549,15 @@
                     "DeepSeek-R1-Distill-Qwen-1.5B-q4f16_1-MLC", {
                         appConfig: customAppConfig,
                         initProgressCallback: (progress) => {
+                            const currentProgressDiv = document.getElementById("localModelProgress");
+                            if (!currentProgressDiv) return; // Защита от Null Pointer
+                            
                             let statusTxt = progress.text;
-                            // Объясняем пользователю "зависание" в конце
                             if (progress.progress >= 0.85 && progress.progress < 1) {
                                 statusTxt +=
                                     "<br><br><span style='color:#f59e0b;'><i class='bx bx-cog bx-spin'></i> Компиляция шейдеров для видеокарты... (Может занять минуту, не закрывайте вкладку)</span>";
                             }
-                            progressDiv.innerHTML =
+                            currentProgressDiv.innerHTML =
                                 `Загрузка в память: <b>${Math.round(progress.progress * 100)}%</b><br><span style="color:var(--text-muted); font-size:11px;">${statusTxt}</span>`;
                         }
                     }
@@ -9054,22 +9979,31 @@
                 // 3. ЛОГИКА ДЛЯ OPENAI И OPENROUTER (СТАНДАРТ)
                 // ========================================================
                 else {
-                    let apiUrl = "https://api.proxyapi.ru/openai/v1/chat/completions"; // Нативный OpenAI
+                    let apiUrl = "";
                     let modelForApi = rawModel;
 
-                    if (rawModel.includes("/")) {
-                        // Все кросс-провайдерные запросы идут через единый совместимый шлюз
-                        apiUrl = "https://openai.api.proxyapi.ru/v1/chat/completions";
-                        modelForApi = rawModel;
-                    } else if (rawModel.startsWith("gpt-") || rawModel.startsWith("o1-") || rawModel.startsWith(
-                            "o3-")) {
+                    // Определение: является ли модель OpenRouter-моделью
+                    const isOpenRouterModel = rawModel.startsWith("openrouter/") || 
+                                              rawModel.startsWith("qwen/") || 
+                                              rawModel.includes("grok");
+
+                    if (isOpenRouterModel) {
+                        // Используем прямой высокопроизводительный эндпоинт OpenRouter через ProxyAPI
+                        apiUrl = "https://api.proxyapi.ru/openrouter/v1/chat/completions";
+                        
+                        // Нормализуем идентификатор модели, отсекая префикс "openrouter/" для прямого эндпоинта
+                        if (modelForApi.startsWith("openrouter/")) {
+                            modelForApi = modelForApi.substring("openrouter/".length);
+                        }
+                    } else {
+                        // Прямой эндпоинт OpenAI
                         apiUrl = "https://api.proxyapi.ru/openai/v1/chat/completions";
                     }
 
                     const requestBody = {
                         model: modelForApi,
                         messages: messages,
-                        temperature: 1.0,
+                        temperature: 0.7, // Сбалансированная температура для надежного написания кода и работы Агента
                         stream: true
                     };
 
@@ -9092,35 +10026,34 @@
 
                     if (!res.ok) {
                         const err = await res.json().catch(() => ({}));
-                        const isOR = modelForApi.includes("/");
                         throw new Error(
-                            `${isOR ? 'OpenRouter' : 'OpenAI'} Error: ${err.error?.message || res.status}`);
+                            `${isOpenRouterModel ? 'OpenRouter' : 'OpenAI'} Error: ${err.error?.message || res.status}`
+                        );
                     }
 
                     const reader = res.body.getReader();
                     const decoder = new TextDecoder("utf-8");
+                    let buffer = "";
 
                     while (true) {
-                        const {
-                            done,
-                            value
-                        } = await reader.read();
+                        const { done, value } = await reader.read();
                         if (done) break;
-                        const chunk = decoder.decode(value, {
-                            stream: true
-                        });
-                        const lines = chunk.split("\n");
+                        
+                        // Накопительная буферизация для предотвращения повреждения чанков
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split("\n");
+                        buffer = lines.pop(); // Оставляем незавершенную строку в буфере
+
                         for (const line of lines) {
-                            // Исправлен парсер: некоторые ответы OpenRouter могут не содержать пробела после двоеточия ("data:{...")
-                            if (line.trim().startsWith("data:")) {
-                                const dataStr = line.replace("data:", "").trim();
+                            const cleanLine = line.trim();
+                            if (cleanLine.startsWith("data:")) {
+                                const dataStr = cleanLine.substring(5).trim();
                                 if (dataStr === "[DONE]") continue;
                                 try {
                                     const parsed = JSON.parse(dataStr);
                                     const delta = parsed.choices[0].delta;
-                                    // Читаем рассуждения (reasoning/reasoning_content в зависимости от модели OpenRouter)
-                                    processDelta(delta.content || "", delta.reasoning_content || delta.reasoning ||
-                                        "");
+                                    // Читаем контент и рассуждения (reasoning_content / reasoning)
+                                    processDelta(delta.content || "", delta.reasoning_content || delta.reasoning || "");
                                 } catch (e) {}
                             }
                         }
@@ -9163,8 +10096,8 @@
 
             const actionsContainer = msgDiv.querySelector('.bot-actions-container');
 
-            // ФИКС: Экранируем одинарные кавычки, чтобы кнопка не ломалась от кода ИИ
-            const safeEncodedData = encodeURIComponent(JSON.stringify(actionData)).replace(/'/g, "\\'");
+            // ЗАМЕНА: Кодируем одинарные кавычки в безопасный %27, чтобы не ломать HTML-атрибуты
+            const safeEncodedData = encodeURIComponent(JSON.stringify(actionData)).replace(/'/g, "%27");
 
             actionsContainer.innerHTML = `
           <div style="background: rgba(var(--accent-rgb), 0.1); border: 1px solid rgba(var(--accent-rgb), 0.3); border-radius: 8px; padding: 12px; margin-top: 10px;">
@@ -9410,8 +10343,8 @@
                     `<div style="padding: 20px; color: #f43f5e; text-align: center;"><i class='bx bx-error'></i> Агент не смог сформировать корректный патч. Попробуйте перефразировать запрос.</div>`;
             }
 
-            // ФИКС 1: Экранируем кавычки для главной кнопки применения!
-            const safeEncodedData = encodedData.replace(/'/g, "\\'");
+            // ЗАМЕНА: Кодируем одинарные кавычки в безопасный %27 для кнопки применения
+        const safeEncodedData = encodedData.replace(/'/g, "%27");
 
             overlay.innerHTML = `
           <div class="wd-header">
@@ -10443,6 +11376,20 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             // Находим текущее сообщение пользователя в истории, чтобы сохранить туда сгенерированный контекст
             const lastUserMsg = aiChatHistory[aiChatHistory.length - 1];
 
+            // ОБЪЯВЛЯЕМ ОШИБОЧНО ПРОПУЩЕННЫЕ ПЕРЕМЕННЫЕ CONTEXT И IMAGES
+            const hasImages = (window.userAttachedImages && window.userAttachedImages.length > 0) || !!liveSiteImageBase64;
+            let finalContextText = currentDocumentContext;
+
+            // Прикрепляем содержимое документов в текстовый контекст для ИИ
+            if (window.userAttachedDocs && window.userAttachedDocs.length > 0) {
+                let docsText = "\n\n=== ПРИКРЕПЛЕННЫЕ ПОЛЬЗОВАТЕЛЕМ ДОКУМЕНТЫ (PDF/DOCX/TXT) ===\n";
+                window.userAttachedDocs.forEach(doc => {
+                    docsText += `\n[ДОКУМЕНТ: ${doc.name} (${doc.type.toUpperCase()})]\nСОДЕРЖИМОЕ:\n${doc.content}\n-----------------------------------\n`;
+                });
+                docsText += "\n=============================================\n";
+                finalContextText = docsText + finalContextText;
+            }
+
             if (hasImages) {
                 let contentArray = [];
 
@@ -10547,9 +11494,16 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 aiChatHistory.push({
                     role: "assistant",
                     content: finalContent,
-                    reasoning: result.reasoning
+                    reasoning: result.reasoning,
+                    model: settings.aiModel // СОХРАНЯЕМ МОДЕЛЬ В ИСТОРИЮ
                 });
                 saveAIChat();
+
+                // Отключаем активный пульс генерации на боковой панели
+                const finalAvatar = msgDiv.querySelector('.bot-avatar-gutter');
+                if (finalAvatar) {
+                    finalAvatar.classList.remove('is-generating');
+                }
 
             } catch (error) {
                 const errMsg = "<i class='bx bx-error-circle' style='color: #ef4444;'></i> " + error.message;
@@ -10557,9 +11511,16 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
 
                 aiChatHistory.push({
                     role: "assistant",
-                    content: errMsg
+                    content: errMsg,
+                    model: settings.aiModel
                 });
                 saveAIChat();
+
+                // Снимаем пульсацию при ошибке
+                const finalAvatar = msgDiv.querySelector('.bot-avatar-gutter');
+                if (finalAvatar) {
+                    finalAvatar.classList.remove('is-generating');
+                }
             } finally {
                 if (window.clearChatSelectionContext) window
             .clearChatSelectionContext(); // Очищаем плашку после отправки
@@ -10569,6 +11530,8 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 if (window.renderAttachedImagesUI) window.renderAttachedImagesUI();
 
                 input.disabled = false;
+                sendBtn.classList.remove("is-typing"); // СБРОС СТРЕЛОЧКИ ОБРАТНО В АНИМАЦИЮ ВОЛНЫ
+                sendBtn.title = "Голосовой ввод";
                 sendBtn.style.display = "flex";
                 stopContainer.style.display = "none";
                 window.currentAIController = null;
