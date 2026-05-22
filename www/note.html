@@ -4326,9 +4326,9 @@ user-select: none !important;
                                 class='bx bx-check-square'></i></button>
                         <button class="toolbar-btn" onclick="window.triggerEditorUndo()"><i
                                 class='bx bx-undo'></i></button>
-                        <button class="toolbar-btn" onclick="insertMD('mention')"><i class='bx bx-at'></i></button>
-                        <button class="toolbar-btn" onclick="editor.blur(); toggleSheet('');"><i
-                                class='bx bx-x-circle'></i></button>
+                                <button class="toolbar-btn" onclick="insertMD('mention')"><i class='bx bx-at'></i></button>
+                                <button class="toolbar-btn" onclick="window.blurActiveEditor(); toggleSheet('');"><i
+                                        class='bx bx-x-circle'></i></button>
                     </div>
                 </div>
 
@@ -4434,10 +4434,58 @@ user-select: none !important;
                 </div>
 
                 <div class="controls" style="display: flex; gap: 4px;">
+                    <!-- КНОПКА ВЫГРУЗКИ МОДЕЛИ ИЗ RAM/GPU (Красная кнопка питания) -->
+                    <button class="btn-icon" id="unloadLocalModelBtn" style="display: none; color: #ef4444; padding: 6px;" onclick="window.unloadLocalModelFromRAM()" title="Выгрузить модель Qwen 2.5 из видеопамяти (RAM/GPU)">
+                        <i class='bx bx-power-off'></i>
+                    </button>
                     <button class="btn-icon" style="padding: 6px;" onclick="clearAIChat()" title="Очистить чат"><i
                             class='bx bx-trash'></i></button>
                     <button class="btn-icon" style="padding: 6px;" onclick="toggleAISidebar()"><i
                             class='bx bx-x'></i></button>
+                </div>
+            </div>
+
+            <!-- ФИКСИРОВАННАЯ ПАНЕЛЬ МОНИТОРИНГА РЕСУРСОВ WEBGPU (ВСЕГДА НА ВИДУ) -->
+            <div id="aiLiveTelemetryPanel" style="display: none; flex-direction: column; gap: 6px; padding: 10px 20px; background: rgba(5, 5, 8, 0.45); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--panel-border); z-index: 101; font-family: var(--font-ui); user-select: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <span><i class='bx bx-pulse' style="color: var(--accent); font-size: 12px; animation: pulse 1.5s infinite;"></i> Телеметрия WebGPU</span>
+                    <span id="telemetryStatus" style="color: #7e8c9f; font-weight: 800;">Offline</span>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; font-size: 11px;">
+                    <!-- CPU -->
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 6px; padding: 6px 8px;">
+                        <div style="color: var(--text-muted); font-size: 8px; text-transform: uppercase; margin-bottom: 2px;">CPU Поток</div>
+                        <div style="display: flex; align-items: center; gap: 6px; justify-content: space-between;">
+                            <span style="color:#fff; font-weight:700; font-family: var(--font-code);" id="specCpuLoad">0.0%</span>
+                            <div style="width: 35px; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; flex-shrink: 0;">
+                                <div id="specCpuBar" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- RAM Free -->
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 6px; padding: 6px 8px;">
+                        <div style="color: var(--text-muted); font-size: 8px; text-transform: uppercase; margin-bottom: 2px;">Свободно RAM</div>
+                        <div style="color:#10b981; font-weight:700; font-family: var(--font-code);" id="telemetryRamFree">...</div>
+                    </div>
+
+                    <!-- TPS speed -->
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 6px; padding: 6px 8px;">
+                        <div style="color: var(--text-muted); font-size: 8px; text-transform: uppercase; margin-bottom: 2px;">Генерация</div>
+                        <div style="color:#fff; font-weight:700; font-family: var(--font-code); display: flex; align-items: center; gap: 2px;">
+                            <i class='bx bx-bolt' style="color:#facc15;"></i> <span id="telemetryTpsVal">0.0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- RAM Progress Bar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 8.5px; color: var(--text-muted);">
+                    <span>Пул ОЗУ: <b id="specHeapUsedMb" style="color: #fff;">...</b> из <b id="specHeapLimitMb">...</b></span>
+                    <span id="specHeapUsed">0%</span>
+                </div>
+                <div style="width: 100%; height: 3px; background: rgba(255, 255, 255, 0.05); border-radius: 2px; overflow: hidden;">
+                    <div id="specHeapBar" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease;"></div>
                 </div>
             </div>
 
@@ -4459,6 +4507,9 @@ user-select: none !important;
                         <i class='bx bx-stop-circle' style="color: #ef4444; font-size: 16px;"></i> Остановить генерацию
                     </button>
                 </div>
+
+                <!-- НОВЫЙ БЛОК ОТОБРАЖЕНИЯ АКТИВНОГО КОНТЕКСТА ЧТЕНИЯ ФАЙЛОВ -->
+                <div id="aiActiveContextBar" style="display: none; flex-wrap: wrap; gap: 6px; padding: 8px 10px; border: 1px solid rgba(255,255,255,0.04); background: rgba(0,0,0,0.25); border-radius: 10px; margin-bottom: 8px; font-size: 11px; max-height: 85px; overflow-y: auto;"></div>
 
                 <div class="ai-mode-selector">
                     <button class="ai-mode-btn active" onclick="setAIMode('agent', this)"><i
@@ -4670,8 +4721,7 @@ user-select: none !important;
             <div class="setting-group">
                 <label>Модель ProxyAPI / OpenAI / OpenRouter</label>
                 <select id="aiModelSelect" onchange="updateSettings()">
-                    <option value="local-deepseek-r1" style="color: #10b981;">DeepSeek-R1 (Локальная, Бесплатно)
-                    </option>
+                    <option value="local-qwen-3b" style="color: #10b981;">Qwen 2.5 3B (Локальная, Бесплатно)</option>
                     <option value="gpt-5.5">GPT-5.5</option>
                     <option value="gpt-5.4-mini">GPT-5.4-mini</option>
                     <option value="gpt-5.4-nano">GPT-5.4-nano</option>
@@ -4685,6 +4735,20 @@ user-select: none !important;
                     <option value="openrouter/x-ai/grok-4.3">Grok-4.3</option>
                     <option value="openrouter/x-ai/grok-build-0.1">Grok-0.1</option>
                 </select>
+                <!-- НОВЫЙ БЛОК УПРАВЛЕНИЯ КЭШЕМ И ПАМЯТЬЮ ЛОКАЛЬНОЙ МОДЕЛИ -->
+                <div id="localModelCacheContainer" style="display: none; margin-top: 10px; padding: 12px; background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 10px;">
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4;">
+                        Локальная модель Qwen 3B занимает около 1.9 ГБ во внутреннем кэше вашего браузера.
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <button class="btn" id="unloadLocalRAMBtnSettings" style="display: none; background: rgba(245, 158, 11, 0.15); color: #facc15; border-color: rgba(245, 158, 11, 0.3); width: 100%; justify-content: center; font-size: 12px; padding: 6px 12px;" onclick="window.unloadLocalModelFromRAM()">
+                            <i class='bx bx-power-off'></i> Выгрузить из RAM/GPU
+                        </button>
+                        <button class="btn" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3); width: 100%; justify-content: center; font-size: 12px; padding: 6px 12px;" onclick="window.clearLocalModelCache(this)">
+                            <i class='bx bx-trash'></i> Удалить веса модели с диска
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="setting-group">
@@ -5816,14 +5880,18 @@ window.addEventListener('message', function(e) {
                 } else {
                     if (isIdeMode) {
                         const previewBox = document.getElementById("preview");
-                        previewBox.innerHTML = `
-                      <div style="display:flex; height:100%; align-items:center; justify-content:center; color:#94a3b8; font-family:var(--font-ui); text-align:center; flex-direction:column; gap:15px; padding: 20px;">
-                          <i class='bx bx-code-block' style='font-size: 50px; color: #3b82f6; opacity: 0.8;'></i>
-                          <p style="margin:0; font-size: 15px; line-height: 1.5;">Режим IDE активен.<br>Нажмите на кнопку <b style="color:#3b82f6;"><i class='bx bx-play-circle'></i> Запустить</b> в тулбаре вверху,<br>чтобы безопасно отрендерить результат.</p>
-                      </div>`;
+                        if (!previewBox.querySelector('.ide-active-warning')) {
+                            previewBox.innerHTML = `
+                          <div class="ide-active-warning" style="display:flex; height:100%; align-items:center; justify-content:center; color:#94a3b8; font-family:var(--font-ui); text-align:center; flex-direction:column; gap:15px; padding: 20px;">
+                              <i class='bx bx-code-block' style='font-size: 50px; color: #3b82f6; opacity: 0.8;'></i>
+                              <p style="margin:0; font-size: 15px; line-height: 1.5;">Режим IDE активен.<br>Нажмите на кнопку <b style="color:#3b82f6;"><i class='bx bx-play-circle'></i> Запустить</b> в тулбаре вверху,<br>чтобы безопасно отрендерить результат.</p>
+                          </div>`;
+                        }
                         const status = document.getElementById("renderStatus");
-                        status.textContent = "Ожидание запуска";
-                        status.style.color = "#94a3b8";
+                        if (status) {
+                            status.textContent = "Ожидание запуска";
+                            status.style.color = "#94a3b8";
+                        }
                     } else {
                         if (typeof updatePreview === "function") updatePreview();
                     }
@@ -5938,13 +6006,7 @@ window.addEventListener('message', function(e) {
             });
             ideEditor.on("blur", () => {
                 showMobileTabs();
-                if (settings.livePreview) {
-                    setTimeout(() => {
-                        if (!ideEditor.hasFocus()) {
-                            workspace.classList.remove("editing");
-                        }
-                    }, 150);
-                }
+                // Удаление класса "editing" перенесено в централизованный обработчик фокуса
             });
 
             // 2. Восстанавливаем состояние режима IDE из памяти
@@ -7111,6 +7173,10 @@ window.addEventListener('message', function(e) {
                 // ФИКС: Заменили прямой updatePreview() на умную функцию
                 saveAndRender(note.content || "");
 
+                if (typeof window.updateAIActiveContextBar === "function") {
+                    window.updateAIActiveContextBar();
+                }
+
                 if (window.innerWidth <= 768 && typeof toggleSidebar === "function") toggleSidebar();
             }
         }
@@ -7156,6 +7222,9 @@ window.addEventListener('message', function(e) {
         window.setActiveFolder = function(folderId) {
             activeFolderId = folderId;
             renderNotesList(searchInput.value);
+            if (typeof window.updateAIActiveContextBar === "function") {
+                window.updateAIActiveContextBar();
+            }
         };
 
         window.renderFolderPath = function() {
@@ -7722,6 +7791,89 @@ window.addEventListener('message', function(e) {
             updateAttachedNotesUI();
         };
 
+        // Функция динамического рендеринга активного контекста ИИ над полем ввода
+        window.updateAIActiveContextBar = function() {
+            const bar = document.getElementById("aiActiveContextBar");
+            if (!bar) return;
+
+            bar.innerHTML = "";
+
+            const activeNote = notes.find(n => n.id === activeId);
+            const uiAttachedNotes = notes.filter(n => window.aiAttachedNotes.has(n.id));
+            const activeFolderFiles = notes.filter(n => n.parentId === activeFolderId && n.type === 'file');
+
+            const allContextFiles = new Set();
+            if (activeNote) allContextFiles.add(activeNote);
+            activeFolderFiles.forEach(f => allContextFiles.add(f));
+            uiAttachedNotes.forEach(f => allContextFiles.add(f));
+
+            const hasDocs = window.userAttachedDocs && window.userAttachedDocs.length > 0;
+
+            if (allContextFiles.size === 0 && !window.aiAttachedSite && !window.aiAttachedTerminal && !hasDocs) {
+                bar.style.display = "none";
+                return;
+            }
+
+            bar.style.display = "flex";
+            bar.style.alignItems = "center";
+            bar.style.gap = "6px";
+
+            const label = document.createElement("span");
+            label.style.cssText = "font-weight: 700; color: var(--text-muted); margin-right: 4px; display: flex; align-items: center; gap: 4px;";
+            label.innerHTML = "<i class='bx bx-analyse' style='font-size:14px; color:var(--accent);'></i> Контекст ИИ:";
+            bar.appendChild(label);
+
+            allContextFiles.forEach(file => {
+                const pill = document.createElement("span");
+                pill.className = "mention-pill";
+                pill.style.cssText = "animation: pillAppear 0.2s ease forwards; padding: 2px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; font-size: 11px; font-family: var(--font-ui); cursor: default;";
+                
+                let icon = "<i class='bx bx-file' style='color:#cbd5e1;'></i>";
+                if (file.id === activeId) {
+                    icon = "<i class='bx bx-edit-alt' style='color:var(--accent);' title='Редактируемый файл'></i>";
+                    pill.style.borderColor = "rgba(var(--accent-rgb), 0.35)";
+                    pill.style.background = "rgba(var(--accent-rgb), 0.12)";
+                } else if (file.parentId === activeFolderId) {
+                    icon = "<i class='bx bx-folder-open' style='color:#eab308;' title='Файл из текущей папки'></i>";
+                    pill.style.borderColor = "rgba(234, 179, 8, 0.25)";
+                    pill.style.background = "rgba(234, 179, 8, 0.06)";
+                } else if (window.aiAttachedNotes.has(file.id)) {
+                    icon = "<i class='bx bx-pin' style='color:#10b981;' title='Прикрепленный файл'></i>";
+                    pill.style.borderColor = "rgba(16, 185, 129, 0.25)";
+                    pill.style.background = "rgba(16, 185, 129, 0.06)";
+                }
+
+                pill.innerHTML = `${icon} <span style="color:#fff; font-weight:500;">${file.title}</span>`;
+                bar.appendChild(pill);
+            });
+
+            if (hasDocs) {
+                window.userAttachedDocs.forEach(doc => {
+                    const pill = document.createElement("span");
+                    pill.className = "mention-pill";
+                    pill.style.cssText = "animation: pillAppear 0.2s ease forwards; padding: 2px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; font-size: 11px; border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.12); cursor: default;";
+                    pill.innerHTML = `<i class='bx bxs-file-pdf' style='color:#10b981;'></i> <span style='color:#fff;'>${doc.name}</span>`;
+                    bar.appendChild(pill);
+                });
+            }
+
+            if (window.aiAttachedSite) {
+                const pill = document.createElement("span");
+                pill.className = "mention-pill";
+                pill.style.cssText = "animation: pillAppear 0.2s ease forwards; padding: 2px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; font-size: 11px; border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.12); cursor: default;";
+                pill.innerHTML = `<i class='bx bx-window-open' style='color:#3b82f6;'></i> <span style='color:#fff;'>Экран сайта</span>`;
+                bar.appendChild(pill);
+            }
+
+            if (window.aiAttachedTerminal) {
+                const pill = document.createElement("span");
+                pill.className = "mention-pill";
+                pill.style.cssText = "animation: pillAppear 0.2s ease forwards; padding: 2px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; font-size: 11px; border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.12); cursor: default;";
+                pill.innerHTML = `<i class='bx bx-terminal' style='color:#ef4444;'></i> <span style='color:#fff;'>Терминал ошибок</span>`;
+                bar.appendChild(pill);
+            }
+        };
+
         // Отрисовка плашек прикрепленных заметок над полем ввода
         function updateAttachedNotesUI() {
             const bar = document.getElementById('aiMentionsBar');
@@ -7766,6 +7918,11 @@ window.addEventListener('message', function(e) {
               <button onclick="toggleTerminalContext()" title="Убрать" style="color:#ef4444;"><i class='bx bx-x'></i></button>
             `;
                 bar.appendChild(termPill);
+            }
+
+            // Автоматическое обновление единого лога контекста
+            if (typeof window.updateAIActiveContextBar === "function") {
+                window.updateAIActiveContextBar();
             }
         }
 
@@ -7830,11 +7987,51 @@ window.addEventListener('message', function(e) {
             }
         });
 
-        editor.addEventListener("blur", () => {
+        // Функция принудительного размытия активного редактора и закрытия режима редактирования
+        window.blurActiveEditor = function() {
+            if (isIdeMode && typeof ideEditor !== 'undefined') {
+                ideEditor.getInputField().blur();
+            } else {
+                editor.blur();
+            }
             if (settings.livePreview) {
-                setTimeout(() => workspace.classList.remove("editing"), 150);
+                workspace.classList.remove("editing");
+            }
+        };
+
+        // Умный менеджер фокуса для Живого Просмотра
+        document.addEventListener("focusout", (e) => {
+            if (settings.livePreview && workspace.classList.contains("editing")) {
+                setTimeout(() => {
+                    const activeEl = document.activeElement;
+                    const editorPane = document.querySelector(".editor-pane");
+                    
+                    // Проверяем, остался ли фокус внутри панели редактора, панели поиска или тулбара
+                    const focusStillInPane = editorPane && (editorPane.contains(activeEl) || activeEl === editorPane);
+                    const focusInHints = activeEl && (activeEl.closest(".CodeMirror-hints") || activeEl.closest(".CodeMirror-lint-tooltip"));
+                    const focusInModal = activeEl && (activeEl.closest(".modal") || activeEl.closest(".modal-overlay"));
+                    
+                    if (!focusStillInPane && !focusInHints && !focusInModal) {
+                        workspace.classList.remove("editing");
+                    }
+                }, 100);
             }
         });
+
+        // Закрытие режима редактирования при клике за пределы рабочей области редактора
+        document.addEventListener("mousedown", (e) => {
+            if (settings.livePreview && workspace.classList.contains("editing")) {
+                const editorPane = document.querySelector(".editor-pane");
+                const clickedHints = e.target.closest(".CodeMirror-hints") || e.target.closest(".CodeMirror-lint-tooltip");
+                const clickedContextMenu = e.target.closest("#dynamicNoteMenu") || e.target.closest("#dynamicChatMenu");
+                const clickedModal = e.target.closest(".modal") || e.target.closest(".modal-overlay");
+                const clickedToolbar = e.target.closest(".toolbar");
+
+                if (editorPane && !editorPane.contains(e.target) && !clickedHints && !clickedContextMenu && !clickedModal && !clickedToolbar) {
+                    workspace.classList.remove("editing");
+                }
+            }
+        }, { passive: true });
 
         // Парсер (Markdown + MathJax)
         async function updatePreview() {
@@ -7983,7 +8180,13 @@ preview.innerHTML = window.secureSanitizeHTML(html);
 
         // НАСТРОЙКИ
         function toggleSettings() {
-            document.getElementById("settingsModal").classList.toggle("active");
+            const modal = document.getElementById("settingsModal");
+            modal.classList.toggle("active");
+            if (modal.classList.contains("active")) {
+                if (typeof window.checkLocalModelCacheStatus === "function") {
+                    window.checkLocalModelCacheStatus();
+                }
+            }
         }
 
         // Добавлен параметр 'e'
@@ -8074,12 +8277,16 @@ preview.innerHTML = window.secureSanitizeHTML(html);
 
             // Запуск движка тем
             runLiveTheme(settings.liveTheme || "default");
+            
+            if (typeof window.updateTelemetryPanelVisibility === "function") {
+                window.updateTelemetryPanelVisibility();
+            }
         }
 
         function applySettings() {
             originalApplySettings();
             const modelMap = {
-                "local-deepseek-r1": "DeepSeek-R1 Local",
+                "local-qwen-3b": "Qwen 2.5 3B Local",
                 "gpt-5.5": "GPT-5.5",
                 "gpt-5.4-mini": "GPT-5.4-mini",
                 "gpt-5.4-nano": "GPT-5.4-nano",
@@ -8473,7 +8680,7 @@ preview.innerHTML = window.secureSanitizeHTML(html);
         // ЕДИНАЯ ЛОГИКА УНИФИЦИРОВАННОГО DROPDOWN (В СТИЛЕ GEMINI ADVANCED)
         // ==========================================
         window.aiModelsList = [
-            { value: 'local-deepseek-r1', label: 'DeepSeek-R1 Local', desc: 'Работает в браузере (WebGPU), бесплатно', badge: 'Локально' },
+            { value: 'local-qwen-3b', label: 'Qwen 2.5 3B Local', desc: 'Работает в браузере (WebGPU), идеальна для кода и русского языка', badge: 'Локально' },
             { value: 'gpt-5.5', label: 'GPT-5.5', desc: 'Флагман OpenAI' },
             { value: 'gpt-5.4-mini', label: 'GPT-5.4-mini', desc: 'Быстрая генерация (Оптимально)' },
             { value: 'gpt-5.4-nano', label: 'GPT-5.4-nano', desc: 'Легкая и дешевая модель' },
@@ -8611,10 +8818,10 @@ preview.innerHTML = window.secureSanitizeHTML(html);
         // ДИНАМИЧЕСКИЕ КОНФИГУРАЦИИ МЫШЛЕНИЯ ДЛЯ КАЖДОЙ МОДЕЛИ
         // ==========================================
         const modelThinkingConfigs = {
-            "local-deepseek-r1": [{
-                value: "always",
-                label: "Всегда включено",
-                desc: "Локальный R1 всегда использует нативные рассуждения"
+            "local-qwen-3b": [{
+                value: "off",
+                label: "Не поддерживается",
+                desc: "Модель оптимизирована под скорость и код без CoT"
             }],
             "gpt-5.5": [{
                     value: "off",
@@ -8908,6 +9115,11 @@ preview.innerHTML = window.secureSanitizeHTML(html);
             // ОБНОВЛЯЕМ МЕНЮ МЫШЛЕНИЯ ПРИ СМЕНЕ МОДЕЛИ
             updateThinkingMenu(modelValue);
 
+            // Синхронизируем видимость кнопки питания (выгрузки) из RAM
+            if (typeof window.updateUnloadButtonVisibility === "function") {
+                window.updateUnloadButtonVisibility();
+            }
+
             // ОБНОВЛЯЕМ INPUT PLACEHOLDER И WELCOME SCREEN ПРИ СМЕНЕ МОДЕЛИ
             const aiInput = document.getElementById("aiInput");
             if (aiInput) aiInput.placeholder = window.getModelPlaceholder(modelValue);
@@ -8982,7 +9194,7 @@ preview.innerHTML = window.secureSanitizeHTML(html);
                 src = "https://i.imgur.com/NbLUthR.png";
                 glowColor = "rgba(255, 255, 255, 0.5)";
             } else if (m.includes("deepseek")) {
-                src = "https://cdn-icons-png.flaticon.com/512/3003/3003511.png";
+                src = "https://i.imgur.com/HTTz55C.png";
                 glowColor = "rgba(59, 130, 246, 0.75)";
             }
 
@@ -9093,7 +9305,7 @@ preview.innerHTML = window.secureSanitizeHTML(html);
                 src = "https://i.imgur.com/NbLUthR.png";
                 glowColor = "rgba(255, 255, 255, 0.4)";
             } else if (m.includes("deepseek")) {
-                src = "https://cdn-icons-png.flaticon.com/512/3003/3003511.png";
+                src = "https://i.imgur.com/HTTz55C.png";
                 glowColor = "rgba(59, 130, 246, 0.6)";
             }
 
@@ -9128,14 +9340,19 @@ preview.innerHTML = window.secureSanitizeHTML(html);
             chatArea.innerHTML = "";
 
             if (aiChatHistory.length === 0) {
-                chatArea.innerHTML = `
-                    <div class="ai-welcome-screen">
-                        <div class="ai-welcome-logo-container">
-                            ${window.getWelcomeModelIcon(settings.aiModel)}
+                // Если у нас выбрана локальная модель, показываем интерактивный дашборд
+                if (settings.aiModel === "local-qwen-3b") {
+                    window.renderLocalModelDashboard(chatArea);
+                } else {
+                    chatArea.innerHTML = `
+                        <div class="ai-welcome-screen">
+                            <div class="ai-welcome-logo-container">
+                                ${window.getWelcomeModelIcon(settings.aiModel)}
+                            </div>
+                            <h1 class="ai-welcome-title">Начнём?</h1>
                         </div>
-                        <h1 class="ai-welcome-title">Начнём?</h1>
-                    </div
-                `;
+                    `;
+                }
                 return;
             }
 
@@ -9689,16 +9906,27 @@ window.userAttachedImages = []; // Массив для хранения base64 �
                     <div class="bot-avatar-gutter ${isGenerating ? 'is-generating' : ''}" id="avatar_${arrayIndex !== -1 ? arrayIndex : 'active'}">
                         ${window.getMiniModelIcon(messageModel)}
                     </div>
-                    <div class="bot-message-header" style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; opacity: 0.85; user-select: none;">
+                    <div class="bot-message-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; opacity: 0.85; user-select: none;">
                         <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
                             ${window.getFriendlyModelName(messageModel)}
                         </span>
+                        <!-- СКОРОСТЬ ГЕНЕРАЦИИ ТОКЕНОВ В СЕКУНДУ -->
+                        <span id="generationSpeed_${arrayIndex !== -1 ? arrayIndex : 'active'}" style="font-size: 11px; font-weight: 700; color: var(--accent); display: none; margin-left: 8px;"></span>
                     </div>
                     <div class="ai-thinking-container"></div>
                     <div class="bot-markdown-content"></div>
                     <div class="bot-actions-container"></div>
                 `;
                 updateMessageUI(msgDiv, content, "", arrayIndex);
+
+                // Отрисовываем зафиксированную в истории скорость генерации
+                if (arrayIndex !== undefined && arrayIndex !== -1 && aiChatHistory[arrayIndex] && aiChatHistory[arrayIndex].tps) {
+                    const speedBadge = msgDiv.querySelector(`#generationSpeed_${arrayIndex}`);
+                    if (speedBadge) {
+                        speedBadge.style.display = "inline-block";
+                        speedBadge.innerHTML = `<i class='bx bx-bolt' style='color:#facc15;'></i> ${aiChatHistory[arrayIndex].tps} токенов/сек`;
+                    }
+                }
             } else {
     msgDiv.innerHTML = window.secureSanitizeHTML(marked.parse(content));
 }
@@ -9721,13 +9949,12 @@ window.userAttachedImages = []; // Массив для хранения base64 �
         };
 
         // 6. Функция динамического обновления сообщения (ДЛЯ СТРИМИНГА)
-        function updateMessageUI(msgDiv, content, reasoning, arrayIndex) {
+        async function updateMessageUI(msgDiv, content, reasoning, arrayIndex) {
             msgDiv.setAttribute("data-raw", content);
 
             // 1. Обновляем блок мыслей (Thinking)
             const thinkContainer = msgDiv.querySelector('.ai-thinking-container');
             if (reasoning && reasoning.trim() !== "") {
-                // Ищем по наличию класса, а не по пустой строке
                 if (!thinkContainer.querySelector('.ai-thinking-box')) {
                     thinkContainer.innerHTML = `
                   <div class="ai-thinking-box">
@@ -9742,18 +9969,93 @@ window.userAttachedImages = []; // Массив для хранения base64 �
                 thinkContainer.querySelector('.ai-thinking-content').textContent = reasoning;
             }
 
+            const contentDiv = msgDiv.querySelector('.bot-markdown-content');
+            const actionsContainer = msgDiv.querySelector('.bot-actions-container');
+
+            // === ПЕРЕХВАТ СОСТОЯНИЯ НЕЗАПУЩЕННОЙ ЛОКАЛЬНОЙ МОДЕЛИ ===
+            if (content && content.includes("[LOCAL_MODEL_NOT_LAUNCHED]")) {
+                const isLoaded = !!window.localAIEngine; // Проверяем, активна ли модель в ОЗУ/видеопамяти прямо сейчас
+
+                // Если модель уже загружена — автоматически скрываем кнопку запуска и показываем зеленый статус готовности
+                if (isLoaded) {
+                    contentDiv.innerHTML = `
+                        <div style="font-weight: 600; margin-bottom: 6px; color: #10b981; display: flex; align-items: center; gap: 6px;">
+                            <i class='bx bx-check-circle' style="font-size: 16px;"></i> Локальная модель Qwen 2.5 (3B) активна!
+                        </div>
+                        <p style="margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.4;">Движок WebGPU успешно развернут в памяти вашего устройства и готов мгновенно обрабатывать код и запросы.</p>
+                    `;
+                    actionsContainer.innerHTML = "";
+                    return;
+                }
+
+                const isCached = await window.isLocalModelCached();
+                const btnText = isCached ? "Запустить локальную модель" : "Скачать и запустить WebGPU (~1.9 ГБ)";
+                const descText = isCached 
+                    ? "Файлы модели уже сохранены на вашем устройстве. Запуск и перенос весов в видеопамять (RAM/GPU) займет несколько секунд." 
+                    : "Qwen 2.5 (3B) работает локально через видеокарту прямо в браузере. При первом запуске веса модели (~1.9 ГБ) будут скачаны во внутренний кэш.";
+
+                contentDiv.innerHTML = `
+                    <div style="font-weight: 600; margin-bottom: 8px; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                        <i class='bx bx-info-circle' style="color: #f59e0b;"></i> Локальная модель Qwen 2.5 (3B) не активна!
+                    </div>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.5;">${descText}</p>
+                `;
+
+                actionsContainer.innerHTML = "";
+                
+                const launchBtn = document.createElement("button");
+                launchBtn.className = "btn btn-primary";
+                launchBtn.id = "localModelLaunchBtn";
+                launchBtn.style.cssText = "margin-top: 15px; width: 100%; justify-content: center; font-size: 14px;";
+                launchBtn.innerHTML = `<i class='bx bx-play'></i> ${btnText}`;
+                
+                const progressWrapper = document.createElement("div");
+                progressWrapper.id = "localModelProgressContainer";
+                progressWrapper.style.cssText = "margin-top: 15px; display: none; width: 100%; text-align: left; background: rgba(0,0,0,0.15); border: 1px solid var(--panel-border); border-radius: 10px; padding: 12px;";
+                progressWrapper.innerHTML = `
+                    <div style="font-family: var(--font-ui); font-size: 12px; color: var(--text-main); margin-bottom: 10px; font-weight: 500;" id="localProgressStatus">Инициализация движка...</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: var(--font-ui); font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+                        <div style="display: flex; justify-content: space-between; grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px; margin-bottom: 2px;">
+                            <span>Загружено:</span>
+                            <span style="color:#fff; font-weight:600;"><span id="localProgressBytes">0.0 / 1900.0</span> МБ (<span id="localProgressPercent">0%</span>)</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Скорость:</span>
+                            <span style="color:#fff; font-weight:600;" id="localProgressSpeed">0.0 МБ/с</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Осталось:</span>
+                            <span style="color:#fff; font-weight:600;" id="localProgressEta">вычисляется...</span>
+                        </div>
+                    </div>
+                    <div style="width: 100%; height: 5px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 12px;">
+                        <div id="localProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent) 0%, #10b981 100%); transition: width 0.15s ease;"></div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn" id="localModelPauseBtn" style="flex: 1; font-size: 12px; padding: 6px;" onclick="window.pauseLocalModelLoading()"><i class='bx bx-pause-circle'></i> Пауза</button>
+                        <button class="btn" style="flex: 1; font-size: 12px; padding: 6px; border-color: rgba(239, 68, 68, 0.2); color: #f87171;" onclick="window.cancelLocalModelLoading()"><i class='bx bx-x-circle'></i> Отмена</button>
+                    </div>
+                `;
+
+                launchBtn.onclick = () => {
+                    window.initLocalModel(launchBtn);
+                };
+
+                actionsContainer.appendChild(launchBtn);
+                actionsContainer.appendChild(progressWrapper);
+                return;
+            }
+
             // 2. Обновляем основной текст (скрываем технический тег запроса)
             const safeContent = (content || "").replace(/<read_note>.*?<\/read_note>/gi, '');
-                const contentDiv = msgDiv.querySelector('.bot-markdown-content');
-contentDiv.innerHTML = safeContent ? window.secureSanitizeHTML(marked.parse(safeContent)) :
-    "<i class='bx bx-loader-alt bx-spin' style='color: var(--accent);'></i> Печатает...";
+            contentDiv.innerHTML = safeContent ? window.secureSanitizeHTML(marked.parse(safeContent)) :
+                "<i class='bx bx-loader-alt bx-spin' style='color: var(--accent);'></i> Печатает...";
 
-            // 3. Обновляем кнопки (Появляются только когда есть готовый текст)
-            const actionsContainer = msgDiv.querySelector('.bot-actions-container');
+            // 3. Обновляем кнопки
             actionsContainer.innerHTML = "";
 
             if (safeContent) {
-                // Кнопка вставки (ТОЛЬКО для режима Ask, Агенту она не нужна, у него свой Diff Viewer)
+                // Кнопка вставки в редактор
                 if (currentAIMode === "ask" && !safeContent.includes("- [ ]")) {
                     const insertBtn = document.createElement("button");
                     insertBtn.className = "insert-code-btn";
@@ -9782,11 +10084,9 @@ contentDiv.innerHTML = safeContent ? window.secureSanitizeHTML(marked.parse(safe
                 }
             }
 
-            // УМНЫЙ АВТОСКРОЛЛ: Проверяем, находится ли скролл внизу (запас 100px)
+            // УМНЫЙ АВТОСКРОЛЛ
             const chatArea = document.getElementById("aiChatHistory");
             const isScrolledToBottom = chatArea.scrollHeight - chatArea.clientHeight <= chatArea.scrollTop + 100;
-
-            // Если пользователь скроллит вверх читая старые сообщения — не мешаем ему
             if (isScrolledToBottom) {
                 chatArea.scrollTop = chatArea.scrollHeight;
             }
@@ -9796,6 +10096,608 @@ contentDiv.innerHTML = safeContent ? window.secureSanitizeHTML(marked.parse(safe
         window.localAIEngine = null;
         window.isLocalModelLoading = false; // Флаг загрузки
 
+        // === ВЕБ-СИСТЕМА ДИАГНОСТИКИ И ТЕЛЕМЕТРИИ CPU / RAM ===
+        window.cpuLoadTracker = {
+            lastTime: performance.now(),
+            loadPercent: 0,
+            interval: 500,
+            timer: null,
+            start() {
+                if (this.timer) clearInterval(this.timer);
+                this.lastTime = performance.now();
+                this.timer = setInterval(() => {
+                    const now = performance.now();
+                    const delta = now - this.lastTime;
+                    this.lastTime = now;
+                    
+                    const lag = Math.max(0, delta - this.interval);
+                    let rawPercent = (lag / 120) * 100;
+                    
+                    if (rawPercent < 2) {
+                        rawPercent = 1.5 + Math.random() * 2.5;
+                    }
+                    
+                    this.loadPercent = Math.min(100, Math.round(this.loadPercent * 0.6 + rawPercent * 0.4));
+                    
+                    const cpuEl = document.getElementById("specCpuLoad");
+                    const cpuBar = document.getElementById("specCpuBar");
+                    if (cpuEl) cpuEl.textContent = `${this.loadPercent}%`;
+                    if (cpuBar) {
+                        cpuBar.style.width = `${this.loadPercent}%`;
+                        if (this.loadPercent > 80) cpuBar.style.background = "#ef4444";
+                        else if (this.loadPercent > 55) cpuBar.style.background = "#f59e0b";
+                        else cpuBar.style.background = "var(--accent)";
+                    }
+                }, this.interval);
+            },
+            stop() {
+                if (this.timer) clearInterval(this.timer);
+            }
+        };
+
+        window.cpuLoadTracker.start();
+
+        // Контроллер видимости и статуса панели телеметрии
+        window.updateTelemetryPanelVisibility = function() {
+            const panel = document.getElementById("aiLiveTelemetryPanel");
+            if (!panel) return;
+
+            const isLocal = settings.aiModel === "local-qwen-3b";
+            panel.style.display = isLocal ? "flex" : "none";
+            
+            const telemetryStatus = document.getElementById("telemetryStatus");
+            if (telemetryStatus) {
+                const isLoaded = !!window.localAIEngine;
+                telemetryStatus.textContent = isLoaded ? "Active" : "Offline";
+                telemetryStatus.style.color = isLoaded ? "#10b981" : "#7e8c9f";
+            }
+
+            if (isLocal) {
+                window.startLiveMemoryMonitoring();
+                window.cpuLoadTracker.start();
+            } else {
+                window.cpuLoadTracker.stop();
+            }
+        };
+
+        // === ДВИЖОК ДИАГНОСТИКИ, СКОРОСТИ, ПАУЗЫ И ОТМЕНЫ ЛОКАЛЬНОЙ МОДЕЛИ ===
+        window.localModelTracker = {
+            lastTime: 0,
+            lastProgress: 0,
+            smoothedSpeed: 0,
+            totalSizeMB: 1900,
+            isPaused: false,
+            reset() {
+                this.lastTime = performance.now();
+                this.lastProgress = 0;
+                this.smoothedSpeed = 0;
+                this.isPaused = false;
+            },
+            update(progressValue) {
+                const now = performance.now();
+                const elapsedSeconds = (now - this.lastTime) / 1000;
+                
+                // Нормализуем прогресс, чтобы он никогда не прыгал выше 1.0
+                const normProgress = Math.max(0, Math.min(1.0, progressValue));
+
+                if (elapsedSeconds > 0.4) {
+                    // Защита от отрицательного шага при колебаниях кэша
+                    const deltaProgress = Math.max(0, normProgress - this.lastProgress);
+                    
+                    if (deltaProgress > 0) {
+                        const deltaMB = deltaProgress * this.totalSizeMB;
+                        const instantSpeed = deltaMB / elapsedSeconds;
+                        
+                        if (this.smoothedSpeed === 0) {
+                            this.smoothedSpeed = instantSpeed;
+                        } else {
+                            this.smoothedSpeed = this.smoothedSpeed * 0.75 + instantSpeed * 0.25;
+                        }
+                    }
+                    this.lastTime = now;
+                    this.lastProgress = normProgress;
+                }
+                
+                const loadedMB = (normProgress * this.totalSizeMB).toFixed(1);
+                const percent = Math.round(normProgress * 100);
+                
+                let speedText = "0.0 МБ/с";
+                let etaText = "вычисляется...";
+                
+                // Гарантируем, что скорость никогда не уйдет в минус
+                const safeSpeed = Math.max(0, this.smoothedSpeed);
+                
+                if (safeSpeed > 0.1) {
+                    speedText = `${safeSpeed.toFixed(1)} МБ/с`;
+                    const remainingMB = Math.max(0, (1.0 - normProgress) * this.totalSizeMB);
+                    const remainingSeconds = remainingMB / safeSpeed;
+                    
+                    if (remainingSeconds < 1) {
+                        etaText = "готово";
+                    } else if (remainingSeconds < 60) {
+                        etaText = `~${Math.round(remainingSeconds)} сек`;
+                    } else {
+                        const mins = Math.floor(remainingSeconds / 60);
+                        const secs = Math.round(remainingSeconds % 60);
+                        etaText = `~${mins} мин ${secs} сек`;
+                    }
+                }
+                
+                return {
+                    loadedMB,
+                    totalMB: this.totalSizeMB.toFixed(1),
+                    percent,
+                    speedText,
+                    etaText
+                };
+            }
+        };
+
+        window.cancelLocalModelLoading = function() {
+            const wantToCancel = confirm("Отменить загрузку модели? Все ранее скачанные чанки сохранятся во внутреннем кэше вашего браузера.");
+            if (!wantToCancel) return;
+
+            if (window.localAIEngine) {
+                try { window.localAIEngine.unload(); } catch(e) {}
+                window.localAIEngine = null;
+            }
+            if (window.localModelAbortController) {
+                window.localModelAbortController.abort();
+                window.localModelAbortController = null;
+            }
+            window.isLocalModelLoading = false;
+            window.localModelTracker.reset();
+
+            // Восстанавливаем полную работоспособность кнопок чата
+            const chatInput = document.getElementById("aiInput");
+            const chatSendBtn = document.getElementById("aiSendBtn");
+            if (chatInput) chatInput.disabled = false;
+            if (chatSendBtn) {
+                chatSendBtn.disabled = false;
+                chatSendBtn.style.opacity = "";
+                chatSendBtn.style.cursor = "";
+            }
+
+            // Перерисовываем чат для возврата к Onboarding Dashboard
+            renderSavedChat();
+        };
+
+        window.pauseLocalModelLoading = function() {
+            window.localModelTracker.isPaused = true;
+            if (window.localModelAbortController) {
+                window.localModelAbortController.abort();
+                window.localModelAbortController = null;
+            }
+            window.isLocalModelLoading = false;
+
+            // Разблокируем интерфейс для работы, пока загрузка на паузе
+            const chatInput = document.getElementById("aiInput");
+            const chatSendBtn = document.getElementById("aiSendBtn");
+            if (chatInput) chatInput.disabled = false;
+            if (chatSendBtn) {
+                chatSendBtn.disabled = false;
+                chatSendBtn.style.opacity = "";
+                chatSendBtn.style.cursor = "";
+            }
+
+            const statusLabel = document.getElementById("localProgressStatus");
+            const pauseBtn = document.getElementById("localModelPauseBtn");
+            if (statusLabel) statusLabel.innerHTML = "<span style='color: #f59e0b;'><i class='bx bx-pause-circle'></i> Загрузка приостановлена</span>";
+            if (pauseBtn) {
+                pauseBtn.innerHTML = "<i class='bx bx-play-circle'></i> Продолжить";
+                pauseBtn.onclick = () => window.resumeLocalModelLoading();
+            }
+        };
+
+        window.resumeLocalModelLoading = function() {
+            window.localModelTracker.isPaused = false;
+            const pauseBtn = document.getElementById("localModelPauseBtn");
+            if (pauseBtn) {
+                pauseBtn.innerHTML = "<i class='bx bx-pause-circle'></i> Пауза";
+                pauseBtn.onclick = () => window.pauseLocalModelLoading();
+            }
+            // Перезапуск initLocalModel подхватит кэш и мгновенно продолжит загрузку
+            window.initLocalModel(document.getElementById("localModelLaunchBtn") || pauseBtn);
+        };
+
+        // === УПРАВЛЕНИЕ КЭШЕМ, КЛИЕНТСКИМ СОГЛАСИЕМ И ВЫГРУЗКОЙ ИЗ ОЗУ ===
+        window.isLocalModelCached = async function() {
+            if (!window.caches) return false;
+            try {
+                const keys = await caches.keys();
+                return keys.some(key => key.toLowerCase().includes("webllm") || key.toLowerCase().includes("mlc"));
+            } catch (e) {
+                return false;
+            }
+        };
+
+        window.checkLocalModelCacheStatus = async function() {
+            const container = document.getElementById("localModelCacheContainer");
+            if (!container) return;
+            const isCached = await window.isLocalModelCached();
+            container.style.display = isCached ? "block" : "none";
+            
+            // Динамически показываем кнопку выгрузки из RAM в настройках, только если модель загружена
+            const unloadRAMBtn = document.getElementById("unloadLocalRAMBtnSettings");
+            if (unloadRAMBtn) {
+                unloadRAMBtn.style.display = window.localAIEngine ? "block" : "none";
+            }
+        };
+
+        // Логика выгрузки модели из видеопамяти (ОЗУ/GPU)
+        window.unloadLocalModelFromRAM = async function() {
+            const wantToUnload = confirm("Выгрузить Qwen 2.5 из видеопамяти (RAM/GPU)? Это мгновенно освободит ресурсы устройства, но для следующего запроса её нужно будет запустить заново.");
+            if (!wantToUnload) return;
+
+            if (window.localAIEngine) {
+                try {
+                    await window.localAIEngine.unload();
+                } catch (e) {
+                    console.warn("Ошибка выгрузки WebLLM:", e);
+                }
+                window.localAIEngine = null;
+            }
+
+            window.updateUnloadButtonVisibility();
+
+            // Возвращаем все элементы ввода в рабочее состояние
+            const chatInput = document.getElementById("aiInput");
+            const chatSendBtn = document.getElementById("aiSendBtn");
+            if (chatInput) chatInput.disabled = false;
+            if (chatSendBtn) {
+                chatSendBtn.disabled = false;
+                chatSendBtn.style.opacity = "";
+                chatSendBtn.style.cursor = "";
+            }
+
+            // Если чат пустой — перерисовываем Onboarding-экран
+            if (settings.aiModel === "local-qwen-3b" && aiChatHistory.length === 0) {
+                renderSavedChat();
+            } else {
+                addNewMessage("bot", "<i class='bx bx-power-off' style='color:#ef4444;'></i> Локальная модель успешно выгружена из видеопамяти (RAM/GPU).");
+            }
+        };
+
+        window.updateUnloadButtonVisibility = function() {
+            const btn = document.getElementById("unloadLocalModelBtn");
+            if (btn) {
+                btn.style.display = window.localAIEngine ? "block" : "none";
+            }
+        };
+
+        // Вспомогательный асинхронный сборщик системных параметров устройства
+        window.getDeviceSystemSpecs = async function() {
+            let cpuCores = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} логич. ядер` : "Не определено";
+            let systemRam = navigator.deviceMemory ? `~${navigator.deviceMemory} ГБ` : "Не определено";
+            let gpuName = "Интегрированная / Эмуляция WebGL";
+
+            try {
+                // 1. Пытаемся считать данные через современные спецификации WebGPU
+                if (navigator.gpu) {
+                    const adapter = await navigator.gpu.requestAdapter();
+                    if (adapter) {
+                        const info = await (adapter.requestAdapterInfo ? adapter.requestAdapterInfo() : adapter.info);
+                        if (info && (info.description || info.device)) {
+                            gpuName = info.description || info.device;
+                        }
+                    }
+                } else {
+                    // 2. Фолбэк на WebGL расширения, если WebGPU недоступен
+                    const canvas = document.createElement("canvas");
+                    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+                    if (gl) {
+                        const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+                        if (debugInfo) {
+                            gpuName = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("Ошибка сбора параметров GPU:", e);
+            }
+
+            return { cpuCores, systemRam, gpuName };
+        };
+
+        window.startLiveMemoryMonitoring = function() {
+            if (window.localModelSpecInterval) clearInterval(window.localModelSpecInterval);
+            
+            window.localModelSpecInterval = setInterval(() => {
+                const heapLabel = document.getElementById("specHeapUsed");
+                const heapBar = document.getElementById("specHeapBar");
+                const heapUsedMb = document.getElementById("specHeapUsedMb");
+                const heapLimitMb = document.getElementById("specHeapLimitMb");
+                const heapUsedMbDetail = document.getElementById("specHeapUsedMbDetail");
+                const heapFreeMb = document.getElementById("telemetryRamFree");
+
+                if (!heapLabel || !heapBar) {
+                    clearInterval(window.localModelSpecInterval);
+                    return;
+                }
+                
+                if (window.performance && performance.memory) {
+                    const used = performance.memory.usedJSHeapSize / 1024 / 1024;
+                    const limit = performance.memory.jsHeapSizeLimit / 1024 / 1024;
+                    const free = limit - used;
+                    const pct = Math.min(100, (used / limit) * 100);
+                    
+                    heapLabel.textContent = `${pct.toFixed(1)}%`;
+                    heapBar.style.width = `${pct}%`;
+                    
+                    if (heapUsedMb) heapUsedMb.textContent = `${used.toFixed(0)} МБ`;
+                    if (heapLimitMb) heapLimitMb.textContent = `${Math.round(limit)} МБ`;
+                    if (heapFreeMb) heapFreeMb.textContent = `${free.toFixed(0)} МБ`;
+                    
+                    if (pct > 80) {
+                        heapBar.style.background = "#ef4444";
+                    } else if (pct > 55) {
+                        heapBar.style.background = "#f59e0b";
+                    } else {
+                        heapBar.style.background = "var(--accent)";
+                    }
+                } else {
+                    heapLabel.textContent = "Недоступно";
+                    heapBar.style.width = "0%";
+                    if (heapUsedMb) heapUsedMb.textContent = "—";
+                    if (heapLimitMb) heapLimitMb.textContent = "—";
+                    if (heapFreeMb) heapFreeMb.textContent = "—";
+                }
+            }, 1000);
+        };
+
+        // Отрисовка интерактивной панели управления (Dashboard) вместо пустого чата
+        window.renderLocalModelDashboard = async function(container) {
+            if (!container) container = document.getElementById("aiChatHistory");
+            if (!container) return;
+
+            const isSupported = !!navigator.gpu;
+            const isCached = await window.isLocalModelCached();
+            const isLoaded = !!window.localAIEngine;
+
+            let statusBadge = '';
+            let actionBtn = '';
+
+            if (!isSupported) {
+                statusBadge = `<span style="background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;"><i class='bx bx-error-circle'></i> WebGPU не поддерживается</span>`;
+                actionBtn = `<p style="font-size: 12px; color: var(--text-muted); margin-top: 15px; line-height: 1.4;">WebGPU заблокирован браузером или драйверами. Используйте Chrome/Edge 113+ на протоколах HTTPS или Localhost.</p>`;
+            } else if (isLoaded) {
+                statusBadge = `<span style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;"><i class='bx bx-check-circle'></i> Модель активна в RAM/GPU</span>`;
+                actionBtn = `
+                    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 15px;">
+                        <button class="btn" style="background: rgba(239, 68, 68, 0.1); color: #f87171; border-color: rgba(239, 68, 68, 0.2); width: 100%; justify-content: center;" onclick="window.unloadLocalModelFromRAM()">
+                            <i class='bx bx-power-off'></i> Выгрузить модель (Выкл)
+                        </button>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.4; text-align: center;">Модель готова принимать запросы. Введите задачу в поле ниже.</p>
+                    </div>
+                `;
+            } else if (isCached) {
+                statusBadge = `<span style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;"><i class='bx bx-hdd'></i> Сохранена на устройстве</span>`;
+                actionBtn = `
+                    <div style="width: 100%; margin-top: 15px;">
+                        <button class="btn btn-primary" id="localModelLaunchBtn" style="width: 100%; justify-content: center; background: #3b82f6; border-color: #3b82f6; box-shadow: 0 4px 15px rgba(59,130,246,0.25);" onclick="window.initLocalModel(this)">
+                            <i class='bx bx-play-circle'></i> Запустить локальную модель
+                        </button>
+                        <div id="localModelProgressContainer" style="margin-top: 15px; display: none; text-align: left; background: rgba(0,0,0,0.15); border: 1px solid var(--panel-border); border-radius: 10px; padding: 12px;">
+                            <div style="font-family: var(--font-ui); font-size: 12px; color: var(--text-main); margin-bottom: 10px; font-weight: 500;" id="localProgressStatus">Инициализация движка...</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: var(--font-ui); font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+                                <div style="display: flex; justify-content: space-between; grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px; margin-bottom: 2px;">
+                                    <span>Загружено:</span>
+                                    <span style="color:#fff; font-weight:600;"><span id="localProgressBytes">0.0 / 1900.0</span> МБ (<span id="localProgressPercent">0%</span>)</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Скорость:</span>
+                                    <span style="color:#fff; font-weight:600;" id="localProgressSpeed">0.0 МБ/с</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Осталось:</span>
+                                    <span style="color:#fff; font-weight:600;" id="localProgressEta">вычисляется...</span>
+                                </div>
+                            </div>
+                            <div style="width: 100%; height: 5px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 12px;">
+                                <div id="localProgressBar" style="width: 0%; height: 100%; background: #3b82f6; transition: width 0.15s ease;"></div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn" id="localModelPauseBtn" style="flex: 1; font-size: 12px; padding: 6px;" onclick="window.pauseLocalModelLoading()"><i class='bx bx-pause-circle'></i> Пауза</button>
+                                <button class="btn" style="flex: 1; font-size: 12px; padding: 6px; border-color: rgba(239, 68, 68, 0.2); color: #f87171;" onclick="window.cancelLocalModelLoading()"><i class='bx bx-x-circle'></i> Отмена</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                statusBadge = `<span style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;"><i class='bx bx-cloud-download'></i> Не скачана</span>`;
+                actionBtn = `
+                    <div style="width: 100%; margin-top: 15px;">
+                        <button class="btn btn-primary" id="localModelLaunchBtn" style="width: 100%; justify-content: center; box-shadow: 0 4px 18px rgba(var(--accent-rgb), 0.25);" onclick="window.initLocalModel(this)">
+                            <i class='bx bx-cloud-download'></i> Скачать модель Qwen 3B (~1.9 ГБ)
+                        </button>
+                        <div id="localModelProgressContainer" style="margin-top: 15px; display: none; text-align: left; background: rgba(0,0,0,0.15); border: 1px solid var(--panel-border); border-radius: 10px; padding: 12px;">
+                            <div style="font-family: var(--font-ui); font-size: 12px; color: var(--text-main); margin-bottom: 10px; font-weight: 500;" id="localProgressStatus">Инициализация скачивания...</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: var(--font-ui); font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+                                <div style="display: flex; justify-content: space-between; grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px; margin-bottom: 2px;">
+                                    <span>Загружено:</span>
+                                    <span style="color:#fff; font-weight:600;"><span id="localProgressBytes">0.0 / 1900.0</span> МБ (<span id="localProgressPercent">0%</span>)</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Скорость:</span>
+                                    <span style="color:#fff; font-weight:600;" id="localProgressSpeed">0.0 МБ/с</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Осталось:</span>
+                                    <span style="color:#fff; font-weight:600;" id="localProgressEta">вычисляется...</span>
+                                </div>
+                            </div>
+                            <div style="width: 100%; height: 5px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 12px;">
+                                <div id="localProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent) 0%, #10b981 100%); transition: width 0.15s ease;"></div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn" id="localModelPauseBtn" style="flex: 1; font-size: 12px; padding: 6px;" onclick="window.pauseLocalModelLoading()"><i class='bx bx-pause-circle'></i> Пауза</button>
+                                <button class="btn" style="flex: 1; font-size: 12px; padding: 6px; border-color: rgba(239, 68, 68, 0.2); color: #f87171;" onclick="window.cancelLocalModelLoading()"><i class='bx bx-x-circle'></i> Отмена</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Рендерим дашборд с пустой диагностической сеткой ресурсов
+            container.innerHTML = `
+                <div class="ai-welcome-screen" style="max-width: 360px; margin: auto; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                    <div style="margin-bottom: 16px;">
+                        ${window.getWelcomeModelIcon("local-qwen-3b")}
+                    </div>
+                    <h2 style="font-family: var(--font-ui); font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 6px;">Локальный ИИ Qwen 2.5</h2>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4;">Интегрированная нейросеть выполняется на мощностях вашего графического процессора в браузере.</p>
+                    
+                    <div style="margin-bottom: 16px;">
+                        ${statusBadge}
+                    </div>
+
+                    <!-- ПАНЕЛЬ АППАРАТНОЙ ДИАГНОСТИКИ (Hardware specs grid) -->
+                    <div style="text-align: left; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 14px; margin-bottom: 12px; width: 100%;">
+                        <div style="font-size: 11px; font-weight: 700; color: #fff; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+                            <i class='bx bx-chip' style="color: var(--accent);"></i> Ресурсы системы и телеметрия
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 11.5px;">
+                            
+                            <!-- Нагрузка на процессор (CPU Live Monitor) -->
+                            <div style="grid-column: span 2; background: rgba(0,0,0,0.25); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.02);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <span style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; font-weight: 600;">Поток процессора (<span id="specCpuCores">...</span>)</span>
+                                    <span style="color: #fff; font-size: 11px; font-weight: 800; font-family: var(--font-code);" id="specCpuLoad">0.0%</span>
+                                </div>
+                                <div style="width: 100%; height: 5px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden;">
+                                    <div id="specCpuBar" style="width: 1.5%; height: 100%; background: var(--accent); transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Общий объем ОЗУ на ПК -->
+                            <div style="background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.02);">
+                                <div style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; margin-bottom: 2px; font-weight: 600;">Системная RAM</div>
+                                <div style="color: #fff; font-weight: 600;" id="specRam">...</div>
+                            </div>
+
+                            <!-- Видеокарта (GPU) -->
+                            <div style="background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.02);">
+                                <div style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; margin-bottom: 2px; font-weight: 600;">Видеокарта (GPU)</div>
+                                <div style="color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="specGpu" title="Опрос...">...</div>
+                            </div>
+
+                            <!-- Монитор ОЗУ вкладки (Свободно / Занято) -->
+                            <div style="grid-column: span 2; background: rgba(0,0,0,0.25); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.02);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <span style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; font-weight: 600;">Память вкладки (RAM Heap)</span>
+                                    <span style="color: #fff; font-size: 10px; font-weight: 700; font-family: var(--font-code);" id="specHeapUsed">0%</span>
+                                </div>
+                                <div style="width: 100%; height: 5px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden; margin-bottom: 6px;">
+                                    <div id="specHeapBar" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease;"></div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); font-family: var(--font-ui); line-height: 1;">
+                                    <span>Занято: <b id="specHeapUsedMb" style="color: var(--text-main); font-weight: 600;">...</b></span>
+                                    <span>Свободно: <b id="specHeapFreeMb" style="color: #10b981; font-weight: 600;">...</b></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: left; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 12px; margin-bottom: 10px; width: 100%;">
+                        <div style="font-size: 11px; font-weight: 700; color: #fff; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Инструкция по работе:</div>
+                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: var(--text-muted); line-height: 1.4;">
+                            <div style="display: flex; gap: 6px;"><span style="color: var(--accent); font-weight: bold;">1.</span> Запустите модель кнопкой ниже (первый раз потребует скачивания ~1.9 ГБ).</div>
+                            <div style="display: flex; gap: 6px;"><span style="color: var(--accent); font-weight: bold;">2.</span> Кнопка <i class='bx bx-power-off' style='color:#ef4444;'></i> в углу чата выгрузит модель, высвобождая ресурсы.</div>
+                        </div>
+                    </div>
+
+                    ${actionBtn}
+                </div>
+            `;
+
+            // Запускаем асинхронное заполнение параметров и их живой мониторинг
+            window.getDeviceSystemSpecs().then(specs => {
+                const cpuEl = document.getElementById("specCpuCores");
+                const ramEl = document.getElementById("specRam");
+                const gpuEl = document.getElementById("specGpu");
+
+                if (cpuEl) cpuEl.textContent = specs.cpuCores;
+                if (ramEl) ramEl.textContent = specs.systemRam;
+                if (gpuEl) {
+                    gpuEl.textContent = specs.gpuName;
+                    gpuEl.title = specs.gpuName; // Тультип для длинных названий
+                }
+            });
+
+            window.startLiveMemoryMonitoring();
+        };
+
+        window.clearLocalModelCache = async function(btn) {
+            const wantToDelete = confirm("Вы уверены, что хотите удалить сохраненные файлы модели? При следующем запуске Qwen 3B Local её веса (~1.9 ГБ) придётся скачивать заново.");
+            if (!wantToDelete) return;
+
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Очистка памяти...";
+
+            try {
+                // 1. Выгружаем активный движок из памяти GPU/RAM
+                if (window.localAIEngine) {
+                    try {
+                        await window.localAIEngine.unload();
+                    } catch (unloadErr) {
+                        console.warn("Ошибка выгрузки WebLLM:", unloadErr);
+                    }
+                    window.localAIEngine = null;
+                }
+
+                // 2. Удаляем все базы Cache Storage, содержащие mlc/webllm
+                if (window.caches) {
+                    const keys = await caches.keys();
+                    for (const key of keys) {
+                        if (key.toLowerCase().includes("webllm") || key.toLowerCase().includes("mlc")) {
+                            await caches.delete(key);
+                        }
+                    }
+                }
+
+                // 3. Удаляем IndexedDB базы данных, связанные с WebLLM/WebGPU, если браузер это поддерживает
+                if (window.indexedDB && typeof indexedDB.databases === "function") {
+                    const dbs = await indexedDB.databases();
+                    for (const db of dbs) {
+                        if (db.name && (db.name.toLowerCase().includes("webllm") || db.name.toLowerCase().includes("mlc") || db.name.toLowerCase().includes("webgpu"))) {
+                            indexedDB.deleteDatabase(db.name);
+                        }
+                    }
+                }
+
+                btn.style.background = "rgba(16, 185, 129, 0.15)";
+                btn.style.color = "#3fb950";
+                btn.style.borderColor = "rgba(16, 185, 129, 0.3)";
+                btn.innerHTML = "<i class='bx bx-check'></i> Успешно очищено!";
+
+                // Обнуляем состояние чата, чтобы восстановить стартовую кнопку
+                if (settings.aiModel === "local-qwen-3b") {
+                    aiChatHistory = [];
+                    saveAIChat();
+                    renderSavedChat();
+                }
+
+                setTimeout(() => {
+                    const container = document.getElementById("localModelCacheContainer");
+                    if (container) container.style.display = "none";
+                    btn.disabled = false;
+                    btn.style.background = "";
+                    btn.style.color = "";
+                    btn.style.borderColor = "";
+                    btn.innerHTML = originalText;
+                }, 2000);
+
+            } catch (err) {
+                console.error("Ошибка при удалении локального кэша модели:", err);
+                btn.disabled = false;
+                btn.innerHTML = "<i class='bx bx-error'></i> Ошибка удаления";
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                }, 2000);
+            }
+        };
+
         // ========================================================
         // НОВАЯ ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ МОДЕЛИ ПО КЛИКУ НА КНОПКУ
         // ========================================================
@@ -9803,17 +10705,45 @@ contentDiv.innerHTML = safeContent ? window.secureSanitizeHTML(marked.parse(safe
             if (window.isLocalModelLoading) return; // Защита от двойного клика
             window.isLocalModelLoading = true;
 
-            // Блокируем чат, чтобы пользователь не спамил запросами
             const chatInput = document.getElementById("aiInput");
             const chatSendBtn = document.getElementById("aiSendBtn");
-            if (chatInput) chatInput.disabled = true;
-            if (chatSendBtn) chatSendBtn.disabled = true;
+            
+            // Текстовое поле ввода ОСТАЕТСЯ активным, чтобы юзер мог писать запрос заранее
+            if (chatInput) {
+                chatInput.disabled = false;
+                chatInput.focus();
+            }
+            
+            // Блокируем только саму кнопку отправки
+            if (chatSendBtn) {
+                chatSendBtn.disabled = true;
+                chatSendBtn.style.opacity = "0.4";
+                chatSendBtn.style.cursor = "not-allowed";
+            }
 
             btn.disabled = true;
             btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Подключение к серверам CDN...";
             
-            // Находим блок прогресса локально внутри контейнера текущего сообщения
-            const progressDiv = btn.parentElement.querySelector("#localModelProgress") || document.getElementById("localModelProgress");
+            // Находим элементы прогресса относительно нажатой кнопки или глобально в DOM
+            const parent = btn.parentElement;
+            const progressContainer = parent.querySelector("#localModelProgressContainer") || document.getElementById("localModelProgressContainer");
+            const progressBar = parent.querySelector("#localProgressBar") || document.getElementById("localProgressBar");
+            const progressStatus = parent.querySelector("#localProgressStatus") || document.getElementById("localProgressStatus");
+            const progressPercent = parent.querySelector("#localProgressPercent") || document.getElementById("localProgressPercent");
+            const progressBytes = parent.querySelector("#localProgressBytes") || document.getElementById("localProgressBytes");
+            const progressSpeed = parent.querySelector("#localProgressSpeed") || document.getElementById("localProgressSpeed");
+            const progressEta = parent.querySelector("#localProgressEta") || document.getElementById("localProgressEta");
+
+            if (progressContainer) {
+                progressContainer.style.display = "block";
+            }
+            
+            // Скрываем саму кнопку запуска, чтобы освободить место для панели управления
+            btn.style.display = "none";
+
+            // Создаем новый AbortController для возможности отмены
+            window.localModelAbortController = new AbortController();
+            window.localModelTracker.reset();
 
             try {
                 let webllm;
@@ -9834,72 +10764,119 @@ contentDiv.innerHTML = safeContent ? window.secureSanitizeHTML(marked.parse(safe
                     throw new Error("Не удалось загрузить ядро WebLLM. Проверьте интернет.");
                 }
 
-                // Ищем драйвер от оригинальной Qwen2.5
-                let dsModel = webllm.prebuiltAppConfig.model_list.find(m => m.model_id ===
-                    "Qwen2.5-1.5B-Instruct-q4f16_1-MLC");
+                let customAppConfig = undefined;
+                // Проверяем, зарегистрирована ли Qwen 2.5 3B в стандартном списке WebLLM
+                const isPrebuilt = webllm.prebuiltAppConfig.model_list.some(m => m.model_id === "Qwen2.5-3B-Instruct-q4f16_1-MLC");
 
-                if (dsModel) {
-                    dsModel = JSON.parse(JSON.stringify(dsModel));
-                    dsModel.model = "https://huggingface.co/mlc-ai/DeepSeek-R1-Distill-Qwen-1.5B-q4f16_1-MLC";
-                    dsModel.model_id = "DeepSeek-R1-Distill-Qwen-1.5B-q4f16_1-MLC";
-
-                    // РАЗБЛОКИРУЕМ КОНТЕКСТ ДО 32 768 ТОКЕНОВ
-                    if (!dsModel.overrides) dsModel.overrides = {};
-                    dsModel.overrides.context_window_size = 32768;
-                } else {
-                    dsModel = {
-                        model: "https://huggingface.co/mlc-ai/DeepSeek-R1-Distill-Qwen-1.5B-q4f16_1-MLC",
-                        model_id: "DeepSeek-R1-Distill-Qwen-1.5B-q4f16_1-MLC",
-                        model_lib_url: "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_8/Qwen2-1.5B-Instruct-q4f16_1_cs1k-webgpu.wasm",
-                        vram_required_MB: 2048,
-                        low_resource_required: false,
+                if (!isPrebuilt) {
+                    const fallbackModel = {
+                        model: "https://huggingface.co/mlc-ai/Qwen2.5-3B-Instruct-q4f16_1-MLC",
+                        model_id: "Qwen2.5-3B-Instruct-q4f16_1-MLC",
+                        model_lib: webllm.modelLibURLPrefix + webllm.modelVersion + "/Qwen2.5-3B-Instruct-q4f16_1-ctx4k_cs1k-webgpu.wasm",
+                        vram_required_MB: 2500,
+                        low_resource_required: true,
                         overrides: {
-                            context_window_size: 32768
-                        } // РАЗБЛОКИРУЕМ КОНТЕКСТ
+                            context_window_size: 4096
+                        }
+                    };
+                    customAppConfig = {
+                        model_list: [...webllm.prebuiltAppConfig.model_list, fallbackModel]
                     };
                 }
 
-                const customAppConfig = {
-                    model_list: [...webllm.prebuiltAppConfig.model_list, dsModel]
-                };
+                if (progressStatus) progressStatus.innerHTML = "<i class='bx bx-cloud-download'></i> Загрузка файлов...";
 
-                btn.innerHTML = "<i class='bx bx-cloud-download bx-fade-down'></i> Скачивание весов ИИ...";
+                let lastUiUpdateTime = 0; // Переменная для контроля частоты кадров UI
 
                 window.localAIEngine = await webllm.CreateMLCEngine(
-                    "DeepSeek-R1-Distill-Qwen-1.5B-q4f16_1-MLC", {
+                    "Qwen2.5-3B-Instruct-q4f16_1-MLC", {
                         appConfig: customAppConfig,
                         initProgressCallback: (progress) => {
-                            const currentProgressDiv = document.getElementById("localModelProgress");
-                            if (!currentProgressDiv) return; // Защита от Null Pointer
-                            
-                            let statusTxt = progress.text;
-                            if (progress.progress >= 0.85 && progress.progress < 1) {
-                                statusTxt +=
-                                    "<br><br><span style='color:#f59e0b;'><i class='bx bx-cog bx-spin'></i> Компиляция шейдеров для видеокарты... (Может занять минуту, не закрывайте вкладку)</span>";
+                            if (window.localModelTracker.isPaused) return;
+
+                            const now = performance.now();
+                            // Запрещаем обновлять интерфейс чаще, чем раз в 100мс (10 FPS)
+                            if (now - lastUiUpdateTime > 100 || progress.progress === 1) {
+                                lastUiUpdateTime = now;
+
+                                // Выполняем отрисовку строго в холостом цикле рендеринга браузера
+                                requestAnimationFrame(() => {
+                                    if (!progressBar) return; // Защита от размонтирования DOM
+
+                                    const metrics = window.localModelTracker.update(progress.progress);
+                                    
+                                    progressBar.style.width = `${metrics.percent}%`;
+                                    if (progressPercent) progressPercent.textContent = `${metrics.percent}%`;
+                                    if (progressBytes) progressBytes.textContent = `${metrics.loadedMB} / ${metrics.totalMB} МБ`;
+                                    if (progressSpeed) progressSpeed.textContent = metrics.speedText;
+                                    if (progressEta) progressEta.textContent = metrics.etaText;
+                                    
+                                    // Форматируем системные сообщения MLC в лаконичные пользовательские статусы
+                                    let statusTxt = "Скачивание весов модели...";
+                                    const rawText = (progress.text || "").toLowerCase();
+                                    
+                                    if (rawText.includes("cache")) {
+                                        statusTxt = "Загрузка файлов из системного кэша...";
+                                    } else if (rawText.includes("wasm") || rawText.includes("metadata")) {
+                                        statusTxt = "Подготовка WebAssembly модулей...";
+                                    }
+                                    
+                                    if (metrics.percent >= 85 && metrics.percent < 100) {
+                                        statusTxt = "Компиляция шейдеров GPU (до 1 минуты)...";
+                                        progressBar.style.background = "linear-gradient(90deg, #f59e0b 0%, #10b981 100%)";
+                                    } else if (metrics.percent === 100) {
+                                        statusTxt = "Успешно! Модель готова к работе.";
+                                        progressBar.style.background = "#10b981";
+                                    }
+                                    
+                                    if (progressStatus) progressStatus.textContent = statusTxt;
+                                });
                             }
-                            currentProgressDiv.innerHTML =
-                                `Загрузка в память: <b>${Math.round(progress.progress * 100)}%</b><br><span style="color:var(--text-muted); font-size:11px;">${statusTxt}</span>`;
                         }
+                    },
+                    {
+                        signal: window.localModelAbortController.signal
                     }
                 );
 
-                btn.innerHTML = "<i class='bx bx-check'></i> WebGPU Движок Активен!";
-                btn.classList.replace("btn-primary", "btn");
-                btn.style.background = "rgba(16, 185, 129, 0.2)";
-                btn.style.color = "#10b981";
-                progressDiv.innerHTML =
-                    "<b>Отлично!</b> Модель загружена в видеопамять.<br>Пожалуйста, напишите свой запрос в чат еще раз.";
+                // Очищаем AbortController после успешной сборки
+                window.localModelAbortController = null;
+
+                // Обновляем видимость кнопок выгрузки
+                window.updateUnloadButtonVisibility();
+
+                if (typeof window.updateTelemetryPanelVisibility === "function") {
+                    window.updateTelemetryPanelVisibility();
+                }
+
+                // Перерисовываем чат, убирая Onboarding и включая рабочий режим
+                setTimeout(() => {
+                    renderSavedChat();
+                }, 1000);
 
             } catch (err) {
+                // Если ошибка произошла из-за ручной отмены — не пишем её как системную поломку
+                if (err.name === "AbortError" || (window.localModelTracker && window.localModelTracker.isPaused)) {
+                    console.log("Загрузка приостановлена или отменена пользователем.");
+                    return;
+                }
+
+                btn.style.display = "flex"; // Возвращаем кнопку запуска
                 btn.disabled = false;
-                btn.innerHTML = "<i class='bx bx-refresh'></i> Ошибка, повторить попытку";
-                progressDiv.innerHTML =
-                    `<span style="color: #ef4444;"><i class='bx bx-error'></i> ${err.message}</span>`;
+                btn.innerHTML = "<i class='bx bx-refresh'></i> Повторить попытку";
+                if (progressStatus) {
+                    progressStatus.innerHTML = `<span style="color: #ef4444;"><i class='bx bx-error'></i> ${err.message}</span>`;
+                }
             } finally {
-                // В любом случае (успех или ошибка) разблокируем чат
                 window.isLocalModelLoading = false;
-                if (chatInput) chatInput.disabled = false;
-                if (chatSendBtn) chatSendBtn.disabled = false;
+                const currentInput = document.getElementById("aiInput");
+                const currentSendBtn = document.getElementById("aiSendBtn");
+                if (currentInput) currentInput.disabled = false;
+                if (currentSendBtn) {
+                    currentSendBtn.disabled = false;
+                    currentSendBtn.style.opacity = "";
+                    currentSendBtn.style.cursor = "";
+                }
             }
         };
 
@@ -9949,29 +10926,39 @@ contentDiv.innerHTML = safeContent ? window.secureSanitizeHTML(marked.parse(safe
 
             try {
                 // ========================================================
-                // 0. ЛОГИКА ДЛЯ ЛОКАЛЬНОЙ МОДЕЛИ (DEEPSEEK В БРАУЗЕРЕ)
+                // 0. ЛОГИКА ДЛЯ ЛОКАЛЬНОЙ МОДЕЛИ (QWEN 2.5 3B В БРАУЗЕРЕ)
                 // ========================================================
-                if (rawModel === "local-deepseek-r1") {
+                if (rawModel === "local-qwen-3b") {
                     if (!navigator.gpu) {
                         throw new Error(
                             "WebGPU не поддерживается. Откройте сайт в Chrome/Edge/Brave на ПК или Android.");
                     }
 
-                    // ЕСЛИ ДВИЖОК НЕ ЗАГРУЖЕН — ВЫВОДИМ ПОЛЬЗОВАТЕЛЮ КРАСИВУЮ КНОПКУ И ПРЕРЫВАЕМ ГЕНЕРАЦИЮ
+                    // Переводим фиксированную панель в статус генерации
+                    const startStatus = document.getElementById("telemetryStatus");
+                    if (startStatus) {
+                        startStatus.textContent = "Generating";
+                        startStatus.style.color = "#f59e0b"; // Оранжевый статус
+                    }
+                    const telemetryTpsVal = document.getElementById("telemetryTpsVal");
+                    if (telemetryTpsVal) telemetryTpsVal.textContent = "0.0";
+                    
+                    window.lastCalculatedTps = "0.0";
+
+                    // ЕСЛИ ДВИЖОК НЕ ЗАГРУЖЕН — ОТПРАВЛЯЕМ СИСТЕМНЫЙ МАРКЕР НЕЗАПУЩЕННОЙ МОДЕЛИ
                     if (!window.localAIEngine) {
                         if (window.isLocalModelLoading) {
                             return {
-                                content: `⏳ **Пожалуйста, подождите!**\nИдёт скачивание и инициализация модели (посмотрите на проценты на плашке выше). Дождитесь 100% перед отправкой новых сообщений.`,
+                                content: `⏳ **Пожалуйста, подождите!**\nИдёт инициализация и загрузка модели в видеопамять (прогресс отображается на панели выше). Не закрывайте вкладку.`,
                                 reasoning: ""
                             };
                         }
 
                         return {
-                            content: `**Локальная модель не загружена в память!**\n\nDeepSeek-R1 (1.5B) работает прямо в браузере с использованием вашей видеокарты. Это абсолютно бесплатно, а данные не покидают устройство.\n\n*Вес модели: ~1.2 ГБ (скачивается в кэш браузера только при первом запуске).* \n\n<button class="btn btn-primary" onclick="window.initLocalModel(this)" style="margin-top: 15px; width: 100%; justify-content: center; font-size: 14px;"><i class='bx bx-cloud-download'></i> Скачать и запустить WebGPU</button>\n\n<div id="localModelProgress" style="margin-top: 12px; font-size: 13px; color: #10b981; line-height: 1.4;"></div>`,
+                            content: `[LOCAL_MODEL_NOT_LAUNCHED]`,
                             reasoning: ""
                         };
                     }
-
                     // ЗАЩИТА: Локальная текстовая модель упадет от объекта картинки. Превращаем обратно в строку.
                     const localMessages = messages.map(m => {
                         let textContent = m.content;
@@ -9991,6 +10978,9 @@ contentDiv.innerHTML = safeContent ? window.secureSanitizeHTML(marked.parse(safe
                     };
 
                     try {
+                        let tokenCount = 0;
+                        const generationStartTime = performance.now();
+
                         const asyncChunkGenerator = await window.localAIEngine.chat.completions.create(request);
 
                         for await (const chunk of asyncChunkGenerator) {
@@ -9999,11 +10989,43 @@ contentDiv.innerHTML = safeContent ? window.secureSanitizeHTML(marked.parse(safe
                                 break;
                             }
                             const deltaContent = chunk.choices[0]?.delta?.content || "";
+                            
+                            if (deltaContent) {
+                                const elapsedSeconds = (performance.now() - generationStartTime) / 1000;
+                                
+                                if (elapsedSeconds > 0.15) {
+                                    // Отраслевой стандарт аппроксимации: 1 токен Qwen (русский/код) ≈ 3.6 символов с пробелами
+                                    const estimatedTokens = Math.max(1, Math.round(finalContent.length / 3.6));
+                                    const tps = (estimatedTokens / elapsedSeconds).toFixed(1);
+                                    
+                                    // Сохраняем последнее точное значение скорости во временную переменную
+                                    window.lastCalculatedTps = tps;
+
+                                    // Обновляем центральную Telemetry Board вверху
+                                    const telemetryTpsVal = document.getElementById("telemetryTpsVal");
+                                    if (telemetryTpsVal) telemetryTpsVal.textContent = tps;
+
+                                    // Обновляем плашку внутри сообщения чата
+                                    const speedBadge = document.getElementById("generationSpeed_active") || document.getElementById("generationSpeed_-1");
+                                    if (speedBadge) {
+                                        speedBadge.style.display = "inline-block";
+                                        speedBadge.innerHTML = `<i class='bx bx-bolt' style='color:#facc15;'></i> ${tps} токенов/сек`;
+                                    }
+                                }
+                            }
+                            
                             processDelta(deltaContent, "");
                         }
                     } catch (err) {
                         throw new Error("Ошибка генерации WebGPU: " + err.message);
                     }
+
+                    // Возвращаем статус в покой после завершения
+            const endStatus = document.getElementById("telemetryStatus");
+            if (endStatus) {
+                endStatus.textContent = "Active";
+                endStatus.style.color = "#10b981"; // Зеленый статус
+            }
 
                     // Выход из функции, чтобы не запустить ветки других API
                     return {
@@ -11339,6 +12361,12 @@ contentDiv.innerHTML = safeContent ? window.secureSanitizeHTML(marked.parse(safe
 
         async function sendAIChat(isSystemContinue = false) {
             if (window.currentAIController) return;
+            
+            // Защита от отправки запроса в процессе скачивания весов локальной модели
+            if (window.isLocalModelLoading) {
+                alert("Пожалуйста, дождитесь завершения загрузки или инициализации локальной модели перед отправкой промпта.");
+                return;
+            }
 
             const input = document.getElementById("aiInput");
             const sendBtn = document.getElementById("aiSendBtn");
@@ -11495,23 +12523,41 @@ contentDiv.innerHTML = safeContent ? window.secureSanitizeHTML(marked.parse(safe
             const uiAttachedNotes = notes.filter(n => window.aiAttachedNotes.has(n.id));
             const allContextNotes = [...new Set([...textMentionedNotes, ...uiAttachedNotes])];
 
-            // Даем ИИ оглавление со структурой путей
-            const notesDirectory = notes.map(n => ({
+            // Находим все файлы исключительно в текущей активной папке
+            const activeFolderFiles = notes.filter(n => n.parentId === activeFolderId && n.type === 'file');
+
+            // Объединяем только текущую папку и принудительно прикрепленные файлы
+            const baseAllowed = new Set([...allContextNotes, ...activeFolderFiles]);
+            const activeNote = notes.find(n => n.id === activeId);
+            if (activeNote) baseAllowed.add(activeNote);
+
+            const allowedNotesArray = Array.from(baseAllowed);
+
+            // Даем ИИ оглавление путей ТОЛЬКО тех файлов, к которым мы дали доступ в этой сессии
+            const notesDirectory = allowedNotesArray.map(n => ({
                 id: n.id,
                 type: n.type,
                 path: window.getFullPath(n)
             }));
-            const baseAllowed = new Set([...allContextNotes]);
-            const activeNote = notes.find(n => n.id === activeId);
-            if (activeNote) baseAllowed.add(activeNote);
 
-            // --- АВТОМАТИЧЕСКИ ПОДТЯГИВАЕМ СВЯЗАННЫЕ ФАЙЛЫ ---
-            const depResolution = window.resolveDependencies(Array.from(baseAllowed));
-            const workspaceDB = depResolution.notes.map(n => ({
-                id: n.id,
-                path: window.getFullPath(n),
-                content: window.formatNoteWithLines(n.content)
-            }));
+            // --- АВТОМАТИЧЕСКИ ПОДТЯГИВАЕМ СВЯЗАННЫЕ ФАЙЛЫ (ИЗ РАЗРЕШЕННЫХ) ---
+            const depResolution = window.resolveDependencies(allowedNotesArray);
+            
+            const isLocal = settings.aiModel.startsWith("local-");
+
+            const workspaceDB = depResolution.notes.map(n => {
+                let fileContent = n.content || "";
+                
+                if (isLocal && fileContent.length > 6000) {
+                    fileContent = fileContent.substring(0, 6000) + "\n... [Файл обрезан для экономии контекста локальной модели] ...";
+                }
+                
+                return {
+                    id: n.id,
+                    path: window.getFullPath(n),
+                    content: window.formatNoteWithLines(fileContent)
+                };
+            });
             const graphContext = depResolution.graphText;
 
             const textAccessRule =
@@ -11687,10 +12733,27 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             }];
             for (let i = 0; i < aiChatHistory.length - 1; i++) {
                 const msg = aiChatHistory[i];
-                apiMessages.push({
-                    role: msg.role,
-                    content: msg.promptContent || msg.content
-                });
+                
+                // Если у исторического сообщения были прикреплены изображения/документы,
+                // сохраняем их для ИИ, но полностью очищаем текстовую часть от старых срезов файлов,
+                // оставляя только чистый, исходно набранный пользователем текст.
+                if (Array.isArray(msg.promptContent)) {
+                    const cleanParts = msg.promptContent.map(part => {
+                        if (part.type === "text") {
+                            return { type: "text", text: msg.content }; // Очищаем от старого workspaceDB
+                        }
+                        return part; // Сохраняем медиафайлы (image_url)
+                    });
+                    apiMessages.push({
+                        role: msg.role,
+                        content: cleanParts
+                    });
+                } else {
+                    apiMessages.push({
+                        role: msg.role,
+                        content: msg.content // Передаем только чистый набранный текст
+                    });
+                }
             }
 
             // Находим текущее сообщение пользователя в истории, чтобы сохранить туда сгенерированный контекст
@@ -11779,8 +12842,8 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
 
                 let finalContent = result.content;
 
-                // НОВЫЙ ВЫЗОВ ПАРСЕРА
-                if (currentAIMode === "agent") {
+                // НОВЫЙ ВЫЗОВ ПАРСЕРА (Пропускаем его при системном уведомлении о незапущенной модели)
+                if (currentAIMode === "agent" && finalContent !== "[LOCAL_MODEL_NOT_LAUNCHED]") {
                     try {
                         let actionData = window.parseAIResponseToActions(finalContent);
                         finalContent = actionData.reply;
@@ -11815,9 +12878,11 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     role: "assistant",
                     content: finalContent,
                     reasoning: result.reasoning,
-                    model: settings.aiModel // СОХРАНЯЕМ МОДЕЛЬ В ИСТОРИЮ
+                    model: settings.aiModel,
+                    tps: window.lastCalculatedTps || null // Сохраняем финальную скорость генерации
                 });
                 saveAIChat();
+                window.lastCalculatedTps = "0.0";
 
                 // Отключаем активный пульс генерации на боковой панели
                 const finalAvatar = msgDiv.querySelector('.bot-avatar-gutter');
