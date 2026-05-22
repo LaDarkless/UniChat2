@@ -57,24 +57,28 @@
 
     <style>
         :root {
-            --bg-color: #030303;
-            --grid-color: rgba(255, 255, 255, 0.03);
-            --panel-bg: rgba(8, 8, 10, 0.72);
-            --panel-border: rgba(255, 255, 255, 0.06);
+            --bg-color: #020204;
+            --grid-color: rgba(255, 255, 255, 0.015);
+            --panel-bg: rgba(10, 10, 12, 0.65);
+            --panel-border: rgba(255, 255, 255, 0.05);
+            --panel-border-glow: rgba(var(--accent-rgb), 0.15);
             --text-main: #f8fafc;
-            --text-muted: #8a99ad;
+            --text-muted: #7e8c9f;
 
-            /* Акцентные цвета */
-            --accent: #8b5cf6;
-            --accent-hover: #a78bfa;
-            --accent-rgb: 139, 92, 246;
+            /* Акцентные цвета с улучшенным контрастом */
+            --accent: #7c3aed;
+            --accent-hover: #9333ea;
+            --accent-rgb: 124, 58, 237;
+
+            /* Фирменные кривые анимации (Linear Style) */
+            --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            --transition-bounce: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 
             /* Шрифты и адаптивное fluid-масштабирование */
             --font-ui: "Inter", sans-serif;
             --font-text: "Inter", sans-serif;
             --font-code: "JetBrains Mono", monospace;
-            --text-size: clamp(14px, 1.05vw, 17px);
-            /* Плавное масштабирование текста */
+            --text-size: clamp(14px, 1.05vw, 16px);
         }
 
         * {
@@ -609,9 +613,9 @@
 
         /* ========================================== */
 
-        /* Эстетичные адаптивные кнопки */
+        /* Премиальные адаптивные кнопки с радиальным подсвечиванием */
         .btn {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.01);
             color: var(--text-main);
             border: 1px solid var(--panel-border);
             padding: clamp(8px, 1.2vh, 11px) clamp(12px, 1.5vw, 18px);
@@ -624,31 +628,33 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: var(--transition-smooth);
             position: relative;
             overflow: hidden;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
         }
 
         .btn::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
-            transition: 0.6s;
+            inset: 0;
+            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, 0.08) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
         }
 
         .btn:hover::before {
-            left: 100%;
+            opacity: 1;
         }
 
         .btn:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(var(--accent-rgb), 0.3);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(var(--accent-rgb), 0.45);
+            transform: translateY(-1.5px);
+            box-shadow: 
+                0 6px 20px rgba(0, 0, 0, 0.4),
+                0 0 12px var(--panel-border-glow);
         }
 
         .btn-primary {
@@ -871,11 +877,14 @@
             background: var(--accent);
         }
 
-        /* Подсветка папки во время Drag & Drop */
+        /* Подсветка папки во время Drag & Drop в стиле SaaS High-End */
         .note-item.drag-over {
             border-color: var(--accent) !important;
-            background: rgba(var(--accent-rgb), 0.2) !important;
-            transform: scale(1.02);
+            background: rgba(var(--accent-rgb), 0.08) !important;
+            transform: scale(1.03) translateX(2px);
+            box-shadow: 
+                0 0 25px rgba(var(--accent-rgb), 0.25),
+                inset 0 0 10px rgba(var(--accent-rgb), 0.15) !important;
         }
 
         /* Внутренние элементы карточки */
@@ -1607,107 +1616,172 @@
             top: 0;
             right: 0;
             width: 450px;
-            /* Широкое и удобное окно */
             height: 100vh;
-            background: #000000 !important; /* Угольно-черный монолитный фон */
-            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            background: #040406 !important; /* Глубокий, чистый темный фон перенесен на родителя */
+            backdrop-filter: blur(40px) saturate(130%);
+            -webkit-backdrop-filter: blur(40px) saturate(130%);
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
             transform: translateX(100%);
-            transition: transform 0.3s ease;
-            /* Плавный выезд */
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             z-index: 2000;
             display: flex;
             flex-direction: column;
-            box-shadow: -20px 0 50px rgba(0, 0, 0, 0.5);
-            overflow: hidden; /* Маскируем края свечения */
+            box-shadow: -25px 0 60px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
         }
 
-        /* СЛОЙ 1: Хроматическое плазменное свечение (Аврора)
-           Плавное смещение спектра и мягкое покачивание тепла */
-           .ai-sidebar::before {
-            content: '';
+        /* Прозрачный фон чата, чтобы сквозь него просвечивала бесконечная глубина */
+        .ai-chat-area {
+            background: transparent !important;
+        }
+
+        /* Контейнер деликатного космического фона */
+        .ai-cosmos-bg {
             position: absolute;
-            bottom: -50px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 160%;
-            height: 180px;
-            background: radial-gradient(circle at 50% 100%, 
-                rgba(99, 102, 241, 0.35) 0%,   /* Indigo */
-                rgba(168, 85, 247, 0.2) 25%,   /* Violet */
-                rgba(236, 72, 153, 0.08) 55%,  /* Pink */
-                rgba(59, 130, 246, 0.03) 75%,  /* Soft Blue */
-                transparent 90%
-            );
-            filter: blur(40px);
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
             pointer-events: none;
-            z-index: 1;
-            mix-blend-mode: screen;
-            animation: auroraMovement 8s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
-            will-change: transform, opacity, filter;
+            overflow: hidden;
+            background: #020204;
         }
 
-        /* СЛОЙ 2: Двухскоростная система искр с тепловым дрожанием воздуха
-           Сочетает быстрые фоновые микро-точки и медленные вытянутые передние треки */
-        .ai-sidebar::after {
-            content: '';
+        /* Едва заметное, мягкое фиолетово-бирюзовое свечение туманностей */
+        .ai-cosmos-nebula {
             position: absolute;
-            bottom: -70px;
-            left: 50%;
-            transform: translate3d(-50%, 0, 0);
-            width: 150%;
-            height: 220px;
-            
+            inset: 0;
+            background: 
+                radial-gradient(circle at 80% 20%, rgba(0, 229, 255, 0.025) 0%, transparent 60%),
+                radial-gradient(circle at 20% 80%, rgba(167, 139, 250, 0.03) 0%, transparent 60%);
+            animation: nebulaPulse 12s ease-in-out infinite alternate;
+            will-change: opacity, transform;
+        }
+
+        @keyframes nebulaPulse {
+            0% { opacity: 0.7; transform: scale(1); }
+            100% { opacity: 1.1; transform: scale(1.05); }
+        }
+
+        /* Процедурная карта звездного неба разной величины и яркости */
+        .ai-stars {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
             background-image: 
-                /* --- ПЕРЕДНИЙ ПЛАН (Медленные вытянутые стреки, сетка 180x180px) --- */
-                radial-gradient(ellipse 1px 4px at 30px 50px, rgba(255, 255, 255, 0.95) 100%, transparent),
-                radial-gradient(ellipse 1.2px 6px at 120px 140px, rgba(244, 63, 94, 0.9) 100%, transparent),
-                radial-gradient(ellipse 1px 5px at 150px 30px, rgba(192, 132, 252, 0.8) 100%, transparent),
-                radial-gradient(ellipse 1.5px 7px at 75px 100px, rgba(255, 255, 255, 0.9) 100%, transparent),
-                
-                /* --- ЗАДНИЙ ПЛАН (Быстрые круглые микро-искры, сетка 120x120px) --- */
-                radial-gradient(circle 1px at 20px 30px, rgba(34, 211, 238, 0.8) 100%, transparent),
-                radial-gradient(circle 0.8px at 70px 15px, rgba(255, 255, 255, 0.9) 100%, transparent),
-                radial-gradient(circle 1.2px at 100px 85px, rgba(129, 140, 248, 0.7) 100%, transparent),
-                radial-gradient(circle 0.8px at 45px 95px, rgba(251, 191, 36, 0.8) 100%, transparent),
-                radial-gradient(circle 1px at 10px 110px, rgba(255, 255, 255, 0.6) 100%, transparent);
-
-            background-size: 
-                180px 180px, 180px 180px, 180px 180px, 180px 180px, /* Стреки */
-                120px 120px, 120px 120px, 120px 120px, 120px 120px, 120px 120px; /* Микро-искры */
-                
-            background-repeat: repeat;
-            
-            /* Маска для мягкого растворения частиц по мере их подъема */
-            -webkit-mask-image: linear-gradient(to top, transparent 10%, rgba(0,0,0,1) 40%, rgba(0,0,0,0.85) 70%, transparent 95%);
-            mask-image: linear-gradient(to top, transparent 10%, rgba(0,0,0,1) 40%, rgba(0,0,0,0.85) 70%, transparent 95%);
-            
-            pointer-events: none;
-            z-index: 2;
-            mix-blend-mode: screen;
-            
-            /* Два независимых потока анимации: физический подъем текстуры + покачивание холста */
-            animation: 
-                parallaxSparks 9s linear infinite,
-                thermalDraft 5s ease-in-out infinite alternate;
-            will-change: background-position, transform;
+                radial-gradient(circle 0.75px at 15% 10%, rgba(255,255,255,0.25) 100%, transparent),
+                radial-gradient(circle 0.5px at 85% 20%, rgba(255,255,255,0.18) 100%, transparent),
+                radial-gradient(circle 0.75px at 45% 35%, rgba(255,255,255,0.3) 100%, transparent),
+                radial-gradient(circle 0.5px at 30% 60%, rgba(255,255,255,0.15) 100%, transparent),
+                radial-gradient(circle 1px at 70% 50%, rgba(0, 229, 255, 0.2) 100%, transparent),
+                radial-gradient(circle 0.75px at 90% 75%, rgba(255,255,255,0.25) 100%, transparent),
+                radial-gradient(circle 0.5px at 10% 80%, rgba(255,255,255,0.18) 100%, transparent),
+                radial-gradient(circle 0.5px at 50% 90%, rgba(255,255,255,0.15) 100%, transparent),
+                radial-gradient(circle 1px at 65% 15%, rgba(167, 139, 250, 0.2) 100%, transparent),
+                radial-gradient(circle 0.75px at 25% 45%, rgba(255,255,255,0.25) 100%, transparent);
+            background-repeat: repeat-y;
+            background-size: 100% 600px;
+            animation: twinklingStars 10s ease-in-out infinite alternate;
+            will-change: opacity;
         }
 
-        /* Медленный дрейф фонового свечения с мягким смещением цветового тона (hue-rotate) */
-        @keyframes auroraMovement {
+        @keyframes twinklingStars {
+            0% { opacity: 0.5; }
+            100% { opacity: 0.95; }
+        }
+
+        /* Контейнер падающих звезд */
+        .ai-shooting-stars {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Падающая звезда (тонкая скользящая линия с плавным затуханием хвоста) */
+        .shooting-star {
+            position: absolute;
+            height: 1px;
+            width: 90px;
+            background: linear-gradient(-45deg, transparent, rgba(0, 229, 255, 0.5) 10%, rgba(255, 255, 255, 0.9) 40%, transparent 100%);
+            filter: drop-shadow(0 0 3px rgba(0, 229, 255, 0.35));
+            opacity: 0;
+            transform: rotate(-40deg);
+            animation: shoot var(--speed, 4s) linear infinite;
+            animation-delay: var(--delay, 0s);
+            will-change: transform, opacity;
+        }
+
+        /* 
+           Траектория падения по диагонали (сверху-справа вниз-влево).
+           Подходит под пропорции вертикальной боковой панели.
+        */
+        @keyframes shoot {
             0% {
-                opacity: 0.6;
-                transform: translateX(-50%) scale(0.92) skewX(-2deg);
-                filter: blur(40px) hue-rotate(0deg);
+                transform: translate3d(150px, -125px, 0) rotate(-40deg) scaleX(0.1);
+                opacity: 0;
             }
-            50% {
+            3% {
                 opacity: 0.9;
-                transform: translateX(-49%) scale(1.05) skewX(3deg);
-                filter: blur(35px) hue-rotate(15deg);
+                transform: translate3d(100px, -83px, 0) rotate(-40deg) scaleX(1);
+            }
+            15% {
+                transform: translate3d(-150px, 125px, 0) rotate(-40deg) scaleX(1);
+                opacity: 0;
             }
             100% {
-                opacity: 0.7;
-                transform: translateX(-51%) scale(0.96) skewX(-1deg);
-                filter: blur(45px) hue-rotate(-10deg);
+                transform: translate3d(-200px, 166px, 0) rotate(-40deg) scaleX(0);
+                opacity: 0;
+            }
+        }
+
+        /* Гарантия того, что контент чата будет лежать строго поверх космоса */
+        .ai-header {
+            position: relative;
+            z-index: 100; /* Принудительно поднимаем шапку и её выпадающие меню на верхний слой */
+        }
+        .ai-chat-area {
+            position: relative;
+            z-index: 10;
+        }
+        .ai-input-area {
+            position: relative;
+            z-index: 20;
+        }
+
+        /* Мягкий дрейф фонового свечения по всей площади панели чата */
+        @keyframes auroraMovement {
+            0% {
+                opacity: 0.5;
+                transform: scale(1) translate3d(-2%, -3%, 0);
+                filter: blur(60px) hue-rotate(0deg);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.08) translate3d(2%, 2%, 0);
+                filter: blur(50px) hue-rotate(20deg);
+            }
+            100% {
+                opacity: 0.6;
+                transform: scale(0.95) translate3d(-1%, 1%, 0);
+                filter: blur(65px) hue-rotate(-10deg);
+            }
+        }
+
+        /* Мягкое тепловое покачивание искр без горизонтального сдвига на 50% */
+        @keyframes thermalDraft {
+            0% {
+                transform: translate3d(0, 0, 0) scaleX(0.97);
+                filter: brightness(0.95);
+            }
+            50% {
+                transform: translate3d(1.5%, -5px, 0) scaleX(1.03) skewX(0.5deg);
+                filter: brightness(1.12);
+            }
+            100% {
+                transform: translate3d(-1.5%, 3px, 0) scaleX(0.98) skewX(-0.5deg);
+                filter: brightness(0.9);
             }
         }
 
@@ -1727,23 +1801,6 @@
                     0px -360px, 0px -360px, 0px -360px, 0px -360px,
                     /* Задний план (Быстрый подъем на 720px) */
                     0px -720px, 0px -720px, 0px -720px, 0px -720px, 0px -720px;
-            }
-        }
-
-        /* Симуляция тепловых потоков воздуха: 
-           Легкое покачивание всего холста с искрами по горизонтали и микро-мерцание яркости */
-        @keyframes thermalDraft {
-            0% {
-                transform: translate3d(-50%, 0, 0) scaleX(0.96);
-                filter: brightness(0.95);
-            }
-            50% {
-                transform: translate3d(-48%, -4px, 0) scaleX(1.04) skewX(0.8deg);
-                filter: brightness(1.15);
-            }
-            100% {
-                transform: translate3d(-52%, 2px, 0) scaleX(0.98) skewX(-0.8deg);
-                filter: brightness(0.9);
             }
         }
 
@@ -3679,11 +3736,6 @@ user-select: none !important;
             from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        /* Угольно-черный фон чата как на скриншоте */
-        .ai-chat-area {
-            background: #000000 !important;
-        }
         
         #aiInput {
             width: 100%;
@@ -3819,6 +3871,81 @@ user-select: none !important;
             flex-shrink: 0 !important;
             display: block !important;
             margin: 0 auto !important;
+        }
+
+        /* =======================================================================
+         УНИФИЦИРОВАННЫЙ DROPDOWN В СТИЛЕ GEMINI ADVANCED (СКРИНШОТ 2)
+         ======================================================================= */
+         #aiUnifiedDropdown {
+            position: relative;
+            z-index: 2005; /* Поверх остальных элементов интерфейса */
+        }
+        #aiUnifiedDropdown .ai-model-btn {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            padding: 8px 14px !important;
+            border-radius: 10px !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        #aiUnifiedDropdown .ai-model-btn:hover {
+            background: rgba(255, 255, 255, 0.06) !important;
+            border-color: rgba(var(--accent-rgb), 0.35) !important;
+        }
+        #aiUnifiedMenu {
+            width: 320px !important;
+            max-height: 480px !important;
+            overflow-y: auto !important;
+            border-radius: 14px !important;
+            padding: 8px !important;
+            background: #111115 !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8) !important;
+            
+            /* Кроссбраузерный скроллбар для Firefox */
+            scrollbar-width: thin !important;
+            scrollbar-color: rgba(255, 255, 255, 0.15) transparent !important;
+        }
+        
+        /* Премиальная стилизация скроллбара для Webkit (Chrome, Edge, Opera, Safari) */
+        #aiUnifiedMenu::-webkit-scrollbar {
+            width: 6px !important;
+        }
+        #aiUnifiedMenu::-webkit-scrollbar-track {
+            background: transparent !important; /* Убирает белый или серый фоновый трек */
+        }
+        #aiUnifiedMenu::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.12) !important;
+            border-radius: 10px !important;
+            border: 1px solid transparent !important;
+            background-clip: padding-box !important;
+            transition: background 0.2s ease !important;
+        }
+        #aiUnifiedMenu::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25) !important;
+        }
+        .ai-model-item {
+            padding: 10px 14px !important;
+            margin: 2px 0 !important;
+            border-radius: 8px !important;
+            border-bottom: none !important;
+        }
+        .ai-model-item.active {
+            background: rgba(var(--accent-rgb), 0.06) !important;
+            border-left: 2px solid var(--accent) !important;
+        }
+        #aiThinkingMenu {
+            transition: all 0.25s ease;
+        }
+        #aiThinkingMenu .ai-model-item {
+            padding: 8px 12px !important;
+            border-radius: 6px !important;
+            margin: 2px 0 !important;
+        }
+        #aiThinkingMenu .ai-model-item.active {
+            background: rgba(16, 185, 129, 0.1) !important;
+            border-left: 2.5px solid #10b981 !important;
         }
     </style>
 
@@ -4194,108 +4321,55 @@ user-select: none !important;
         <div class="ai-sidebar-overlay" onclick="toggleAISidebar()"></div>
         <aside class="ai-sidebar" id="aiSidebar">
 
+            <!-- Деликатный космический фон со звездным небом и звездопадом -->
+            <div class="ai-cosmos-bg">
+                <div class="ai-cosmos-nebula"></div>
+                <div class="ai-stars"></div>
+                <div class="ai-shooting-stars">
+                    <div class="shooting-star" style="top: 5%; left: 85%; --delay: 0s; --speed: 4.2s;"></div>
+                    <div class="shooting-star" style="top: 25%; left: 95%; --delay: 2.1s; --speed: 5s;"></div>
+                    <div class="shooting-star" style="top: 48%; left: 90%; --delay: 3.8s; --speed: 4.6s;"></div>
+                    <div class="shooting-star" style="top: 72%; left: 80%; --delay: 1.4s; --speed: 5.8s;"></div>
+                    <div class="shooting-star" style="top: -12%; left: 65%; --delay: 5.5s; --speed: 3.9s;"></div>
+                </div>
+            </div>
+
             <div class="ai-header"
                 style="padding: 20px; border-bottom: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
 
                 <div style="display: flex; gap: 8px; flex: 1;">
-                    <!-- Кастомный красивый Dropdown (Модель) -->
-                    <div class="ai-model-dropdown" id="aiModelDropdown">
-                        <button class="ai-model-btn" onclick="toggleModelDropdown(event)">
-                            <i class='bx bx-brain' style="color: var(--accent); font-size: 18px;"></i>
-                            <span id="currentModelLabel">GPT-5.5</span>
-                            <i class='bx bx-chevron-down' style="color: var(--text-muted);"></i>
+                    <!-- Единый кастомный Dropdown в стиле Gemini Advanced -->
+                    <div class="ai-model-dropdown" id="aiUnifiedDropdown" style="position: relative; flex: 1; max-width: 280px;">
+                        <button class="ai-model-btn" onclick="toggleUnifiedDropdown(event)" style="width: 100%; display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); color: #fff; padding: 8px 14px; border-radius: 10px; font-size: 13px; font-family: var(--font-ui); font-weight: 500; cursor: pointer; transition: 0.2s ease;">
+                            <span style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                                <i class='bx bx-brain' style="color: var(--accent); font-size: 18px; flex-shrink: 0;"></i>
+                                <span id="currentModelLabel" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;">GPT-5.5</span>
+                                <span id="currentThinkingBadge" style="font-size: 10px; color: var(--accent); background: rgba(var(--accent-rgb), 0.12); padding: 1px 6px; border-radius: 6px; font-weight: 600; flex-shrink: 0;">Выкл</span>
+                            </span>
+                            <i class='bx bx-chevron-down' style="color: var(--text-muted); flex-shrink: 0; margin-left: 4px;"></i>
                         </button>
-                        <div class="ai-model-menu" id="aiModelMenu">
-                            <!-- НОВЫЙ ЛОКАЛЬНЫЙ ПУНКТ -->
-                            <div class="ai-model-item"
-                                style="background: rgba(16, 185, 129, 0.1); border-bottom: 1px solid rgba(16,185,129,0.3);"
-                                onclick="selectAIModel('local-deepseek-r1', 'DeepSeek-R1 Local')">
-                                <span class="m-title" style="color: #10b981;"><i class='bx bx-laptop'></i> DeepSeek-R1
-                                    (Локально)</span>
-                                <span class="m-desc">Работает прямо в браузере, бесплатно</span>
+                        <div class="ai-model-menu" id="aiUnifiedMenu">
+                            <div style="font-size: 11px; color: var(--text-muted); padding: 8px 12px 4px 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Выберите модель ИИ</div>
+                            <div id="aiModelListContainer">
+                                <!-- Список моделей генерируется динамически с галочками -->
                             </div>
-                            <div class="ai-model-item" onclick="selectAIModel('gpt-5.5', 'GPT-5.5')">
-                                <span class="m-title">GPT-5.5</span><span class="m-desc">Флагман OpenAI</span>
-                            </div>
-                            <div class="ai-model-item" onclick="selectAIModel('gpt-5.4-mini', 'GPT-5.4-mini')">
-                                <span class="m-title">GPT-5.4-mini</span><span class="m-desc">Быстрая генерация
-                                    (Оптимально)</span>
-                            </div>
-                            <div class="ai-model-item" onclick="selectAIModel('gpt-5.4-nano', 'GPT-5.4-nano')">
-                                <span class="m-title">GPT-5.4-nano</span><span class="m-desc">Легкая и дешевая
-                                    модель</span>
-                            </div>
-                            <div class="ai-model-item" onclick="selectAIModel('qwen/qwen3.7-max', 'Qwen3.7-max')">
-                                <span class="m-title">Qwen3.7 max</span><span class="m-desc">Последняя модель от
-                                    Qwen</span>
-                            </div>
-                            <div class="ai-model-item" onclick="selectAIModel('qwen/qwen3.5-plus-20260420', 'Qwen3.6-plus')">
-                                <span class="m-title">Qwen3.6 plus</span><span class="m-desc">PLUS Model by 
-                                    Alibaba</span>
-                            </div>
-                            <div class="ai-model-item" onclick="selectAIModel('claude-opus-4-7', 'Claude Opus 4.7')">
-                                <span class="m-title">Claude Opus 4.7</span><span class="m-desc">Мощная аналитика
-                                    (Anthropic)</span>
-                            </div>
-                            <div class="ai-model-item"
-                                onclick="selectAIModel('claude-sonnet-4-6', 'Claude Sonnet 4.6')">
-                                <span class="m-title">Claude Sonnet 4.6</span><span class="m-desc">Код и логика
-                                    (Anthropic)</span>
-                            </div>
-                            <div class="ai-model-item" onclick="selectAIModel('claude-haiku-4-5', 'Claude Haiku 4.5')">
-                                <span class="m-title">Claude Haiku 4.5</span><span class="m-desc">Молниеносная
-                                    скорость</span>
-                            </div>
-                            <div class="ai-model-item" onclick="selectAIModel('gemini-3.5-flash', 'Gemini 3.5 Flash')">
-                                <span class="m-title">Gemini 3.5 Flash</span><span class="m-desc">Нативный API Google с
-                                    полной поддержкой размышлений</span>
-                            </div>
-                            <div class="ai-model-item"
-                                onclick="selectAIModel('gemini-3.1-pro-preview', 'Gemini 3.1 Pro')">
-                                <span class="m-title">Gemini 3.1 Pro</span><span class="m-desc">Модель Google с
-                                    рассуждением</span>
-                            </div>
-                            <div class="ai-model-item"
-                                onclick="selectAIModel('openrouter/x-ai/grok-build-0.1', 'Grok-0.1')">
-                                <span class="m-title">Grok-build-0.1</span><span class="m-desc">Без цензуры
-                                    (X/Twitter)</span>
-                            </div>
-                            <div class="ai-model-item" onclick="selectAIModel('openrouter/x-ai/grok-4.3', 'Grok-4.3')">
-                                <span class="m-title">Grok-4.3</span><span class="m-desc">Без цензуры (X/Twitter)</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ВТОРОЙ DROPDOWN: Thinking Mode -->
-                    <div class="ai-model-dropdown" id="aiThinkingDropdown">
-                        <button class="ai-model-btn" onclick="toggleThinkingDropdown(event)"
-                            style="border-color: rgba(16, 185, 129, 0.3);">
-                            <i class='bx bx-bulb' style="color: #10b981; font-size: 18px;"></i>
-                            <span id="currentThinkingLabel">Off</span>
-                            <i class='bx bx-chevron-down' style="color: var(--text-muted);"></i>
-                        </button>
-                        <div class="ai-model-menu" id="aiThinkingMenu" style="width: 220px;">
-                            <div class="ai-model-item" data-mode="off" onclick="selectThinkingMode('off', 'Off')">
-                                <span class="m-title">Отключено (None)</span>
-                                <span class="m-desc">Быстрый ответ (GPT) / Базовый (Grok)</span>
-                            </div>
-                            <div class="ai-model-item" data-mode="low" onclick="selectThinkingMode('low', 'Low')">
-                                <span class="m-title">Низкий (Low)</span>
-                                <span class="m-desc">Базовое обдумывание</span>
-                            </div>
-                            <div class="ai-model-item" data-mode="medium"
-                                onclick="selectThinkingMode('medium', 'Medium')">
-                                <span class="m-title">Средний (Medium)</span>
-                                <span class="m-desc">Глубокий анализ</span>
-                            </div>
-                            <div class="ai-model-item" data-mode="high" onclick="selectThinkingMode('high', 'High')">
-                                <span class="m-title">Высокий (High)</span>
-                                <span class="m-desc">Максимальная логика (Долго)</span>
-                            </div>
-                            <div class="ai-model-item" data-mode="xhigh"
-                                onclick="selectThinkingMode('xhigh', 'Extreme')">
-                                <span class="m-title">Экстрим (XHigh)</span>
-                                <span class="m-desc">Сложные задачи (Для GPT-5)</span>
+                            <div style="height: 1px; background: rgba(255, 255, 255, 0.06); margin: 6px 0;"></div>
+                            
+                            <!-- Секция Уровень рассуждений в стиле Gemini Advanced -->
+                            <div class="ai-thinking-dropdown-section" style="padding: 4px;">
+                                <div onclick="toggleThinkingSection(event)" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.2s; background: rgba(255,255,255,0.01);" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='rgba(255,255,255,0.01)'">
+                                    <span style="display: flex; align-items: center; gap: 8px;">
+                                        <i class='bx bx-bulb' style="color: #10b981; font-size: 16px;"></i>
+                                        <span style="font-size: 13px; font-weight: 500; color: #fff;">Уровень рассуждений</span>
+                                    </span>
+                                    <span style="display: flex; align-items: center; gap: 6px;">
+                                        <span id="currentThinkingLabel" style="font-size: 12px; color: var(--text-muted);">Off</span>
+                                        <i class='bx bx-chevron-down' id="thinkingSectionChevron" style="color: var(--text-muted); transition: transform 0.2s;"></i>
+                                    </span>
+                                </div>
+                                <div id="aiThinkingMenu" style="display: none; flex-direction: column; gap: 2px; padding: 4px 6px 0 6px;">
+                                    <!-- Варианты рассуждений генерируются динамически -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -4797,7 +4871,18 @@ user-select: none !important;
             }
         }
 
-        // Навешиваем клики на интерактивные элементы
+        // Селективный и ненавязчивый интерактивный аудио-дизайн + расчет градиента ховера
+        document.addEventListener('mousemove', (e) => {
+            const btn = e.target.closest('.btn');
+            if (btn) {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                btn.style.setProperty('--x', `${x}px`);
+                btn.style.setProperty('--y', `${y}px`);
+            }
+        }, { passive: true });
+
         document.addEventListener('click', (e) => {
             if (window.synth) {
                 window.synth.init();
@@ -4805,11 +4890,20 @@ user-select: none !important;
                     window.synth.ctx.resume();
                 }
             }
-            const target = e.target.closest(
-                '.btn, .btn-icon, .note-item, .t-menu-item, .ai-mode-btn, .toolbar-btn, .sheet-item, .color-dot, .theme-btn'
-                );
-            if (target && window.synth) {
-                window.synth.playClick();
+            
+            // Фильтруем элементы: проигрываем звук клика только на основных операционных триггерах
+            const actionTarget = e.target.closest(
+                '.btn-primary, #webPreviewBtn, #previewFullscreenBtn, #screenshotBtn, .theme-btn, .color-dot'
+            );
+            
+            if (actionTarget && window.synth) {
+                if (actionTarget.id === 'webPreviewBtn') {
+                    window.synth.playChime(); // Мелодичный старт для запуска сайта
+                } else if (actionTarget.classList.contains('color-dot') || actionTarget.classList.contains('theme-btn')) {
+                    window.synth.playBubble(); // Бульканье при смене косметической темы
+                } else {
+                    window.synth.playClick(); // Деликатный клик для важных CTA
+                }
             }
         });
 
@@ -7920,6 +8014,10 @@ user-select: none !important;
                 }
                 label.textContent = modelMap[lookupKey] || settings.aiModel;
             }
+        // НОВОЕ: обновляем значок мышления в единой шапке
+        if (typeof updateUnifiedBadge === "function") {
+                updateUnifiedBadge();
+            }
         }
 
         // ==========================================
@@ -8281,28 +8379,136 @@ user-select: none !important;
         });
 
         // ==========================================
-        // ЛОГИКА ТУЛБАРА И МАРКДАУН ВСТАВОК
+        // ЕДИНАЯ ЛОГИКА УНИФИЦИРОВАННОГО DROPDOWN (В СТИЛЕ GEMINI ADVANCED)
         // ==========================================
-        function toggleModelDropdown(e) {
-            e.stopPropagation();
-            document.getElementById("aiThinkingDropdown").classList.remove("open"); // Закрываем соседнее
-            document.getElementById("aiModelDropdown").classList.toggle("open");
+        window.aiModelsList = [
+            { value: 'local-deepseek-r1', label: 'DeepSeek-R1 Local', desc: 'Работает в браузере (WebGPU), бесплатно', badge: 'Локально' },
+            { value: 'gpt-5.5', label: 'GPT-5.5', desc: 'Флагман OpenAI' },
+            { value: 'gpt-5.4-mini', label: 'GPT-5.4-mini', desc: 'Быстрая генерация (Оптимально)' },
+            { value: 'gpt-5.4-nano', label: 'GPT-5.4-nano', desc: 'Легкая и дешевая модель' },
+            { value: 'qwen/qwen3.7-max', label: 'Qwen3.7-max', desc: 'Последняя модель от Qwen' },
+            { value: 'qwen/qwen3.5-plus-20260420', label: 'Qwen3.6-plus', desc: 'PLUS Model by Alibaba' },
+            { value: 'claude-opus-4-7', label: 'Claude Opus 4.7', desc: 'Мощная аналитика (Anthropic)' },
+            { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', desc: 'Код и логика (Anthropic)' },
+            { value: 'claude-haiku-4-5', label: 'Claude Haiku 4.5', desc: 'Молниеносная скорость' },
+            { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash', desc: 'Нативный API Google с полной поддержкой размышлений' },
+            { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', desc: 'Модель Google с рассуждением' },
+            { value: 'openrouter/x-ai/grok-build-0.1', label: 'Grok-0.1', desc: 'Без цензуры (X/Twitter)' },
+            { value: 'openrouter/x-ai/grok-4.3', label: 'Grok-4.3', desc: 'Без цензуры (X/Twitter)' }
+        ];
+
+        window.toggleUnifiedDropdown = function(e) {
+            if (e) e.stopPropagation();
+            const dropdown = document.getElementById("aiUnifiedDropdown");
+            if (!dropdown) return;
+            
+            const isOpen = dropdown.classList.toggle("open");
+            if (isOpen) {
+                renderAIModelsList();
+            }
+        };
+
+        window.toggleThinkingSection = function(e) {
+            if (e) e.stopPropagation();
+            const menu = document.getElementById("aiThinkingMenu");
+            const chevron = document.getElementById("thinkingSectionChevron");
+            if (!menu) return;
+            
+            if (menu.style.display === "none" || !menu.style.display) {
+                menu.style.display = "flex";
+                chevron.style.transform = "rotate(180deg)";
+            } else {
+                menu.style.display = "none";
+                chevron.style.transform = "rotate(0deg)";
+            }
+        };
+
+        function renderAIModelsList() {
+            const container = document.getElementById("aiModelListContainer");
+            if (!container) return;
+            
+            container.innerHTML = "";
+            window.aiModelsList.forEach(model => {
+                const div = document.createElement("div");
+                div.className = "ai-model-item";
+                if (settings.aiModel === model.value) {
+                    div.classList.add("active");
+                }
+                
+                let badgeHtml = "";
+                if (model.badge) {
+                    badgeHtml = `<span style="font-size: 10px; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 1px 5px; border-radius: 4px; font-weight: 600; margin-left: 6px;">${model.badge}</span>`;
+                }
+                
+                const isSelected = settings.aiModel === model.value;
+                const checkIcon = isSelected ? `<i class='bx bx-check' style="color: var(--accent); font-size: 18px; margin-left: auto; flex-shrink: 0;"></i>` : "";
+                
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; width: 100%; justify-content: space-between; gap: 8px;">
+                        <div style="flex: 1; min-width: 0; text-align: left;">
+                            <span class="m-title" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">${model.label}${badgeHtml}</span>
+                            <span class="m-desc">${model.desc}</span>
+                        </div>
+                        ${checkIcon}
+                    </div>
+                `;
+                
+                if (model.value === 'local-deepseek-r1') {
+                    div.style.background = "rgba(16, 185, 129, 0.03)";
+                    div.style.borderLeft = "3px solid #10b981";
+                }
+                
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    selectAIModel(model.value, model.label);
+                };
+                container.appendChild(div);
+            });
         }
 
-        function toggleThinkingDropdown(e) {
-            e.stopPropagation();
-            document.getElementById("aiModelDropdown").classList.remove("open"); // Закрываем соседнее
-            document.getElementById("aiThinkingDropdown").classList.toggle("open");
-        }
+        window.updateUnifiedBadge = function() {
+            const badge = document.getElementById("currentThinkingBadge");
+            if (!badge) return;
+            
+            const configs = modelThinkingConfigs[settings.aiModel] || [];
+            const isSupported = configs.some(cfg => cfg.value === settings.thinking);
+            
+            if (!isSupported && configs.length > 0) {
+                settings.thinking = configs[0].value;
+                localStorage.setItem("qn_settings", JSON.stringify(settings));
+            }
+            
+            const currentMode = settings.thinking || "off";
+            
+            const labelMap = {
+                "off": "Выкл",
+                "low": "Низкий",
+                "mid": "Средний",
+                "medium": "Средний",
+                "high": "Высокий",
+                "xhigh": "Экстрим",
+                "always": "Вкл"
+            };
+            
+            badge.textContent = labelMap[currentMode] || "Выкл";
+            
+            if (currentMode === "off") {
+                badge.style.background = "rgba(255, 255, 255, 0.05)";
+                badge.style.color = "var(--text-muted)";
+            } else {
+                badge.style.background = "rgba(16, 185, 129, 0.12)";
+                badge.style.color = "#10b981";
+            }
+        };
 
         // Закрываем меню при клике в любое место
         document.addEventListener("click", (e) => {
-            const mDropdown = document.getElementById("aiModelDropdown");
-            const tDropdown = document.getElementById("aiThinkingDropdown");
+            const unifiedDropdown = document.getElementById("aiUnifiedDropdown");
             const extMenu = document.getElementById("aiExtraToolsMenu");
 
-            if (mDropdown && !mDropdown.contains(e.target)) mDropdown.classList.remove("open");
-            if (tDropdown && !tDropdown.contains(e.target)) tDropdown.classList.remove("open");
+            if (unifiedDropdown && !unifiedDropdown.contains(e.target)) {
+                unifiedDropdown.classList.remove("open");
+            }
 
             // Закрываем меню доп. функций, если кликнули мимо
             if (extMenu && !extMenu.contains(e.target) && (!e.target.closest('#aiExtraToolsBtn'))) {
@@ -8545,6 +8751,12 @@ user-select: none !important;
             configs.forEach(cfg => {
                 const div = document.createElement("div");
                 div.className = "ai-model-item";
+                
+                // Добавляем класс active, если этот режим сейчас выбран
+                if (settings.thinking === cfg.value) {
+                    div.classList.add("active");
+                }
+                
                 div.setAttribute("data-mode", cfg.value);
                 div.onclick = (e) => {
                     e.stopPropagation();
@@ -8573,15 +8785,29 @@ user-select: none !important;
         }
 
         function selectThinkingMode(val, label) {
-            document.getElementById("currentThinkingLabel").textContent = label;
-            document.getElementById("aiThinkingDropdown").classList.remove("open");
+            const labelEl = document.getElementById("currentThinkingLabel");
+            if (labelEl) labelEl.textContent = label;
+            
             settings.thinking = val;
             localStorage.setItem("qn_settings", JSON.stringify(settings));
+            
+            // Перерисовываем меню, чтобы зеленая подсветка мгновенно переключилась на новый элемент
+            updateThinkingMenu(settings.aiModel);
+            
+            const dropdown = document.getElementById("aiUnifiedDropdown");
+            if (dropdown) dropdown.classList.remove("open");
+            
+            if (typeof updateUnifiedBadge === "function") {
+                updateUnifiedBadge();
+            }
         }
 
         function selectAIModel(modelValue, modelLabel) {
             document.getElementById("currentModelLabel").textContent = modelLabel;
-            document.getElementById("aiModelDropdown").classList.remove("open");
+            
+            const dropdown = document.getElementById("aiUnifiedDropdown");
+            if (dropdown) dropdown.classList.remove("open");
+            
             settings.aiModel = modelValue;
             const mainSelect = document.getElementById("aiModelSelect");
             if (mainSelect) mainSelect.value = modelValue;
@@ -8595,14 +8821,17 @@ user-select: none !important;
             const aiInput = document.getElementById("aiInput");
             if (aiInput) aiInput.placeholder = window.getModelPlaceholder(modelValue);
             
-            // Если в истории нет реальных сообщений пользователя (то есть на экране только приветствие)
             const isWelcomeOnly = aiChatHistory.length === 0 || 
                                   (aiChatHistory.length === 1 && aiChatHistory[0].role === "assistant" && !aiChatHistory[0].model);
             
             if (isWelcomeOnly) {
-                aiChatHistory = []; // Очищаем возможные заглушки
+                aiChatHistory = [];
                 saveAIChat();
-                renderSavedChat(); // Полностью перерисовываем приветствие с новым логотипом!
+                renderSavedChat();
+            }
+            
+            if (typeof updateUnifiedBadge === "function") {
+                updateUnifiedBadge();
             }
         }
 
