@@ -1822,7 +1822,7 @@
             flex-direction: column;
             gap: 12px;
             position: relative;
-            z-index: 5; /* Поверх фонового свечения */
+            z-index: 25; /* Помещает панель ввода и меню поверх окна чата */
         }
 
         /* Стилизация отступа под боковую аватарку для сообщений бота */
@@ -3944,10 +3944,68 @@ user-select: none !important;
             margin: 2px 0 !important;
         }
         #aiThinkingMenu .ai-model-item.active {
-            background: rgba(16, 185, 129, 0.1) !important;
-            border-left: 2.5px solid #10b981 !important;
-        }
-    </style>
+                background: rgba(16, 185, 129, 0.1) !important;
+                border-left: 2.5px solid #10b981 !important;
+            }
+
+            /* Премиальные неоновые эффекты свечения для дополнительных инструментов ИИ */
+            .ai-extra-tool-item {
+                border: 1px solid transparent !important;
+                transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+            .ai-extra-tool-item.active-site {
+                background: rgba(59, 130, 246, 0.25) !important;
+                color: #60a5fa !important;
+                border: 1px solid #3b82f6 !important;
+                box-shadow: 0 0 15px rgba(59, 130, 246, 0.45) !important;
+                font-weight: 600 !important;
+            }
+            .ai-extra-tool-item.active-terminal {
+                background: rgba(239, 68, 68, 0.25) !important;
+                color: #f87171 !important;
+                border: 1px solid #ef4444 !important;
+                box-shadow: 0 0 15px rgba(239, 68, 68, 0.45) !important;
+                font-weight: 600 !important;
+            }
+            
+            /* Динамические состояния для родительской кнопки "Доп." на панели ввода */
+            .ai-mode-btn {
+                transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+            .ai-mode-btn.extra-active-site {
+                border-color: rgba(59, 130, 246, 0.5) !important;
+                color: #3b82f6 !important;
+                background: rgba(59, 130, 246, 0.08) !important;
+                box-shadow: 0 0 10px rgba(59, 130, 246, 0.15) !important;
+            }
+            .ai-mode-btn.extra-active-terminal {
+                border-color: rgba(239, 68, 68, 0.5) !important;
+                color: #ef4444 !important;
+                background: rgba(239, 68, 68, 0.08) !important;
+                box-shadow: 0 0 10px rgba(239, 68, 68, 0.15) !important;
+            }
+            .ai-mode-btn.extra-active-both {
+                border-color: var(--accent) !important;
+                color: #fff !important;
+                background: rgba(var(--accent-rgb), 0.12) !important;
+                box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.25) !important;
+            }
+            
+            /* Эффектное появление плашек контекста над полем ввода */
+            @keyframes pillAppear {
+                from {
+                    opacity: 0;
+                    transform: scale(0.85) translateY(6px);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+            .mention-pill {
+                animation: pillAppear 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+            }
+        </style>
 
     <!-- ================= IDE (CodeMirror) ================= -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
@@ -4412,14 +4470,14 @@ user-select: none !important;
 
                     <!-- КНОПКА "+" ДЛЯ ДОП. ФУНКЦИЙ -->
                     <div style="position: relative; display: flex;">
-                        <button class="ai-mode-btn" id="aiExtraToolsBtn" onclick="toggleExtraAITools(event)">
+                        <button class="ai-mode-btn" id="aiExtraToolsBtn" onclick="window.toggleExtraAITools(event)">
                             <i class='bx bx-plus'></i> Доп.
                         </button>
                         <div class="ai-extra-tools-menu" id="aiExtraToolsMenu">
-                            <button class="ai-extra-tool-item" id="attachSiteBtn" onclick="toggleSiteContext()">
+                            <button class="ai-extra-tool-item" id="attachSiteBtn" onclick="window.toggleSiteContext(event)">
                                 <i class='bx bx-window-open'></i> + Экран сайта
                             </button>
-                            <button class="ai-extra-tool-item" id="attachTerminalBtn" onclick="toggleTerminalContext()">
+                            <button class="ai-extra-tool-item" id="attachTerminalBtn" onclick="window.toggleTerminalContext(event)">
                                 <i class='bx bx-terminal'></i> + Ошибки терминала
                             </button>
                         </div>
@@ -5343,6 +5401,18 @@ user-select: none !important;
                 consoleBtn.style.display = "none";
                 if (screenshotBtn) screenshotBtn.style.display = "none";
                 if (fullscreenBtn) fullscreenBtn.style.display = "none";
+
+                // Автоматически деактивируем контекст экрана сайта, так как Live-сервер остановлен
+                if (window.aiAttachedSite) {
+                    window.aiAttachedSite = false;
+                    const siteBtn = document.getElementById("attachSiteBtn");
+                    if (siteBtn) {
+                        siteBtn.classList.remove("active-site");
+                        siteBtn.innerHTML = `<i class='bx bx-window-open'></i> + Экран сайта`;
+                    }
+                    window.updateExtraBtnGlow();
+                    updateAttachedNotesUI();
+                }
 
                 // Сбрасываем полноэкранный режим при остановке сайта
                 if (document.body.classList.contains("preview-fullscreen")) {
@@ -7566,68 +7636,83 @@ user-select: none !important;
             updateAttachedNotesUI();
         };
 
-        // Глобальная переменная для экрана сайта
+        // === ИНИЦИАЛИЗАЦИЯ И УПРАВЛЕНИЕ ДОПОЛНИТЕЛЬНЫМ КОНТЕКСТОМ ИИ ===
         window.aiAttachedSite = false;
+        window.aiAttachedTerminal = false;
 
-        // === МЕНЮ ДОП ФУНКЦИЙ ИИ ===
+        // Открытие/закрытие меню доп. функций ИИ
         window.toggleExtraAITools = function(e) {
-            e.stopPropagation();
+            if (e) e.stopPropagation();
             const menu = document.getElementById("aiExtraToolsMenu");
             if (menu) menu.classList.toggle("show");
         };
 
-        window.toggleSiteContext = function() {
-            if (!isWebPreview) {
+        // Вспомогательная функция для обновления свечения родительской кнопки "Доп."
+        window.updateExtraBtnGlow = function() {
+            const extraBtn = document.getElementById("aiExtraToolsBtn");
+            if (!extraBtn) return;
+            
+            extraBtn.classList.remove("extra-active-site", "extra-active-terminal", "extra-active-both");
+            
+            if (window.aiAttachedSite && window.aiAttachedTerminal) {
+                extraBtn.classList.add("extra-active-both");
+            } else if (window.aiAttachedSite) {
+                extraBtn.classList.add("extra-active-site");
+            } else if (window.aiAttachedTerminal) {
+                extraBtn.classList.add("extra-active-terminal");
+            }
+        };
+
+        window.toggleSiteContext = function(e) {
+            if (e) e.stopPropagation(); // Предотвращаем баги всплытия событий
+            
+            // Защита: Включение доступно только при запущенном превью. 
+            // Но отключение (снятие плашки) должно работать абсолютно всегда!
+            if (!window.aiAttachedSite && !isWebPreview) {
                 alert("Сначала запустите сайт (синяя кнопка Play в тулбаре), чтобы ИИ мог на него посмотреть!");
                 return;
             }
+            
             window.aiAttachedSite = !window.aiAttachedSite;
             const btn = document.getElementById("attachSiteBtn");
-            const extraBtn = document.getElementById("aiExtraToolsBtn");
 
             if (btn) {
                 if (window.aiAttachedSite) {
-                    btn.style.background = "rgba(59, 130, 246, 0.15)";
-                    btn.style.color = "#3b82f6";
-                    if (extraBtn) {
-                        extraBtn.style.borderColor = "#3b82f6";
-                        extraBtn.style.color = "#3b82f6";
-                    }
+                    btn.classList.add("active-site");
+                    btn.innerHTML = `<i class='bx bx-check-double'></i> Экран сайта (Вкл)`;
+                    if (window.synth) window.synth.playChime(); // Небесный колокольчик при активации
                 } else {
-                    btn.style.background = "transparent";
-                    btn.style.color = "#e2e8f0";
-                    if (extraBtn && !window.aiAttachedTerminal) {
-                        extraBtn.style.borderColor = "";
-                        extraBtn.style.color = "";
-                    }
+                    btn.classList.remove("active-site");
+                    btn.innerHTML = `<i class='bx bx-window-open'></i> + Экран сайта`;
+                    if (window.synth) window.synth.playSoftHum(); // Мягкий клик при выключении
                 }
             }
+            
+            console.log("Quantum Notes Debug: Контекст экрана сайта изменен. Активен:", window.aiAttachedSite);
+            window.updateExtraBtnGlow();
             updateAttachedNotesUI();
         };
 
-        window.aiAttachedTerminal = false;
-        window.toggleTerminalContext = function() {
+        window.toggleTerminalContext = function(e) {
+            if (e) e.stopPropagation(); // Предотвращаем баги всплытия событий
+            
             window.aiAttachedTerminal = !window.aiAttachedTerminal;
             const btn = document.getElementById("attachTerminalBtn");
-            const extraBtn = document.getElementById("aiExtraToolsBtn");
 
             if (btn) {
                 if (window.aiAttachedTerminal) {
-                    btn.style.background = "rgba(239, 68, 68, 0.15)";
-                    btn.style.color = "#ef4444";
-                    if (extraBtn) {
-                        extraBtn.style.borderColor = "#ef4444";
-                        extraBtn.style.color = "#ef4444";
-                    }
+                    btn.classList.add("active-terminal");
+                    btn.innerHTML = `<i class='bx bx-check-double'></i> Терминал (Вкл)`;
+                    if (window.synth) window.synth.playChime(); // Акустический chime
                 } else {
-                    btn.style.background = "transparent";
-                    btn.style.color = "#e2e8f0";
-                    if (extraBtn && !window.aiAttachedSite) {
-                        extraBtn.style.borderColor = "";
-                        extraBtn.style.color = "";
-                    }
+                    btn.classList.remove("active-terminal");
+                    btn.innerHTML = `<i class='bx bx-terminal'></i> + Ошибки терминала`;
+                    if (window.synth) window.synth.playSoftHum(); // Затухающий клик
                 }
             }
+            
+            console.log("Quantum Notes Debug: Контекст терминала изменен. Активен:", window.aiAttachedTerminal);
+            window.updateExtraBtnGlow();
             updateAttachedNotesUI();
         };
 
@@ -12344,7 +12429,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             position: fixed;
             bottom: 30px;
             right: 30px;
-            z-index: 999999;
+            z-index: 9999;
             width: 68px;
             height: 68px;
             pointer-events: none;
