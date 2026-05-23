@@ -6895,7 +6895,7 @@ window.addEventListener('message', function(e) {
         }
 
         // Единая функция сохранения и рендера превью (Обновлена!)
-        function saveAndRender(textValue) {
+        function saveAndRender(textValue, shouldBroadcast = true) {
             if (!activeId) return;
             const note = notes.find((n) => n.id === activeId);
             if (note) {
@@ -6908,7 +6908,7 @@ window.addEventListener('message', function(e) {
                 }, 500);
 
                 // Мгновенная отправка изменений другим пользователям через WebSocket бродкаст
-                if (activeProfileId !== "profile-personal" && window.supabaseSync && window.supabaseSync.channel) {
+                if (shouldBroadcast && activeProfileId !== "profile-personal" && window.supabaseSync && window.supabaseSync.channel) {
                     window.supabaseSync.broadcastEdit(activeId, textValue);
                 }
             }
@@ -7067,7 +7067,8 @@ window.addEventListener('message', function(e) {
 
             // 3. Слушатель изменения текста (СУПЕР-АВТОДОПОЛНЕНИЕ КАК В VS CODE)
             ideEditor.on("change", function(cm, change) {
-                if (isIdeMode) saveAndRender(cm.getValue());
+                if (window.isReceivingRemoteEdit) return; // Блокируем эхо-цикл от внешних изменений
+                if (isIdeMode) saveAndRender(cm.getValue(), true);
 
                 if (cm.state.completionActive) return;
 
@@ -7324,7 +7325,8 @@ window.addEventListener('message', function(e) {
 
             // 4. Слушатель для оригинальной Textarea (когда режим кода выключен)
             editor.addEventListener("input", (e) => {
-                if (!isIdeMode) saveAndRender(e.target.value);
+                if (window.isReceivingRemoteEdit) return; // Блокируем эхо-цикл от внешних изменений
+                if (!isIdeMode) saveAndRender(e.target.value, true);
             });
 
             // Слежка за вводом ИИ чата (волна превращается в стрелку отправки)
@@ -16194,7 +16196,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         this.renderActiveTeamPresence();
                     });
 
-                    this.channel.subscribe(async (status) => {
+                this.channel.subscribe(async (status) => {
                     if (status === 'SUBSCRIBED') {
                         // Считаем текущее количество участников перед авторизацией
                         const currentUsers = [];
@@ -16326,24 +16328,32 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
 
                 // Если измененный файл в данный момент открыт на экране — обновляем IDE с сохранением положения курсора
                 if (activeId === noteId) {
-                    if (isIdeMode && typeof ideEditor !== 'undefined') {
-                        const cursor = ideEditor.getCursor();
-                        const scrollInfo = ideEditor.getScrollInfo();
-                        
-                        if (ideEditor.getValue() !== content) {
-                            ideEditor.setValue(content);
-                            ideEditor.setCursor(cursor);
-                            ideEditor.scrollTo(scrollInfo.left, scrollInfo.top);
+                    window.isReceivingRemoteEdit = true;
+                    try {
+                        if (isIdeMode && typeof ideEditor !== 'undefined') {
+                            const cursor = ideEditor.getCursor();
+                            const scrollInfo = ideEditor.getScrollInfo();
+                            
+                            if (ideEditor.getValue() !== content) {
+                                ideEditor.setValue(content);
+                                ideEditor.setCursor(cursor);
+                                ideEditor.scrollTo(scrollInfo.left, scrollInfo.top);
+                            }
+                        } else {
+                            const start = editor.selectionStart;
+                            const end = editor.selectionEnd;
+                            if (editor.value !== content) {
+                                editor.value = content;
+                                editor.setSelectionRange(start, end);
+                            }
                         }
-                    } else {
-                        const start = editor.selectionStart;
-                        const end = editor.selectionEnd;
-                        if (editor.value !== content) {
-                            editor.value = content;
-                            editor.setSelectionRange(start, end);
-                        }
+                        // Передаем false, чтобы не вызывать эхо-бродкаст обратно
+                        saveAndRender(content, false);
+                    } finally {
+                        setTimeout(() => {
+                            window.isReceivingRemoteEdit = false;
+                        }, 50);
                     }
-                    saveAndRender(content);
                 }
             }
 
@@ -16362,82 +16372,89 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 // Игнорируем изменения, которые инициировали мы сами (для предотвращения петель рендеринга)
                 if (newRecord && newRecord.updated_by === this.userId) return;
 
-                if (eventType === 'INSERT') {
-                    const exists = notes.some(n => n.id === newRecord.id);
-                    if (!exists) {
-                        notes.push({
-                            id: newRecord.id,
-                            title: newRecord.title,
-                            content: newRecord.content,
-                            type: newRecord.type,
-                            parentId: newRecord.parent_id,
-                            profileId: this.currentWorkspaceId,
-                            date: new Date(newRecord.updated_at).toLocaleDateString()
-                        });
-                        saveNotes();
-                        renderNotesList();
-                        if (window.synth) window.synth.playChime();
-                    }
-                } else if (eventType === 'UPDATE') {
-                    const note = notes.find(n => n.id === newRecord.id);
-                    if (note) {
-                        const titleChanged = note.title !== newRecord.title;
-                        const parentChanged = note.parentId !== newRecord.parent_id;
-                        const contentChanged = note.content !== newRecord.content;
-                        
-                        note.title = newRecord.title;
-                        note.parentId = newRecord.parent_id;
-                        note.content = newRecord.content;
-                        note.date = new Date(newRecord.updated_at).toLocaleDateString();
-                        
-                        saveNotes();
-                        
-                        if (titleChanged || parentChanged) {
+                window.isReceivingRemoteEdit = true;
+                try {
+                    if (eventType === 'INSERT') {
+                        const exists = notes.some(n => n.id === newRecord.id);
+                        if (!exists) {
+                            notes.push({
+                                id: newRecord.id,
+                                title: newRecord.title,
+                                content: newRecord.content,
+                                type: newRecord.type,
+                                parentId: newRecord.parent_id,
+                                profileId: this.currentWorkspaceId,
+                                date: new Date(newRecord.updated_at).toLocaleDateString()
+                            });
+                            saveNotes();
                             renderNotesList();
+                            if (window.synth) window.synth.playChime();
                         }
-                        
-                        // Если измененный на бэкенде файл открыт прямо сейчас на нашем экране
-                        if (activeId === newRecord.id) {
-                            const titleInput = document.getElementById("noteTitle");
-                            if (titleInput && titleInput.value !== newRecord.title) {
-                                titleInput.value = newRecord.title;
+                    } else if (eventType === 'UPDATE') {
+                        const note = notes.find(n => n.id === newRecord.id);
+                        if (note) {
+                            const titleChanged = note.title !== newRecord.title;
+                            const parentChanged = note.parentId !== newRecord.parent_id;
+                            const contentChanged = note.content !== newRecord.content;
+                            
+                            note.title = newRecord.title;
+                            note.parentId = newRecord.parent_id;
+                            note.content = newRecord.content;
+                            note.date = new Date(newRecord.updated_at).toLocaleDateString();
+                            
+                            saveNotes();
+                            
+                            if (titleChanged || parentChanged) {
+                                renderNotesList();
                             }
                             
-                            if (contentChanged) {
-                                if (isIdeMode && typeof ideEditor !== 'undefined') {
-                                    const cursor = ideEditor.getCursor();
-                                    const scrollInfo = ideEditor.getScrollInfo();
-                                    if (ideEditor.getValue() !== newRecord.content) {
-                                        ideEditor.setValue(newRecord.content);
-                                        ideEditor.setCursor(cursor);
-                                        ideEditor.scrollTo(scrollInfo.left, scrollInfo.top);
-                                    }
-                                } else {
-                                    const start = editor.selectionStart;
-                                    const end = editor.selectionEnd;
-                                    if (editor.value !== newRecord.content) {
-                                        editor.value = newRecord.content;
-                                        editor.setSelectionRange(start, end);
-                                    }
+                            // Если измененный на бэкенде файл открыт прямо сейчас на нашем экране
+                            if (activeId === newRecord.id) {
+                                const titleInput = document.getElementById("noteTitle");
+                                if (titleInput && titleInput.value !== newRecord.title) {
+                                    titleInput.value = newRecord.title;
                                 }
-                                saveAndRender(newRecord.content);
+                                
+                                if (contentChanged) {
+                                    if (isIdeMode && typeof ideEditor !== 'undefined') {
+                                        const cursor = ideEditor.getCursor();
+                                        const scrollInfo = ideEditor.getScrollInfo();
+                                        if (ideEditor.getValue() !== newRecord.content) {
+                                            ideEditor.setValue(newRecord.content);
+                                            ideEditor.setCursor(cursor);
+                                            ideEditor.scrollTo(scrollInfo.left, scrollInfo.top);
+                                        }
+                                    } else {
+                                        const start = editor.selectionStart;
+                                        const end = editor.selectionEnd;
+                                        if (editor.value !== newRecord.content) {
+                                            editor.value = newRecord.content;
+                                            editor.setSelectionRange(start, end);
+                                        }
+                                    }
+                                    saveAndRender(newRecord.content, false); // Отправляем false для остановки рекурсии
+                                }
+                            }
+                        }
+                    } else if (eventType === 'DELETE') {
+                        const exists = notes.some(n => n.id === oldRecord.id);
+                        if (exists) {
+                            notes = notes.filter(n => n.id !== oldRecord.id);
+                            window.aiAttachedNotes.delete(oldRecord.id);
+                            saveNotes();
+                            renderNotesList();
+                            
+                            if (activeId === oldRecord.id) {
+                                const anyFile = notes.find(n => n.type === 'file' && (n.profileId || "profile-personal") === activeProfileId);
+                                if (anyFile) switchNote(anyFile.id);
+                                else createNewNote();
                             }
                         }
                     }
-                } else if (eventType === 'DELETE') {
-                    const exists = notes.some(n => n.id === oldRecord.id);
-                    if (exists) {
-                        notes = notes.filter(n => n.id !== oldRecord.id);
-                        window.aiAttachedNotes.delete(oldRecord.id);
-                        saveNotes();
-                        renderNotesList();
-                        
-                        if (activeId === oldRecord.id) {
-                            const anyFile = notes.find(n => n.type === 'file' && (n.profileId || "profile-personal") === activeProfileId);
-                            if (anyFile) switchNote(anyFile.id);
-                            else createNewNote();
-                        }
-                    }
+                } finally {
+                    setTimeout(() => {
+                        window.isReceivingRemoteEdit = false;
+                    }, 50);
                 }
             }
 
