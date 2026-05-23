@@ -16440,6 +16440,14 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                             online: true,
                             active_note_id: activeId
                         });
+
+                        // АВТО-МИГРАЦИЯ: Бесшумно регистрируем себя в таблице участников БД, 
+                        // если нас там ещё нет (это заполнит список для старых воркспейсов)
+                        try {
+                            await this.client.rpc('join_workspace_silent', { ws_id: workspaceId });
+                        } catch (silentErr) {
+                            console.warn("SupabaseSync: Ошибка фоновой регистрации участника:", silentErr);
+                        }
                     }
                 });
             }
