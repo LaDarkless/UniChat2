@@ -16170,24 +16170,15 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 // 1. Загружаем актуальные файлы этого воркспейса из PostgreSQL
                 await this.downloadWorkspaceFiles(workspaceId);
 
-                // 2. Инициализируем WebSockets-канал
-                const channelName = `workspace_${workspaceId}`;
-                this.channel = this.client.channel(channelName, {
+                // 2. Инициализируем WebSockets-канал для Бродкаста и Присутствия (Presence)
+                const collabChannelName = `collab_${workspaceId}`;
+                this.channel = this.client.channel(collabChannelName, {
                     config: {
                         presence: { key: this.userId }
                     }
                 });
 
-                // Подписываемся на Broadcast (посимвольный ввод), Presence (онлайн-статус) и Postgres Realtime (CRUD операции)
                 this.channel
-                    .on('postgres_changes', {
-                        event: '*',
-                        schema: 'public',
-                        table: 'notes',
-                        filter: `workspace_id=eq.${workspaceId}`
-                    }, payload => {
-                        this.handleIncomingDbChange(payload);
-                    })
                     .on('broadcast', { event: 'text_edit' }, payload => {
                         this.handleIncomingBroadcastEdit(payload.payload);
                     })
@@ -16196,22 +16187,50 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         this.renderActiveTeamPresence();
                     });
 
+                // 3. Инициализируем ИЗОЛИРОВАННЫЙ канал для отслеживания изменений БД (как в X Messages Pro)
+                const dbChannelName = `db_changes_${workspaceId}`;
+                this.dbChannel = this.client.channel(dbChannelName);
+
+                this.dbChannel
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'notes',
+                        filter: `workspace_id=eq.${workspaceId}`
+                    }, payload => {
+                        this.handleIncomingDbChange(payload);
+                    })
+                    .on('postgres_changes', {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'notes',
+                        filter: `workspace_id=eq.${workspaceId}`
+                    }, payload => {
+                        this.handleIncomingDbChange(payload);
+                    })
+                    .on('postgres_changes', {
+                        event: 'DELETE',
+                        schema: 'public',
+                        table: 'notes',
+                        filter: `workspace_id=eq.${workspaceId}`
+                    }, payload => {
+                        this.handleIncomingDbChange(payload);
+                    });
+
+                // Подписываем канал взаимодействия
                 this.channel.subscribe(async (status) => {
                     if (status === 'SUBSCRIBED') {
-                        // Считаем текущее количество участников перед авторизацией
                         const currentUsers = [];
                         Object.keys(this.presenceState).forEach(key => {
                             const list = this.presenceState[key];
                             if (list && list.length > 0) currentUsers.push(list[0]);
                         });
 
-                        // Защита от переполнения: лимит 50 человек на воркспейс
                         if (currentUsers.length >= 50) {
                             alert("Внимание: Данное облачное пространство заполнено (лимит 50 участников). Вы вошли в режиме только чтения.");
                             return;
                         }
 
-                        // Регистрируем наш профиль в списке активных участников воркспейса
                         await this.channel.track({
                             nickname: userProfile.nickname,
                             devLevel: userProfile.devLevel || "Middle",
@@ -16220,6 +16239,9 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         });
                     }
                 });
+
+                // Подписываем изолированный канал базы данных
+                this.dbChannel.subscribe();
             }
 
             async downloadWorkspaceFiles(workspaceId) {
@@ -16270,6 +16292,10 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     this.client.removeChannel(this.channel);
                     this.channel = null;
                 }
+                if (this.dbChannel) {
+                    this.client.removeChannel(this.dbChannel);
+                    this.dbChannel = null;
+                }
                 this.currentWorkspaceId = null;
                 this.presenceState = {};
                 this.renderActiveTeamPresence();
@@ -16301,10 +16327,12 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 if (!note) return;
 
                 try {
+                    // ФИКС: Если контент не передан явно (например, при перемещении папки), 
+                    // берём его из локального объекта заметки во избежание отправки undefined/NULL в СУБД
                     await this.client.from('notes').upsert({
                         id: noteId,
                         title: note.title,
-                        content: content,
+                        content: content !== undefined ? content : (note.content || ""),
                         type: note.type,
                         parent_id: note.parentId,
                         workspace_id: this.currentWorkspaceId,
