@@ -16170,11 +16170,12 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 // 1. Загружаем актуальные файлы этого воркспейса из PostgreSQL
                 await this.downloadWorkspaceFiles(workspaceId);
 
-                // 2. Инициализируем WebSockets-канал для Бродкаста и Присутствия (Presence)
-                const collabChannelName = `collab_${workspaceId}`;
-                this.channel = this.client.channel(collabChannelName, {
+                // 2. Инициализируем ЕДИНЫЙ WebSockets-канал для Бродкаста, Присутствия и Изменений БД
+                const channelName = `workspace_${workspaceId}`;
+                this.channel = this.client.channel(channelName, {
                     config: {
-                        presence: { key: this.userId }
+                        presence: { key: this.userId },
+                        broadcast: { self: false } // Получаем изменения только от других разработчиков
                     }
                 });
 
@@ -16184,52 +16185,36 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     })
                     .on('presence', { event: 'sync' }, () => {
                         this.presenceState = this.channel.presenceState();
-                        this.renderActiveTeamPresence();
-                    });
-
-                // 3. Инициализируем ИЗОЛИРОВАННЫЙ канал для отслеживания изменений БД (как в X Messages Pro)
-                // ОПТИМИЗАЦИЯ: Убираем фильтрацию на сервере для обхода RLS-багов Supabase Realtime
-                const dbChannelName = `db_changes_${workspaceId}`;
-                this.dbChannel = this.client.channel(dbChannelName);
-
-                this.dbChannel
-                    .on('postgres_changes', {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'notes'
-                    }, payload => {
-                        this.handleIncomingDbChange(payload);
-                    })
-                    .on('postgres_changes', {
-                        event: 'UPDATE',
-                        schema: 'public',
-                        table: 'notes'
-                    }, payload => {
-                        this.handleIncomingDbChange(payload);
-                    })
-                    .on('postgres_changes', {
-                        event: 'DELETE',
-                        schema: 'public',
-                        table: 'notes'
-                    }, payload => {
-                        this.handleIncomingDbChange(payload);
-                    });
-
-                // Подписываем канал взаимодействия с логом в консоль
-                this.channel.subscribe(async (status) => {
-                    console.log(`SupabaseSync: Статус канала совместной работы (${collabChannelName}):`, status);
-                    if (status === 'SUBSCRIBED') {
+                        
+                        // Безопасная проверка лимита участников при синхронизации Presence
                         const currentUsers = [];
                         Object.keys(this.presenceState).forEach(key => {
                             const list = this.presenceState[key];
                             if (list && list.length > 0) currentUsers.push(list[0]);
                         });
 
-                        if (currentUsers.length >= 50) {
-                            alert("Внимание: Данное облачное пространство заполнено (лимит 50 участников). Вы вошли в режиме только чтения.");
-                            return;
+                        if (currentUsers.length > 50) {
+                            alert("Внимание: Данное облачное пространство заполнено (лимит 50 участников).");
                         }
 
+                        this.renderActiveTeamPresence();
+                    })
+                    .on('postgres_changes', {
+                        event: '*', // Отслеживаем все типы изменений (INSERT, UPDATE, DELETE)
+                        schema: 'public',
+                        table: 'notes',
+                        filter: `workspace_id=eq.${workspaceId}` // Высокопроизводительная серверная фильтрация
+                    }, payload => {
+                        this.handleIncomingDbChange(payload);
+                    });
+
+                // Подписываем единый мультиплексированный канал совместной работы
+                this.channel.subscribe(async (status, err) => {
+                    console.log(`SupabaseSync: Статус канала совместной работы (${channelName}):`, status);
+                    if (err) console.error("SupabaseSync: Критическая ошибка сокета:", err);
+                    
+                    if (status === 'SUBSCRIBED') {
+                        // Регистрируем себя в Presence
                         await this.channel.track({
                             nickname: userProfile.nickname,
                             devLevel: userProfile.devLevel || "Middle",
@@ -16237,12 +16222,6 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                             active_note_id: activeId
                         });
                     }
-                });
-
-                // Подписываем изолированный канал базы данных с логом состояния
-                this.dbChannel.subscribe((status, err) => {
-                    console.log(`SupabaseSync: Статус канала базы данных (${dbChannelName}):`, status);
-                    if (err) console.error("SupabaseSync: Ошибка подписки на БД изменения:", err);
                 });
             }
 
@@ -16293,10 +16272,6 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 if (this.channel) {
                     this.client.removeChannel(this.channel);
                     this.channel = null;
-                }
-                if (this.dbChannel) {
-                    this.client.removeChannel(this.dbChannel);
-                    this.dbChannel = null;
                 }
                 this.currentWorkspaceId = null;
                 this.presenceState = {};
