@@ -31,6 +31,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
+    <!-- Supabase Realtime & DB JS Client UMD -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/dist/umd/supabase.js"></script>
+
     <!-- MathJax (LaTeX) -->
     <script>
         window.MathJax = {
@@ -188,6 +191,173 @@
                 transform: scale(1.08) translate3d(20px, -10px, 0);
                 opacity: 0.25;
             }
+        }
+
+        /* =======================================================================
+         ВЕРСЕЛЬ-СТИЛЬ ПЕРЕКЛЮЧАТЕЛЬ РАБОЧИХ ПРОСТРАНСТВ (WORKSPACES)
+         ======================================================================= */
+         .workspace-switcher {
+            position: relative;
+            margin-bottom: 18px;
+            z-index: 150;
+        }
+        .workspace-switcher-btn {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-align: left;
+        }
+        .workspace-switcher-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(var(--accent-rgb), 0.35);
+        }
+        .workspace-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 11px;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.25);
+            flex-shrink: 0;
+            transition: var(--transition-smooth);
+        }
+        .workspace-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .workspace-name {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+        }
+        .workspace-tier {
+            font-size: 10px;
+            color: var(--text-muted);
+            line-height: 1;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .workspace-tier-badge {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+            font-size: 8px;
+            font-weight: 700;
+            padding: 1px 4px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .workspace-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            width: 100%;
+            background: #111115;
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-5px);
+            transition: var(--transition-smooth);
+            z-index: 110;
+            padding: 4px;
+        }
+        .workspace-switcher.open .workspace-menu {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+        .workspace-menu-item {
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 8px 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: left;
+            font-family: var(--font-ui);
+        }
+        .workspace-menu-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .workspace-menu-item.active {
+            background: rgba(var(--accent-rgb), 0.06);
+            border-left: 2px solid var(--accent);
+        }
+        .workspace-menu-item.add-workspace {
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-radius: 0 0 8px 8px;
+            margin-top: 4px;
+            color: var(--accent);
+        }
+
+        .workspace-menu-item.add-workspace {
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-radius: 0 0 8px 8px;
+            margin-top: 4px;
+            color: var(--accent);
+        }
+
+        /* =======================================================================
+         КОСМИЧЕСКИЙ ЛОББИ: ПОИСКОВОЕ ПОЛЕ В СТИЛЕ LINEAR
+         ======================================================================= */
+        .lobby-search-container {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 10px !important;
+            padding: 10px 14px !important;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .lobby-search-container:focus-within {
+            border-color: rgba(96, 165, 250, 0.5) !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            box-shadow: 0 0 15px rgba(96, 165, 250, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
+        }
+        .lobby-search-container i {
+            color: #60a5fa !important;
+            font-size: 18px !important;
+            margin-right: 10px !important;
+            filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.3)) !important;
+        }
+        .lobby-search-input {
+            background: transparent !important;
+            border: none !important;
+            color: #fff !important;
+            font-family: var(--font-ui) !important;
+            font-size: 13px !important;
+            outline: none !important;
+            width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .lobby-search-input::placeholder {
+            color: rgba(255, 255, 255, 0.25) !important;
         }
 
         /* ==========================================
@@ -1499,6 +1669,19 @@
         }
 
         /* Конец вставки стилей */
+
+        /* ==========================================
+         КОМАНДНЫЙ ДАШБОРД (LINEAR / VERCEL STYLE)
+         ========================================== */
+         @media (min-width: 768px) {
+            .dashboard-grid-responsive {
+                grid-template-columns: 330px 1fr !important;
+            }
+            .dashboard-left-col {
+                border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+                border-bottom: none !important;
+            }
+        }
 
         /* МЕДИА ЗАПРОСЫ (АДАПТИВ) */
         @media (max-width: 768px) {
@@ -4488,6 +4671,42 @@
     <aside class="sidebar" id="sidebar">
         <div class="brand"><i class="bx bxl-graphql"></i> Quantum Notes</div>
 
+        <!-- ВЕРСЕЛЬ-СТИЛЬ ПЕРЕКЛЮЧАТЕЛЬ РАБОЧИХ ПРОСТРАНСТВ (WORKSPACES) -->
+        <div class="workspace-switcher" id="workspaceSwitcher">
+            <button class="workspace-switcher-btn" onclick="window.toggleWorkspaceMenu(event)" oncontextmenu="window.showWorkspaceSwitcherSettingsMenu(event)">
+                <div class="workspace-avatar" id="userAvatar" style="background: var(--accent);">GU</div>
+                <div class="workspace-info">
+                    <div class="workspace-name" id="userNicknameDisplay" style="font-weight: 700; font-size: 13px;">Guest User</div>
+                    <div class="workspace-tier" id="activeWsNameDisplay">Личное пространство <span class="workspace-tier-badge" id="userTierBadge">Free</span></div>
+                </div>
+                <i class='bx bx-chevron-down' style="color: var(--text-muted); font-size: 16px;"></i>
+            </button>
+            <div class="workspace-menu" id="workspaceMenu">
+                <div style="font-size: 11px; color: var(--text-muted); padding: 8px 12px 4px 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Рабочие области</div>
+                <div id="workspaceListContainer">
+                    <!-- Список пространств генерируется динамически -->
+                </div>
+                <button class="workspace-menu-item add-workspace" onclick="window.createNewWorkspace(event)">
+                    <div class="workspace-avatar" style="background: rgba(255,255,255,0.05); color: var(--accent);"><i class='bx bx-plus'></i></div>
+                    <div class="workspace-info">
+                        <div class="workspace-name" style="font-weight: 500;">Создать Workspace</div>
+                    </div>
+                </button>
+                <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 4px 0;"></div>
+                <button class="workspace-menu-item" onclick="window.openProfileSettingsModal(event)" style="border-radius: 0 0 8px 8px;">
+                    <div class="workspace-avatar" style="background: rgba(255,255,255,0.05); color: var(--text-muted);"><i class='bx bx-user'></i></div>
+                    <div class="workspace-info">
+                        <div class="workspace-name" style="font-weight: 500;">Настройки профиля</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- КНОПКА ПОИСКА ОБЛАЧНЫХ WORKSPACES (КОСМИЧЕСКИЙ ЛОББИ) -->
+        <button class="btn" style="width: 100%; margin-bottom: 12px; background: rgba(59, 130, 246, 0.08); border-color: rgba(59, 130, 246, 0.25); color: #60a5fa; justify-content: center; gap: 8px; font-weight: 600;" onclick="window.toggleJoinWorkspaceModal(event)">
+            <i class='bx bx-globe' style="font-size: 16px;"></i> Космический Лобби
+        </button>
+
         <!-- ФАЙЛОВАЯ СИСТЕМА: Кнопки создания -->
         <div style="display: flex; gap: 8px;">
             <button class="btn btn-primary" style="flex: 1; padding: 10px;" onclick="createNewNote()">
@@ -4519,6 +4738,9 @@
         </div>
 
         <div class="notes-list" id="notesList"></div>
+
+        <!-- КОМАНДНЫЙ ЦЕНТР WORKSPACE (Генерируется динамически только для PRO-областей) -->
+        <div id="workspaceExtraPanel"></div>
 
         <!-- SaaS ВИДЖЕТ ОБЛАЧНОЙ СИНХРОНИЗАЦИИ (CRO-оптимизированный) -->
         <div class="cloud-sync-widget" id="cloudSyncWidget">
@@ -4993,11 +5215,11 @@
                 <div id="aiActiveContextBar" style="display: none; flex-wrap: wrap; gap: 6px; padding: 8px 10px; border: 1px solid rgba(255,255,255,0.04); background: rgba(0,0,0,0.25); border-radius: 10px; margin-bottom: 8px; font-size: 11px; max-height: 85px; overflow-y: auto;"></div>
 
                 <div class="ai-mode-selector">
-                    <button class="ai-mode-btn active" onclick="setAIMode('agent', this)"><i
-                            class='bx bx-magic-wand'></i> Agent</button>
-                    <button class="ai-mode-btn" onclick="setAIMode('plan', this)"><i class='bx bx-task'></i>
-                        Plan</button>
-                    <button class="ai-mode-btn" onclick="setAIMode('ask', this)"><i class='bx bx-message-rounded'></i>
+                    <button class="ai-mode-btn" id="aiBtnAgent" onclick="setAIMode('agent', this)"><i
+                            class='bx bx-magic-wand'></i> Agent <i class='bx bx-lock-alt' id="agentLockIcon" style="font-size: 10px; margin-left: 2px; opacity: 0.6;"></i></button>
+                    <button class="ai-mode-btn" id="aiBtnPlan" onclick="setAIMode('plan', this)"><i class='bx bx-task'></i>
+                        Plan <i class='bx bx-lock-alt' id="planLockIcon" style="font-size: 10px; margin-left: 2px; opacity: 0.6;"></i></button>
+                    <button class="ai-mode-btn active" id="aiBtnAsk" onclick="setAIMode('ask', this)"><i class='bx bx-message-rounded'></i>
                         Ask</button>
 
                     <!-- КНОПКА "+" ДЛЯ ДОП. ФУНКЦИЙ -->
@@ -5099,13 +5321,46 @@
         </div>
     </div>
 
+    <!-- МОДАЛКА ПРИСОЕДИНЕНИЯ К ЧУЖОМУ WORKSPACE (КОСМИЧЕСКИЙ ЛОББИ) -->
+    <div class="modal-overlay" id="joinWorkspaceModal" onclick="if (event.target === this) window.toggleJoinWorkspaceModal();">
+        <div class="modal" style="max-width: 460px; padding: 25px; border-color: rgba(59, 130, 246, 0.3); box-shadow: 0 0 30px rgba(59, 130, 246, 0.15), 0 15px 40px rgba(0,0,0,0.85); background: rgba(10, 10, 14, 0.95); backdrop-filter: blur(20px);">
+            <h2 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
+                <span style="display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; color: #fff;"><i class='bx bx-globe' style="color: #60a5fa; font-size: 22px;"></i> Космический Лобби</span>
+                <button class="btn-icon" onclick="window.toggleJoinWorkspaceModal()"><i class='bx bx-x' style="color: var(--text-muted);"></i></button>
+            </h2>
+            <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 15px; line-height: 1.45;">
+                Исследуйте вселенную совместных проектов. Выберите любое рабочее пространство других разработчиков и укажите пароль для мгновенной синхронизации.
+            </p>
+            
+            <!-- ОБНОВЛЕННЫЙ ИНПУТ В СТИЛЕ LINEAR -->
+            <div class="lobby-search-container">
+                <i class="bx bx-search"></i>
+                <input type="text" id="wsSearchInput" class="lobby-search-input" placeholder="Поиск пространства по названию..." oninput="window.handleWsSearch()" />
+            </div>
+
+            <div id="wsSearchResultList" style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding-right: 4px;">
+                <!-- Сюда подгружаются воркспейсы из Supabase -->
+            </div>
+            <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 15px 0;"></div>
+            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; display: flex; align-items: center; gap: 6px;">
+                <i class='bx bx-shield-quarter' style="color: #60a5fa; font-size: 14px;"></i>
+                <span>Все сессии защищены сквозным шифрованием и закрыты секретными паролями создателей.</span>
+            </div>
+        </div>
+    </div>
+
     <!-- НАСТРОЙКИ -->
     <div class="modal-overlay" id="settingsModal" onclick="if (event.target === this) toggleSettings();">
-        <div class="modal">
-            <h2><i class="bx bx-cog"></i> Параметры среды</h2>
+        <div class="modal" style="max-width: 460px;">
+            <div class="settings-tabs" style="display: flex; gap: 8px; border-bottom: 1px solid var(--panel-border); margin-bottom: 20px; padding-bottom: 10px;">
+                <button class="sidebar-tab active" id="setTabEnv" onclick="window.switchSettingsTab('env')" style="font-size: 12px; padding: 6px 12px;">Среда</button>
+                <button class="sidebar-tab" id="setTabProfile" onclick="window.switchSettingsTab('profile')" style="font-size: 12px; padding: 6px 12px;">Профиль ИИ</button>
+            </div>
 
-            <div class="setting-group">
-                <label>Тема (Акцентный цвет)</label>
+            <!-- ВКЛАДКА НАСТРОЕК СРЕДЫ -->
+            <div id="settingsContentEnv">
+                <div class="setting-group">
+                    <label>Тема (Акцентный цвет)</label>
                 <div class="color-picker">
                     <div class="color-dot" style="background: #8b5cf6; color: #8b5cf6"
                         onclick="setTheme(event, '#8b5cf6', '139, 92, 246')"></div>
@@ -5238,10 +5493,132 @@
                 <label>Размер текста (<span id="fontSizeVal">16</span>px)</label>
                 <input type="range" id="sizeSelect" min="12" max="22" value="16" oninput="updateSettings()" />
             </div>
-            <button class="btn btn-primary" style="width: 100%; margin-top: 10px"
-                onclick="toggleSettings()">Готово</button>
+        </div> <!-- Конец #settingsContentEnv -->
+
+        <!-- ВКЛАДКА НАСТРОЕК ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ -->
+        <div id="settingsContentProfile" style="display: none;">
+            <div class="setting-group">
+                <label>Никнейм пользователя</label>
+                <input type="text" id="userNicknameInput" placeholder="Иван Иванов" oninput="window.updateUserProfile()" style="width: 100%; padding: 10px; background: #000; border: 1px solid var(--panel-border); color: #fff; border-radius: 8px; font-family: var(--font-ui); outline: none;">
+            </div>
+            <div class="setting-group" style="margin-top: 12px;">
+                <label>Уровень квалификации (Dev Level)</label>
+                <select id="userDevLevelSelect" onchange="window.updateUserProfile()" style="width: 100%; padding: 10px; background: #000; border: 1px solid var(--panel-border); color: #fff; border-radius: 8px; font-family: var(--font-ui); outline: none;">
+                    <option value="Junior">Junior Developer</option>
+                    <option value="Middle">Middle Developer</option>
+                    <option value="Senior">Senior Developer</option>
+                    <option value="Lead">Lead Engineer</option>
+                </select>
+            </div>
+            <div class="setting-group" style="margin-top: 15px;">
+                <label>О себе (Контекст для ИИ)</label>
+                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.35;">ИИ будет автоматически считывать эти предпочтения для кастомизации ответов, тона и структуры кода.</p>
+                <textarea id="userAboutMeInput" placeholder="Пример: 'Я Junior веб-разработчик. Пиши лаконичный код без лишних комментариев, разжевывай алгоритмы...'" oninput="window.updateUserProfile()" style="width: 100%; min-height: 110px; max-height: 150px; background: #000; border: 1px solid var(--panel-border); color: #fff; padding: 10px; border-radius: 8px; font-size: 12.5px; font-family: var(--font-ui); resize: vertical; outline: none; line-height: 1.45;"></textarea>
+            </div>
+            
+            <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 15px 0;"></div>
+            
+            <!-- СТАТУС ПОДКЛЮЧЕНИЯ К SUPABASE -->
+            <div class="setting-group">
+                <label><i class='bx bx-cloud' style="color: #10b981;"></i> Supabase Team Sync</label>
+                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.35;">Параметры инстанса зафиксированы в коде приложения. Подключение ко всем командным воркспейсам происходит автоматически.</p>
+                <div style="background: rgba(16, 185, 129, 0.08); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 8px; padding: 10px; font-size: 11.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; justify-content: center;">
+                    <i class='bx bx-check-double' style="font-size: 16px;"></i> Облачный движок активен и настроен
+                </div>
+            </div>
+        </div> <!-- Конец #settingsContentProfile -->
+
+        <button class="btn btn-primary" style="width: 100%; margin-top: 15px"
+            onclick="toggleSettings()">Готово</button>
+    </div>
+</div>
+
+<!-- ПОЛНОЭКРАННЫЙ ДАШБОРД КОМАНДЫ И WORKSPACE -->
+<div class="modal-overlay" id="workspaceStatsDashboardModal" onclick="if (event.target === this) window.closeWorkspaceStatsDashboard();" style="z-index: 99999; backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);">
+    <div class="modal" style="max-width: 840px; width: 95%; background: rgba(8, 8, 12, 0.9); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 50px rgba(var(--accent-rgb), 0.15); display: flex; flex-direction: column; max-height: 90vh; padding: 0; overflow: hidden; font-family: var(--font-ui);">
+        
+        <!-- Шапка Дашборда -->
+        <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div id="dashActiveWsColorDot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent);"></div>
+                <span id="dashActiveWsName" style="font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.01em;">Workspace Name</span>
+                <span id="dashActiveWsTier" style="font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 12px; letter-spacing: 0.3px;">Pro Team</span>
+            </div>
+            <button class="btn-icon" onclick="window.closeWorkspaceStatsDashboard()"><i class='bx bx-x' style="font-size: 24px; color: var(--text-muted);"></i></button>
+        </div>
+
+        <!-- Главный контент (Двухколоночный Grid) -->
+        <div style="display: grid; grid-template-columns: 1fr; overflow-y: auto; flex: 1;" class="dashboard-grid-responsive">
+            
+            <!-- Левая колонка: Статистика и Архитектура -->
+            <div style="padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 20px;" class="dashboard-left-col">
+                
+                <!-- ID и Слоты -->
+                <div style="display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 14px; padding: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <span>Область ID</span>
+                        <span style="font-family: var(--font-code); color: #fff; font-size: 10px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="dashActiveWsId">...</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                        <span style="font-size: 12.5px; color: var(--text-muted); font-weight: 500;">Активные слоты:</span>
+                        <span style="font-size: 14px; font-weight: 800; color: #10b981; font-family: var(--font-code);" id="dashActiveWsMembersCount">1 / 50</span>
+                    </div>
+                </div>
+
+                <!-- Level Distribution Chart -->
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Распределение уровней</div>
+                    
+                    <!-- Многосегментный прогресс-бар -->
+                    <div style="display: flex; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; width: 100%;">
+                        <div id="dashJrBar" style="width: 0%; height: 100%; background: #10b981; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);"></div>
+                        <div id="dashMdBar" style="width: 0%; height: 100%; background: #3b82f6; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);"></div>
+                        <div id="dashSrBar" style="width: 0%; height: 100%; background: #f59e0b; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);"></div>
+                        <div id="dashLdBar" style="width: 0%; height: 100%; background: #a855f7; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);"></div>
+                    </div>
+
+                    <!-- Легенда -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11.5px; margin-top: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(16,185,129,0.04); border: 1px solid rgba(16,185,129,0.1); border-radius: 8px;">
+                            <span style="display:flex; align-items:center; gap:6px; color: var(--text-muted); font-weight: 500;"><div style="width: 6px; height:6px; border-radius:50%; background:#10b981;"></div> Junior</span>
+                            <span style="font-weight:700; color:#fff;" id="dashJrCount">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.1); border-radius: 8px;">
+                            <span style="display:flex; align-items:center; gap:6px; color: var(--text-muted); font-weight: 500;"><div style="width: 6px; height:6px; border-radius:50%; background:#3b82f6;"></div> Middle</span>
+                            <span style="font-weight:700; color:#fff;" id="dashMdCount">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(245,158,11,0.04); border: 1px solid rgba(245,158,11,0.1); border-radius: 8px;">
+                            <span style="display:flex; align-items:center; gap:6px; color: var(--text-muted); font-weight: 500;"><div style="width: 6px; height:6px; border-radius:50%; background:#f59e0b;"></div> Senior</span>
+                            <span style="font-weight:700; color:#fff;" id="dashSrCount">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(168,85,247,0.04); border: 1px solid rgba(168,85,247,0.1); border-radius: 8px;">
+                            <span style="display:flex; align-items:center; gap:6px; color: var(--text-muted); font-weight: 500;"><div style="width: 6px; height:6px; border-radius:50%; background:#a855f7;"></div> Lead</span>
+                            <span style="font-weight:700; color:#fff;" id="dashLdCount">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Архитектура синхронизации -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Спецификация инфраструктуры</div>
+                    <div style="display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 12px; font-family: var(--font-code); font-size: 10.5px; line-height: 1.4; color: var(--text-muted);">
+                        <div style="display: flex; justify-content: space-between;"><span style="color:#60a5fa;"><i class='bx bx-data' style='color:#3b82f6;'></i> metadata:</span><span style="color:#fff;">PostgreSQL (Supabase)</span></div>
+                        <div style="display: flex; justify-content: space-between;"><span style="color:#10b981;"><i class='bx bx-cloud' style='color:#10b981;'></i> static assets:</span><span style="color:#fff;">Cloudflare R2 Bucket</span></div>
+                        <div style="display: flex; justify-content: space-between;"><span style="color:#f59e0b;"><i class='bx bx-git-branch' style='color:#f59e0b;'></i> real-time sync:</span><span style="color:#fff;">Supabase Broadcast / Presence</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правая колонка: Список участников -->
+            <div style="padding: 24px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto;" class="dashboard-right-col">
+                <div style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 4px;">Участники в сети</div>
+                <div style="display: flex; flex-direction: column; gap: 8px;" id="dashMembersList">
+                    <!-- Список участников генерируется динамически через JS -->
+                </div>
+            </div>
         </div>
     </div>
+</div>
 
     <!-- МОДАЛКА ПОДКЛЮЧЕНИЯ ОБЛАКА И ТАРИФОВ (CRO-ОПТИМИЗИРОВАННАЯ) -->
     <div class="modal-overlay" id="cloudUpgradeModal" onclick="if (event.target === this) window.toggleCloudModal();">
@@ -5463,7 +5840,21 @@ window.escapeHTML = function(str) {
         let aiChatHistory = [];
         
         window.activeSidebarTab = "files"; // По умолчанию открыт Проводник
+        
+        // СТАТИЧЕСКАЯ КОНФИГУРАЦИЯ SUPABASE (Параметры зафиксированы в коде)
+        const SUPABASE_URL = "https://wciqrfxsittcaxlewpwu.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjaXFyZnhzaXR0Y2F4bGV3cHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzY2NzYsImV4cCI6MjA5MTA1MjY3Nn0.l0P2YR8QUIsvUFZ6aZDBNuDywYjwS_bOuYLXhULuYNA";    // <--- Укажите ваш Anon Key
 
+        // Переменные системы рабочих пространств
+        let activeProfileId = "profile-personal"; 
+        let profiles = [
+            { id: "profile-personal", name: "Личное пространство", avatar: "ЛП", tier: "free", color: "#8b5cf6", rgb: "139, 92, 246" }
+        ];
+        let userProfile = {
+            nickname: "Guest User",
+            aboutMe: "",
+            devLevel: "Middle"
+        };
         // Функции-посредники для сохранения
         function saveNotes() {
             QuantumDB.saveNotes(notes).catch(err => console.error("Ошибка сохранения заметок в IndexedDB:", err));
@@ -5737,8 +6128,8 @@ window.escapeHTML = function(str) {
 
             let targetAbsPath = currentDirParts.join("/");
 
-            // Ищем файл, абсолютный путь которого совпадает с вычисленным целевым
-            return notes.find(n => n.type === 'file' && getNoteAbsolutePath(n.id).toLowerCase() === targetAbsPath
+            // Изолируем поиск зависимостей строго внутри текущего рабочего пространства (Workspace)
+            return notes.find(n => n.type === 'file' && (n.profileId || "profile-personal") === activeProfileId && getNoteAbsolutePath(n.id).toLowerCase() === targetAbsPath
                 .toLowerCase());
         }
 
@@ -5879,7 +6270,7 @@ window.escapeHTML = function(str) {
                 if (!folderName || folderName === "." || folderName === "..") continue;
 
                 let existingFolder = notes.find(n => n.type === 'folder' && n.parentId === currentParentId && n.title
-                    .toLowerCase() === folderName.toLowerCase());
+                    .toLowerCase() === folderName.toLowerCase() && (n.profileId || "profile-personal") === activeProfileId);
                 if (!existingFolder) {
                     const newFolderId = "folder-" + Date.now().toString() + "-" + Math.random().toString(36).substring(
                         2, 9);
@@ -5888,6 +6279,7 @@ window.escapeHTML = function(str) {
                         title: folderName,
                         type: 'folder',
                         parentId: currentParentId,
+                        profileId: activeProfileId, // Привязка к пространству
                         isOpen: true,
                         date: new Date().toLocaleDateString()
                     };
@@ -6276,10 +6668,13 @@ window.addEventListener('message', function(e) {
             }
         };
 
-        // Вспомогательная функция поиска точки входа веб-приложения с учетом приоритета активного файла
+        // Вспомогательная функция поиска точки входа веб-приложения с учетом приоритета активного файла в текущем Workspace
         function getWebEntryPoint() {
+            // Изолируем структуру файлов по активному пространству
+            const currentWorkspaceNotes = notes.filter(n => (n.profileId || "profile-personal") === activeProfileId);
+
             // 1. Если активный файл - это HTML, он ВСЕГДА является приоритетной точкой входа
-            const activeNote = notes.find(n => n.id === activeId);
+            const activeNote = currentWorkspaceNotes.find(n => n.id === activeId);
             if (activeNote && activeNote.type === 'file' && (activeNote.title.toLowerCase().endsWith(".html") ||
                     activeNote.title.toLowerCase().endsWith(".htm"))) {
                 return activeNote;
@@ -6287,22 +6682,22 @@ window.addEventListener('message', function(e) {
 
             // 2. Если активный файл - не HTML, ищем index.html в той же папке (где лежит активный файл)
             if (activeNote && activeNote.type === 'file') {
-                const sameFolderIndex = notes.find(n => n.type === 'file' && n.parentId === activeNote.parentId && n
+                const sameFolderIndex = currentWorkspaceNotes.find(n => n.type === 'file' && n.parentId === activeNote.parentId && n
                     .title.toLowerCase() === "index.html");
                 if (sameFolderIndex) return sameFolderIndex;
             }
 
             // 3. Ищем index.html в корневом каталоге (parentId === null)
-            const rootIndex = notes.find(n => n.type === 'file' && n.title.toLowerCase() === "index.html" && n
+            const rootIndex = currentWorkspaceNotes.find(n => n.type === 'file' && n.title.toLowerCase() === "index.html" && n
                 .parentId === null);
             if (rootIndex) return rootIndex;
 
-            // 4. Ищем любой другой index.html во всей виртуальной файловой системе
-            const anyIndex = notes.find(n => n.type === 'file' && n.title.toLowerCase() === "index.html");
+            // 4. Ищем вообще любой index.html во всей виртуальной файловой системе
+            const anyIndex = currentWorkspaceNotes.find(n => n.type === 'file' && n.title.toLowerCase() === "index.html");
             if (anyIndex) return anyIndex;
 
             // 5. Ищем вообще любой HTML/HTM файл
-            const anyHtml = notes.find(n => n.type === 'file' && (n.title.toLowerCase().endsWith(".html") || n.title
+            const anyHtml = currentWorkspaceNotes.find(n => n.type === 'file' && (n.title.toLowerCase().endsWith(".html") || n.title
                 .toLowerCase().endsWith(".htm")));
             if (anyHtml) return anyHtml;
 
@@ -6511,6 +6906,11 @@ window.addEventListener('message', function(e) {
                 localStorageSaveTimeout = setTimeout(() => {
                     saveNotes();
                 }, 500);
+
+                // Мгновенная отправка изменений другим пользователям через WebSocket бродкаст
+                if (activeProfileId !== "profile-personal" && window.supabaseSync && window.supabaseSync.channel) {
+                    window.supabaseSync.broadcastEdit(activeId, textValue);
+                }
             }
 
             // Оптимизировано: перерисовка нитей перенесена в дебаунс-фильтр
@@ -7367,6 +7767,7 @@ window.addEventListener('message', function(e) {
                 title: getUniqueTitle(title, null, activeFolderId || null),
                 type: 'folder',
                 parentId: activeFolderId || null,
+                profileId: activeProfileId, // Привязка к пространству
                 isOpen: true,
                 date: new Date().toLocaleDateString()
             };
@@ -7449,8 +7850,8 @@ window.addEventListener('message', function(e) {
                 content: "# ",
                 date: new Date().toLocaleDateString(),
                 type: 'file',
-                parentId: activeFolderId ||
-                    null // ФИКС: Явно указываем null (теперь файлы появляются сразу, без F5)
+                parentId: activeFolderId || null,
+                profileId: activeProfileId // Привязка к пространству
             };
             notes.push(newNote);
             saveNotes();
@@ -7475,11 +7876,12 @@ window.addEventListener('message', function(e) {
             list.style.position = "relative";
 
             const renderTree = (parentId, container, depth = 0) => {
-                let items = notes.filter(n => n.parentId === parentId);
+                // Фильтруем элементы строго по принадлежности к активной рабочей области
+                let items = notes.filter(n => n.parentId === parentId && (n.profileId || "profile-personal") === activeProfileId);
 
                 if (filterText) {
                     if (parentId !== null) return;
-                    items = notes.filter(n => n.type === 'file' && n.title.toLowerCase().includes(filterText
+                    items = notes.filter(n => n.type === 'file' && (n.profileId || "profile-personal") === activeProfileId && n.title.toLowerCase().includes(filterText
                         .toLowerCase()));
                 } else {
                     items.sort((a, b) => {
@@ -8321,9 +8723,11 @@ window.addEventListener('message', function(e) {
 
             const noteMenu = document.getElementById('dynamicNoteMenu');
             const chatMenu = document.getElementById('dynamicChatMenu');
+            const wsMenu = document.getElementById('dynamicWorkspaceMenu');
 
             if (noteMenu && !noteMenu.contains(e.target)) window.hideNoteContextMenu();
             if (chatMenu && !chatMenu.contains(e.target)) window.hideChatContextMenu();
+            if (wsMenu && !wsMenu.contains(e.target)) window.hideWorkspaceContextMenu();
         }, true);
 
         // --- ДЕЙСТВИЯ ИЗ МЕНЮ ---
@@ -8487,9 +8891,11 @@ window.addEventListener('message', function(e) {
 
             bar.innerHTML = "";
 
-            const activeNote = notes.find(n => n.id === activeId);
-            const uiAttachedNotes = notes.filter(n => window.aiAttachedNotes.has(n.id));
-            const activeFolderFiles = notes.filter(n => n.parentId === activeFolderId && n.type === 'file');
+            // Ограничиваем отображение панели контекста файлами активного пространства
+            const currentWorkspaceNotes = notes.filter(n => (n.profileId || "profile-personal") === activeProfileId);
+            const activeNote = currentWorkspaceNotes.find(n => n.id === activeId);
+            const uiAttachedNotes = currentWorkspaceNotes.filter(n => window.aiAttachedNotes.has(n.id));
+            const activeFolderFiles = currentWorkspaceNotes.filter(n => n.parentId === activeFolderId && n.type === 'file');
 
             const allContextFiles = new Set();
             if (activeNote) allContextFiles.add(activeNote);
@@ -8547,16 +8953,6 @@ window.addEventListener('message', function(e) {
                     pill.className = "mention-pill";
                     pill.style.cssText = "animation: pillAppear 0.2s ease forwards; padding: 2px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; font-size: 11px; border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.12); cursor: default;";
                     pill.innerHTML = `<i class='bx bxs-file-pdf' style='color:#10b981;'></i> <span style='color:#fff;'>${window.escapeHTML(doc.name)}</span>`;
-                    bar.appendChild(pill);
-                });
-            }
-
-            if (hasDocs) {
-                window.userAttachedDocs.forEach(doc => {
-                    const pill = document.createElement("span");
-                    pill.className = "mention-pill";
-                    pill.style.cssText = "animation: pillAppear 0.2s ease forwards; padding: 2px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; font-size: 11px; border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.12); cursor: default;";
-                    pill.innerHTML = `<i class='bx bxs-file-pdf' style='color:#10b981;'></i> <span style='color:#fff;'>${doc.name}</span>`;
                     bar.appendChild(pill);
                 });
             }
@@ -8923,8 +9319,10 @@ preview.innerHTML = window.secureSanitizeHTML(html);
             liveTheme: "default",
             apiKey: "",
             aiModel: "gpt-5.5",
-            thinking: "off", // Гарантированная базовая инициализация для CoT-режимов
-            ttsVoice: "Eve" // Базовый голос по умолчанию
+            thinking: "off",
+            ttsVoice: "Eve",
+            supabaseUrl: "",
+            supabaseKey: ""
         };
 
         // Гарантируем наличие параметров тонкой настройки ИИ
@@ -8981,6 +9379,8 @@ preview.innerHTML = window.secureSanitizeHTML(html);
 
             if (document.getElementById("apiKeyInput")) document.getElementById("apiKeyInput").value = settings
                 .apiKey || "";
+            if (document.getElementById("supabaseUrlInput")) document.getElementById("supabaseUrlInput").value = settings.supabaseUrl || "";
+            if (document.getElementById("supabaseKeyInput")) document.getElementById("supabaseKeyInput").value = settings.supabaseKey || "";
             if (document.getElementById("aiModelSelect")) document.getElementById("aiModelSelect").value = settings
                 .aiModel || "gpt-5.5";
             if (document.getElementById("ttsVoiceSelect")) document.getElementById("ttsVoiceSelect").value = settings
@@ -9317,6 +9717,59 @@ preview.innerHTML = window.secureSanitizeHTML(html);
             try {
                 await QuantumDB.init();
 
+                // Загрузка данных профиля пользователя
+                let dbUserProfile = await QuantumDB.getState("qn_user_profile");
+                if (dbUserProfile) {
+                    userProfile = dbUserProfile;
+                }
+
+                // Загрузка рабочих пространств (профилей) из БД
+                let dbProfiles = await QuantumDB.getState("qn_profiles");
+                if (dbProfiles && dbProfiles.length > 0) {
+                    profiles = dbProfiles;
+                }
+                let dbActiveProfile = await QuantumDB.getState("qn_active_profile");
+                if (dbActiveProfile && profiles.find(p => p.id === dbActiveProfile)) {
+                    activeProfileId = dbActiveProfile;
+                }
+
+                // Синхронизируем UI профиля и активного воркспейса при загрузке
+                const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0];
+                const avatarDisplay = document.getElementById("userAvatar");
+                const nickDisplay = document.getElementById("userNicknameDisplay");
+                const wsNameDisplay = document.getElementById("activeWsNameDisplay");
+
+                if (avatarDisplay) {
+                    const initials = userProfile.nickname.trim().substring(0, 2).toUpperCase() || "GU";
+                    avatarDisplay.textContent = initials;
+                    avatarDisplay.style.background = activeProfile.color;
+                    avatarDisplay.style.boxShadow = `0 0 10px rgba(${activeProfile.rgb}, 0.25)`;
+                }
+                if (nickDisplay) nickDisplay.textContent = userProfile.nickname;
+                if (wsNameDisplay) {
+                    wsNameDisplay.innerHTML = `${activeProfile.name} <span class="workspace-tier-badge" id="userTierBadge">${activeProfile.tier === 'pro' ? 'Pro' : 'Free'}</span>`;
+                }
+
+                // Заполняем поля ввода во вкладке профиля
+                const nickInput = document.getElementById("userNicknameInput");
+                const aboutInput = document.getElementById("userAboutMeInput");
+                const devLevelSelect = document.getElementById("userDevLevelSelect");
+                if (nickInput) nickInput.value = userProfile.nickname;
+                if (aboutInput) aboutInput.value = userProfile.aboutMe;
+                if (devLevelSelect) devLevelSelect.value = userProfile.devLevel || "Middle";
+                // Привязываем акцентный цвет пространства к настройкам
+                settings.color = activeProfile.color;
+                settings.colorRgb = activeProfile.rgb;
+
+                // Обновляем виджеты, иконки замочков и сбрасываем режим на Ask при инициализации
+                if (typeof window.updateLockIcons === "function") window.updateLockIcons();
+                if (typeof window.updateWorkspaceWidgets === "function") window.updateWorkspaceWidgets();
+
+                if (activeProfileId === "profile-personal" && (currentAIMode === "agent" || currentAIMode === "plan")) {
+                    const askBtn = document.getElementById("aiBtnAsk");
+                    if (askBtn) setAIMode("ask", askBtn);
+                }
+
                 // 1. Загрузка заметок (с миграцией из localStorage)
                 let dbNotes = await QuantumDB.getNotes();
                 if (dbNotes && dbNotes.length > 0) {
@@ -9440,6 +9893,11 @@ preview.innerHTML = window.secureSanitizeHTML(html);
                 renderAttachedImagesUI(); // Отображаем прикрепленные ранее документы
                 renderSavedChat();
                 switchNote(activeId);
+
+                // Автоматическое подключение Supabase при старте
+                if (window.supabaseSync) {
+                    window.supabaseSync.connectAndAuth();
+                }
 
             } catch (error) {
                 console.error("Критическая ошибка инициализации QuantumDB:", error);
@@ -10039,7 +10497,7 @@ preview.innerHTML = window.secureSanitizeHTML(html);
         // SMART AI (AUTO-AGENT) С СОХРАНЕНИЕМ ЧАТА И ПРОГРЕССА
         // ==========================================
 
-        let currentAIMode = "agent"; // agent, plan, ask
+        let currentAIMode = "ask"; // По умолчанию всегда Ask
         // 1. aiChatHistory теперь объявляется на верхнем уровне глобально (Шаг 1) и загружается асинхронно
 
         // 2. Функция сохранения в память IndexedDB
@@ -10364,14 +10822,29 @@ preview.innerHTML = window.secureSanitizeHTML(html);
         }
 
         function setAIMode(mode, element) {
+            // ОГРАНИЧЕНИЕ: Режимы Agent и Plan доступны только в выделенных Командных Workspaces (PRO)
+            if ((mode === "agent" || mode === "plan") && activeProfileId === "profile-personal") {
+                window.triggerPaywall("workspace_limit");
+                return;
+            }
+
             currentAIMode = mode;
             document.querySelectorAll('.ai-mode-btn').forEach(btn => btn.classList.remove('active'));
-            element.classList.add('active');
+            
+            if (element) {
+                element.classList.add('active');
+            } else {
+                // Если элемент не передан в аргумент (авто-вызов), ищем кнопку по ID
+                const targetBtn = document.getElementById(mode === "agent" ? "aiBtnAgent" : (mode === "plan" ? "aiBtnPlan" : "aiBtnAsk"));
+                if (targetBtn) targetBtn.classList.add('active');
+            }
 
             const input = document.getElementById("aiInput");
-            if (mode === "plan") input.placeholder = "Опишите задачу (я составлю roadmap и смогу его выполнить)...";
-            else if (mode === "ask") input.placeholder = "Задайте вопрос по тексту...";
-            else input.placeholder = "Дайте команду (например: сократи текст)...";
+            if (input) {
+                if (mode === "plan") input.placeholder = "Опишите задачу (я составлю roadmap и смогу его выполнить)...";
+                else if (mode === "ask") input.placeholder = "Задайте вопрос по тексту...";
+                else input.placeholder = "Дайте команду (например: сократи текст)...";
+            }
         }
 
         function handleAIEnter(e) {
@@ -13071,17 +13544,18 @@ if (settings.livePreview && !isWebPreview) {
                 reply: finalContent
             };
 
-            // УМНЫЙ ПОИСК: Ищем по точечному ID, по абсолютному/относительному пути или по плоскому имени
+            // УМНЫЙ ПОИСК: Ищем по точечному ID, по абсолютному/относительному пути или по плоскому имени СТРОГО в рамках активного пространства
             const resolveNote = (idStr) => {
                 if (idStr) {
                     const trimmedId = idStr.trim().toLowerCase();
+                    const currentWorkspaceNotes = notes.filter(n => (n.profileId || "profile-personal") === activeProfileId);
 
                     // 1. Поиск по прямому уникальному ID
-                    let n = notes.find(n => n.id === idStr);
+                    let n = currentWorkspaceNotes.find(n => n.id === idStr);
                     if (n) return n;
 
                     // 2. Поиск по абсолютному пути (например, js/app.js)
-                    let resolvedByPath = notes.find(node => {
+                    let resolvedByPath = currentWorkspaceNotes.find(node => {
                         if (node.type !== 'file') return false;
                         const absPath = getNoteAbsolutePath(node.id).toLowerCase();
                         return absPath === trimmedId || absPath.endsWith("/" + trimmedId);
@@ -13090,11 +13564,11 @@ if (settings.livePreview && !isWebPreview) {
 
                     // 3. Фолбэк на простое имя файла (например, app.js)
                     let flatTitle = trimmedId.split("/").pop();
-                    let resolvedByFlat = notes.find(node => node.type === 'file' && node.title.toLowerCase() ===
+                    let resolvedByFlat = currentWorkspaceNotes.find(node => node.type === 'file' && node.title.toLowerCase() ===
                         flatTitle);
                     if (resolvedByFlat) return resolvedByFlat;
                 }
-                return notes.find(n => n.id === activeId);
+                return currentWorkspaceNotes.find(n => n.id === activeId) || notes.find(n => n.id === activeId);
             };
 
             // 1. Roadmap (План задач)
@@ -13423,6 +13897,9 @@ if (settings.livePreview && !isWebPreview) {
                 let systemRequestedIds = [];
                 const lowerText = userText.toLowerCase();
 
+                // Ограничиваем область сканирования только текущим пространством
+                const currentWorkspaceNotes = notes.filter(n => (n.profileId || "profile-personal") === activeProfileId);
+
                 const wantsAllNotes =
                     /(прочитай|изучи|проанализируй|сводку|расскажи|найди|обзор|проверь|что в).*?(все|мои|остальные|другие)\s*(заметки|записи|файлы|документы)/i
                     .test(lowerText) ||
@@ -13430,12 +13907,12 @@ if (settings.livePreview && !isWebPreview) {
                     .test(lowerText);
 
                 if (wantsAllNotes) {
-                    notes.forEach(n => {
+                    currentWorkspaceNotes.forEach(n => {
                         if (n.id !== activeId && !window.aiAttachedNotes.has(n.id)) systemRequestedIds.push(
                             n.id);
                     });
                 } else {
-                    notes.forEach(n => {
+                    currentWorkspaceNotes.forEach(n => {
                         if (n.id !== activeId && !window.aiAttachedNotes.has(n.id) && n.title.trim()
                             .length > 2) {
                             const titleStr = n.title.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -13517,17 +13994,20 @@ if (settings.livePreview && !isWebPreview) {
 
             let systemPrompt = "";
 
+            // Фильтруем все доступные ИИ файлы строго в рамках активного пространства (Workspace)
+            const currentWorkspaceNotes = notes.filter(n => (n.profileId || "profile-personal") === activeProfileId);
+
             const mentionedTitles = [...userText.matchAll(/@"([^"]+)"/g)].map(m => m[1].toLowerCase().trim());
-            const textMentionedNotes = notes.filter(n => mentionedTitles.includes(n.title.toLowerCase().trim()));
-            const uiAttachedNotes = notes.filter(n => window.aiAttachedNotes.has(n.id));
+            const textMentionedNotes = currentWorkspaceNotes.filter(n => mentionedTitles.includes(n.title.toLowerCase().trim()));
+            const uiAttachedNotes = currentWorkspaceNotes.filter(n => window.aiAttachedNotes.has(n.id));
             const allContextNotes = [...new Set([...textMentionedNotes, ...uiAttachedNotes])];
 
-            // Находим все файлы исключительно в текущей активной папке
-            const activeFolderFiles = notes.filter(n => n.parentId === activeFolderId && n.type === 'file');
+            // Находим все файлы исключительно в текущей активной папке в рамках текущего пространства
+            const activeFolderFiles = currentWorkspaceNotes.filter(n => n.parentId === activeFolderId && n.type === 'file');
 
             // Объединяем только текущую папку и принудительно прикрепленные файлы
             const baseAllowed = new Set([...allContextNotes, ...activeFolderFiles]);
-            const activeNote = notes.find(n => n.id === activeId);
+            const activeNote = currentWorkspaceNotes.find(n => n.id === activeId);
             if (activeNote) baseAllowed.add(activeNote);
 
             const allowedNotesArray = Array.from(baseAllowed);
@@ -13691,10 +14171,20 @@ if (settings.livePreview && !isWebPreview) {
                 window.toggleTerminalContext();
             }
 
+            // Инжекция данных профиля пользователя (Custom Instructions) для всех ИИ-моделей
+            let userInstructionsContext = "";
+            if (userProfile && userProfile.nickname) {
+                userInstructionsContext += `\n[ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ]:\nНикнейм разработчика: ${userProfile.nickname}`;
+                if (userProfile.aboutMe && userProfile.aboutMe.trim()) {
+                    userInstructionsContext += `\nИнформация о пользователе и его личные предпочтения:\n"""\n${userProfile.aboutMe}\n"""`;
+                }
+                userInstructionsContext += `\nОБЯЗАТЕЛЬНО адаптируй свои ответы, комментарии в коде и тон общения под эти предпочтения.\n`;
+            }
+
             // ОБНОВЛЕНО: Подставляем liveSiteContext и terminalContext в промпты
             if (currentAIMode === "agent") {
                 systemPrompt = `Ты Senior AI-Инженер и Автономный IDE-Агент. Твоя задача — писать код и управлять файлами/папками.
-
+${userInstructionsContext}
 АБСОЛЮТНЫЕ ПРАВИЛА (ИСПОЛЬЗУЙ ТОЛЬКО ЭТИ XML-ТЕГИ, НИКАКОГО JSON):
 1. Изменить часть кода (Системный Поиск и Замена):
 <edit id="ID_ФАЙЛА">
@@ -13713,10 +14203,10 @@ if (settings.livePreview && !isWebPreview) {
 ${JSON.stringify(notesDirectory)}` + textAccessRule;
             } else if (currentAIMode === "plan") {
                 systemPrompt =
-                    `Ты Senior Менеджер. Составь подробный Roadmap. ВСЕГДА используй markdown-задачи в формате \`- [ ] Задача\`.` +
+                    `Ты Senior Менеджер. Составь подробный Roadmap. ВСЕГДА используй markdown-задачи в формате \`- [ ] Задача\`.\n${userInstructionsContext}` +
                     textAccessRule;
             } else if (currentAIMode === "ask") {
-                systemPrompt = `Ты ИИ-ассистент.` + textAccessRule;
+                systemPrompt = `Ты ИИ-ассистент.\n${userInstructionsContext}` + textAccessRule;
             }
 
             // НАЛОЖЕНИЕ ПОЛЬЗОВАТЕЛЬСКОГО СИСТЕМНОГО ПРОМПТА ПОВЕРХ ВСТРОЕННЫХ ПРАВИЛ
@@ -14082,13 +14572,14 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     `<i class='bx bx-loader-alt bx-spin' style='color: #f59e0b;'></i> Выполняю _"${currentTask}"_...`,
                     "", -1);
 
-                // Собираем актуальный контекст (С УЧЕТОМ ПУТЕЙ)
-                const notesDirectory = notes.map(n => ({
+                // Собираем актуальный контекст (С УЧЕТОМ ПУТЕЙ) строго внутри текущего рабочего пространства
+                const currentWorkspaceNotes = notes.filter(n => (n.profileId || "profile-personal") === activeProfileId);
+                const notesDirectory = currentWorkspaceNotes.map(n => ({
                     id: n.id,
                     type: n.type,
                     path: window.getFullPath(n)
                 }));
-                const baseAllowedNotes = Array.from(new Set([activeId, ...window.aiAttachedNotes])).map(id => notes
+                const baseAllowedNotes = Array.from(new Set([activeId, ...window.aiAttachedNotes])).map(id => currentWorkspaceNotes
                     .find(n => n.id === id)).filter(Boolean);
 
                 // Подтягиваем связанные файлы!
@@ -14764,6 +15255,10 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 "git_depth": {
                     title: "<i class='bx bx-history' style='color: var(--accent);'></i> Глубокая история Git (PRO)",
                     desc: "На бесплатном тарифе доступно сохранение только 3 последних коммитов. Снимите ограничения для безопасной разработки."
+                },
+                "workspace_limit": {
+                    title: "<i class='bx bx-group' style='color: var(--accent);'></i> Совместный Workspace (PRO)",
+                    desc: "Создание и переключение на изолированные командные пространства доступно только на тарифе Team Cloud. Храните проекты на надежных серверах PostgreSQL/S3!"
                 }
             };
 
@@ -15056,7 +15551,1146 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 window.celestialSea = new CelestialSeaDock();
             }
         });
-    </script>
+
+        // =======================================================================
+        // КОНТРОЛЛЕР СИСТЕМЫ ПРОФИЛЕЙ И РАБОЧИХ ПРОСТРАНСТВ (WORKSPACES)
+        // =======================================================================
+        window.switchSettingsTab = function(tab) {
+            const btnEnv = document.getElementById("setTabEnv");
+            const btnProfile = document.getElementById("setTabProfile");
+            const contentEnv = document.getElementById("settingsContentEnv");
+            const contentProfile = document.getElementById("settingsContentProfile");
+            
+            if (tab === "env") {
+                if (btnEnv) btnEnv.classList.add("active");
+                if (btnProfile) btnProfile.classList.remove("active");
+                if (contentEnv) contentEnv.style.display = "block";
+                if (contentProfile) contentProfile.style.display = "none";
+            } else {
+                if (btnEnv) btnEnv.classList.remove("active");
+                if (btnProfile) btnProfile.classList.add("active");
+                if (contentEnv) contentEnv.style.display = "none";
+                if (contentProfile) contentProfile.style.display = "block";
+            }
+            if (window.synth) window.synth.playSoftHum();
+        };
+
+        window.openProfileSettingsModal = function(e) {
+            if (e) e.stopPropagation();
+            const modal = document.getElementById("settingsModal");
+            if (modal && !modal.classList.contains("active")) {
+                modal.classList.add("active");
+            }
+            window.switchSettingsTab("profile");
+        };
+
+        window.showWorkspaceSwitcherSettingsMenu = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.openProfileSettingsModal(e);
+        };
+
+        window.updateUserProfile = function() {
+            const nickInput = document.getElementById("userNicknameInput");
+            const aboutInput = document.getElementById("userAboutMeInput");
+            const devLevelSelect = document.getElementById("userDevLevelSelect");
+
+            if (nickInput) userProfile.nickname = nickInput.value.trim() || "Guest User";
+            if (aboutInput) userProfile.aboutMe = aboutInput.value;
+            if (devLevelSelect) userProfile.devLevel = devLevelSelect.value;
+
+            window.syncUserProfileUI();
+            QuantumDB.saveState("qn_user_profile", userProfile);
+
+            // Синхронизируем измененный никнейм и инфо с базой данных
+            if (window.supabaseSync) {
+                window.supabaseSync.syncProfileToCloud();
+                
+                // Мгновенно перерегистрируем пользователя в Presence с новым уровнем квалификации
+                if (window.supabaseSync.channel) {
+                    window.supabaseSync.channel.track({
+                        nickname: userProfile.nickname,
+                        devLevel: userProfile.devLevel || "Middle",
+                        online: true,
+                        active_note_id: activeId
+                    });
+                }
+            }
+        };
+
+        window.syncUserProfileUI = function() {
+            const nickDisplay = document.getElementById("userNicknameDisplay");
+            const avatarDisplay = document.getElementById("userAvatar");
+            if (nickDisplay) nickDisplay.textContent = userProfile.nickname;
+            if (avatarDisplay) {
+                avatarDisplay.textContent = userProfile.nickname.trim().substring(0, 2).toUpperCase() || "GU";
+            }
+        };
+
+        window.toggleWorkspaceMenu = function(e) {
+            if (e) e.stopPropagation();
+            const switcher = document.getElementById("workspaceSwitcher");
+            if (!switcher) return;
+            
+            const isOpen = switcher.classList.toggle("open");
+            if (isOpen) {
+                window.renderWorkspaceList();
+                if (window.synth) window.synth.playSoftHum();
+            }
+        };
+
+        window.renderWorkspaceList = function() {
+            const container = document.getElementById("workspaceListContainer");
+            if (!container) return;
+
+            container.innerHTML = "";
+            profiles.forEach(p => {
+                const isActive = p.id === activeProfileId;
+                const item = document.createElement("button");
+                item.className = `workspace-menu-item ${isActive ? 'active' : ''}`;
+                
+                // Переключение по клику
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    window.switchWorkspace(p.id);
+                };
+
+                // ПКМ для вызова управления рабочим пространством
+                item.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.showWorkspaceContextMenu(e.clientX, e.clientY, p.id);
+                };
+
+                // Зажатие (Long Press) на смартфонах для вызова управления
+                let touchTimer;
+                item.ontouchstart = (e) => {
+                    touchTimer = setTimeout(() => {
+                        window.showWorkspaceContextMenu(e.touches[0].clientX, e.touches[0].clientY, p.id);
+                        if (navigator.vibrate) navigator.vibrate(50);
+                    }, 800);
+                };
+                item.ontouchmove = () => clearTimeout(touchTimer);
+                item.ontouchend = () => clearTimeout(touchTimer);
+
+                const isProBadge = p.tier === "pro" 
+                    ? `<span class="workspace-tier-badge" style="background:rgba(16,185,129,0.12); color:#10b981; margin-left: auto;">Pro</span>`
+                    : `<span class="workspace-tier-badge" style="margin-left: auto;">Free</span>`;
+
+                item.innerHTML = `
+                    <div class="workspace-avatar" style="background: ${p.color}; box-shadow: 0 0 8px rgba(${p.rgb}, 0.25);">${p.avatar}</div>
+                    <div class="workspace-info" style="text-align: left;">
+                        <div class="workspace-name" style="font-weight: ${isActive ? '700' : '500'};">${p.name}</div>
+                    </div>
+                    ${isProBadge}
+                `;
+                container.appendChild(item);
+            });
+        };
+
+        window.switchWorkspace = function(profileId) {
+            const profile = profiles.find(p => p.id === profileId);
+            if (!profile) return;
+
+            // КЛЮЧЕВОЙ CRO ТРИГГЕР: Если пространство требует PRO-лицензию, блокируем доступ
+            if (profile.tier === "pro" && !window.isProUser) {
+                window.triggerPaywall("workspace_limit");
+                const switcher = document.getElementById("workspaceSwitcher");
+                if (switcher) switcher.classList.remove("open");
+                return;
+            }
+
+            activeProfileId = profileId;
+            QuantumDB.saveState("qn_active_profile", activeProfileId);
+            
+            const switcher = document.getElementById("workspaceSwitcher");
+            if (switcher) switcher.classList.remove("open");
+
+            // Обновляем UI селектора
+            const avatarDisplay = document.getElementById("userAvatar");
+            const wsNameDisplay = document.getElementById("activeWsNameDisplay");
+
+            if (avatarDisplay) {
+                avatarDisplay.textContent = userProfile.nickname.trim().substring(0, 2).toUpperCase() || "GU";
+                avatarDisplay.style.background = profile.color;
+                avatarDisplay.style.boxShadow = `0 0 10px rgba(${profile.rgb}, 0.25)`;
+            }
+            if (wsNameDisplay) {
+                wsNameDisplay.innerHTML = `${profile.name} <span class="workspace-tier-badge" id="userTierBadge">${profile.tier === 'pro' ? 'Pro' : 'Free'}</span>`;
+            }
+
+            // Автоматическое переключение косметической темы под цвет профиля
+            settings.color = profile.color;
+            settings.colorRgb = profile.rgb;
+            applySettings();
+
+            activeFolderId = null;
+
+            // Обновляем виджеты, иконки замочков и сбрасываем режим на Ask при переключении на Personal
+            if (typeof window.updateLockIcons === "function") window.updateLockIcons();
+            if (typeof window.updateWorkspaceWidgets === "function") window.updateWorkspaceWidgets();
+
+            // Переключаем подписку Realtime WebSockets для нового пространства
+            if (window.supabaseSync) {
+                if (profileId === "profile-personal") {
+                    window.supabaseSync.unsubscribe();
+                } else {
+                    window.supabaseSync.subscribeToWorkspace(profileId);
+                }
+            }
+
+            if (activeProfileId === "profile-personal" && (currentAIMode === "agent" || currentAIMode === "plan")) {
+                const askBtn = document.getElementById("aiBtnAsk");
+                if (askBtn) setAIMode("ask", askBtn);
+            }
+
+            // Ищем первый доступный файл в этом профиле, при отсутствии - создаем новый
+            const firstFile = notes.find(n => n.type === 'file' && (n.profileId || "profile-personal") === activeProfileId);
+            if (firstFile) {
+                switchNote(firstFile.id);
+            } else {
+                const uniqueId = Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9);
+                const welcomeNote = {
+                    id: uniqueId,
+                    title: "Старт " + profile.name,
+                    content: `# ${profile.name} 🚀\n\nДобро пожаловать в ваше новое рабочее пространство.\nВсе созданные здесь файлы полностью изолированы от других профилей.`,
+                    date: new Date().toLocaleDateString(),
+                    type: 'file',
+                    parentId: null,
+                    profileId: activeProfileId
+                };
+                notes.push(welcomeNote);
+                saveNotes();
+                switchNote(uniqueId);
+            }
+
+            renderNotesList();
+            if (window.synth) window.synth.playChime();
+        };
+
+        window.createNewWorkspace = async function(e) {
+            if (e) e.stopPropagation();
+
+            // КЛЮЧЕВОЙ CRO ТРИГГЕР: На Free тарифе лимит дополнительных пространств равен 0
+            if (!window.isProUser) {
+                window.triggerPaywall("workspace_limit");
+                const switcher = document.getElementById("workspaceSwitcher");
+                if (switcher) switcher.classList.remove("open");
+                return;
+            }
+
+            // На PRO тарифе лимит рабочих пространств равен 3
+            if (profiles.length >= 3) {
+                alert("Достигнут максимальный лимит рабочих пространств (не более 3-х областей на тарифе Team Cloud).");
+                const switcher = document.getElementById("workspaceSwitcher");
+                if (switcher) switcher.classList.remove("open");
+                return;
+            }
+
+            const name = prompt("Название нового рабочего пространства (обязано быть уникальным):", "Проект Альфа");
+            if (!name || !name.trim()) return;
+
+            const password = prompt("Установите пароль доступа к этому Workspace:");
+            if (!password || !password.trim()) return;
+
+            const switcher = document.getElementById("workspaceSwitcher");
+            if (switcher) switcher.classList.remove("open");
+
+            // Проверяем соединение с Supabase
+            if (!window.supabaseSync || !window.supabaseSync.client) {
+                alert("Облачный движок Supabase не инициализирован. Проверьте SUPABASE_URL в коде.");
+                return;
+            }
+
+            try {
+                const colors = [
+                    { hex: "#10b981", rgb: "16, 185, 129" },
+                    { hex: "#f43f5e", rgb: "244, 63, 94" },
+                    { hex: "#f59e0b", rgb: "245, 158, 11" },
+                    { hex: "#00e5ff", rgb: "0, 229, 255" },
+                    { hex: "#a855f7", rgb: "168, 85, 247" }
+                ];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                const letters = name.trim().substring(0, 2).toUpperCase();
+
+                // 1. Пытаемся создать запись воркспейса на сервере
+                const { data, error } = await window.supabaseSync.client
+                    .from('workspaces')
+                    .insert({
+                        name: name.trim(),
+                        password: password.trim(),
+                        color: randomColor.hex,
+                        rgb: randomColor.rgb,
+                        owner_id: window.supabaseSync.userId
+                    })
+                    .select()
+                    .single();
+
+                if (error) {
+                    if (error.code === "23505") {
+                        throw new Error(`Название "${name}" уже занято другим пользователем. Выберите другое уникальное название.`);
+                    }
+                    throw error;
+                }
+
+                // 2. Если запись создалась, сохраняем её локально в IndexedDB
+                const newProfile = {
+                    id: data.id,
+                    name: data.name,
+                    password: password.trim(), // Сохраняем пароль локально для авто-логина при старте страницы
+                    avatar: letters,
+                    tier: "pro",
+                    color: data.color,
+                    rgb: data.rgb
+                };
+
+                profiles.push(newProfile);
+                await QuantumDB.saveState("qn_profiles", profiles);
+                window.switchWorkspace(data.id);
+
+            } catch (err) {
+                alert("Ошибка создания Workspace: " + err.message);
+                console.error(err);
+            }
+        };
+
+        // Контекстное меню для управления рабочими областями
+        window.showWorkspaceContextMenu = function(clientX, clientY, wsId) {
+            window.ignoreMenuClickTime = Date.now() + 300;
+            window.hideNoteContextMenu();
+            window.hideChatContextMenu();
+            window.hideWorkspaceContextMenu();
+            addDynamicMenuStyles();
+
+            const profile = profiles.find(p => p.id === wsId);
+            if (!profile) return;
+
+            const menuEl = document.createElement('div');
+            menuEl.id = 'dynamicWorkspaceMenu';
+
+            const deleteOption = profile.id !== "profile-personal" 
+                ? `<button class="dyn-menu-btn del-btn" onclick="window.handleWorkspaceDelete('${profile.id}')"><i class='bx bx-trash'></i> Удалить Workspace</button>`
+                : `<span style="font-size:11px; color:var(--text-muted); padding: 8px 12px; display:block; font-family:var(--font-ui);">Нельзя удалить дефолтный Workspace</span>`;
+
+            menuEl.innerHTML = `
+                <div style="font-size:10px; color:var(--text-muted); padding:6px 12px; font-weight:700; text-transform:uppercase; font-family:var(--font-ui);">Workspace: ${profile.name}</div>
+                <button class="dyn-menu-btn" onclick="window.handleWorkspaceRename('${profile.id}')"><i class='bx bx-edit-alt'></i> Переименовать</button>
+                <button class="dyn-menu-btn" onclick="window.handleWorkspaceColorChange('${profile.id}')"><i class='bx bx-palette'></i> Сменить цвет</button>
+                <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 4px 0;"></div>
+                ${deleteOption}
+            `;
+
+            menuEl.style.cssText =
+                "position: fixed !important; background: #18181b !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 12px !important; padding: 6px !important; display: flex !important; flex-direction: column !important; gap: 4px !important; z-index: 21474836 !important; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8) !important; min-width: 200px !important; margin: 0 !important; pointer-events: auto !important;";
+
+            document.body.appendChild(menuEl);
+
+            const menuRect = menuEl.getBoundingClientRect();
+            let posX = clientX, posY = clientY;
+            if (posX + menuRect.width > window.innerWidth) posX = window.innerWidth - menuRect.width - 10;
+            if (posY + menuRect.height > window.innerHeight) posY = window.innerHeight - menuRect.height - 10;
+
+            menuEl.style.left = posX + 'px';
+            menuEl.style.top = posY + 'px';
+        };
+
+        window.hideWorkspaceContextMenu = function() {
+            const menu = document.getElementById('dynamicWorkspaceMenu');
+            if (menu) menu.remove();
+        };
+
+        window.handleWorkspaceRename = function(wsId) {
+            const profile = profiles.find(p => p.id === wsId);
+            if (!profile) return;
+            const newName = prompt("Новое название для этого Workspace:", profile.name);
+            if (newName && newName.trim()) {
+                profile.name = newName.trim();
+                profile.avatar = profile.name.substring(0, 2).toUpperCase();
+                
+                QuantumDB.saveState("qn_profiles", profiles).then(() => {
+                    window.renderWorkspaceList();
+                    if (wsId === activeProfileId) {
+                        window.switchWorkspace(wsId);
+                    }
+                });
+            }
+            window.hideWorkspaceContextMenu();
+        };
+
+        window.handleWorkspaceColorChange = function(wsId) {
+            const profile = profiles.find(p => p.id === wsId);
+            if (!profile) return;
+            
+            const colors = [
+                { hex: "#8b5cf6", rgb: "139, 92, 246" },
+                { hex: "#3b82f6", rgb: "59, 130, 246" },
+                { hex: "#10b981", rgb: "16, 185, 129" },
+                { hex: "#f43f5e", rgb: "244, 63, 94" },
+                { hex: "#f59e0b", rgb: "245, 158, 11" }
+            ];
+            
+            const currentIndex = colors.findIndex(c => c.hex === profile.color);
+            const nextColor = colors[(currentIndex + 1) % colors.length];
+            
+            profile.color = nextColor.hex;
+            profile.rgb = nextColor.rgb;
+            
+            QuantumDB.saveState("qn_profiles", profiles).then(() => {
+                window.renderWorkspaceList();
+                if (wsId === activeProfileId) {
+                    window.switchWorkspace(wsId);
+                }
+            });
+            window.hideWorkspaceContextMenu();
+        };
+
+        window.handleWorkspaceDelete = function(wsId) {
+            if (wsId === "profile-personal") return;
+            const profile = profiles.find(p => p.id === wsId);
+            if (!profile) return;
+
+            if (confirm(`Удалить Workspace "${profile.name}" и все содержащиеся в нём файлы безвозвратно?`)) {
+                // Удаляем файлы, привязанные к удаляемому воркспейсу
+                notes = notes.filter(n => n.profileId !== wsId);
+                saveNotes();
+
+                // Удаляем саму область
+                profiles = profiles.filter(p => p.id !== wsId);
+                QuantumDB.saveState("qn_profiles", profiles).then(() => {
+                    window.switchWorkspace("profile-personal");
+                });
+            }
+            window.hideWorkspaceContextMenu();
+        };
+
+        // Скрытие / показ замочков блокировки режимов ИИ в зависимости от активного пространства
+        window.updateLockIcons = function() {
+            const agentLock = document.getElementById("agentLockIcon");
+            const planLock = document.getElementById("planLockIcon");
+            const isPersonal = activeProfileId === "profile-personal";
+
+            if (agentLock) agentLock.style.display = isPersonal ? "inline-block" : "none";
+            if (planLock) planLock.style.display = isPersonal ? "inline-block" : "none";
+        };
+
+        // Динамическая генерация Командного центра деплоев для выделенных Workspaces
+        window.updateWorkspaceWidgets = function() {
+            const panel = document.getElementById("workspaceExtraPanel");
+            if (!panel) return;
+
+            // Если пространство личное — командный центр скрывается
+            if (activeProfileId === "profile-personal") {
+                panel.style.display = "none";
+                panel.innerHTML = "";
+                return;
+            }
+
+            panel.style.display = "block";
+
+            // 1. Если параметры Supabase не настроены, показываем заглушку с прямым линком на форму ввода
+            if (!settings.supabaseUrl || !settings.supabaseKey) {
+                panel.innerHTML = `
+                    <div class="cloud-sync-widget" style="margin-top: 10px; border-color: rgba(245, 158, 11, 0.25); background: rgba(245, 158, 11, 0.02); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); font-family: var(--font-ui); font-size: 12px;">
+                        <div style="font-weight: 700; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            <i class='bx bx-git-branch' style="color: #f59e0b;"></i> Командная среда (PRO)
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.4; margin-bottom: 10px;">
+                            Для совместной работы в реальном времени подключите ваш инстанс Supabase.
+                        </div>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 10px; font-family: var(--font-code); background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;">
+                            ID Workspace: ${activeProfileId}
+                        </div>
+                        <button class="btn" onclick="window.openProfileSettingsModal(event)" style="width: 100%; font-size: 11px; padding: 6px; background: rgba(var(--accent-rgb), 0.15); border-color: rgba(var(--accent-rgb), 0.3); color: var(--accent); justify-content: center; display: flex; align-items: center; gap: 6px;">
+                            <i class='bx bx-cog'></i> Настроить Supabase Sync
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            // 2. Если параметры указаны, но клиент еще не подключился или находится в процессе
+            if (!window.supabaseSync || !window.supabaseSync.client || !window.supabaseSync.channel) {
+                panel.innerHTML = `
+                    <div class="cloud-sync-widget" style="margin-top: 10px; border-color: rgba(var(--accent-rgb), 0.25); background: rgba(var(--accent-rgb), 0.02); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); font-family: var(--font-ui); font-size: 12px;">
+                        <div style="font-weight: 700; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            <i class='bx bx-git-branch' style="color: var(--accent);"></i> Командная среда
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.4; display: flex; align-items: center; gap: 6px;">
+                            <i class='bx bx-loader-alt bx-spin' style="color: var(--accent);"></i> Подключение к Supabase WebSockets...
+                        </div>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 8px; font-family: var(--font-code); background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;">
+                            ID Workspace: ${activeProfileId}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // 3. Если подключение успешно установлено, передаем отрисовку Presence-контроллеру
+            window.supabaseSync.renderActiveTeamPresence();
+        };
+
+
+
+        // =======================================================================
+        // WEBSOCKETS COLLABORATION CONTROLLER (REALTIME SUPABASE ENGINE)
+        // =======================================================================
+        class SupabaseSyncController {
+            constructor() {
+                this.client = null;
+                this.channel = null;
+                this.currentWorkspaceId = null;
+                this.typingTimeout = null;
+                this.userId = null;
+                this.presenceState = {};
+            }
+
+            init() {
+                if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes("your-project")) {
+                    console.log("SupabaseSync: Параметры подключения к облаку не заданы.");
+                    return;
+                }
+                try {
+                    if (typeof supabase !== "undefined") {
+                        this.client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                        console.log("SupabaseSync: Клиент Supabase успешно инициализирован.");
+                    }
+                } catch (e) {
+                    console.error("SupabaseSync: Ошибка создания клиента", e);
+                }
+            }
+
+            async connectAndAuth() {
+                this.init();
+                if (!this.client) return;
+
+                try {
+                    // Проверяем наличие активной сессии
+                    let { data: { session } } = await this.client.auth.getSession();
+                    if (!session) {
+                        // Бесшовный анонимный вход для совместной работы
+                        const { data, error } = await this.client.auth.signInAnonymously();
+                        if (error) throw error;
+                        session = data.session;
+                    }
+                    this.userId = session.user.id;
+                    console.log("SupabaseSync: UID пользователя:", this.userId);
+
+                    // Синхронизируем никнейм и данные профиля в PostgreSQL
+                    await this.syncProfileToCloud();
+
+                    // Если открыто PRO-пространство, мгновенно подключаем канал связи
+                    if (activeProfileId !== "profile-personal") {
+                        await this.subscribeToWorkspace(activeProfileId);
+                    }
+                } catch (e) {
+                    console.error("SupabaseSync: Ошибка авторизации:", e);
+                }
+            }
+
+            async syncProfileToCloud() {
+                if (!this.client || !this.userId) return;
+                try {
+                    const { error } = await this.client.from('profiles').upsert({
+                        id: this.userId,
+                        nickname: userProfile.nickname,
+                        username: userProfile.nickname, // Дублируем никнейм в поле username для совместимости со стартовым шаблоном Supabase
+                        first_name: userProfile.nickname, // Дублируем в first_name на случай ограничений NOT NULL в вашей схеме БД
+                        last_name: "", // Передаем пустую строку во избежание ограничений NOT NULL в вашей схеме БД
+                        about_me: userProfile.aboutMe
+                    });
+                    if (error) throw error;
+                } catch (e) {
+                    console.warn("SupabaseSync: Ошибка синхронизации профиля:", e);
+                }
+            }
+
+            async subscribeToWorkspace(workspaceId) {
+                if (!this.client) return;
+                this.unsubscribe(); // Отключаем старые каналы
+
+                const isValidUUID = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+                if (!isValidUUID(workspaceId)) {
+                    console.log("SupabaseSync: Ссылка на локальный Workspace (" + workspaceId + "), пропускаем синхронизацию.");
+                    return;
+                }
+
+                this.currentWorkspaceId = workspaceId;
+                
+                // 1. Загружаем актуальные файлы этого воркспейса из PostgreSQL
+                await this.downloadWorkspaceFiles(workspaceId);
+
+                // 2. Инициализируем WebSockets-канал
+                const channelName = `workspace_${workspaceId}`;
+                this.channel = this.client.channel(channelName, {
+                    config: {
+                        presence: { key: this.userId }
+                    }
+                });
+
+                // Подписываемся на мгновенное вещание ввода (Broadcast) и статусы присутствия (Presence)
+                this.channel
+                    .on('broadcast', { event: 'text_edit' }, payload => {
+                        this.handleIncomingBroadcastEdit(payload.payload);
+                    })
+                    .on('presence', { event: 'sync' }, () => {
+                        this.presenceState = this.channel.presenceState();
+                        this.renderActiveTeamPresence();
+                    });
+
+                    this.channel.subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        // Считаем текущее количество участников перед авторизацией
+                        const currentUsers = [];
+                        Object.keys(this.presenceState).forEach(key => {
+                            const list = this.presenceState[key];
+                            if (list && list.length > 0) currentUsers.push(list[0]);
+                        });
+
+                        // Защита от переполнения: лимит 50 человек на воркспейс
+                        if (currentUsers.length >= 50) {
+                            alert("Внимание: Данное облачное пространство заполнено (лимит 50 участников). Вы вошли в режиме только чтения.");
+                            return;
+                        }
+
+                        // Регистрируем наш профиль в списке активных участников воркспейса
+                        await this.channel.track({
+                            nickname: userProfile.nickname,
+                            devLevel: userProfile.devLevel || "Middle",
+                            online: true,
+                            active_note_id: activeId
+                        });
+                    }
+                });
+            }
+
+            async downloadWorkspaceFiles(workspaceId) {
+                if (!this.client) return;
+                const isValidUUID = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+                if (!isValidUUID(workspaceId)) return;
+                try {
+                    const { data, error } = await this.client
+                        .from('notes')
+                        .select('*')
+                        .eq('workspace_id', workspaceId);
+
+                    if (error) throw error;
+
+                    if (data && data.length > 0) {
+                        // Очищаем локальный кэш файлов этой области
+                        notes = notes.filter(n => n.profileId !== workspaceId);
+                        
+                        // Добавляем свежие файлы из Supabase
+                        data.forEach(dbNote => {
+                            notes.push({
+                                id: dbNote.id,
+                                title: dbNote.title,
+                                content: dbNote.content,
+                                type: dbNote.type,
+                                parentId: dbNote.parent_id,
+                                profileId: workspaceId,
+                                date: new Date(dbNote.updated_at).toLocaleDateString()
+                            });
+                        });
+
+                        saveNotes();
+                        renderNotesList();
+                        
+                        const hasActive = notes.some(n => n.id === activeId && n.profileId === workspaceId);
+                        if (!hasActive) {
+                            const first = notes.find(n => n.profileId === workspaceId && n.type === 'file');
+                            if (first) switchNote(first.id);
+                        }
+                    }
+                } catch (e) {
+                    console.error("SupabaseSync: Ошибка загрузки файлов с облака:", e);
+                }
+            }
+
+            unsubscribe() {
+                if (this.channel) {
+                    this.client.removeChannel(this.channel);
+                    this.channel = null;
+                }
+                this.currentWorkspaceId = null;
+                this.presenceState = {};
+                this.renderActiveTeamPresence();
+            }
+
+            broadcastEdit(noteId, content) {
+                if (!this.channel) return;
+                this.channel.send({
+                    type: 'broadcast',
+                    event: 'text_edit',
+                    payload: {
+                        noteId,
+                        content,
+                        senderId: this.userId,
+                        senderName: userProfile.nickname
+                    }
+                });
+
+                // Дебаунсим отправку коммита в PostgreSQL на 1 секунду после прекращения набора
+                clearTimeout(this.typingTimeout);
+                this.typingTimeout = setTimeout(() => {
+                    this.saveNoteToCloudDB(noteId, content);
+                }, 1000);
+            }
+
+            async saveNoteToCloudDB(noteId, content) {
+                if (!this.client || !this.currentWorkspaceId) return;
+                const note = notes.find(n => n.id === noteId);
+                if (!note) return;
+
+                try {
+                    await this.client.from('notes').upsert({
+                        id: noteId,
+                        title: note.title,
+                        content: content,
+                        type: note.type,
+                        parent_id: note.parentId,
+                        workspace_id: this.currentWorkspaceId,
+                        updated_at: new Date().toISOString(),
+                        updated_by: this.userId
+                    });
+                } catch (e) {
+                    console.error("SupabaseSync: Ошибка транзакции в PostgreSQL:", e);
+                }
+            }
+
+            handleIncomingBroadcastEdit(payload) {
+                if (payload.senderId === this.userId) return; // Пропускаем собственное эхо
+
+                const { noteId, content } = payload;
+                const note = notes.find(n => n.id === noteId);
+                if (!note) return;
+
+                note.content = content;
+                saveNotes(); // Локальное кэширование
+
+                // Если измененный файл в данный момент открыт на экране — обновляем IDE с сохранением положения курсора
+                if (activeId === noteId) {
+                    if (isIdeMode && typeof ideEditor !== 'undefined') {
+                        const cursor = ideEditor.getCursor();
+                        const scrollInfo = ideEditor.getScrollInfo();
+                        
+                        if (ideEditor.getValue() !== content) {
+                            ideEditor.setValue(content);
+                            ideEditor.setCursor(cursor);
+                            ideEditor.scrollTo(scrollInfo.left, scrollInfo.top);
+                        }
+                    } else {
+                        const start = editor.selectionStart;
+                        const end = editor.selectionEnd;
+                        if (editor.value !== content) {
+                            editor.value = content;
+                            editor.setSelectionRange(start, end);
+                        }
+                    }
+                    saveAndRender(content);
+                }
+            }
+
+            renderActiveTeamPresence() {
+                const panel = document.getElementById("workspaceExtraPanel");
+                if (!panel || activeProfileId === "profile-personal") return;
+
+                let usersHtml = "";
+                const currentUsers = [];
+
+                // Преобразуем структуру Presence-хранилища в плоский список
+                Object.keys(this.presenceState).forEach(key => {
+                    const list = this.presenceState[key];
+                    if (list && list.length > 0) {
+                        currentUsers.push(list[0]);
+                    }
+                });
+
+                // Ограничиваем рендер 50 участниками
+                const visibleUsers = currentUsers.slice(0, 50);
+
+                visibleUsers.forEach(u => {
+                    const isMe = u.nickname === userProfile.nickname;
+                    const dotColor = "#10b981";
+                    
+                    const devLevel = u.devLevel || "Middle";
+                    let badgeBg = "rgba(59, 130, 246, 0.12)";
+                    let badgeColor = "#3b82f6";
+                    
+                    if (devLevel === "Junior") {
+                        badgeBg = "rgba(16, 185, 129, 0.12)";
+                        badgeColor = "#10b981";
+                    } else if (devLevel === "Senior") {
+                        badgeBg = "rgba(245, 158, 11, 0.12)";
+                        badgeColor = "#f59e0b";
+                    } else if (devLevel === "Lead") {
+                        badgeBg = "rgba(168, 85, 247, 0.12)";
+                        badgeColor = "#a855f7";
+                    }
+
+                    usersHtml += `
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0;">
+                            <span style="font-size: 11.5px; color: #fff; display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
+                                <div style="width: 6px; height: 6px; border-radius: 50%; background: ${dotColor}; box-shadow: 0 0 6px ${dotColor}; flex-shrink: 0;"></div>
+                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${window.escapeHTML(u.nickname)} ${isMe ? '<span style="color:var(--text-muted); font-size:10px;">(Вы)</span>' : ''}</span>
+                            </span>
+                            <span style="font-size: 9px; background: ${badgeBg}; color: ${badgeColor}; padding: 1px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; flex-shrink: 0; letter-spacing: 0.3px;">${devLevel}</span>
+                        </div>
+                    `;
+                });
+
+                if (currentUsers.length === 0) {
+                    usersHtml = `<div style="font-size: 11px; color: var(--text-muted); text-align: left; font-style: italic;">Инициализация списка участников...</div>`;
+                }
+
+                panel.innerHTML = `
+                    <div class="cloud-sync-widget" style="margin-top: 10px; border-color: rgba(var(--accent-rgb), 0.25); background: rgba(var(--accent-rgb), 0.02); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); font-family: var(--font-ui); font-size: 12px;">
+                        <div style="font-weight: 700; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                            <span style="display: flex; align-items: center; gap: 6px;"><i class='bx bx-git-branch' style="color: var(--accent);"></i> Командная среда</span>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <button class="btn-icon" style="padding: 2px; font-size: 15px; color: var(--text-muted); transition: 0.2s;" onclick="window.openWorkspaceStatsDashboard()" title="Инфо о команде"><i class='bx bx-grid-alt'></i></button>
+                                <span style="font-size: 10px; color: var(--text-muted); font-weight: 700; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px;">${currentUsers.length}/50</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Список реальных участников на WebSockets -->
+                        <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; max-height: 180px; overflow-y: auto;">
+                            ${usersHtml}
+                        </div>
+
+                        <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 8px 0;"></div>
+
+                        <!-- ID Проекта и Локация -->
+                        <div style="font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>ID Workspace:</span>
+                                <span style="font-family: var(--font-code); color: #fff; font-size: 10px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${activeProfileId}">${activeProfileId}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                                <span>Статус Sync:</span>
+                                <span style="color: #10b981; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                                    <i class='bx bx-cloud-upload'></i> Connected Live
+                                </span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                                <span>Предпросмотр:</span>
+                                <a href="#" onclick="event.preventDefault(); if(typeof toggleWebPreview === 'function') toggleWebPreview();" style="color: var(--accent); font-weight: 600; text-decoration: underline; font-size: 11px;">live-preview</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Инициализируем глобальный контроллер синхронизации Supabase
+        window.supabaseSync = new SupabaseSyncController();
+
+        // Закрываем меню при клике по любому элементу вне селектора
+        document.addEventListener("click", (e) => {
+            const switcher = document.getElementById("workspaceSwitcher");
+            if (switcher && !switcher.contains(e.target)) {
+                switcher.classList.remove("open");
+            }
+        }, { passive: true });
+
+        // =======================================================================
+        // ДВИЖОК ПОИСКА И ПОДКЛЮЧЕНИЯ К ДРУГИМ WORKSPACES
+        // =======================================================================
+        window.toggleJoinWorkspaceModal = function(e) {
+            if (e) e.stopPropagation();
+            const modal = document.getElementById("joinWorkspaceModal");
+            if (!modal) return;
+            
+            const isShown = modal.classList.toggle("active");
+            if (isShown) {
+                // Закрываем меню воркспейсов сайдбара
+                const switcher = document.getElementById("workspaceSwitcher");
+                if (switcher) switcher.classList.remove("open");
+                
+                // Выводим изначальный список доступных областей
+                window.handleWsSearch();
+                if (window.synth) window.synth.playSoftHum();
+            }
+        };
+
+        window.handleWsSearch = async function() {
+            const list = document.getElementById("wsSearchResultList");
+            const input = document.getElementById("wsSearchInput");
+            if (!list || !input) return;
+
+            // Самовосстановление подключения, если CDN-скрипт догрузился с задержкой
+            if (window.supabaseSync && !window.supabaseSync.client) {
+                window.supabaseSync.init();
+            }
+
+            if (!window.supabaseSync || !window.supabaseSync.client) {
+                list.innerHTML = `<div style="padding:15px; color: #ef4444; font-size:12px; text-align:center; font-family:var(--font-ui);"><i class='bx bx-error-circle'></i> Supabase не подключен. Проверьте SUPABASE_URL в коде.</div>`;
+                return;
+            }
+
+            const query = input.value.trim();
+
+            try {
+                let data, error;
+                
+                // Сначала пробуем извлечь с джоином профилей
+                let queryBuilder = window.supabaseSync.client
+                    .from('workspaces')
+                    .select('id, name, color, rgb, owner_id, profiles(nickname)');
+
+                if (query) {
+                    queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+                }
+
+                const result = await queryBuilder.limit(15);
+                data = result.data;
+                error = result.error;
+
+                // ФОЛБЭК: Если ошибка из-за отсутствия колонки nickname/таблицы profiles, 
+                // пробуем загрузить чистые данные без джоина, чтобы интерфейс не падал!
+                if (error && (error.message.includes("nickname") || error.message.includes("profiles"))) {
+                    console.warn("handleWsSearch: Сбой джоина profiles. Запуск фолбэка без профилей...");
+                    let fallbackQuery = window.supabaseSync.client
+                        .from('workspaces')
+                        .select('id, name, color, rgb, owner_id');
+
+                    if (query) {
+                        fallbackQuery = fallbackQuery.ilike('name', `%${query}%`);
+                    }
+
+                    const fallbackResult = await fallbackQuery.limit(15);
+                    data = fallbackResult.data;
+                    error = fallbackResult.error;
+                }
+
+                if (error) throw error;
+
+                list.innerHTML = "";
+
+                if (!data || data.length === 0) {
+                    list.innerHTML = `<div style="padding:20px; color: var(--text-muted); font-size:12.5px; text-align:center; font-family:var(--font-ui);"><i class='bx bx-compass' style='font-size:24px; color:var(--text-muted); margin-bottom:8px; display:block;'></i> Галактика пуста.<br>Рабочих пространств с таким названием не найдено.</div>`;
+                    return;
+                }
+
+                data.forEach(ws => {
+                    // Проверяем, не добавлен ли этот Workspace уже у нас локально в IndexedDB
+                    const isAlreadyJoined = profiles.some(p => p.id === ws.id);
+                    
+                    // Безопасно извлекаем никнейм создателя, вернувшегося из связанной структуры Supabase
+                    const creatorName = ws.profiles && ws.profiles.nickname ? ws.profiles.nickname : "Cloud Developer";
+                    
+                    const actionBtn = isAlreadyJoined 
+                        ? `<span style="font-size:11px; color:#10b981; font-weight:700; display:flex; align-items:center; gap:4px; padding: 5px 10px; background: rgba(16,185,129,0.08); border-radius: 6px;"><i class='bx bx-check-double'></i> Добавлен</span>`
+                        : `<button class="btn" style="padding:6px 12px; font-size:11.5px; background:rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.2); color:#60a5fa; font-weight: 600; display:flex; align-items:center; gap:4px;" onclick="window.requestWorkspaceAccess('${ws.id}', '${window.escapeHTML(ws.name)}')"><i class='bx bx-key'></i> Войти</button>`;
+
+                    const item = document.createElement("div");
+                    item.className = "note-item";
+                    item.style.cssText = "padding:12px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius:12px; transition: var(--transition-smooth);";
+                    item.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:12px; min-width:0; flex:1;">
+                            <div class="workspace-avatar" style="background: ${ws.color}; box-shadow: 0 0 10px rgba(${ws.rgb}, 0.25); width: 32px; height: 32px; border-radius: 8px; font-size:12px; font-weight:700;">${ws.name.substring(0,2).toUpperCase()}</div>
+                            <div style="min-width:0; flex:1; text-align: left;">
+                                <div style="font-size:13px; font-weight:700; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom: 2px;">${window.escapeHTML(ws.name)}</div>
+                                <div style="font-size:10px; color:var(--text-muted); display:flex; align-items:center; gap:4px;"><i class='bx bx-user' style='font-size:11px;'></i> Владелец: <span style='color: rgba(255,255,255,0.7); font-weight:500;'>${window.escapeHTML(creatorName)}</span></div>
+                            </div>
+                        </div>
+                        <div style="margin-left: 10px; flex-shrink: 0;">
+                            ${actionBtn}
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+
+            } catch (err) {
+                console.error("Ошибка поиска пространств:", err);
+                list.innerHTML = `<div style="padding:15px; color:#ef4444; font-size:11px; text-align:center; font-family:var(--font-ui);"><i class='bx bx-error-circle'></i> Ошибка загрузки списка: ${err.message}</div>`;
+            }
+        };
+
+        window.requestWorkspaceAccess = async function(wsId, wsName) {
+            const password = prompt(`Введите секретный пароль для доступа к Workspace "${wsName}":`);
+            if (!password || !password.trim()) return;
+
+            try {
+                // Пытаемся получить воркспейс из Supabase, передавая пароль для верификации
+                const { data, error } = await window.supabaseSync.client
+                    .from('workspaces')
+                    .select('*')
+                    .eq('id', wsId)
+                    .eq('password', password.trim())
+                    .single();
+
+                if (error || !data) {
+                    throw new Error("Неверный секретный пароль или Workspace был удален.");
+                }
+
+                // Закрываем модалку
+                window.toggleJoinWorkspaceModal();
+
+                // Сохраняем воркспейс с верифицированным паролем в IndexedDB
+                const newProfile = {
+                    id: data.id,
+                    name: data.name,
+                    password: password.trim(), // Сохраняем пароль для прохождения политик RLS при обновлении
+                    avatar: data.name.substring(0, 2).toUpperCase(),
+                    tier: "pro",
+                    color: data.color,
+                    rgb: data.rgb
+                };
+
+                profiles.push(newProfile);
+                await QuantumDB.saveState("qn_profiles", profiles);
+                window.switchWorkspace(data.id);
+
+            } catch (err) {
+                alert("Доступ отклонен: " + err.message);
+                if (window.synth) window.synth.playClick();
+            }
+        };
+
+// =======================================================================
+// КОНТРОЛЛЕР ГРАФИЧЕСКОГО ДАШБОРДА КОМАНДЫ (TEAM ANALYTICS)
+// =======================================================================
+window.openWorkspaceStatsDashboard = function() {
+    const modal = document.getElementById("workspaceStatsDashboardModal");
+    if (!modal) return;
+    
+    // Получаем текущее выбранное пространство
+    const activeProfile = profiles.find(p => p.id === activeProfileId);
+    if (!activeProfile) return;
+    
+    // Получаем участников через Presence
+    const currentUsers = [];
+    if (window.supabaseSync && window.supabaseSync.presenceState) {
+        Object.keys(window.supabaseSync.presenceState).forEach(key => {
+            const list = window.supabaseSync.presenceState[key];
+            if (list && list.length > 0) {
+                currentUsers.push({
+                    uid: key,
+                    ...list[0]
+                });
+            }
+        });
+    }
+    
+    // Вычисляем статистику уровней
+    const levels = { Junior: 0, Middle: 0, Senior: 0, Lead: 0 };
+    currentUsers.forEach(u => {
+        const lvl = u.devLevel || "Middle";
+        if (levels[lvl] !== undefined) levels[lvl]++;
+    });
+    
+    const totalUsers = currentUsers.length || 1;
+    const jrPct = (levels.Junior / totalUsers) * 100;
+    const mdPct = (levels.Middle / totalUsers) * 100;
+    const srPct = (levels.Senior / totalUsers) * 100;
+    const ldPct = (levels.Lead / totalUsers) * 100;
+    
+    // Генерируем HTML для списка участников
+    let membersHtml = "";
+    currentUsers.forEach(u => {
+        const isMe = u.nickname === userProfile.nickname;
+        
+        const devLevel = u.devLevel || "Middle";
+        let badgeBg = "rgba(59, 130, 246, 0.12)";
+        let badgeColor = "#3b82f6";
+        
+        if (devLevel === "Junior") {
+            badgeBg = "rgba(16, 185, 129, 0.12)";
+            badgeColor = "#10b981";
+        } else if (devLevel === "Senior") {
+            badgeBg = "rgba(245, 158, 11, 0.12)";
+            badgeColor = "#f59e0b";
+        } else if (devLevel === "Lead") {
+            badgeBg = "rgba(168, 85, 247, 0.12)";
+            badgeColor = "#a855f7";
+        }
+        
+        // Разрешаем имя файла
+        const activeNote = notes.find(n => n.id === u.active_note_id);
+        const fileName = activeNote ? activeNote.title : "Бездельничает";
+        const fileIcon = activeNote ? getFileIcon(activeNote.title) : "<i class='bx bx-sleepy' style='color:var(--text-muted);'></i>";
+        
+        const initials = u.nickname.trim().substring(0, 2).toUpperCase() || "GU";
+        
+        membersHtml += `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; transition: var(--transition-smooth); gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+                    <div style="position: relative; flex-shrink: 0;">
+                        <div class="workspace-avatar" style="background: ${badgeColor}; box-shadow: 0 0 10px rgba(255,255,255,0.05); width: 36px; height: 36px; border-radius: 10px; font-size: 13px; font-weight: 700; color:#fff;">${initials}</div>
+                        <div style="position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: #10b981; border: 2px solid #08080c; box-shadow: 0 0 6px #10b981;"></div>
+                    </div>
+                    <div style="min-width: 0; flex: 1; text-align: left;">
+                        <div style="font-size: 13.5px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${window.escapeHTML(u.nickname)}</span>
+                            ${isMe ? '<span style="font-size: 9px; background: rgba(var(--accent-rgb), 0.15); color: var(--accent); padding: 1px 5px; border-radius: 4px; font-weight: 700; text-transform: uppercase;">Вы</span>' : ''}
+                        </div>
+                        <div style="font-size: 10.5px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            ${fileIcon} <span style="overflow: hidden; text-overflow: ellipsis;">Фокус: ${window.escapeHTML(fileName)}</span>
+                        </div>
+                    </div>
+                </div>
+                <span style="font-size: 9px; background: ${badgeBg}; color: ${badgeColor}; padding: 3px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${devLevel}</span>
+            </div>
+        `;
+    });
+
+    // Настраиваем левую колонку (статистика и метаданные)
+    const activeWsNameLabel = document.getElementById("dashActiveWsName");
+    const activeWsIdLabel = document.getElementById("dashActiveWsId");
+    const activeWsTierLabel = document.getElementById("dashActiveWsTier");
+    const activeWsColorDot = document.getElementById("dashActiveWsColorDot");
+    const activeWsMembersCount = document.getElementById("dashActiveWsMembersCount");
+    
+    // Статистика баров
+    const jrBar = document.getElementById("dashJrBar");
+    const mdBar = document.getElementById("dashMdBar");
+    const srBar = document.getElementById("dashSrBar");
+    const ldBar = document.getElementById("dashLdBar");
+    
+    const jrCount = document.getElementById("dashJrCount");
+    const mdCount = document.getElementById("dashMdCount");
+    const srCount = document.getElementById("dashSrCount");
+    const ldCount = document.getElementById("dashLdCount");
+
+    if (activeWsNameLabel) activeWsNameLabel.textContent = activeProfile.name;
+    if (activeWsIdLabel) activeWsIdLabel.textContent = activeProfile.id;
+    if (activeWsTierLabel) {
+        activeWsTierLabel.textContent = activeProfile.tier === 'pro' ? 'Pro Team' : 'Free Sandbox';
+        activeWsTierLabel.style.background = activeProfile.tier === 'pro' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.05)';
+        activeWsTierLabel.style.color = activeProfile.tier === 'pro' ? '#10b981' : 'var(--text-muted)';
+    }
+    if (activeWsColorDot) {
+        activeWsColorDot.style.background = activeProfile.color;
+        activeWsColorDot.style.boxShadow = `0 0 12px ${activeProfile.color}`;
+    }
+    if (activeWsMembersCount) activeWsMembersCount.textContent = `${currentUsers.length} / 50`;
+
+    // Анимируем ширину полосок статистики
+    if (jrBar) jrBar.style.width = `${jrPct}%`;
+    if (mdBar) mdBar.style.width = `${mdPct}%`;
+    if (srBar) srBar.style.width = `${srPct}%`;
+    if (ldBar) ldBar.style.width = `${ldPct}%`;
+
+    if (jrCount) jrCount.textContent = levels.Junior;
+    if (mdCount) mdCount.textContent = levels.Middle;
+    if (srCount) srCount.textContent = levels.Senior;
+    if (ldCount) ldCount.textContent = levels.Lead;
+
+    // Вставляем список участников
+    const membersList = document.getElementById("dashMembersList");
+    if (membersList) membersList.innerHTML = membersHtml || "<div style='font-size:12px; color:var(--text-muted); font-style:italic;'>Инициализация списка участников...</div>";
+
+    modal.classList.add("active");
+    if (window.synth) window.synth.playChime();
+};
+
+window.closeWorkspaceStatsDashboard = function() {
+    const modal = document.getElementById("workspaceStatsDashboardModal");
+    if (modal) modal.classList.remove("active");
+    if (window.synth) window.synth.playSoftHum();
+};
+</script>
     <style>
     /* =======================================================================
     НОВЫЙ ПРЕМИАЛЬНЫЙ МИНИМАЛИСТИЧНЫЙ NAV DOCK (LINEAR / VERCEL STYLE)
