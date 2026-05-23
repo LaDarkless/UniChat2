@@ -16188,6 +16188,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     });
 
                 // 3. Инициализируем ИЗОЛИРОВАННЫЙ канал для отслеживания изменений БД (как в X Messages Pro)
+                // ОПТИМИЗАЦИЯ: Убираем фильтрацию на сервере для обхода RLS-багов Supabase Realtime
                 const dbChannelName = `db_changes_${workspaceId}`;
                 this.dbChannel = this.client.channel(dbChannelName);
 
@@ -16195,30 +16196,28 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     .on('postgres_changes', {
                         event: 'INSERT',
                         schema: 'public',
-                        table: 'notes',
-                        filter: `workspace_id=eq.${workspaceId}`
+                        table: 'notes'
                     }, payload => {
                         this.handleIncomingDbChange(payload);
                     })
                     .on('postgres_changes', {
                         event: 'UPDATE',
                         schema: 'public',
-                        table: 'notes',
-                        filter: `workspace_id=eq.${workspaceId}`
+                        table: 'notes'
                     }, payload => {
                         this.handleIncomingDbChange(payload);
                     })
                     .on('postgres_changes', {
                         event: 'DELETE',
                         schema: 'public',
-                        table: 'notes',
-                        filter: `workspace_id=eq.${workspaceId}`
+                        table: 'notes'
                     }, payload => {
                         this.handleIncomingDbChange(payload);
                     });
 
-                // Подписываем канал взаимодействия
+                // Подписываем канал взаимодействия с логом в консоль
                 this.channel.subscribe(async (status) => {
+                    console.log(`SupabaseSync: Статус канала совместной работы (${collabChannelName}):`, status);
                     if (status === 'SUBSCRIBED') {
                         const currentUsers = [];
                         Object.keys(this.presenceState).forEach(key => {
@@ -16240,8 +16239,11 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     }
                 });
 
-                // Подписываем изолированный канал базы данных
-                this.dbChannel.subscribe();
+                // Подписываем изолированный канал базы данных с логом состояния
+                this.dbChannel.subscribe((status, err) => {
+                    console.log(`SupabaseSync: Статус канала базы данных (${dbChannelName}):`, status);
+                    if (err) console.error("SupabaseSync: Ошибка подписки на БД изменения:", err);
+                });
             }
 
             async downloadWorkspaceFiles(workspaceId) {
@@ -16400,6 +16402,9 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 // Игнорируем изменения, которые инициировали мы сами (для предотвращения петель рендеринга)
                 if (newRecord && newRecord.updated_by === this.userId) return;
 
+                // КЛИЕНТСКИЙ ФИЛЬТР: Игнорируем изменения из других пространств (обход RLS-багов Supabase Realtime)
+                if (newRecord && newRecord.workspace_id !== this.currentWorkspaceId) return;
+
                 window.isReceivingRemoteEdit = true;
                 try {
                     if (eventType === 'INSERT') {
@@ -16419,49 +16424,63 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                             if (window.synth) window.synth.playChime();
                         }
                     } else if (eventType === 'UPDATE') {
-                        const note = notes.find(n => n.id === newRecord.id);
-                        if (note) {
-                            const titleChanged = note.title !== newRecord.title;
-                            const parentChanged = note.parentId !== newRecord.parent_id;
-                            const contentChanged = note.content !== newRecord.content;
-                            
-                            note.title = newRecord.title;
-                            note.parentId = newRecord.parent_id;
-                            note.content = newRecord.content;
-                            note.date = new Date(newRecord.updated_at).toLocaleDateString();
-                            
+                        let note = notes.find(n => n.id === newRecord.id);
+                        if (!note) {
+                            // ФОЛБЭК: Если файла по какой-то причине нет локально, создаем его!
+                            notes.push({
+                                id: newRecord.id,
+                                title: newRecord.title,
+                                content: newRecord.content,
+                                type: newRecord.type,
+                                parentId: newRecord.parent_id,
+                                profileId: this.currentWorkspaceId,
+                                date: new Date(newRecord.updated_at).toLocaleDateString()
+                            });
                             saveNotes();
-                            
-                            if (titleChanged || parentChanged) {
-                                renderNotesList();
+                            renderNotesList();
+                            return;
+                        }
+
+                        const titleChanged = note.title !== newRecord.title;
+                        const parentChanged = note.parentId !== newRecord.parent_id;
+                        const contentChanged = note.content !== newRecord.content;
+                        
+                        note.title = newRecord.title;
+                        note.parentId = newRecord.parent_id;
+                        note.content = newRecord.content;
+                        note.date = new Date(newRecord.updated_at).toLocaleDateString();
+                        
+                        saveNotes();
+                        
+                        if (titleChanged || parentChanged) {
+                            renderNotesList();
+                        }
+                        
+                        // Если измененный на бэкенде файл открыт прямо сейчас на нашем экране
+                        if (activeId === newRecord.id) {
+                            const titleInput = document.getElementById("noteTitle");
+                            if (titleInput && titleInput.value !== newRecord.title) {
+                                titleInput.value = newRecord.title;
                             }
                             
-                            // Если измененный на бэкенде файл открыт прямо сейчас на нашем экране
-                            if (activeId === newRecord.id) {
-                                const titleInput = document.getElementById("noteTitle");
-                                if (titleInput && titleInput.value !== newRecord.title) {
-                                    titleInput.value = newRecord.title;
-                                }
-                                
-                                if (contentChanged) {
-                                    if (isIdeMode && typeof ideEditor !== 'undefined') {
-                                        const cursor = ideEditor.getCursor();
-                                        const scrollInfo = ideEditor.getScrollInfo();
-                                        if (ideEditor.getValue() !== newRecord.content) {
-                                            ideEditor.setValue(newRecord.content);
-                                            ideEditor.setCursor(cursor);
-                                            ideEditor.scrollTo(scrollInfo.left, scrollInfo.top);
-                                        }
-                                    } else {
-                                        const start = editor.selectionStart;
-                                        const end = editor.selectionEnd;
-                                        if (editor.value !== newRecord.content) {
-                                            editor.value = newRecord.content;
-                                            editor.setSelectionRange(start, end);
-                                        }
+                            if (contentChanged) {
+                                if (isIdeMode && typeof ideEditor !== 'undefined') {
+                                    const cursor = ideEditor.getCursor();
+                                    const scrollInfo = ideEditor.getScrollInfo();
+                                    if (ideEditor.getValue() !== newRecord.content) {
+                                        ideEditor.setValue(newRecord.content);
+                                        ideEditor.setCursor(cursor);
+                                        ideEditor.scrollTo(scrollInfo.left, scrollInfo.top);
                                     }
-                                    saveAndRender(newRecord.content, false); // Отправляем false для остановки рекурсии
+                                } else {
+                                    const start = editor.selectionStart;
+                                    const end = editor.selectionEnd;
+                                    if (editor.value !== newRecord.content) {
+                                        editor.value = newRecord.content;
+                                        editor.setSelectionRange(start, end);
+                                    }
                                 }
+                                saveAndRender(newRecord.content, false); // Отправляем false для остановки рекурсии
                             }
                         }
                     } else if (eventType === 'DELETE') {
@@ -16480,9 +16499,8 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         }
                     }
                 } finally {
-                    setTimeout(() => {
-                        window.isReceivingRemoteEdit = false;
-                    }, 50);
+                    // ФИКС: Сбрасываем флаг синхронно сразу после применения изменений в UI
+                    window.isReceivingRemoteEdit = false;
                 }
             }
 
