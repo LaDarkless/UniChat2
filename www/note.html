@@ -3045,6 +3045,10 @@
 .brand,
 .pane-header,
 .note-item,
+#workspaceExtraPanel,
+#workspaceExtraPanel *,
+.cloud-sync-widget,
+.cloud-sync-widget *,
 /* Новые правила блокировки выделения служебного UI и истории ИИ */
 .ai-message,
 .ai-message *,
@@ -7004,23 +7008,38 @@ window.addEventListener('message', function(e) {
             }
         };
 
-        // Ручное обновление iframe / превью со спин-эффектом на иконке
-        window.manualRefreshPreview = function() {
+        // Полное обновление всего приложения (абсолютная замена F5 с экстренным автосохранением)
+        window.manualRefreshPreview = async function() {
             const icon = document.getElementById("refreshBtnIcon");
-            if (!icon) return;
+            if (icon) {
+                icon.classList.add("spin-refresh");
+            }
 
             if (window.synth) window.synth.playBubble();
 
-            icon.classList.add("spin-refresh");
-            icon.addEventListener("animationend", () => {
-                icon.classList.remove("spin-refresh");
-            }, { once: true });
-
-            if (isWebPreview) {
-                updateWebFrame();
-            } else {
-                updatePreview();
+            // Безопасность данных: Экстренно сохраняем текущие изменения в локальную БД и облако перед перезагрузкой
+            if (activeId) {
+                const note = notes.find(n => n.id === activeId);
+                if (note) {
+                    const contentValue = isIdeMode && typeof ideEditor !== 'undefined' ? ideEditor.getValue() : editor.value;
+                    note.content = contentValue;
+                    
+                    try {
+                        // Моментальная запись в IndexedDB без дебаунса
+                        await QuantumDB.saveNotes(notes);
+                        
+                        // Если активен командный PRO-воркспейс, отправляем в Supabase PostgreSQL
+                        if (activeProfileId !== "profile-personal" && window.supabaseSync && window.supabaseSync.client) {
+                            await window.supabaseSync.saveNoteToCloudDB(activeId, contentValue);
+                        }
+                    } catch (e) {
+                        console.warn("Ошибка автосохранения перед жесткой перезагрузкой:", e);
+                    }
+                }
             }
+
+            // Выполняем физическую перезагрузку всей вкладки браузера
+            window.location.reload();
         };
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -15209,12 +15228,25 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             }
         }
 
-        // Глобальный бинд на Ctrl + F
+        // Глобальный бинд на Ctrl + F, а также перехват клавиши F5 и Ctrl+R для безопасной перезагрузки приложения
         document.addEventListener("keydown", (e) => {
+            // 1. Поиск по документу (Ctrl + F)
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
-                // Если фокус на строке поиска или это не редактор, всё равно перехватываем
                 e.preventDefault();
                 toggleSearchBox();
+            }
+            
+            // 2. Перехватываем F5 или Ctrl+R/Cmd+R, чтобы принудительно выполнить автосохранение перед полной перезагрузкой
+            const isF5 = e.key === "F5";
+            const isCtrlR = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r";
+            
+            if (isF5 || isCtrlR) {
+                e.preventDefault(); // Блокируем стандартную небезопасную перезагрузку
+                
+                // Вызываем наше полное обновление с автосохранением
+                if (typeof window.manualRefreshPreview === "function") {
+                    window.manualRefreshPreview();
+                }
             }
         });
     // === ЛОКАЛЬНЫЙ GIT ДЛЯ ВЕРСИОНИРОВАНИЯ И СРАВНЕНИЯ ВЕРСИЙ ===
@@ -16139,6 +16171,27 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             if (planLock) planLock.style.display = isPersonal ? "inline-block" : "none";
         };
 
+        // Состояние сворачивания панели командной среды (по умолчанию свернуто на телефонах для экономии места)
+        if (window.isTeamPanelCollapsed === undefined) {
+            const saved = localStorage.getItem("qn_team_panel_collapsed");
+            if (saved !== null) {
+                window.isTeamPanelCollapsed = saved === "true";
+            } else {
+                window.isTeamPanelCollapsed = window.innerWidth <= 768;
+            }
+        }
+
+        window.toggleTeamPanelCollapse = function(e) {
+            if (e) e.stopPropagation();
+            window.isTeamPanelCollapsed = !window.isTeamPanelCollapsed;
+            localStorage.setItem("qn_team_panel_collapsed", window.isTeamPanelCollapsed);
+            if (window.synth) window.synth.playSoftHum();
+            
+            if (window.supabaseSync) {
+                window.supabaseSync.renderActiveTeamPresence();
+            }
+        };
+
         // Динамическая генерация Командного центра деплоев для выделенных Workspaces
         window.updateWorkspaceWidgets = function() {
             const panel = document.getElementById("workspaceExtraPanel");
@@ -16153,22 +16206,30 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
 
             panel.style.display = "block";
 
+            // Сворачивание заголовка
+            const isCollapsed = window.isTeamPanelCollapsed;
+            const chevronClass = isCollapsed ? 'bx-chevron-down' : 'bx-chevron-up';
+            const contentDisplay = isCollapsed ? 'none' : 'block';
+
             // 1. Если параметры Supabase не настроены, показываем заглушку с прямым линком на форму ввода
             if (!settings.supabaseUrl || !settings.supabaseKey) {
                 panel.innerHTML = `
                     <div class="cloud-sync-widget" style="margin-top: 10px; border-color: rgba(245, 158, 11, 0.25); background: rgba(245, 158, 11, 0.02); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); font-family: var(--font-ui); font-size: 12px;">
-                        <div style="font-weight: 700; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                            <i class='bx bx-git-branch' style="color: #f59e0b;"></i> Командная среда (PRO)
+                        <div style="font-weight: 700; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: ${isCollapsed ? '0' : '8px'}; display: flex; align-items: center; justify-content: space-between; gap: 6px; cursor: pointer;" onclick="window.toggleTeamPanelCollapse(event)">
+                            <span style="display: flex; align-items: center; gap: 6px;"><i class='bx bx-git-branch' style="color: #f59e0b;"></i> Командная среда (PRO)</span>
+                            <i class='bx ${chevronClass}' style="font-size: 16px; color: var(--text-muted);"></i>
                         </div>
-                        <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.4; margin-bottom: 10px;">
-                            Для совместной работы в реальном времени подключите ваш инстанс Supabase.
+                        <div style="display: ${contentDisplay};">
+                            <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.4; margin-bottom: 10px;">
+                                Для совместной работы в реальном времени подключите ваш инстанс Supabase.
+                            </div>
+                            <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 10px; font-family: var(--font-code); background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;">
+                                ID Workspace: ${activeProfileId}
+                            </div>
+                            <button class="btn" onclick="window.openProfileSettingsModal(event)" style="width: 100%; font-size: 11px; padding: 6px; background: rgba(var(--accent-rgb), 0.15); border-color: rgba(var(--accent-rgb), 0.3); color: var(--accent); justify-content: center; display: flex; align-items: center; gap: 6px;">
+                                <i class='bx bx-cog'></i> Настроить Supabase Sync
+                            </button>
                         </div>
-                        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 10px; font-family: var(--font-code); background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;">
-                            ID Workspace: ${activeProfileId}
-                        </div>
-                        <button class="btn" onclick="window.openProfileSettingsModal(event)" style="width: 100%; font-size: 11px; padding: 6px; background: rgba(var(--accent-rgb), 0.15); border-color: rgba(var(--accent-rgb), 0.3); color: var(--accent); justify-content: center; display: flex; align-items: center; gap: 6px;">
-                            <i class='bx bx-cog'></i> Настроить Supabase Sync
-                        </button>
                     </div>
                 `;
                 return;
@@ -16178,14 +16239,17 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             if (!window.supabaseSync || !window.supabaseSync.client || !window.supabaseSync.channel) {
                 panel.innerHTML = `
                     <div class="cloud-sync-widget" style="margin-top: 10px; border-color: rgba(var(--accent-rgb), 0.25); background: rgba(var(--accent-rgb), 0.02); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); font-family: var(--font-ui); font-size: 12px;">
-                        <div style="font-weight: 700; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                            <i class='bx bx-git-branch' style="color: var(--accent);"></i> Командная среда
+                        <div style="font-weight: 700; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: ${isCollapsed ? '0' : '8px'}; display: flex; align-items: center; justify-content: space-between; gap: 6px; cursor: pointer;" onclick="window.toggleTeamPanelCollapse(event)">
+                            <span style="display: flex; align-items: center; gap: 6px;"><i class='bx bx-git-branch' style="color: var(--accent);"></i> Командная среда</span>
+                            <i class='bx ${chevronClass}' style="font-size: 16px; color: var(--text-muted);"></i>
                         </div>
-                        <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.4; display: flex; align-items: center; gap: 6px;">
-                            <i class='bx bx-loader-alt bx-spin' style="color: var(--accent);"></i> Подключение к Supabase WebSockets...
-                        </div>
-                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 8px; font-family: var(--font-code); background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;">
-                            ID Workspace: ${activeProfileId}
+                        <div style="display: ${contentDisplay};">
+                            <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.4; display: flex; align-items: center; gap: 6px;">
+                                <i class='bx bx-loader-alt bx-spin' style="color: var(--accent);"></i> Подключение к Supabase WebSockets...
+                            </div>
+                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 8px; font-family: var(--font-code); background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;">
+                                ID Workspace: ${activeProfileId}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -16661,42 +16725,49 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     usersHtml = `<div style="font-size: 11px; color: var(--text-muted); text-align: left; font-style: italic;">Инициализация списка участников...</div>`;
                 }
 
+                const isCollapsed = window.isTeamPanelCollapsed;
+                const chevronClass = isCollapsed ? 'bx-chevron-down' : 'bx-chevron-up';
+                const contentDisplay = isCollapsed ? 'none' : 'flex';
+
                 panel.innerHTML = `
                     <div class="cloud-sync-widget" style="margin-top: 10px; border-color: rgba(var(--accent-rgb), 0.25); background: rgba(var(--accent-rgb), 0.02); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); font-family: var(--font-ui); font-size: 12px;">
-                        <div style="font-weight: 700; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                        <div style="font-weight: 700; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: ${isCollapsed ? '0' : '10px'}; display: flex; align-items: center; justify-content: space-between; gap: 6px; cursor: pointer;" onclick="window.toggleTeamPanelCollapse(event)">
                             <span style="display: flex; align-items: center; gap: 6px;"><i class='bx bx-git-branch' style="color: var(--accent);"></i> Командная среда</span>
                             <div style="display: flex; align-items: center; gap: 6px;">
-                                <button class="btn-icon" style="padding: 2px; font-size: 15px; color: var(--text-muted); transition: 0.2s;" onclick="window.openWorkspaceStatsDashboard()" title="Инфо о команде"><i class='bx bx-grid-alt'></i></button>
+                                <button class="btn-icon" style="padding: 2px; font-size: 15px; color: var(--text-muted); transition: 0.2s;" onclick="event.stopPropagation(); window.openWorkspaceStatsDashboard()" title="Инфо о команде"><i class='bx bx-grid-alt'></i></button>
                                 <span style="font-size: 10px; color: var(--text-muted); font-weight: 700; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px;">${currentUsers.length}/50</span>
+                                <i class='bx ${chevronClass}' style="font-size: 16px; color: var(--text-muted); margin-left: 2px;"></i>
                             </div>
                         </div>
                         
-                        <!-- Список реальных участников на WebSockets -->
-                        <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; max-height: 180px; overflow-y: auto;">
-                            ${usersHtml}
-                        </div>
-
-                        <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 8px 0;"></div>
-
-                        <!-- ID Проекта и Локация -->
-                        <div style="font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>ID Workspace:</span>
-                                <span style="font-family: var(--font-code); color: #fff; font-size: 10px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${activeProfileId}">${activeProfileId}</span>
+                        <div style="display: ${contentDisplay}; flex-direction: column;">
+                            <!-- Список реальных участников на WebSockets -->
+                            <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; max-height: 180px; overflow-y: auto;">
+                                ${usersHtml}
                             </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                                <span>Статус Sync:</span>
-                                <span style="color: #10b981; font-weight: 700; display: flex; align-items: center; gap: 4px;">
-                                    <i class='bx bx-cloud-upload'></i> Connected Live
-                                </span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+
+                            <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 8px 0;"></div>
+
+                            <!-- ID Проекта и Локация -->
+                            <div style="font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span>ID Workspace:</span>
+                                    <span style="font-family: var(--font-code); color: #fff; font-size: 10px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${activeProfileId}">${activeProfileId}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                                    <span>Статус Sync:</span>
+                                    <span style="color: #10b981; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                                        <i class='bx bx-cloud-upload'></i> Connected Live
+                                    </span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
                                 <span>Предпросмотр:</span>
                                 <a href="#" onclick="event.preventDefault(); if(typeof toggleWebPreview === 'function') toggleWebPreview();" style="color: var(--accent); font-weight: 600; text-decoration: underline; font-size: 11px;">live-preview</a>
                             </div>
                         </div>
                     </div>
-                `;
+                </div>
+            `;
             }
         }
 
