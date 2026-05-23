@@ -4400,6 +4400,13 @@
             width: 0;
             height: 0;
         }
+        @keyframes spinAround {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .spin-refresh {
+            animation: spinAround 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
         .switch .slider {
             position: absolute;
             cursor: pointer;
@@ -4780,6 +4787,16 @@
             </div>
             <div class="toolbar-actions">
                 <div class="stats" id="stats">0 слов</div>
+
+                <!-- КНОПКА МГНОВЕННОГО СОХРАНЕНИЯ -->
+                <button class="btn" id="manualSaveBtn" onclick="window.manualSaveNote()" style="padding: 6px 12px; height: 34px; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.25); color: #10b981; font-weight: 600; gap: 6px;">
+                    <i class="bx bx-save" style="font-size: 16px;"></i> Сохранить
+                </button>
+
+                <!-- КНОПКА РУЧНОГО ОБНОВЛЕНИЯ ПРЕВЬЮ -->
+                <button class="btn-icon" id="manualRefreshBtn" title="Обновить превью / сайт" onclick="window.manualRefreshPreview()" style="color: #60a5fa; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bx bx-refresh" id="refreshBtnIcon" style="font-size: 22px;"></i>
+                </button>
 
                 <!-- КНОПКА ЗАПУСКА САЙТА (Самая важная) -->
                 <button class="btn-icon" id="webPreviewBtn" title="Запустить код как Сайт" onclick="toggleWebPreview()">
@@ -6929,6 +6946,82 @@ window.addEventListener('message', function(e) {
             }
         }, delay);
         }
+
+        // Ручное мгновенное сохранение в IndexedDB и Supabase
+        window.manualSaveNote = async function() {
+            if (!activeId) return;
+            const btn = document.getElementById("manualSaveBtn");
+            const originalHTML = btn.innerHTML;
+            
+            if (window.synth) window.synth.playClick();
+            
+            btn.disabled = true;
+            btn.innerHTML = "<i class='bx bx-loader-alt bx-spin' style='font-size: 16px;'></i> Сохранение...";
+            btn.style.borderColor = "rgba(var(--accent-rgb), 0.4)";
+            btn.style.color = "var(--text-main)";
+
+            try {
+                const note = notes.find(n => n.id === activeId);
+                if (note) {
+                    const contentValue = isIdeMode && typeof ideEditor !== 'undefined' ? ideEditor.getValue() : editor.value;
+                    note.content = contentValue;
+                    
+                    // Синхронная немедленная запись в локальную IndexedDB
+                    await QuantumDB.saveNotes(notes);
+
+                    // Синхронная немедленная запись в облачную СУБД Supabase PostgreSQL
+                    if (activeProfileId !== "profile-personal" && window.supabaseSync && window.supabaseSync.client) {
+                        await window.supabaseSync.saveNoteToCloudDB(activeId, contentValue);
+                        // Оповещение коллег об изменении через сокет бродкаст
+                        window.supabaseSync.broadcastEdit(activeId, contentValue);
+                    }
+                }
+
+                // Сигнализация успешного сохранения
+                if (window.synth) window.synth.playChime();
+                btn.innerHTML = "<i class='bx bx-check' style='font-size: 16px; color:#10b981;'></i> Сохранено";
+                btn.style.borderColor = "#10b981";
+                btn.style.color = "#10b981";
+                
+                // Процедурный салют в честь сохранения
+                if (!window.confettiController) {
+                    window.confettiController = new ProceduralConfetti();
+                }
+                window.confettiController.burst();
+
+            } catch (err) {
+                console.error("Ошибка при ручном сохранении:", err);
+                btn.innerHTML = "<i class='bx bx-error' style='font-size: 16px; color:#ef4444;'></i> Ошибка";
+                btn.style.borderColor = "#ef4444";
+                btn.style.color = "#ef4444";
+            } finally {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                    btn.style.borderColor = "";
+                    btn.style.color = "";
+                }, 1500);
+            }
+        };
+
+        // Ручное обновление iframe / превью со спин-эффектом на иконке
+        window.manualRefreshPreview = function() {
+            const icon = document.getElementById("refreshBtnIcon");
+            if (!icon) return;
+
+            if (window.synth) window.synth.playBubble();
+
+            icon.classList.add("spin-refresh");
+            icon.addEventListener("animationend", () => {
+                icon.classList.remove("spin-refresh");
+            }, { once: true });
+
+            if (isWebPreview) {
+                updateWebFrame();
+            } else {
+                updatePreview();
+            }
+        };
 
         document.addEventListener("DOMContentLoaded", () => {
             // 1. Инициализируем CodeMirror поверх textarea
@@ -15891,7 +15984,8 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     avatar: letters,
                     tier: "pro",
                     color: data.color,
-                    rgb: data.rgb
+                    rgb: data.rgb,
+                    owner_id: data.owner_id || window.supabaseSync.userId
                 };
 
                 profiles.push(newProfile);
@@ -15994,21 +16088,43 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             window.hideWorkspaceContextMenu();
         };
 
-        window.handleWorkspaceDelete = function(wsId) {
+        window.handleWorkspaceDelete = async function(wsId) {
             if (wsId === "profile-personal") return;
             const profile = profiles.find(p => p.id === wsId);
             if (!profile) return;
 
-            if (confirm(`Удалить Workspace "${profile.name}" и все содержащиеся в нём файлы безвозвратно?`)) {
-                // Удаляем файлы, привязанные к удаляемому воркспейсу
-                notes = notes.filter(n => n.profileId !== wsId);
-                saveNotes();
+            // КРИТИЧЕСКАЯ ПРОВЕРКА ВЛАДЕЛЬЦА: Сравниваем ID текущего пользователя с owner_id воркспейса
+            const currentUserId = window.supabaseSync ? window.supabaseSync.userId : null;
+            if (profile.owner_id && currentUserId && profile.owner_id !== currentUserId) {
+                alert(`Доступ отклонен: Вы не являетесь создателем Workspace "${profile.name}". Только создатель этой области может удалить её.`);
+                window.hideWorkspaceContextMenu();
+                return;
+            }
 
-                // Удаляем саму область
-                profiles = profiles.filter(p => p.id !== wsId);
-                QuantumDB.saveState("qn_profiles", profiles).then(() => {
+            if (confirm(`Удалить Workspace "${profile.name}" и все содержащиеся в нём файлы безвозвратно в облаке и локально?`)) {
+                try {
+                    // Удаляем воркспейс из Supabase (каскадно удалит и notes на стороне Postgres)
+                    if (window.supabaseSync && window.supabaseSync.client) {
+                        const { error } = await window.supabaseSync.client
+                            .from('workspaces')
+                            .delete()
+                            .eq('id', wsId);
+                        if (error) throw error;
+                    }
+
+                    // Удаляем файлы, привязанные к удаляемому воркспейсу локально
+                    notes = notes.filter(n => n.profileId !== wsId);
+                    saveNotes();
+
+                    // Удаляем саму область локально
+                    profiles = profiles.filter(p => p.id !== wsId);
+                    await QuantumDB.saveState("qn_profiles", profiles);
+                    
                     window.switchWorkspace("profile-personal");
-                });
+                } catch (err) {
+                    console.error("Ошибка при удалении воркспейса с сервера:", err);
+                    alert("Не удалось удалить воркспейс с облачного сервера: " + err.message);
+                }
             }
             window.hideWorkspaceContextMenu();
         };
@@ -16723,7 +16839,8 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     avatar: data.name.substring(0, 2).toUpperCase(),
                     tier: "pro",
                     color: data.color,
-                    rgb: data.rgb
+                    rgb: data.rgb,
+                    owner_id: data.owner_id
                 };
 
                 profiles.push(newProfile);
