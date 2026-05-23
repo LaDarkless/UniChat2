@@ -8384,6 +8384,11 @@ window.addEventListener('message', function(e) {
                 renderNotesList(searchInput.value);
                 saveActiveId();
 
+                // Проверяем права на запись у текущего пользователя
+                window.checkWriteAccess(id).then(canWrite => {
+                    window.updateEditorReadOnlyState(!canWrite);
+                });
+
                 // ФИКС: Заменили прямой updatePreview() на умную функцию
                 saveAndRender(note.content || "");
 
@@ -8608,11 +8613,16 @@ window.addEventListener('message', function(e) {
                 "<i class='bx bxs-star' style='color:#f59e0b;'></i> Убрать из избранного" :
                 "<i class='bx bx-star'></i> В избранное";
 
+            // Проверка: является ли текущий пользователь Директором этого облачного пространства
+            const isDirector = activeProfileId !== "profile-personal" && window.supabaseSync && window.supabaseSync.userRole === 'director';
+            const permissionsOption = isDirector ? `<button class="dyn-menu-btn" onclick="window.openFilePermissionsModal('${noteId}')"><i class='bx bx-shield-quarter' style='color:#3b82f6;'></i> Доступ сотрудников...</button>` : "";
+
             // Собираем HTML кнопок (ТОЛЬКО ДЛЯ ФАЙЛОВ)
             menuEl.innerHTML = `
             <button class="dyn-menu-btn" onclick="handleNoteMention()"><i class='bx bx-bot' style="color: #a78bfa;"></i> Упомянуть для ИИ</button>
             <button class="dyn-menu-btn" onclick="handleNoteRename()"><i class='bx bx-edit-alt'></i> Переименовать</button>
             <button class="dyn-menu-btn" onclick="window.handleMoveClick('${noteId}')"><i class='bx bx-transfer-alt'></i> Переместить...</button>
+            ${permissionsOption}
             <button class="dyn-menu-btn" onclick="handleNoteFavorite()">${favText}</button>
             <button class="dyn-menu-btn del-btn" onclick="handleNoteDelete()"><i class='bx bx-trash'></i> Удалить</button>
         `;
@@ -16364,7 +16374,22 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 // 1. Загружаем актуальные файлы этого воркспейса из PostgreSQL
                 await this.downloadWorkspaceFiles(workspaceId);
 
-                // 2. Инициализируем ЕДИНЫЙ WebSockets-канал для Бродкаста, Присутствия и Изменений БД
+                // 2. Загружаем роль текущего пользователя в выбранном Workspace
+                try {
+                    const { data: memberRecord } = await this.client
+                        .from('workspace_members')
+                        .select('role')
+                        .eq('workspace_id', workspaceId)
+                        .eq('user_id', this.userId)
+                        .maybeSingle();
+                    
+                    this.userRole = memberRecord ? memberRecord.role : 'employee';
+                } catch (roleErr) {
+                    console.warn("Не удалось получить роль, используем employee:", roleErr);
+                    this.userRole = 'employee';
+                }
+
+                // 3. Инициализируем ЕДИНЫЙ WebSockets-канал для Бродкаста, Присутствия и Изменений БД
                 const channelName = `workspace_${workspaceId}`;
                 this.channel = this.client.channel(channelName, {
                     config: {
@@ -16901,31 +16926,39 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             if (!password || !password.trim()) return;
 
             try {
-                // Пытаемся получить воркспейс из Supabase, передавая пароль для верификации
-                const { data, error } = await window.supabaseSync.client
+                // Безопасный вызов RPC-функции для вступления
+                const { data: success, error: errJoin } = await window.supabaseSync.client
+                    .rpc('join_workspace', {
+                        ws_id: wsId,
+                        ws_password: password.trim()
+                    });
+
+                if (errJoin || !success) {
+                    throw new Error(errJoin ? errJoin.message : "Неверный секретный пароль.");
+                }
+
+                // Закрываем модалку Лобби
+                window.toggleJoinWorkspaceModal();
+
+                // Теперь, когда мы стали участником воркспейса, запрашиваем его параметры
+                const { data: wsData, error: errWs } = await window.supabaseSync.client
                     .from('workspaces')
                     .select('*')
                     .eq('id', wsId)
-                    .eq('password', password.trim())
                     .single();
-
-                if (error || !data) {
-                    throw new Error("Неверный секретный пароль или Workspace был удален.");
-                }
-
-                // Закрываем модалку
-                window.toggleJoinWorkspaceModal();
+                
+                if (errWs) throw errWs;
 
                 // Сохраняем воркспейс с верифицированным паролем в IndexedDB
                 const newProfile = {
-                    id: data.id,
-                    name: data.name,
-                    password: password.trim(), // Сохраняем пароль для прохождения политик RLS при обновлении
-                    avatar: data.name.substring(0, 2).toUpperCase(),
+                    id: wsData.id,
+                    name: wsData.name,
+                    password: password.trim(),
+                    avatar: wsData.name.substring(0, 2).toUpperCase(),
                     tier: "pro",
-                    color: data.color,
-                    rgb: data.rgb,
-                    owner_id: data.owner_id
+                    color: wsData.color,
+                    rgb: wsData.rgb,
+                    owner_id: wsData.owner_id
                 };
 
                 profiles.push(newProfile);
@@ -16939,9 +16972,9 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
         };
 
 // =======================================================================
-// КОНТРОЛЛЕР ГРАФИЧЕСКОГО ДАШБОРДА КОМАНДЫ (TEAM ANALYTICS)
+// КОНТРОЛЛЕР ГРАФИЧЕСКОГО ДАШБОРДА КОМАНДЫ (TEAM ANALYTICS + RBAC)
 // =======================================================================
-window.openWorkspaceStatsDashboard = function() {
+window.openWorkspaceStatsDashboard = async function() {
     const modal = document.getElementById("workspaceStatsDashboardModal");
     if (!modal) return;
     
@@ -16949,136 +16982,373 @@ window.openWorkspaceStatsDashboard = function() {
     const activeProfile = profiles.find(p => p.id === activeProfileId);
     if (!activeProfile) return;
     
-    // Получаем участников через Presence
-    const currentUsers = [];
-    if (window.supabaseSync && window.supabaseSync.presenceState) {
-        Object.keys(window.supabaseSync.presenceState).forEach(key => {
-            const list = window.supabaseSync.presenceState[key];
-            if (list && list.length > 0) {
-                currentUsers.push({
-                    uid: key,
-                    ...list[0]
-                });
-            }
-        });
-    }
-    
-    // Вычисляем статистику уровней
-    const levels = { Junior: 0, Middle: 0, Senior: 0, Lead: 0 };
-    currentUsers.forEach(u => {
-        const lvl = u.devLevel || "Middle";
-        if (levels[lvl] !== undefined) levels[lvl]++;
-    });
-    
-    const totalUsers = currentUsers.length || 1;
-    const jrPct = (levels.Junior / totalUsers) * 100;
-    const mdPct = (levels.Middle / totalUsers) * 100;
-    const srPct = (levels.Senior / totalUsers) * 100;
-    const ldPct = (levels.Lead / totalUsers) * 100;
-    
-    // Генерируем HTML для списка участников
-    let membersHtml = "";
-    currentUsers.forEach(u => {
-        const isMe = u.nickname === userProfile.nickname;
-        
-        const devLevel = u.devLevel || "Middle";
-        let badgeBg = "rgba(59, 130, 246, 0.12)";
-        let badgeColor = "#3b82f6";
-        
-        if (devLevel === "Junior") {
-            badgeBg = "rgba(16, 185, 129, 0.12)";
-            badgeColor = "#10b981";
-        } else if (devLevel === "Senior") {
-            badgeBg = "rgba(245, 158, 11, 0.12)";
-            badgeColor = "#f59e0b";
-        } else if (devLevel === "Lead") {
-            badgeBg = "rgba(168, 85, 247, 0.12)";
-            badgeColor = "#a855f7";
-        }
-        
-        // Разрешаем имя файла
-        const activeNote = notes.find(n => n.id === u.active_note_id);
-        const fileName = activeNote ? activeNote.title : "Бездельничает";
-        const fileIcon = activeNote ? getFileIcon(activeNote.title) : "<i class='bx bx-sleepy' style='color:var(--text-muted);'></i>";
-        
-        const initials = u.nickname.trim().substring(0, 2).toUpperCase() || "GU";
-        
-        membersHtml += `
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; transition: var(--transition-smooth); gap: 12px;">
-                <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
-                    <div style="position: relative; flex-shrink: 0;">
-                        <div class="workspace-avatar" style="background: ${badgeColor}; box-shadow: 0 0 10px rgba(255,255,255,0.05); width: 36px; height: 36px; border-radius: 10px; font-size: 13px; font-weight: 700; color:#fff;">${initials}</div>
-                        <div style="position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: #10b981; border: 2px solid #08080c; box-shadow: 0 0 6px #10b981;"></div>
-                    </div>
-                    <div style="min-width: 0; flex: 1; text-align: left;">
-                        <div style="font-size: 13.5px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
-                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${window.escapeHTML(u.nickname)}</span>
-                            ${isMe ? '<span style="font-size: 9px; background: rgba(var(--accent-rgb), 0.15); color: var(--accent); padding: 1px 5px; border-radius: 4px; font-weight: 700; text-transform: uppercase;">Вы</span>' : ''}
-                        </div>
-                        <div style="font-size: 10.5px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                            ${fileIcon} <span style="overflow: hidden; text-overflow: ellipsis;">Фокус: ${window.escapeHTML(fileName)}</span>
-                        </div>
-                    </div>
-                </div>
-                <span style="font-size: 9px; background: ${badgeBg}; color: ${badgeColor}; padding: 3px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${devLevel}</span>
-            </div>
-        `;
-    });
-
-    // Настраиваем левую колонку (статистика и метаданные)
-    const activeWsNameLabel = document.getElementById("dashActiveWsName");
-    const activeWsIdLabel = document.getElementById("dashActiveWsId");
-    const activeWsTierLabel = document.getElementById("dashActiveWsTier");
-    const activeWsColorDot = document.getElementById("dashActiveWsColorDot");
-    const activeWsMembersCount = document.getElementById("dashActiveWsMembersCount");
-    
-    // Статистика баров
-    const jrBar = document.getElementById("dashJrBar");
-    const mdBar = document.getElementById("dashMdBar");
-    const srBar = document.getElementById("dashSrBar");
-    const ldBar = document.getElementById("dashLdBar");
-    
-    const jrCount = document.getElementById("dashJrCount");
-    const mdCount = document.getElementById("dashMdCount");
-    const srCount = document.getElementById("dashSrCount");
-    const ldCount = document.getElementById("dashLdCount");
-
-    if (activeWsNameLabel) activeWsNameLabel.textContent = activeProfile.name;
-    if (activeWsIdLabel) activeWsIdLabel.textContent = activeProfile.id;
-    if (activeWsTierLabel) {
-        activeWsTierLabel.textContent = activeProfile.tier === 'pro' ? 'Pro Team' : 'Free Sandbox';
-        activeWsTierLabel.style.background = activeProfile.tier === 'pro' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.05)';
-        activeWsTierLabel.style.color = activeProfile.tier === 'pro' ? '#10b981' : 'var(--text-muted)';
-    }
-    if (activeWsColorDot) {
-        activeWsColorDot.style.background = activeProfile.color;
-        activeWsColorDot.style.boxShadow = `0 0 12px ${activeProfile.color}`;
-    }
-    if (activeWsMembersCount) activeWsMembersCount.textContent = `${currentUsers.length} / 50`;
-
-    // Анимируем ширину полосок статистики
-    if (jrBar) jrBar.style.width = `${jrPct}%`;
-    if (mdBar) mdBar.style.width = `${mdPct}%`;
-    if (srBar) srBar.style.width = `${srPct}%`;
-    if (ldBar) ldBar.style.width = `${ldPct}%`;
-
-    if (jrCount) jrCount.textContent = levels.Junior;
-    if (mdCount) mdCount.textContent = levels.Middle;
-    if (srCount) srCount.textContent = levels.Senior;
-    if (ldCount) ldCount.textContent = levels.Lead;
-
-    // Вставляем список участников
+    // Показываем лоадер участников
     const membersList = document.getElementById("dashMembersList");
-    if (membersList) membersList.innerHTML = membersHtml || "<div style='font-size:12px; color:var(--text-muted); font-style:italic;'>Инициализация списка участников...</div>";
+    if (membersList) {
+        membersList.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);"><i class='bx bx-loader-alt bx-spin' style='font-size:20px;'></i> Загрузка участников...</div>`;
+    }
 
     modal.classList.add("active");
     if (window.synth) window.synth.playChime();
+
+    try {
+        // 1. Получаем список всех зарегистрированных участников воркспейса из БД
+        const { data: dbMembers, error: errMem } = await window.supabaseSync.client
+            .from('workspace_members')
+            .select('user_id, role, created_at, profiles(nickname, about_me)')
+            .eq('workspace_id', activeProfileId);
+        
+        if (errMem) throw errMem;
+
+        // 2. Получаем Presence (кто в данный момент в сети)
+        const onlineUids = new Set();
+        const activeNotesMap = {};
+        if (window.supabaseSync && window.supabaseSync.presenceState) {
+            Object.keys(window.supabaseSync.presenceState).forEach(key => {
+                onlineUids.add(key);
+                const list = window.supabaseSync.presenceState[key];
+                if (list && list.length > 0 && list[0].active_note_id) {
+                    activeNotesMap[key] = list[0].active_note_id;
+                }
+            });
+        }
+        
+        // Рендерим участников
+        let membersHtml = "";
+        const isCurrentUserDirector = window.supabaseSync.userRole === 'director';
+
+        dbMembers.forEach(m => {
+            const isMe = m.user_id === window.supabaseSync.userId;
+            const isOnline = onlineUids.has(m.user_id);
+            const nickname = m.profiles ? m.profiles.nickname : "Коллега";
+            const initials = nickname.trim().substring(0, 2).toUpperCase() || "GU";
+
+            // Генерация селектора ролей (только Директор может менять роли других участников)
+            let roleSelectHtml = "";
+            if (isCurrentUserDirector && !isMe) {
+                roleSelectHtml = `
+                    <select onchange="window.updateMemberRole('${m.user_id}', this.value)" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 6px; outline: none; font-family: var(--font-ui); cursor: pointer;">
+                        <option value="employee" ${m.role === 'employee' ? 'selected' : ''}>Работник</option>
+                        <option value="manager" ${m.role === 'manager' ? 'selected' : ''}>Менеджер</option>
+                        <option value="director" ${m.role === 'director' ? 'selected' : ''}>Директор</option>
+                    </select>
+                `;
+            } else {
+                const roleLabels = {
+                    'director': 'Директор',
+                    'manager': 'Менеджер',
+                    'employee': 'Работник'
+                };
+                roleSelectHtml = `<span style="font-size: 11px; font-weight: 700; color: ${m.role === 'director' ? '#a855f7' : (m.role === 'manager' ? '#3b82f6' : 'var(--text-muted)')}; text-transform: uppercase;">${roleLabels[m.role] || 'Работник'}</span>`;
+            }
+
+            // Кнопка удаления участника (только для Директора)
+            let deleteMemberBtn = "";
+            if (isCurrentUserDirector && !isMe) {
+                deleteMemberBtn = `
+                    <button class="btn-icon" onclick="window.removeMemberFromWorkspace('${m.user_id}')" style="color: #ef4444; padding: 4px; font-size: 16px; margin-left: 8px;" title="Исключить из команды">
+                        <i class='bx bx-user-minus'></i>
+                    </button>
+                `;
+            }
+
+            // Определение файла фокуса
+            const userActiveNoteId = activeNotesMap[m.user_id];
+            const activeNote = userActiveNoteId ? notes.find(n => n.id === userActiveNoteId) : null;
+            const fileName = activeNote ? activeNote.title : "Бездельничает";
+            const fileIcon = activeNote ? getFileIcon(activeNote.title) : "<i class='bx bx-sleepy' style='color:var(--text-muted);'></i>";
+
+            membersHtml += `
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; transition: var(--transition-smooth); gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+                        <div style="position: relative; flex-shrink: 0;">
+                            <div class="workspace-avatar" style="background: ${m.role === 'director' ? '#a855f7' : '#3b82f6'}; width: 36px; height: 36px; border-radius: 10px; font-size: 13px; font-weight: 700; color:#fff;">${initials}</div>
+                            <div style="position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: ${isOnline ? '#10b981' : 'rgba(255,255,255,0.15)'}; border: 2px solid #08080c; box-shadow: ${isOnline ? '0 0 6px #10b981' : 'none'};"></div>
+                        </div>
+                        <div style="min-width: 0; flex: 1; text-align: left;">
+                            <div style="font-size: 13.5px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
+                                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${window.escapeHTML(nickname)}</span>
+                                ${isMe ? '<span style="font-size: 9px; background: rgba(var(--accent-rgb), 0.15); color: var(--accent); padding: 1px 5px; border-radius: 4px; font-weight: 700; text-transform: uppercase;">Вы</span>' : ''}
+                            </div>
+                            <div style="font-size: 10.5px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${fileIcon} <span style="overflow: hidden; text-overflow: ellipsis;">Фокус: ${window.escapeHTML(fileName)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        ${roleSelectHtml}
+                        ${deleteMemberBtn}
+                    </div>
+                </div>
+            `;
+        });
+
+        // Настраиваем левую колонку
+        const activeWsNameLabel = document.getElementById("dashActiveWsName");
+        const activeWsIdLabel = document.getElementById("dashActiveWsId");
+        const activeWsTierLabel = document.getElementById("dashActiveWsTier");
+        const activeWsColorDot = document.getElementById("dashActiveWsColorDot");
+        const activeWsMembersCount = document.getElementById("dashActiveWsMembersCount");
+
+        if (activeWsNameLabel) activeWsNameLabel.textContent = activeProfile.name;
+        if (activeWsIdLabel) activeWsIdLabel.textContent = activeProfile.id;
+        if (activeWsTierLabel) {
+            activeWsTierLabel.textContent = activeProfile.tier === 'pro' ? 'Pro Team' : 'Free Sandbox';
+            activeWsTierLabel.style.background = activeProfile.tier === 'pro' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.05)';
+            activeWsTierLabel.style.color = activeProfile.tier === 'pro' ? '#10b981' : 'var(--text-muted)';
+        }
+        if (activeWsColorDot) {
+            activeWsColorDot.style.background = activeProfile.color;
+            activeWsColorDot.style.boxShadow = `0 0 12px ${activeProfile.color}`;
+        }
+        if (activeWsMembersCount) activeWsMembersCount.textContent = `${dbMembers.length} / 50`;
+
+        if (membersList) membersList.innerHTML = membersHtml;
+
+    } catch (e) {
+        console.error("Ошибка дашборда команды:", e);
+        if (membersList) {
+            membersList.innerHTML = `<div style="text-align:center; padding:20px; color:#ef4444;">Ошибка загрузки: ${e.message}</div>`;
+        }
+    }
 };
 
 window.closeWorkspaceStatsDashboard = function() {
     const modal = document.getElementById("workspaceStatsDashboardModal");
     if (modal) modal.classList.remove("active");
     if (window.synth) window.synth.playSoftHum();
+};
+
+// === НОВЫЕ СЛУЖЕБНЫЕ ФУНКЦИИ И УПРАВЛЕНИЕ РОЛЯМИ И ПРАВАМИ ===
+
+window.updateMemberRole = async function(userId, newRole) {
+    if (window.synth) window.synth.playSoftHum();
+    try {
+        const { error } = await window.supabaseSync.client
+            .from('workspace_members')
+            .update({ role: newRole })
+            .eq('workspace_id', activeProfileId)
+            .eq('user_id', userId);
+        
+        if (error) throw error;
+        window.openWorkspaceStatsDashboard(); // Перерисовываем
+    } catch (err) {
+        console.error("Ошибка изменения роли:", err);
+        alert("Не удалось изменить роль: " + err.message);
+    }
+};
+
+window.removeMemberFromWorkspace = async function(userId) {
+    const wantToRemove = confirm("Исключить этого участника из рабочей области?");
+    if (!wantToRemove) return;
+
+    if (window.synth) window.synth.playClick();
+    try {
+        const { error } = await window.supabaseSync.client
+            .from('workspace_members')
+            .delete()
+            .eq('workspace_id', activeProfileId)
+            .eq('user_id', userId);
+        
+        if (error) throw error;
+        window.openWorkspaceStatsDashboard(); // Перерисовываем
+    } catch (err) {
+        console.error("Ошибка исключения участника:", err);
+        alert("Не удалось исключить участника: " + err.message);
+    }
+};
+
+// Проверка наличия прав на запись у текущего пользователя
+window.checkWriteAccess = async function(noteId) {
+    if (activeProfileId === "profile-personal") return true;
+    if (!window.supabaseSync || !window.supabaseSync.client || !window.supabaseSync.userId) return true;
+    if (window.supabaseSync.userRole === 'director') return true;
+
+    try {
+        const { data, error } = await window.supabaseSync.client
+            .from('note_permissions')
+            .select('can_write')
+            .eq('note_id', noteId)
+            .eq('user_id', window.supabaseSync.userId)
+            .maybeSingle();
+        
+        if (error) throw error;
+        
+        // Если правила нет — запись разрешена (по умолчанию разрешено всем, директор может запретить)
+        return data ? data.can_write : true;
+    } catch (e) {
+        console.warn("Сбой проверки прав, фолбэк на true:", e);
+        return true;
+    }
+};
+
+// Блокировка/разблокировка редактора (CodeMirror и textarea) + вывод индикатора
+window.updateEditorReadOnlyState = function(readOnly) {
+    const saveBtn = document.getElementById("manualSaveBtn");
+    const titleInput = document.getElementById("noteTitle");
+    
+    if (saveBtn) {
+        saveBtn.disabled = readOnly;
+        saveBtn.style.opacity = readOnly ? "0.5" : "1";
+        saveBtn.style.pointerEvents = readOnly ? "none" : "auto";
+    }
+    if (titleInput) {
+        titleInput.readOnly = readOnly;
+        titleInput.style.opacity = readOnly ? "0.6" : "1";
+    }
+    if (typeof ideEditor !== 'undefined' && ideEditor) {
+        ideEditor.setOption("readOnly", readOnly ? "nocursor" : false);
+        const wrapper = ideEditor.getWrapperElement();
+        if (readOnly) wrapper.classList.add("cm-read-only");
+        else wrapper.classList.remove("cm-read-only");
+    }
+    if (editor) {
+        editor.readOnly = readOnly;
+    }
+
+    // Выводим красный индикатор замочка "Только чтение" в хэдер
+    let lockBadge = document.getElementById("editorReadOnlyBadge");
+    if (readOnly) {
+        if (!lockBadge) {
+            lockBadge = document.createElement("div");
+            lockBadge.id = "editorReadOnlyBadge";
+            lockBadge.style.cssText = "background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; font-family: var(--font-ui); margin-right: 10px;";
+            lockBadge.innerHTML = "<i class='bx bx-lock-alt'></i> Только чтение";
+            const actions = document.querySelector(".toolbar-actions");
+            if (actions) actions.insertBefore(lockBadge, actions.firstChild);
+        }
+    } else {
+        if (lockBadge) lockBadge.remove();
+    }
+};
+
+// Модальное окно Директора для управления индивидуальным доступом сотрудников к файлу
+window.openFilePermissionsModal = async function(noteId) {
+    window.hideNoteContextMenu();
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+
+    let modal = document.getElementById('filePermissionsModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'filePermissionsModal';
+        modal.className = 'modal-overlay';
+        document.body.appendChild(modal);
+    }
+    modal.classList.add('active');
+
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 440px; padding: 25px; background: #111115; border: 1px solid rgba(255,255,255,0.08);">
+            <h2 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+                <span style="font-size: 16px; display:flex; align-items:center; gap:6px;"><i class='bx bx-shield-quarter' style='color:#3b82f6;'></i> Доступ к "${window.escapeHTML(note.title)}"</span>
+                <button class="btn-icon" onclick="document.getElementById('filePermissionsModal').classList.remove('active')"><i class='bx bx-x'></i></button>
+            </h2>
+            <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;">
+                Выберите, какие сотрудники могут редактировать этот файл. Менеджеры и Работники без прав доступа смогут только читать файл, но не смогут изменять его содержимое.
+            </p>
+            <div id="permissionsMembersList" style="display: flex; flex-direction: column; gap: 10px; max-height: 240px; overflow-y: auto; margin-bottom: 15px;">
+                <div style="text-align: center; padding: 20px; color: var(--text-muted);"><i class='bx bx-loader-alt bx-spin' style='font-size: 20px;'></i> Загрузка участников...</div>
+            </div>
+            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="document.getElementById('filePermissionsModal').classList.remove('active')">Готово</button>
+        </div>
+    `;
+
+    try {
+        // 1. Получаем список всех участников воркспейса
+        const { data: members, error: errMem } = await window.supabaseSync.client
+            .from('workspace_members')
+            .select('user_id, role, profiles(nickname)')
+            .eq('workspace_id', activeProfileId);
+        
+        if (errMem) throw errMem;
+
+        // 2. Получаем текущие индивидуальные права доступа к этому файлу
+        const { data: perms, error: errPerms } = await window.supabaseSync.client
+            .from('note_permissions')
+            .select('user_id, can_write')
+            .eq('note_id', noteId);
+        
+        if (errPerms) throw errPerms;
+
+        const permsMap = {};
+        if (perms) {
+            perms.forEach(p => {
+                permsMap[p.user_id] = p.can_write;
+            });
+        }
+
+        const listContainer = document.getElementById("permissionsMembersList");
+        listContainer.innerHTML = "";
+
+        // Исключаем из списка самого себя (Директора)
+        const otherMembers = members.filter(m => m.user_id !== window.supabaseSync.userId);
+
+        if (otherMembers.length === 0) {
+            listContainer.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 12.5px;">В этом Workspace пока нет других участников.</div>`;
+            return;
+        }
+
+        otherMembers.forEach(m => {
+            const nickname = m.profiles ? m.profiles.nickname : "Коллега";
+            const isChecked = permsMap[m.user_id] !== false; // По умолчанию true (запись разрешена), если не выставлен явный false
+            const checkboxId = `perm_toggle_${m.user_id}`;
+            
+            const roleLabels = {
+                'director': 'Директор',
+                'manager': 'Менеджер',
+                'employee': 'Работник'
+            };
+            const roleLabel = roleLabels[m.role] || 'Работник';
+
+            const row = document.createElement("div");
+            row.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 8px;";
+            row.innerHTML = `
+                <div style="text-align: left;">
+                    <div style="font-weight: 600; font-size: 13px; color: #fff;">${window.escapeHTML(nickname)}</div>
+                    <div style="font-size: 10.5px; color: var(--text-muted);">${roleLabel}</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 11px; color: ${isChecked ? '#10b981' : 'var(--text-muted)'}; font-weight: 500;">${isChecked ? 'Запись' : 'Чтение'}</span>
+                    <label class="switch">
+                        <input type="checkbox" id="${checkboxId}" ${isChecked ? 'checked' : ''} onchange="window.toggleUserFilePermission('${noteId}', '${m.user_id}', this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            `;
+            listContainer.appendChild(row);
+        });
+
+    } catch (err) {
+        console.error("Ошибка загрузки прав доступа:", err);
+        document.getElementById("permissionsMembersList").innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444; font-size: 12px;">Ошибка загрузки: ${err.message}</div>`;
+    }
+};
+
+window.toggleUserFilePermission = async function(noteId, userId, checkbox) {
+    const canWrite = checkbox.checked;
+    if (window.synth) window.synth.playSoftHum();
+
+    try {
+        const { error } = await window.supabaseSync.client
+            .from('note_permissions')
+            .upsert({
+                note_id: noteId,
+                user_id: userId,
+                can_write: canWrite
+            }, { onConflict: 'note_id,user_id' });
+        
+        if (error) throw error;
+        
+        const statusSpan = checkbox.parentElement.previousElementSibling;
+        if (statusSpan) {
+            statusSpan.textContent = canWrite ? 'Запись' : 'Чтение';
+            statusSpan.style.color = canWrite ? '#10b981' : 'var(--text-muted)';
+        }
+    } catch (err) {
+        console.error("Ошибка изменения прав:", err);
+        alert("Не удалось сохранить: " + err.message);
+        checkbox.checked = !canWrite; // Возвращаем свитч обратно
+    }
 };
 </script>
     <style>
@@ -17358,6 +17628,16 @@ window.closeWorkspaceStatsDashboard = function() {
             .global-dock {
                 transition: none !important;
             }
+        }
+
+        /* Стилизация редактора в режиме Только чтение */
+        .CodeMirror.cm-read-only {
+            opacity: 0.75;
+            background: #121215 !important;
+            filter: grayscale(30%);
+        }
+        .CodeMirror.cm-read-only .CodeMirror-cursor {
+            display: none !important;
         }
     </style>
 
