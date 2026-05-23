@@ -16236,7 +16236,21 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     if (!session) {
                         // Бесшовный анонимный вход для совместной работы
                         const { data, error } = await this.client.auth.signInAnonymously();
-                        if (error) throw error;
+                        if (error) {
+                            if (error.message && error.message.includes("Anonymous sign-ins are disabled")) {
+                                console.warn(
+                                    "🚨 [Supabase Configuration Error]: Anonymous Sign-ins are disabled on your Supabase backend.\n" +
+                                    "To fix this, go to your Supabase Dashboard -> Authentication -> Providers -> Anonymous and turn on 'Allow anonymous sign-ins'.\n" +
+                                    "Falling back to local-only guest session for now."
+                                );
+                                // Отображаем деликатную подсказку в виджете синхронизации сайдбара
+                                const widgetDesc = document.getElementById("cloudSyncWidgetDesc");
+                                if (widgetDesc) {
+                                    widgetDesc.innerHTML = "<span style='color: #f87171;'>Ошибка синхронизации: В панели Supabase отключен анонимный вход (Anonymous Sign-ins). Включите его в настройках проекта.</span>";
+                                }
+                            }
+                            throw error;
+                        }
                         session = data.session;
                     }
                     this.userId = session.user.id;
