@@ -15873,9 +15873,14 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             });
         };
 
-        window.switchWorkspace = function(profileId) {
+        window.switchWorkspace = function(profileId, force = false) {
             const profile = profiles.find(p => p.id === profileId);
             if (!profile) return;
+
+            // Предотвращаем разрыв и повторное подключение WebSockets при обычном переключении файлов в той же рабочей области
+            if (activeProfileId === profileId && !force) {
+                return;
+            }
 
             // КЛЮЧЕВОЙ CRO ТРИГГЕР: Если пространство требует PRO-лицензию, блокируем доступ
             if (profile.tier === "pro" && !window.isProUser) {
@@ -16351,7 +16356,8 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         username: userProfile.nickname, // Дублируем никнейм в поле username для совместимости со стартовым шаблоном Supabase
                         first_name: userProfile.nickname, // Дублируем в first_name на случай ограничений NOT NULL в вашей схеме БД
                         last_name: "", // Передаем пустую строку во избежание ограничений NOT NULL в вашей схеме БД
-                        about_me: userProfile.aboutMe
+                        about_me: userProfile.aboutMe,
+                        dev_level: userProfile.devLevel || "Middle" // Наш уровень квалификации для дашборда и рейтинга
                     });
                     if (error) throw error;
                 } catch (e) {
@@ -16393,7 +16399,6 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 const channelName = `workspace_${workspaceId}`;
                 this.channel = this.client.channel(channelName, {
                     config: {
-                        presence: { key: this.userId },
                         broadcast: { self: false } // Получаем изменения только от других разработчиков
                     }
                 });
@@ -16440,6 +16445,9 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                             online: true,
                             active_note_id: activeId
                         });
+
+                        // Мгновенно убираем заглушку лоадера и форсируем рендер панели участников
+                        window.updateWorkspaceWidgets();
 
                         // АВТО-МИГРАЦИЯ: Бесшумно регистрируем себя в таблице участников БД, 
                         // если нас там ещё нет (это заполнит список для старых воркспейсов)
@@ -17000,13 +17008,47 @@ window.openWorkspaceStatsDashboard = async function() {
     if (window.synth) window.synth.playChime();
 
     try {
-        // 1. Получаем список всех зарегистрированных участников воркспейса из БД
+        // 1. Получаем список всех зарегистрированных участников воркспейса из БД с уровнями квалификации
         const { data: dbMembers, error: errMem } = await window.supabaseSync.client
             .from('workspace_members')
-            .select('user_id, role, created_at, profiles(nickname, about_me)')
+            .select('user_id, role, created_at, profiles(nickname, about_me, dev_level)')
             .eq('workspace_id', activeProfileId);
         
         if (errMem) throw errMem;
+
+        // Вычисляем распределение рангов (Junior, Middle, Senior, Lead) по всем зарегистрированным участникам
+        const levels = { Junior: 0, Middle: 0, Senior: 0, Lead: 0 };
+        dbMembers.forEach(m => {
+            const lvl = m.profiles && m.profiles.dev_level ? m.profiles.dev_level : "Middle";
+            if (levels[lvl] !== undefined) levels[lvl]++;
+        });
+
+        const totalMembers = dbMembers.length || 1;
+        const jrPct = (levels.Junior / totalMembers) * 100;
+        const mdPct = (levels.Middle / totalMembers) * 100;
+        const srPct = (levels.Senior / totalMembers) * 100;
+        const ldPct = (levels.Lead / totalMembers) * 100;
+
+        // Анимируем ширину полосок статистики
+        const jrBar = document.getElementById("dashJrBar");
+        const mdBar = document.getElementById("dashMdBar");
+        const srBar = document.getElementById("dashSrBar");
+        const ldBar = document.getElementById("dashLdBar");
+        
+        const jrCount = document.getElementById("dashJrCount");
+        const mdCount = document.getElementById("dashMdCount");
+        const srCount = document.getElementById("dashSrCount");
+        const ldCount = document.getElementById("dashLdCount");
+
+        if (jrBar) jrBar.style.width = `${jrPct}%`;
+        if (mdBar) mdBar.style.width = `${mdPct}%`;
+        if (srBar) srBar.style.width = `${srPct}%`;
+        if (ldBar) ldBar.style.width = `${ldPct}%`;
+
+        if (jrCount) jrCount.textContent = levels.Junior;
+        if (mdCount) mdCount.textContent = levels.Middle;
+        if (srCount) srCount.textContent = levels.Senior;
+        if (ldCount) ldCount.textContent = levels.Lead;
 
         // 2. Получаем Presence (кто в данный момент в сети)
         const onlineUids = new Set();
@@ -17030,6 +17072,21 @@ window.openWorkspaceStatsDashboard = async function() {
             const isOnline = onlineUids.has(m.user_id);
             const nickname = m.profiles ? m.profiles.nickname : "Коллега";
             const initials = nickname.trim().substring(0, 2).toUpperCase() || "GU";
+
+            const devLevel = m.profiles && m.profiles.dev_level ? m.profiles.dev_level : "Middle";
+            let lvlBadgeBg = "rgba(59, 130, 246, 0.12)";
+            let lvlBadgeColor = "#3b82f6";
+            if (devLevel === "Junior") {
+                lvlBadgeBg = "rgba(16, 185, 129, 0.12)";
+                lvlBadgeColor = "#10b981";
+            } else if (devLevel === "Senior") {
+                lvlBadgeBg = "rgba(245, 158, 11, 0.12)";
+                lvlBadgeColor = "#f59e0b";
+            } else if (devLevel === "Lead") {
+                lvlBadgeBg = "rgba(168, 85, 247, 0.12)";
+                lvlBadgeColor = "#a855f7";
+            }
+            const devLevelBadge = `<span style="font-size: 9px; background: ${lvlBadgeBg}; color: ${lvlBadgeColor}; padding: 1px 5px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">${devLevel}</span>`;
 
             // Генерация селектора ролей (только Директор может менять роли других участников)
             let roleSelectHtml = "";
@@ -17074,8 +17131,9 @@ window.openWorkspaceStatsDashboard = async function() {
                             <div style="position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: ${isOnline ? '#10b981' : 'rgba(255,255,255,0.15)'}; border: 2px solid #08080c; box-shadow: ${isOnline ? '0 0 6px #10b981' : 'none'};"></div>
                         </div>
                         <div style="min-width: 0; flex: 1; text-align: left;">
-                            <div style="font-size: 13.5px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
+                            <div style="font-size: 13.5px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                 <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${window.escapeHTML(nickname)}</span>
+                                ${devLevelBadge}
                                 ${isMe ? '<span style="font-size: 9px; background: rgba(var(--accent-rgb), 0.15); color: var(--accent); padding: 1px 5px; border-radius: 4px; font-weight: 700; text-transform: uppercase;">Вы</span>' : ''}
                             </div>
                             <div style="font-size: 10.5px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
