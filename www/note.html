@@ -16385,146 +16385,20 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 }
             }
 
-            async loadWorkspaceChatHistory(workspaceId) {
+            async loadWorkspaceMembers(workspaceId) {
                 if (!this.client) return;
                 try {
-                    const { data: messages, error } = await this.client
-                        .from('chat_messages')
-                        .select('id, sender_id, message, created_at, profiles(nickname, dev_level)')
-                        .eq('workspace_id', workspaceId)
-                        .order('created_at', { ascending: true })
-                        .limit(100);
+                    const { data: dbMembers } = await this.client
+                        .from('workspace_members')
+                        .select('user_id, role, profiles(nickname, dev_level)')
+                        .eq('workspace_id', workspaceId);
                     
-                    if (error) throw error;
-                    this.workspaceChatMessages = messages || [];
-                    
-                    // Если модальное окно чата сейчас открыто — перерисовываем сообщения
-                    if (document.getElementById("workspaceTeamChatModal")?.classList.contains("active")) {
-                        this.renderTeamChatMessages();
-                    }
-                } catch (e) {
-                    console.warn("SupabaseSync: Ошибка загрузки чата:", e);
-                    this.workspaceChatMessages = [];
+                    this.workspaceMembers = dbMembers || [];
+                    this.renderActiveTeamPresence();
+                } catch (err) {
+                    console.warn("SupabaseSync: Не удалось подгрузить команду для сайдбара:", err);
+                    this.workspaceMembers = [];
                 }
-            }
-
-            handleIncomingChatMessage(newMsg) {
-                // Предотвращаем дублирование, если сообщение уже добавлено оптимистичным рендером
-                if (this.workspaceChatMessages.some(m => m.id === newMsg.id)) return;
-                
-                // Связываем никнеймы и ранги на основе кэшированного списка участников воркспейса
-                const member = this.workspaceMembers.find(m => m.user_id === newMsg.sender_id);
-                const nickname = member && member.profiles ? member.profiles.nickname : "Коллега";
-                const devLevel = member && member.profiles ? member.profiles.dev_level : "Middle";
-                
-                const fullMsg = {
-                    id: newMsg.id,
-                    sender_id: newMsg.sender_id,
-                    message: newMsg.message,
-                    created_at: newMsg.created_at,
-                    profiles: {
-                        nickname,
-                        dev_level: devLevel
-                    }
-                };
-                
-                this.workspaceChatMessages.push(fullMsg);
-                
-                // Если чат открыт — дописываем сообщение в интерфейс
-                if (document.getElementById("workspaceTeamChatModal")?.classList.contains("active")) {
-                    this.renderTeamChatMessages();
-                    if (window.synth) window.synth.playSoftHum(); // Мягкий неоновый аудио-клик входящего сообщения
-                }
-            }
-
-            async sendTeamChatMessage(text) {
-                if (!this.client || !this.currentWorkspaceId || !this.userId) return;
-                try {
-                    const { data, error } = await this.client
-                        .from('chat_messages')
-                        .insert({
-                            workspace_id: this.currentWorkspaceId,
-                            sender_id: this.userId,
-                            message: text
-                        })
-                        .select('id, sender_id, message, created_at')
-                        .single();
-                    
-                    if (error) throw error;
-                    
-                    // Оптимистичный рендер: мгновенно выводим сообщение на экран отправителя
-                    const myMember = this.workspaceMembers.find(m => m.user_id === this.userId);
-                    const myNickname = myMember && myMember.profiles ? myMember.profiles.nickname : userProfile.nickname;
-                    const myDevLevel = myMember && myMember.profiles ? myMember.profiles.dev_level : userProfile.devLevel;
-                    
-                    const fullMsg = {
-                        id: data.id,
-                        sender_id: data.sender_id,
-                        message: data.message,
-                        created_at: data.created_at,
-                        profiles: {
-                            nickname: myNickname,
-                            dev_level: myDevLevel
-                        }
-                    };
-                    
-                    if (!this.workspaceChatMessages.some(m => m.id === data.id)) {
-                        this.workspaceChatMessages.push(fullMsg);
-                        this.renderTeamChatMessages();
-                    }
-                } catch (e) {
-                    console.error("SupabaseSync: Сбой отправки сообщения:", e);
-                }
-            }
-
-            renderTeamChatMessages() {
-                const box = document.getElementById("teamChatMessagesBox");
-                if (!box) return;
-                
-                box.innerHTML = "";
-                const msgs = this.workspaceChatMessages || [];
-                
-                if (msgs.length === 0) {
-                    box.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted); font-size:13px; font-style:italic;"><i class='bx bx-comment-detail' style='font-size:28px; color:var(--text-muted); margin-bottom:10px; display:block;'></i> Общий чат пуст. Задайте вектор работы!</div>`;
-                    return;
-                }
-                
-                msgs.forEach(m => {
-                    const isMe = m.sender_id === this.userId;
-                    const nickname = m.profiles ? m.profiles.nickname : "Коллега";
-                    const devLevel = m.profiles ? m.profiles.dev_level : "Middle";
-                    const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    
-                    let badgeBg = "rgba(59, 130, 246, 0.12)";
-                    let badgeColor = "#3b82f6";
-                    if (devLevel === "Junior") {
-                        badgeBg = "rgba(16, 185, 129, 0.12)";
-                        badgeColor = "#10b981";
-                    } else if (devLevel === "Senior") {
-                        badgeBg = "rgba(245, 158, 11, 0.12)";
-                        badgeColor = "#f59e0b";
-                    } else if (devLevel === "Lead") {
-                        badgeBg = "rgba(168, 85, 247, 0.12)";
-                        badgeColor = "#a855f7";
-                    }
-                    
-                    const row = document.createElement("div");
-                    row.style.cssText = `display: flex; flex-direction: column; align-items: ${isMe ? 'flex-end' : 'flex-start'}; gap: 4px; width: 100%;`;
-                    
-                    row.innerHTML = `
-                        <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; margin-left: ${isMe ? '0' : '6px'}; margin-right: ${isMe ? '6px' : '0'};">
-                            <span style="font-weight: 700; color: ${isMe ? 'var(--accent)' : '#fff'};">${window.escapeHTML(nickname)}</span>
-                            <span style="font-size: 8px; background: ${badgeBg}; color: ${badgeColor}; padding: 1px 4px; border-radius: 4px; font-weight: 700; text-transform: uppercase;">${devLevel}</span>
-                            <span style="color: var(--text-muted);">${time}</span>
-                        </div>
-                        <div style="max-width: 75%; background: ${isMe ? 'var(--accent)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isMe ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'}; color: #fff; padding: 10px 14px; border-radius: ${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; font-size: 13px; line-height: 1.45; word-wrap: break-word; text-align: left;">
-                            ${window.escapeHTML(m.message)}
-                        </div>
-                    `;
-                    box.appendChild(row);
-                });
-                
-                box.scrollTop = box.scrollHeight;
             }
 
             async subscribeToWorkspace(workspaceId) {
@@ -16538,6 +16412,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 }
 
                 this.currentWorkspaceId = workspaceId;
+                this.typingUsers = {}; // Инициализируем стек печатающих
                 
                 // 1. Загружаем актуальные файлы этого воркспейса из PostgreSQL
                 await this.downloadWorkspaceFiles(workspaceId);
@@ -16548,7 +16423,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 // 3. Загружаем историю переписки командного чата
                 await this.loadWorkspaceChatHistory(workspaceId);
 
-                // 3. Загружаем роль текущего пользователя в выбранном Workspace
+                // 3. Загружаем роль пользователя в текущем Workspace
                 try {
                     const { data: memberRecord } = await this.client
                         .from('workspace_members')
@@ -16574,6 +16449,9 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 this.channel
                     .on('broadcast', { event: 'text_edit' }, payload => {
                         this.handleIncomingBroadcastEdit(payload.payload);
+                    })
+                    .on('broadcast', { event: 'user_typing' }, payload => {
+                        this.handleIncomingTypingIndicator(payload.payload);
                     })
                     .on('presence', { event: 'sync' }, async () => {
                         this.presenceState = this.channel.presenceState();
@@ -16601,12 +16479,12 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         this.handleIncomingDbChange(payload);
                     })
                     .on('postgres_changes', {
-                        event: 'INSERT',
+                        event: '*', // Мультиплексируем сокет на ЛЮБЫЕ транзакции в чате (синхронизация удалений и закрепов)
                         schema: 'public',
                         table: 'chat_messages',
                         filter: `workspace_id=eq.${workspaceId}`
                     }, payload => {
-                        this.handleIncomingChatMessage(payload.new);
+                        this.handleIncomingChatDbChange(payload);
                     });
 
                 // Подписываем единый мультиплексированный канал совместной работы
@@ -16635,6 +16513,256 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         }
                     }
                 });
+            }
+
+            sendTypingSignal() {
+                if (!this.channel) return;
+                const now = Date.now();
+                
+                // Троттлим отправку сигнала бродкаста до раза в 2 секунды
+                if (!this.lastTypingSent || now - this.lastTypingSent > 2000) {
+                    this.lastTypingSent = now;
+                    this.channel.send({
+                        type: 'broadcast',
+                        event: 'user_typing',
+                        payload: {
+                            userId: this.userId,
+                            nickname: userProfile.nickname,
+                            isTyping: true
+                        }
+                    });
+                }
+                
+                // Автоматически отправляем сигнал завершения печати через 3 секунды молчания
+                clearTimeout(this.typingStopTimeout);
+                this.typingStopTimeout = setTimeout(() => {
+                    this.channel.send({
+                        type: 'broadcast',
+                        event: 'user_typing',
+                        payload: {
+                            userId: this.userId,
+                            nickname: userProfile.nickname,
+                            isTyping: false
+                        }
+                    });
+                }, 3000);
+            }
+
+            handleIncomingTypingIndicator(payload) {
+                const { userId, nickname, isTyping } = payload;
+                if (userId === this.userId) return; // Игнорируем собственное эхо
+                
+                if (isTyping) {
+                    this.typingUsers[userId] = nickname;
+                } else {
+                    delete this.typingUsers[userId];
+                }
+                
+                this.renderTypingIndicator();
+            }
+
+            renderTypingIndicator() {
+                const indicator = document.getElementById("teamChatTypingIndicator");
+                if (!indicator) return;
+                
+                const typers = Object.values(this.typingUsers || {});
+                if (typers.length === 0) {
+                    indicator.style.display = "none";
+                    indicator.innerHTML = "";
+                    return;
+                }
+                
+                let text = "";
+                if (typers.length === 1) {
+                    text = `<b>${window.escapeHTML(typers[0])}</b> печатает...`;
+                } else if (typers.length === 2) {
+                    text = `<b>${window.escapeHTML(typers[0])}</b> и <b>${window.escapeHTML(typers[1])}</b> печатают...`;
+                } else {
+                    text = `Несколько человек печатают...`;
+                }
+                
+                indicator.style.display = "flex";
+                indicator.innerHTML = `<i class='bx bx-edit-alt bx-flashing' style='color: var(--accent); margin-right: 4px; font-size: 13px;'></i> ${text}`;
+            }
+
+            async loadWorkspaceChatHistory(workspaceId) {
+                if (!this.client) return;
+                try {
+                    const { data: messages, error } = await this.client
+                        .from('chat_messages')
+                        .select('id, sender_id, message, is_pinned, created_at, profiles(nickname, dev_level)')
+                        .eq('workspace_id', workspaceId)
+                        .order('created_at', { ascending: true })
+                        .limit(100);
+                    
+                    if (error) throw error;
+                    this.workspaceChatMessages = messages || [];
+                    
+                    // Если модальное окно чата сейчас открыто — перерисовываем сообщения
+                    if (document.getElementById("workspaceTeamChatModal")?.classList.contains("active")) {
+                        this.renderTeamChatMessages();
+                    }
+                } catch (e) {
+                    console.warn("SupabaseSync: Ошибка загрузки чата:", e);
+                    this.workspaceChatMessages = [];
+                }
+            }
+
+            handleIncomingChatMessage(newMsg) {
+                if (this.workspaceChatMessages.some(m => m.id === newMsg.id)) return;
+                
+                const member = this.workspaceMembers.find(m => m.user_id === newMsg.sender_id);
+                const nickname = member && member.profiles ? member.profiles.nickname : "Коллега";
+                const devLevel = member && member.profiles ? member.profiles.dev_level : "Middle";
+                
+                const fullMsg = {
+                    id: newMsg.id,
+                    sender_id: newMsg.sender_id,
+                    message: newMsg.message,
+                    is_pinned: newMsg.is_pinned || false,
+                    created_at: newMsg.created_at,
+                    profiles: {
+                        nickname,
+                        dev_level: devLevel
+                    }
+                };
+                
+                this.workspaceChatMessages.push(fullMsg);
+                
+                if (document.getElementById("workspaceTeamChatModal")?.classList.contains("active")) {
+                    this.renderTeamChatMessages();
+                    if (window.synth) window.synth.playSoftHum();
+                }
+            }
+
+            handleIncomingChatDbChange(payload) {
+                const { eventType, new: newRecord, old: oldRecord } = payload;
+                
+                if (eventType === 'INSERT') {
+                    this.handleIncomingChatMessage(newRecord);
+                } else if (eventType === 'UPDATE') {
+                    // Обработка обновлений в реальном времени (например, закрепление / открепление сообщения Директором)
+                    const msg = this.workspaceChatMessages.find(m => m.id === newRecord.id);
+                    if (msg) {
+                        msg.is_pinned = newRecord.is_pinned;
+                        this.renderTeamChatMessages();
+                        if (window.synth) window.synth.playChime();
+                    }
+                } else if (eventType === 'DELETE') {
+                    // Обработка удаления сообщения в реальном времени
+                    this.workspaceChatMessages = this.workspaceChatMessages.filter(m => m.id !== oldRecord.id);
+                    this.renderTeamChatMessages();
+                }
+            }
+
+            renderTeamChatMessages() {
+                const box = document.getElementById("teamChatMessagesBox");
+                if (!box) return;
+                
+                box.innerHTML = "";
+                const msgs = this.workspaceChatMessages || [];
+                
+                // 1. Отрисовка Закрепленных сообщений (Pinned Header) вверху чата
+                const pinnedMsgs = msgs.filter(m => m.is_pinned);
+                const pinnedBar = document.getElementById("teamChatPinnedBar");
+                
+                if (pinnedBar) {
+                    if (pinnedMsgs.length > 0) {
+                        const latestPin = pinnedMsgs[pinnedMsgs.length - 1]; // Самый свежий закреп
+                        const senderName = latestPin.profiles ? latestPin.profiles.nickname : "Коллега";
+                        
+                        const isDirector = this.userRole === 'director';
+                        const unpinBtn = isDirector ? `
+                            <button class="btn-icon" style="padding: 2px; font-size: 14px; color: var(--text-muted); cursor: pointer;" onclick="event.stopPropagation(); window.togglePinTeamChatMessage('${latestPin.id}')" title="Открепить сообщение">
+                                <i class='bx bx-pin' style="text-decoration: line-through;"></i>
+                            </button>
+                        ` : "";
+
+                        pinnedBar.innerHTML = `
+                            <div style="background: rgba(var(--accent-rgb), 0.08); border-bottom: 1px solid rgba(var(--accent-rgb), 0.2); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11.5px; color: #fff;">
+                                <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; text-align: left;">
+                                    <i class='bx bx-pin' style="color: #facc15; font-size: 16px; flex-shrink: 0; animation: pulse 2s infinite;"></i>
+                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500;">
+                                        <b style="color: var(--accent);">${window.escapeHTML(senderName)}:</b> ${window.escapeHTML(latestPin.message)}
+                                    </span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    ${pinnedMsgs.length > 1 ? `<span style="font-size: 9px; opacity: 0.6;">(Всего: ${pinnedMsgs.length})</span>` : ""}
+                                    ${unpinBtn}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        pinnedBar.innerHTML = "";
+                    }
+                }
+                
+                // 2. Отрисовка списка сообщений
+                if (msgs.length === 0) {
+                    box.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted); font-size:13px; font-style:italic;"><i class='bx bx-comment-detail' style='font-size:28px; color:var(--text-muted); margin-bottom:10px; display:block;'></i> Общий чат пуст. Задайте вектор работы!</div>`;
+                    return;
+                }
+                
+                msgs.forEach(m => {
+                    const isMe = m.sender_id === this.userId;
+                    const nickname = m.profiles ? m.profiles.nickname : "Коллега";
+                    const devLevel = m.profiles ? m.profiles.dev_level : "Middle";
+                    const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    let badgeBg = "rgba(59, 130, 246, 0.12)";
+                    let badgeColor = "#3b82f6";
+                    if (devLevel === "Junior") {
+                        badgeBg = "rgba(16, 185, 129, 0.12)";
+                        badgeColor = "#10b981";
+                    } else if (devLevel === "Senior") {
+                        badgeBg = "rgba(245, 158, 11, 0.12)";
+                        badgeColor = "#f59e0b";
+                    } else if (devLevel === "Lead") {
+                        badgeBg = "rgba(168, 85, 247, 0.12)";
+                        badgeColor = "#a855f7";
+                    }
+                    
+                    const row = document.createElement("div");
+                    row.style.cssText = `display: flex; flex-direction: column; align-items: ${isMe ? 'flex-end' : 'flex-start'}; gap: 4px; width: 100%; position: relative;`;
+                    row.setAttribute("data-msg-id", m.id);
+                    row.setAttribute("data-sender-id", m.sender_id);
+
+                    // ПКМ для чата команды
+                    row.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.showTeamChatContextMenu(e.clientX, e.clientY, m.id, m.sender_id, m.message);
+                    };
+
+                    // Лонг-тап для телефонов
+                    let pressTimer;
+                    row.ontouchstart = (e) => {
+                        pressTimer = setTimeout(() => {
+                            window.showTeamChatContextMenu(e.touches[0].clientX, e.touches[0].clientY, m.id, m.sender_id, m.message);
+                            if (navigator.vibrate) navigator.vibrate(50);
+                        }, 800);
+                    };
+                    row.ontouchmove = () => clearTimeout(pressTimer);
+                    row.ontouchend = () => clearTimeout(pressTimer);
+                    
+                    // Небольшой шильдик булавки, если сообщение закреплено
+                    const pinIcon = m.is_pinned ? `<i class='bx bx-pin' style="color:#facc15; font-size:12px; margin-left: 4px;" title="Закрепленное сообщение"></i>` : "";
+
+                    row.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; margin-left: ${isMe ? '0' : '6px'}; margin-right: ${isMe ? '6px' : '0'};">
+                            <span style="font-weight: 700; color: ${isMe ? 'var(--accent)' : '#fff'};">${window.escapeHTML(nickname)}</span>
+                            <span style="font-size: 8px; background: ${badgeBg}; color: ${badgeColor}; padding: 1px 4px; border-radius: 4px; font-weight: 700; text-transform: uppercase;">${devLevel}</span>
+                            <span style="color: var(--text-muted);">${time}</span>
+                            ${pinIcon}
+                        </div>
+                        <div style="max-width: 75%; background: ${isMe ? 'var(--accent)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isMe ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'}; color: #fff; padding: 10px 14px; border-radius: ${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; font-size: 13px; line-height: 1.45; word-wrap: break-word; text-align: left;">
+                            ${window.escapeHTML(m.message)}
+                        </div>
+                    `;
+                    box.appendChild(row);
+                });
+                
+                box.scrollTop = box.scrollHeight;
             }
 
             async downloadWorkspaceFiles(workspaceId) {
@@ -16962,7 +17090,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         </div>
                         
                         <div style="display: ${contentDisplay}; flex-direction: column;">
-                            <!-- Список участников из БД -->
+                            <!-- Список реальных участников на WebSockets -->
                             <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; max-height: 180px; overflow-y: auto;">
                                 ${usersHtml}
                             </div>
@@ -17598,6 +17726,139 @@ window.toggleUserFilePermission = async function(noteId, userId, checkbox) {
         checkbox.checked = !canWrite; // Возвращаем свитч обратно
     }
 };
+
+// =======================================================================
+        // КОНТЕКСТНОЕ МЕНЮ И СИГНАЛЫ ПЕЧАТИ КОМАНДНОГО ЧАТА (WORKSPACE CHAT)
+        // =======================================================================
+        
+        // Слушаем ввод текста в чате команды для отправки бродкаст-сигнала печати
+        document.addEventListener("DOMContentLoaded", () => {
+            const chatInput = document.getElementById("teamChatMessageInput");
+            if (chatInput) {
+                chatInput.addEventListener("input", () => {
+                    if (window.supabaseSync) {
+                        window.supabaseSync.sendTypingSignal();
+                    }
+                });
+            }
+        });
+
+        window.showTeamChatContextMenu = function(clientX, clientY, msgId, senderId, messageText) {
+            window.ignoreMenuClickTime = Date.now() + 300;
+            
+            // Скрываем все остальные открытые меню
+            window.hideNoteContextMenu();
+            window.hideChatContextMenu();
+            window.hideTeamChatContextMenu();
+            addDynamicMenuStyles();
+
+            const menuEl = document.createElement('div');
+            menuEl.id = 'dynamicTeamChatMenu';
+
+            const isMe = senderId === (window.supabaseSync ? window.supabaseSync.userId : null);
+            const isDirector = window.supabaseSync && window.supabaseSync.userRole === 'director';
+
+            // Ищем сообщение в кэше, чтобы узнать, закреплено ли оно
+            const msg = window.supabaseSync.workspaceChatMessages.find(m => m.id === msgId);
+            const isPinned = msg ? msg.is_pinned : false;
+
+            // Базовые опции (доступны всем)
+            let optionsHtml = `
+                <button class="dyn-menu-btn" onclick="window.copyTeamChatMessage('${msgId}')"><i class='bx bx-copy'></i> Копировать текст</button>
+            `;
+
+            // Сверхвозможность: Только Директор воркспейса может закреплять/откреплять любые сообщения [1]
+            if (isDirector) {
+                optionsHtml += `
+                    <button class="dyn-menu-btn" onclick="window.togglePinTeamChatMessage('${msgId}')">
+                        <i class='bx bx-pin' style="color: #facc15;"></i> ${isPinned ? 'Открепить сообщение' : 'Закрепить в шапке'}
+                    </button>
+                `;
+            }
+
+            // Директор может удалить любое сообщение. Обычный участник — только своё. [3]
+            if (isDirector || isMe) {
+                optionsHtml += `
+                    <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 4px 0;"></div>
+                    <button class="dyn-menu-btn del-btn" onclick="window.deleteTeamChatMessage('${msgId}')"><i class='bx bx-trash'></i> Удалить сообщение</button>
+                `;
+            }
+
+            menuEl.innerHTML = optionsHtml;
+            menuEl.style.cssText =
+                "position: fixed !important; background: #18181b !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 12px !important; padding: 6px !important; display: flex !important; flex-direction: column !important; gap: 4px !important; z-index: 21474836 !important; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8) !important; min-width: 180px !important; margin: 0 !important; pointer-events: auto !important;";
+
+            document.body.appendChild(menuEl);
+
+            // Корректируем координаты, чтобы меню не вылезало за края экрана
+            const menuRect = menuEl.getBoundingClientRect();
+            let posX = clientX, posY = clientY;
+            if (posX + menuRect.width > window.innerWidth) posX = window.innerWidth - menuRect.width - 10;
+            if (posY + menuRect.height > window.innerHeight) posY = window.innerHeight - menuRect.height - 10;
+
+            menuEl.style.left = posX + 'px';
+            menuEl.style.top = posY + 'px';
+        };
+
+        window.hideTeamChatContextMenu = function() {
+            const menu = document.getElementById('dynamicTeamChatMenu');
+            if (menu) menu.remove();
+        };
+
+        // Скрытие меню кликом во внешнюю область
+        document.addEventListener('mousedown', (e) => {
+            if (e.button === 2) return;
+            const menu = document.getElementById('dynamicTeamChatMenu');
+            if (menu && !menu.contains(e.target)) window.hideTeamChatContextMenu();
+        }, true);
+
+        window.copyTeamChatMessage = function(msgId) {
+            window.hideTeamChatContextMenu();
+            const msg = window.supabaseSync.workspaceChatMessages.find(m => m.id === msgId);
+            if (msg) {
+                navigator.clipboard.writeText(msg.message).then(() => {
+                    if (window.synth) window.synth.playSoftHum();
+                });
+            }
+        };
+
+        window.deleteTeamChatMessage = async function(msgId) {
+            window.hideTeamChatContextMenu();
+            const confirmDel = confirm("Удалить это сообщение для всех участников?");
+            if (!confirmDel) return;
+
+            if (window.synth) window.synth.playClick();
+
+            try {
+                const { error } = await window.supabaseSync.client
+                    .from('chat_messages')
+                    .delete()
+                    .eq('id', msgId);
+                
+                if (error) throw error;
+            } catch (e) {
+                alert("Ошибка удаления сообщения: " + e.message);
+            }
+        };
+
+        window.togglePinTeamChatMessage = async function(msgId) {
+            window.hideTeamChatContextMenu();
+            const msg = window.supabaseSync.workspaceChatMessages.find(m => m.id === msgId);
+            if (!msg) return;
+
+            const nextPinnedState = !msg.is_pinned;
+
+            try {
+                const { error } = await window.supabaseSync.client
+                    .from('chat_messages')
+                    .update({ is_pinned: nextPinnedState })
+                    .eq('id', msgId);
+                
+                if (error) throw error;
+            } catch (e) {
+                alert("Ошибка закрепления сообщения: " + e.message);
+            }
+        };
 </script>
     <style>
     /* =======================================================================
@@ -18381,10 +18642,17 @@ window.toggleUserFilePermission = async function(noteId, userId, checkbox) {
 
             <!-- Правая сторона: Сообщения чата -->
             <div style="flex: 1; display: flex; flex-direction: column; background: rgba(0, 0, 0, 0.15);">
+                        
+                <!-- БАР ЗАКРЕПЛЕННЫХ ДИРЕКТОРОМ СООБЩЕНИЙ -->
+                <div id="teamChatPinnedBar" style="flex-shrink: 0; z-index: 10;"></div>
+
                 <!-- Окно сообщений -->
                 <div id="teamChatMessagesBox" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
                     <!-- Сюда вставляются сообщения -->
                 </div>
+
+                <!-- ИНДИКАТОР ПЕЧАТИ (TYPING INDICATOR) -->
+                <div id="teamChatTypingIndicator" style="padding: 6px 20px; font-size: 11px; color: var(--text-muted); font-style: italic; min-height: 24px; display: none; align-items: center; gap: 6px; background: rgba(0,0,0,0.1); border-top: 1px solid rgba(255,255,255,0.03); transition: all 0.2s ease;"></div>
 
                 <!-- Форма отправки сообщения -->
                 <div style="padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.3); display: flex; gap: 10px; align-items: center; flex-shrink: 0;">
