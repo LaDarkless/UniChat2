@@ -16365,6 +16365,22 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 }
             }
 
+            async loadWorkspaceMembers(workspaceId) {
+                if (!this.client) return;
+                try {
+                    const { data: dbMembers } = await this.client
+                        .from('workspace_members')
+                        .select('user_id, role, profiles(nickname, dev_level)')
+                        .eq('workspace_id', workspaceId);
+                    
+                    this.workspaceMembers = dbMembers || [];
+                    this.renderActiveTeamPresence();
+                } catch (err) {
+                    console.warn("SupabaseSync: Не удалось подгрузить команду для сайдбара:", err);
+                    this.workspaceMembers = [];
+                }
+            }
+
             async subscribeToWorkspace(workspaceId) {
                 if (!this.client) return;
                 this.unsubscribe(); // Отключаем старые каналы
@@ -16380,7 +16396,10 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 // 1. Загружаем актуальные файлы этого воркспейса из PostgreSQL
                 await this.downloadWorkspaceFiles(workspaceId);
 
-                // 2. Загружаем роль текущего пользователя в выбранном Workspace
+                // 2. Загружаем полный список участников из базы данных для рендера в сайдбаре
+                await this.loadWorkspaceMembers(workspaceId);
+
+                // 3. Загружаем роль текущего пользователя в выбранном Workspace
                 try {
                     const { data: memberRecord } = await this.client
                         .from('workspace_members')
@@ -16395,7 +16414,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     this.userRole = 'employee';
                 }
 
-                // 3. Инициализируем ЕДИНЫЙ WebSockets-канал для Бродкаста, Присутствия и Изменений БД
+                // 4. Инициализируем ЕДИНЫЙ WebSockets-канал для Бродкаста, Присутствия и Изменений БД
                 const channelName = `workspace_${workspaceId}`;
                 this.channel = this.client.channel(channelName, {
                     config: {
@@ -16407,7 +16426,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     .on('broadcast', { event: 'text_edit' }, payload => {
                         this.handleIncomingBroadcastEdit(payload.payload);
                     })
-                    .on('presence', { event: 'sync' }, () => {
+                    .on('presence', { event: 'sync' }, async () => {
                         this.presenceState = this.channel.presenceState();
                         
                         // Безопасная проверка лимита участников при синхронизации Presence
@@ -16421,7 +16440,8 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                             alert("Внимание: Данное облачное пространство заполнено (лимит 50 участников).");
                         }
 
-                        this.renderActiveTeamPresence();
+                        // Реактивно подтягиваем актуальных зарегистрированных участников и перерисовываем сайдбар
+                        await this.loadWorkspaceMembers(workspaceId);
                     })
                     .on('postgres_changes', {
                         event: '*', // Отслеживаем все типы изменений (INSERT, UPDATE, DELETE)
@@ -16510,6 +16530,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 }
                 this.currentWorkspaceId = null;
                 this.presenceState = {};
+                this.workspaceMembers = []; // Очищаем список участников при выходе
                 this.renderActiveTeamPresence();
             }
 
@@ -16718,25 +16739,26 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 const panel = document.getElementById("workspaceExtraPanel");
                 if (!panel || activeProfileId === "profile-personal") return;
 
+                // Получаем список UUID тех, кто сейчас онлайн в Presence
+                const onlineUids = new Set();
+                if (this.presenceState) {
+                    Object.keys(this.presenceState).forEach(key => {
+                        onlineUids.add(key);
+                    });
+                }
+
                 let usersHtml = "";
-                const currentUsers = [];
+                const membersList = this.workspaceMembers || [];
 
-                // Преобразуем структуру Presence-хранилища в плоский список
-                Object.keys(this.presenceState).forEach(key => {
-                    const list = this.presenceState[key];
-                    if (list && list.length > 0) {
-                        currentUsers.push(list[0]);
-                    }
-                });
-
-                // Ограничиваем рендер 50 участниками
-                const visibleUsers = currentUsers.slice(0, 50);
-
-                visibleUsers.forEach(u => {
-                    const isMe = u.nickname === userProfile.nickname;
-                    const dotColor = "#10b981";
+                membersList.forEach(m => {
+                    const isMe = m.user_id === this.userId;
+                    const isOnline = onlineUids.has(m.user_id);
+                    const dotColor = isOnline ? "#10b981" : "rgba(255, 255, 255, 0.2)";
+                    const shadowGlow = isOnline ? `box-shadow: 0 0 6px ${dotColor};` : "";
                     
-                    const devLevel = u.devLevel || "Middle";
+                    const nickname = m.profiles ? m.profiles.nickname : "Коллега";
+                    const devLevel = m.profiles && m.profiles.dev_level ? m.profiles.dev_level : "Middle";
+                    
                     let badgeBg = "rgba(59, 130, 246, 0.12)";
                     let badgeColor = "#3b82f6";
                     
@@ -16753,16 +16775,16 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
 
                     usersHtml += `
                         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0;">
-                            <span style="font-size: 11.5px; color: #fff; display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
-                                <div style="width: 6px; height: 6px; border-radius: 50%; background: ${dotColor}; box-shadow: 0 0 6px ${dotColor}; flex-shrink: 0;"></div>
-                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${window.escapeHTML(u.nickname)} ${isMe ? '<span style="color:var(--text-muted); font-size:10px;">(Вы)</span>' : ''}</span>
+                            <span style="font-size: 11.5px; color: ${isOnline ? '#fff' : 'var(--text-muted)'}; display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
+                                <div style="width: 6px; height: 6px; border-radius: 50%; background: ${dotColor}; ${shadowGlow} flex-shrink: 0;"></div>
+                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${window.escapeHTML(nickname)} ${isMe ? '<span style="color:var(--text-muted); font-size:10px;">(Вы)</span>' : ''}</span>
                             </span>
                             <span style="font-size: 9px; background: ${badgeBg}; color: ${badgeColor}; padding: 1px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; flex-shrink: 0; letter-spacing: 0.3px;">${devLevel}</span>
                         </div>
                     `;
                 });
 
-                if (currentUsers.length === 0) {
+                if (membersList.length === 0) {
                     usersHtml = `<div style="font-size: 11px; color: var(--text-muted); text-align: left; font-style: italic;">Инициализация списка участников...</div>`;
                 }
 
@@ -16776,13 +16798,13 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                             <span style="display: flex; align-items: center; gap: 6px;"><i class='bx bx-git-branch' style="color: var(--accent);"></i> Командная среда</span>
                             <div style="display: flex; align-items: center; gap: 6px;">
                                 <button class="btn-icon" style="padding: 2px; font-size: 15px; color: var(--text-muted); transition: 0.2s;" onclick="event.stopPropagation(); window.openWorkspaceStatsDashboard()" title="Инфо о команде"><i class='bx bx-grid-alt'></i></button>
-                                <span style="font-size: 10px; color: var(--text-muted); font-weight: 700; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px;">${currentUsers.length}/50</span>
+                                <span style="font-size: 10px; color: var(--text-muted); font-weight: 700; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px;">${membersList.length}/50</span>
                                 <i class='bx ${chevronClass}' style="font-size: 16px; color: var(--text-muted); margin-left: 2px;"></i>
                             </div>
                         </div>
                         
                         <div style="display: ${contentDisplay}; flex-direction: column;">
-                            <!-- Список реальных участников на WebSockets -->
+                            <!-- Список участников из БД -->
                             <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; max-height: 180px; overflow-y: auto;">
                                 ${usersHtml}
                             </div>
@@ -16802,13 +16824,13 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                                     </span>
                                 </div>
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                                <span>Предпросмотр:</span>
-                                <a href="#" onclick="event.preventDefault(); if(typeof toggleWebPreview === 'function') toggleWebPreview();" style="color: var(--accent); font-weight: 600; text-decoration: underline; font-size: 11px;">live-preview</a>
+                                    <span>Предпросмотр:</span>
+                                    <a href="#" onclick="event.preventDefault(); if(typeof toggleWebPreview === 'function') toggleWebPreview();" style="color: var(--accent); font-weight: 600; text-decoration: underline; font-size: 11px;">live-preview</a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
             }
         }
 
