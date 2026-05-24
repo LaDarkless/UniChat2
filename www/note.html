@@ -5536,6 +5536,23 @@
                 <div class="auth-switch-text" id="authSwitchText" onclick="window.toggleAuthMode()" style="font-size: 12.5px; color: var(--text-muted); text-align: center; margin-top: 15px; cursor: pointer;">
                     Ещё нет аккаунта? <span style="color: var(--accent); font-weight: 600;">Создать профиль</span>
                 </div>
+
+                <!-- КНОПКА ДЛЯ АДМИНОВ -->
+                <div style="text-align: center; margin-top: 10px;">
+                    <button type="button" class="btn" id="adminBypassTriggerBtn" style="padding: 6px 12px; font-size: 11px; background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.25); color: #f59e0b; margin: 0 auto; display: inline-flex;" onclick="window.showAdminBypassField(event)">
+                        <i class='bx bx-shield-quarter'></i> Для Админов
+                    </button>
+                </div>
+
+                <!-- ПОЛЕ ВВОДА ПАРОЛЯ АДМИНА -->
+                <div id="adminBypassForm" style="display: none; flex-direction: column; gap: 8px; margin-top: 15px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(245,158,11,0.2); border-radius: 10px;">
+                    <label for="adminBypassPass" style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Пароль разработчика</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="password" id="adminBypassPass" placeholder="••••••••" style="flex: 1; background: #000; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; color: #fff; font-family: var(--font-code); font-size: 13px; outline: none;" onkeydown="if(event.key==='Enter'){event.preventDefault(); window.handleAdminBypassSubmit(event)}">
+                        <button type="button" class="btn btn-primary" style="padding: 0 15px; font-size: 12px;" onclick="window.handleAdminBypassSubmit(event)">Войти</button>
+                    </div>
+                    <div id="adminBypassFeedback" style="font-size: 11px; color: #ef4444; display: none; text-align: center; font-weight: 500;"></div>
+                </div>
             </div>
 
             <!-- ШАГ 2: Ввод 6-значного OTP-кода -->
@@ -10216,6 +10233,81 @@ preview.innerHTML = window.secureSanitizeHTML(html);
             applySettings(); // Сохраняем в localStorage и обновляем везде
         }
 
+        // Единая функция контроля состояния облачного виджета и подписки
+window.updateCloudSyncWidget = function() {
+    const dot = document.getElementById("cloudSyncDot");
+    const label = document.getElementById("cloudStatusLabel");
+    const widgetDesc = document.getElementById("cloudSyncWidgetDesc");
+    const cloudSyncBtn = document.getElementById("cloudSyncBtn");
+    
+    const isLoggedIn = !!(window.supabaseSync && window.supabaseSync.userId);
+    const isPro = localStorage.getItem("qn_pro_tier") === "true";
+    const expiresVal = localStorage.getItem("qn_pro_expires");
+    const cycle = localStorage.getItem("qn_pro_billing_cycle");
+    const expirationTime = expiresVal ? parseInt(expiresVal, 10) : 0;
+
+    // Валидация подписки по времени
+    if (isPro && expirationTime > 0 && Date.now() > expirationTime) {
+        localStorage.setItem("qn_pro_tier", "false");
+        localStorage.removeItem("qn_pro_expires");
+        localStorage.removeItem("qn_pro_billing_cycle");
+        window.isProUser = false;
+        alert("Срок действия вашей подписки Team Cloud истёк. Базовые лимиты возобновлены.");
+        window.updateCloudSyncWidget();
+        return;
+    }
+
+    if (isPro) {
+        if (dot) {
+            dot.className = "sync-status-dot online";
+            dot.style.background = "#10b981";
+            dot.style.boxShadow = "0 0 8px #10b981";
+        }
+        if (label) {
+            label.textContent = isLoggedIn ? "Облако активно" : "PRO (Локально)";
+            label.style.color = "#10b981";
+        }
+        if (widgetDesc) {
+            if (cycle === "developer") {
+                widgetDesc.textContent = "Лицензия разработчика • Безлимитный пожизненный доступ к Cloud S3 и ИИ.";
+            } else if (expirationTime > 0) {
+                const daysLeft = Math.max(1, Math.ceil((expirationTime - Date.now()) / (1000 * 60 * 60 * 24)));
+                const cycleText = cycle === "yearly" ? "ежегодной" : "ежемесячной";
+                widgetDesc.textContent = `Team Cloud (PRO) • Активно ещё ${daysLeft} дн. по ${cycleText} подписке.`;
+            } else {
+                widgetDesc.textContent = "Team Cloud (PRO) • Активно без ограничений.";
+            }
+        }
+        if (cloudSyncBtn) {
+            cloudSyncBtn.style.display = "none";
+        }
+    } else {
+        if (dot) {
+            dot.className = isLoggedIn ? "sync-status-dot online" : "sync-status-dot";
+            if (!isLoggedIn) {
+                dot.style.background = "#ef4444";
+                dot.style.boxShadow = "0 0 8px #ef4444";
+            } else {
+                dot.style.background = "#10b981";
+                dot.style.boxShadow = "0 0 8px #10b981";
+            }
+        }
+        if (label) {
+            label.textContent = isLoggedIn ? "Облако (Free)" : "Локально";
+            label.style.color = isLoggedIn ? "#10b981" : "var(--text-muted)";
+        }
+        if (widgetDesc) {
+            widgetDesc.textContent = isLoggedIn 
+                ? "Вы вошли в облако! Бесплатный тариф ограничен 15 генерациями ИИ в день и 1 Workspace."
+                : "Ваши файлы хранятся в IndexedDB. Подключите облако для синхронизации и бэкапов.";
+        }
+        if (cloudSyncBtn) {
+            cloudSyncBtn.style.display = "block";
+            cloudSyncBtn.innerHTML = "<i class='bx bx-cloud-lightning'></i> Подключить Quantum Cloud";
+        }
+    }
+};
+
         // АСИНХРОННАЯ ИНИЦИАЛИЗАЦИЯ И МИГРАЦИЯ ДАННЫХ ИЗ LOCALSTORAGE
         async function initQuantumNotesApp() {
             try {
@@ -10225,6 +10317,17 @@ preview.innerHTML = window.secureSanitizeHTML(html);
                 let dbUserProfile = await QuantumDB.getState("qn_user_profile");
                 if (dbUserProfile) {
                     userProfile = dbUserProfile;
+                }
+
+                // Проверяем наличие локального обхода
+                if (localStorage.getItem("qn_bypass_auth") === "true") {
+                    userProfile.nickname = "Admin Developer";
+                    userProfile.devLevel = "Lead";
+                    if (window.supabaseSync) {
+                        window.supabaseSync.userId = "00000000-0000-0000-0000-000000000000";
+                        window.supabaseSync.userRole = "director";
+                    }
+                    window.isProUser = true;
                 }
 
                 // Загрузка рабочих пространств (профилей) из БД
@@ -10353,47 +10456,10 @@ preview.innerHTML = window.secureSanitizeHTML(html);
                 let dbDocs = await QuantumDB.getState("qn_attached_docs");
                 window.userAttachedDocs = dbDocs || [];
 
-                // 4. Инициализация интерфейса и валидация подписки по времени
+                // 4. Инициализация интерфейса подписки и проверка лимитов
                 window.isProUser = localStorage.getItem("qn_pro_tier") === "true";
-                const expiresVal = localStorage.getItem("qn_pro_expires");
-                
-                if (window.isProUser && expiresVal) {
-                    const expirationTime = parseInt(expiresVal, 10);
-                    if (Date.now() > expirationTime) {
-                        // Срок действия подписки истек
-                        localStorage.setItem("qn_pro_tier", "false");
-                        localStorage.removeItem("qn_pro_expires");
-                        localStorage.removeItem("qn_pro_billing_cycle");
-                        window.isProUser = false;
-                        
-                        alert("Срок действия вашей подписки Team Cloud истёк. Базовые лимиты возобновлены.");
-                    } else {
-                        // Подписка всё ещё активна
-                        const dot = document.getElementById("cloudSyncDot");
-                        const label = document.getElementById("cloudStatusLabel");
-                        const widgetDesc = document.getElementById("cloudSyncWidgetDesc");
-                        const cloudSyncBtn = document.getElementById("cloudSyncBtn");
-
-                        const cycle = localStorage.getItem("qn_pro_billing_cycle");
-                        
-                        if (dot) dot.className = "sync-status-dot online";
-                        if (label) {
-                            label.textContent = "Облако активно";
-                            label.style.color = "#10b981";
-                        }
-                        if (widgetDesc) {
-                            if (cycle === "developer") {
-                                widgetDesc.textContent = "Лицензия разработчика • Безлимитный пожизненный доступ к Cloud S3 и ИИ.";
-                            } else {
-                                const daysLeft = Math.max(1, Math.ceil((expirationTime - Date.now()) / (1000 * 60 * 60 * 24)));
-                                const cycleText = cycle === "yearly" ? "ежегодной" : "ежемесячной";
-                                widgetDesc.textContent = `Team Cloud (PRO) • Активно ещё ${daysLeft} дн. по ${cycleText} подписке.`;
-                            }
-                        }
-                        if (cloudSyncBtn) {
-                            cloudSyncBtn.style.display = "none";
-                        }
-                    }
+                if (typeof window.updateCloudSyncWidget === "function") {
+                    window.updateCloudSyncWidget();
                 }
 
                 applySettings();
@@ -15905,26 +15971,14 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 localStorage.setItem("qn_pro_billing_cycle", billingCycle);
                 window.isProUser = true;
 
-                const dot = document.getElementById("cloudSyncDot");
-                const label = document.getElementById("cloudStatusLabel");
-                const widgetDesc = document.getElementById("cloudSyncWidgetDesc");
-                const cloudSyncBtn = document.getElementById("cloudSyncBtn");
+                // Немедленно пушим статус подписки в профиль Supabase
+                if (window.supabaseSync && window.supabaseSync.userId) {
+                    window.supabaseSync.syncProfileToCloud();
+                }
 
-                if (dot) dot.className = "sync-status-dot online";
-                if (label) {
-                    label.textContent = "Облако активно";
-                    label.style.color = "#10b981";
-                }
-                if (widgetDesc) {
-                    if (isDeveloper) {
-                        widgetDesc.textContent = "Лицензия разработчика • Безлимитный пожизненный доступ к Cloud S3 и ИИ.";
-                    } else {
-                        const daysLeft = Math.ceil((expirationTimestamp - Date.now()) / (1000 * 60 * 60 * 24));
-                        widgetDesc.textContent = `Team Cloud (PRO) • Активно ещё ${daysLeft} дн. Автоматический бэкап в Cloud S3 запущен.`;
-                    }
-                }
-                if (cloudSyncBtn) {
-                    cloudSyncBtn.style.display = "none";
+                // Перерисовываем виджет через унифицированный метод
+                if (typeof window.updateCloudSyncWidget === "function") {
+                    window.updateCloudSyncWidget();
                 }
 
                 // Сбрасываем возможные кастомные заголовки Paywall-экранов на исходные
@@ -16501,7 +16555,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 avatarDisplay.textContent = userProfile.nickname.trim().substring(0, 2).toUpperCase() || "GU";
             }
 
-            const isLoggedIn = window.supabaseSync && window.supabaseSync.userId;
+            const isLoggedIn = (window.supabaseSync && window.supabaseSync.userId) || localStorage.getItem("qn_bypass_auth") === "true";
 
             // Обновляем панель авторизации в настройках профиля
             const statusBox = document.getElementById("settingsAuthStatusBox");
@@ -17147,7 +17201,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         try {
                             const { data: profileData } = await this.client
                                 .from('profiles')
-                                .select('nickname, about_me, dev_level')
+                                .select('nickname, about_me, dev_level, is_pro, pro_expires_at, pro_billing_cycle')
                                 .eq('id', this.userId)
                                 .maybeSingle();
                             if (profileData) {
@@ -17155,6 +17209,19 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                                 userProfile.aboutMe = profileData.about_me || userProfile.aboutMe;
                                 userProfile.devLevel = profileData.dev_level || userProfile.devLevel;
                                 
+                                // Восстановление PRO-статуса из облака при авторизации
+                                if (profileData.is_pro) {
+                                    const cloudExpires = profileData.pro_expires_at ? new Date(profileData.pro_expires_at).getTime() : 0;
+                                    const localExpires = parseInt(localStorage.getItem("qn_pro_expires") || "0", 10);
+                                    
+                                    if (cloudExpires > localExpires) {
+                                        localStorage.setItem("qn_pro_tier", "true");
+                                        localStorage.setItem("qn_pro_expires", cloudExpires.toString());
+                                        localStorage.setItem("qn_pro_billing_cycle", profileData.pro_billing_cycle || "monthly");
+                                        window.isProUser = true;
+                                    }
+                                }
+
                                 // Синхронизируем инпуты в настройках
                                 const nickInput = document.getElementById("userNicknameInput");
                                 const aboutInput = document.getElementById("userAboutMeInput");
@@ -17170,17 +17237,9 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         window.syncUserProfileUI();
                         await this.syncProfileToCloud();
                         
-                        // Настраиваем виджет синхронизации
-                        const dot = document.getElementById("cloudSyncDot");
-                        const label = document.getElementById("cloudStatusLabel");
-                        const widgetBtn = document.getElementById("cloudSyncBtn");
-                        if (dot) dot.className = "sync-status-dot online";
-                        if (label) {
-                            label.textContent = "Облако активно";
-                            label.style.color = "#10b981";
-                        }
-                        if (widgetBtn) {
-                            widgetBtn.style.display = "none";
+                        // Безопасное обновление виджета с учетом нового статуса сессии
+                        if (typeof window.updateCloudSyncWidget === "function") {
+                            window.updateCloudSyncWidget();
                         }
 
                         // Скачиваем и синхронизируем все рабочие области и файлы с облака в IndexedDB
@@ -17199,18 +17258,6 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         this.userId = null;
                         this.unsubscribe();
                         
-                        const dot = document.getElementById("cloudSyncDot");
-                        const label = document.getElementById("cloudStatusLabel");
-                        const widgetBtn = document.getElementById("cloudSyncBtn");
-                        if (dot) dot.className = "sync-status-dot";
-                        if (label) {
-                            label.textContent = "Локально";
-                            label.style.color = "";
-                        }
-                        if (widgetBtn) {
-                            widgetBtn.style.display = "flex";
-                        }
-
                         // Сбрасываем воркспейс на персональный
                         if (activeProfileId !== "profile-personal") {
                             window.switchWorkspace("profile-personal", true);
@@ -17218,6 +17265,11 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                             window.updateWorkspaceWidgets();
                         }
                         window.syncUserProfileUI();
+                        
+                        // Безопасно обновляем виджет, сохраняя локальный PRO-статус если он активен
+                        if (typeof window.updateCloudSyncWidget === "function") {
+                            window.updateCloudSyncWidget();
+                        }
                     }
                 });
 
@@ -17387,6 +17439,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         localStorage.removeItem("qn_pro_tier");
                         localStorage.removeItem("qn_pro_expires");
                         localStorage.removeItem("qn_pro_billing_cycle");
+                        localStorage.removeItem("qn_bypass_auth"); // Очищаем обход авторизации
                         window.isProUser = false;
 
                         // 3. Полный сброс кэша никнейма и профиля на дефолтный гостевой режим
@@ -17424,14 +17477,21 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             async syncProfileToCloud() {
                 if (!this.client || !this.userId) return;
                 try {
+                    const isPro = localStorage.getItem("qn_pro_tier") === "true";
+                    const expires = localStorage.getItem("qn_pro_expires");
+                    const cycle = localStorage.getItem("qn_pro_billing_cycle");
+
                     const { error } = await this.client.from('profiles').upsert({
                         id: this.userId,
                         nickname: userProfile.nickname,
-                        username: userProfile.nickname, // Для совместимости
+                        username: userProfile.nickname,
                         first_name: userProfile.nickname, 
                         last_name: "", 
                         about_me: userProfile.aboutMe,
-                        dev_level: userProfile.devLevel || "Middle" 
+                        dev_level: userProfile.devLevel || "Middle",
+                        is_pro: isPro,
+                        pro_expires_at: expires ? new Date(parseInt(expires, 10)).toISOString() : null,
+                        pro_billing_cycle: cycle || null
                     });
                     if (error) throw error;
                 } catch (e) {
@@ -19339,6 +19399,81 @@ window.toggleUserFilePermission = async function(noteId, userId, checkbox) {
     <script>
 
 window.editingItemId = null; // ID файла или папки, которая переименовывается прямо сейчас
+
+// Показ поля ввода обхода авторизации для администраторов
+window.showAdminBypassField = function(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    const form = document.getElementById("adminBypassForm");
+    if (form) {
+        const isHidden = (form.style.display === "none");
+        form.style.display = isHidden ? "flex" : "none";
+        if (isHidden) {
+            setTimeout(() => {
+                const input = document.getElementById("adminBypassPass");
+                if (input) input.focus();
+            }, 50);
+        }
+    }
+};
+
+// Обработка проверки пароля админа
+window.handleAdminBypassSubmit = async function(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    const passInput = document.getElementById("adminBypassPass");
+    const feedback = document.getElementById("adminBypassFeedback");
+    
+    if (!passInput || !feedback) return;
+    feedback.style.display = "none";
+
+    const password = passInput.value;
+    if (password === "2204angel") {
+        if (window.synth) window.synth.playChime();
+        
+        // Настраиваем режим локального обхода
+        localStorage.setItem("qn_bypass_auth", "true");
+        
+        // Активируем PRO-функции
+        localStorage.setItem("qn_pro_tier", "true");
+        localStorage.setItem("qn_pro_expires", (Date.now() + 10 * 365 * 24 * 60 * 60 * 1000).toString()); // 10 лет
+        localStorage.setItem("qn_pro_billing_cycle", "developer");
+        window.isProUser = true;
+
+        // Настраиваем профиль админа
+        userProfile.nickname = "Admin Developer";
+        userProfile.devLevel = "Lead";
+        userProfile.aboutMe = "Режим администратора. Полный локальный доступ ко всем возможностям среды.";
+        await QuantumDB.saveState("qn_user_profile", userProfile);
+
+        if (window.supabaseSync) {
+            window.supabaseSync.userId = "00000000-0000-0000-0000-000000000000"; // Системный Mock UUID
+            window.supabaseSync.userRole = "director";
+        }
+
+        window.syncUserProfileUI();
+        window.toggleAuthModal();
+        
+        // Делаем праздничное конфетти
+        if (!window.confettiController) {
+            window.confettiController = new ProceduralConfetti();
+        }
+        window.confettiController.burst();
+
+        // Очищаем поле ввода
+        passInput.value = "";
+        const form = document.getElementById("adminBypassForm");
+        if (form) form.style.display = "none";
+    } else {
+        if (window.synth) window.synth.playClick();
+        feedback.textContent = "Неверный пароль администратора.";
+        feedback.style.display = "block";
+    }
+};
 
 // Безопасное сохранение нового имени из инпута дерева проводника
 window.saveInlineRename = function(itemId, newValue) {
