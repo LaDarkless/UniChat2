@@ -17666,9 +17666,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     const { error } = await this.client.from('profiles').upsert({
                         id: this.userId,
                         nickname: userProfile.nickname,
-                        username: userProfile.nickname,
-                        first_name: userProfile.nickname, 
-                        last_name: "", 
+                        // Исключаем перезапись системного username никнеймом, чтобы избежать конфликтов уникальности (ошибка 23505)
                         about_me: userProfile.aboutMe,
                         dev_level: userProfile.devLevel || "Middle",
                         is_pro: isPro,
