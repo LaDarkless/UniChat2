@@ -16236,18 +16236,27 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
 
             if (window.synth) window.synth.playSoftHum();
 
+            const submitBtn = document.getElementById("authSubmitBtn");
             if (method === "otp") {
                 if (btnPass) btnPass.classList.remove("active");
                 if (btnOtp) btnOtp.classList.add("active");
                 if (groupPass) groupPass.style.display = "none";
                 if (labelEmail) labelEmail.textContent = "Электронная почта";
                 if (inputEmail) inputEmail.placeholder = "mail@example.com";
+                // Исправление текста в режиме входа по OTP
+                if (submitBtn && window.authMode === "login") {
+                    submitBtn.textContent = "Отправить код";
+                }
             } else {
                 if (btnPass) btnPass.classList.add("active");
                 if (btnOtp) btnOtp.classList.remove("active");
                 if (groupPass) groupPass.style.display = "flex";
                 if (labelEmail) labelEmail.textContent = "Электронная почта или никнейм";
                 if (inputEmail) inputEmail.placeholder = "mail@example.com или ник";
+                // Исправление текста в режиме обычного входа
+                if (submitBtn && window.authMode === "login") {
+                    submitBtn.textContent = "Войти";
+                }
             }
         };
 
@@ -16299,6 +16308,12 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 groupConfirm.style.display = "none";
                 if (loginTabs) loginTabs.style.display = "flex";
                 window.switchLoginMethod(window.loginMethod);
+                
+                // Исправление бага: сброс текста кнопки в зависимости от метода входа
+                if (submitBtn) {
+                    submitBtn.textContent = window.loginMethod === "otp" ? "Отправить код" : "Войти";
+                }
+                
                 switchText.innerHTML = "Ещё нет аккаунта? <span style='color: var(--accent); font-weight:600;'>Создать профиль</span>";
             }
             if (window.synth) window.synth.playSoftHum();
@@ -16408,6 +16423,35 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             clearInterval(window.otpTimerInterval);
             document.getElementById("authFormStep").style.display = "block";
             document.getElementById("authOtpStep").style.display = "none";
+            
+            // Полный сброс режима авторизации во избежание скрытых вызовов регистрации
+            window.authMode = "login";
+            
+            const title = document.getElementById("authTitle");
+            const subtitle = document.getElementById("authSubtitle");
+            const groupNickname = document.getElementById("authGroupNickname");
+            const groupConfirm = document.getElementById("authGroupConfirmPassword");
+            const groupPass = document.getElementById("authGroupPassword");
+            const labelEmail = document.getElementById("authLabelEmail");
+            const inputEmail = document.getElementById("authEmail");
+            const submitBtn = document.getElementById("authSubmitBtn");
+            const switchText = document.getElementById("authSwitchText");
+            const feedback = document.getElementById("authFeedback");
+            const loginTabs = document.getElementById("loginMethodsTab");
+
+            if (feedback) feedback.style.display = "none";
+            if (title) title.textContent = "Войти в Quantum Cloud";
+            if (subtitle) subtitle.textContent = "Синхронизируйте свои проекты с облаком PostgreSQL";
+            if (groupNickname) groupNickname.style.display = "none";
+            if (groupConfirm) groupConfirm.style.display = "none";
+            if (groupPass) groupPass.style.display = "flex";
+            if (loginTabs) loginTabs.style.display = "flex";
+            
+            window.switchLoginMethod("password"); // Сбрасываем способ входа на дефолтный (по паролю)
+            
+            if (submitBtn) submitBtn.textContent = "Войти";
+            if (switchText) switchText.innerHTML = "Ещё нет аккаунта? <span style='color: var(--accent); font-weight:600;'>Создать профиль</span>";
+            
             if (window.synth) window.synth.playSoftHum();
         };
 
