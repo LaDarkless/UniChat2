@@ -5370,6 +5370,56 @@
         </div>
     </div>
 
+    <!-- МОДАЛКА АВТОРИЗАЦИИ / РЕГИСТРАЦИИ (Vercel Style) -->
+    <div class="modal-overlay" id="authModal" onclick="if (event.target === this) window.toggleAuthModal();" style="z-index: 200000;">
+        <div class="auth-card" style="background: #0b0b0e; border: 1px solid var(--panel-border); border-radius: 16px; width: 100%; max-width: 400px; padding: 30px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8), 0 0 40px rgba(var(--accent-rgb), 0.05); display: flex; flex-direction: column; gap: 15px;">
+            <div style="display: flex; justify-content: flex-end; margin-top: -15px; margin-right: -15px;">
+                <button class="btn-icon" onclick="window.toggleAuthModal()"><i class='bx bx-x' style="font-size: 20px;"></i></button>
+            </div>
+            <div id="authLogo" style="text-align: center; margin-bottom: 5px; font-size: 28px; color: var(--accent);">
+                <i class="bx bxl-graphql"></i>
+            </div>
+            <h2 class="auth-title" id="authTitle" style="font-size: 20px; font-weight: 700; color: #fff; text-align: center; margin-bottom: 5px;">Войти в Quantum Cloud</h2>
+            <p class="auth-subtitle" id="authSubtitle" style="font-size: 12.5px; color: var(--text-muted); text-align: center; margin-bottom: 15px;">Синхронизируйте свои проекты с облаком PostgreSQL</p>
+            
+            <form id="authForm" onsubmit="window.handleAuthSubmit(event)" style="display: flex; flex-direction: column; gap: 14px;">
+                <!-- Никнейм (только для регистрации) -->
+                <div class="auth-input-group" id="authGroupNickname" style="display: none; flex-direction: column; gap: 6px;">
+                    <label for="authNickname" style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Никнейм разработчика</label>
+                    <input type="text" id="authNickname" class="auth-input" placeholder="Введите уникальный ник" autocomplete="username" style="background: #000; border: 1px solid var(--panel-border); border-radius: 8px; padding: 10px 12px; color: #fff; font-family: var(--font-ui); font-size: 13.5px; outline: none; transition: var(--transition-smooth);">
+                </div>
+
+                <!-- Почта или Никнейм -->
+                <div class="auth-input-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label id="authLabelEmail" for="authEmail" style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Электронная почта или никнейм</label>
+                    <input type="text" id="authEmail" class="auth-input" placeholder="mail@example.com или ник" required autocomplete="email" style="background: #000; border: 1px solid var(--panel-border); border-radius: 8px; padding: 10px 12px; color: #fff; font-family: var(--font-ui); font-size: 13.5px; outline: none; transition: var(--transition-smooth);">
+                </div>
+
+                <!-- Пароль -->
+                <div class="auth-input-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label for="authPassword" style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Пароль</label>
+                    <input type="password" id="authPassword" class="auth-input" placeholder="••••••••" required autocomplete="current-password" style="background: #000; border: 1px solid var(--panel-border); border-radius: 8px; padding: 10px 12px; color: #fff; font-family: var(--font-ui); font-size: 13.5px; outline: none; transition: var(--transition-smooth);">
+                </div>
+
+                <!-- Подтверждение пароля (только для регистрации) -->
+                <div class="auth-input-group" id="authGroupConfirmPassword" style="display: none; flex-direction: column; gap: 6px;">
+                    <label for="authConfirmPassword" style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Подтвердите пароль</label>
+                    <input type="password" id="authConfirmPassword" class="auth-input" placeholder="••••••••" autocomplete="new-password" style="background: #000; border: 1px solid var(--panel-border); border-radius: 8px; padding: 10px 12px; color: #fff; font-family: var(--font-ui); font-size: 13.5px; outline: none; transition: var(--transition-smooth);">
+                </div>
+
+                <div id="authFeedback" style="font-size: 11.5px; color: #ef4444; display: none; text-align: center; font-weight: 500;"></div>
+
+                <button type="submit" class="btn btn-primary" id="authSubmitBtn" style="width: 100%; justify-content: center; height: 42px; margin-top: 5px;">
+                    Войти
+                </button>
+            </form>
+
+            <div class="auth-switch-text" id="authSwitchText" onclick="window.toggleAuthMode()" style="font-size: 12.5px; color: var(--text-muted); text-align: center; margin-top: 10px; cursor: pointer; transition: 0.2s;">
+                Ещё нет аккаунта? <span style="color: var(--accent); font-weight: 600;">Создать профиль</span>
+            </div>
+        </div>
+    </div>
+
     <!-- НАСТРОЙКИ -->
     <div class="modal-overlay" id="settingsModal" onclick="if (event.target === this) toggleSettings();">
         <div class="modal" style="max-width: 460px;">
@@ -5539,13 +5589,9 @@
             
             <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 15px 0;"></div>
             
-            <!-- СТАТУС ПОДКЛЮЧЕНИЯ К SUPABASE -->
-            <div class="setting-group">
-                <label><i class='bx bx-cloud' style="color: #10b981;"></i> Supabase Team Sync</label>
-                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.35;">Параметры инстанса зафиксированы в коде приложения. Подключение ко всем командным воркспейсам происходит автоматически.</p>
-                <div style="background: rgba(16, 185, 129, 0.08); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 8px; padding: 10px; font-size: 11.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; justify-content: center;">
-                    <i class='bx bx-check-double' style="font-size: 16px;"></i> Облачный движок активен и настроен
-                </div>
+            <!-- ДИНАМИЧЕСКИЙ СТАТУС ПОДКЛЮЧЕНИЯ К SUPABASE -->
+            <div class="setting-group" id="settingsAuthStatusBox">
+                <!-- Генерируется через JS (window.syncUserProfileUI) -->
             </div>
         </div> <!-- Конец #settingsContentProfile -->
 
@@ -5558,7 +5604,7 @@
 <div class="modal-overlay" id="workspaceStatsDashboardModal" onclick="if (event.target === this) window.closeWorkspaceStatsDashboard();" style="z-index: 99999; backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);">
     <div class="modal" style="max-width: 840px; width: 95%; background: rgba(8, 8, 12, 0.9); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 50px rgba(var(--accent-rgb), 0.15); display: flex; flex-direction: column; max-height: 90vh; padding: 0; overflow: hidden; font-family: var(--font-ui);">
         
-        // Шапка Дашборда (С кнопкой Полноэкранного чата)
+        <!-- Шапка Дашборда (С кнопкой Полноэкранного чата) -->
         <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); flex-wrap: wrap; gap: 10px;">
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <div id="dashActiveWsColorDot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent);"></div>
@@ -15327,8 +15373,24 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     const transaction = QuantumDB.db.transaction("commits", "readwrite");
                     const store = transaction.objectStore("commits");
                     store.put(commit);
-                    transaction.oncomplete = () => {
+                    transaction.oncomplete = async () => {
                         window.synth.playChime();
+
+                        // Синхронизация версий в облаке при нахождении в командном пространстве
+                        if (activeProfileId !== "profile-personal" && window.supabaseSync && window.supabaseSync.client) {
+                            try {
+                                await window.supabaseSync.client.from('note_commits').insert({
+                                    note_id: noteId,
+                                    workspace_id: activeProfileId,
+                                    author_id: window.supabaseSync.userId,
+                                    message: message || "Auto-commit",
+                                    content: note.content
+                                });
+                            } catch (err) {
+                                console.warn("SupabaseSync: Не удалось сохранить коммит в облачной БД:", err);
+                            }
+                        }
+
                         resolve(commit);
                     };
                     transaction.onerror = (e) => reject(e.target.error);
@@ -15556,6 +15618,13 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
         };
 
         window.simulateCloudActivation = function(instant = false, isDeveloper = false) {
+            // Если пользователь гость (не вошел) — закрываем тарифы и просим войти
+            if (!window.supabaseSync || !window.supabaseSync.userId) {
+                window.toggleCloudModal(); // Закрываем тарифы
+                window.toggleAuthModal();  // Открываем Auth
+                return;
+            }
+
             const container = document.getElementById("cloudSyncProgressContainer");
             if (!container) return;
 
@@ -15842,12 +15911,125 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             }
         };
 
+        window.toggleAuthModal = function() {
+            const modal = document.getElementById("authModal");
+            if (modal) {
+                modal.classList.toggle("active");
+                if (window.synth) window.synth.playSoftHum();
+            }
+        };
+
+        window.authMode = "login"; // "login" или "signup"
+
+        window.toggleAuthMode = function() {
+            const title = document.getElementById("authTitle");
+            const subtitle = document.getElementById("authSubtitle");
+            const groupNickname = document.getElementById("authGroupNickname");
+            const groupConfirm = document.getElementById("authGroupConfirmPassword");
+            const labelEmail = document.getElementById("authLabelEmail");
+            const inputEmail = document.getElementById("authEmail");
+            const submitBtn = document.getElementById("authSubmitBtn");
+            const switchText = document.getElementById("authSwitchText");
+            const feedback = document.getElementById("authFeedback");
+
+            if (feedback) feedback.style.display = "none";
+
+            if (window.authMode === "login") {
+                window.authMode = "signup";
+                title.textContent = "Регистрация";
+                subtitle.textContent = "Создайте аккаунт разработчика";
+                groupNickname.style.display = "flex";
+                groupConfirm.style.display = "flex";
+                labelEmail.textContent = "Электронная почта";
+                inputEmail.placeholder = "mail@example.com";
+                submitBtn.textContent = "Зарегистрироваться";
+                switchText.innerHTML = "Уже есть аккаунт? <span>Войти</span>";
+            } else {
+                window.authMode = "login";
+                title.textContent = "Войти в Quantum Cloud";
+                subtitle.textContent = "Синхронизируйте свои проекты с облаком PostgreSQL";
+                groupNickname.style.display = "none";
+                groupConfirm.style.display = "none";
+                labelEmail.textContent = "Электронная почта или никнейм";
+                inputEmail.placeholder = "mail@example.com или никнейм";
+                submitBtn.textContent = "Войти";
+                switchText.innerHTML = "Ещё нет аккаунта? <span>Создать профиль</span>";
+            }
+            if (window.synth) window.synth.playSoftHum();
+        };
+
+        window.handleAuthSubmit = async function(e) {
+            e.preventDefault();
+            const feedback = document.getElementById("authFeedback");
+            const submitBtn = document.getElementById("authSubmitBtn");
+            const originalText = submitBtn.innerHTML;
+
+            if (feedback) feedback.style.display = "none";
+
+            const emailVal = document.getElementById("authEmail").value.trim();
+            const passwordVal = document.getElementById("authPassword").value;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Обработка...";
+
+            try {
+                if (window.authMode === "signup") {
+                    const nickVal = document.getElementById("authNickname").value.trim();
+                    const confirmVal = document.getElementById("authConfirmPassword").value;
+
+                    if (!nickVal) throw new Error("Введите никнейм.");
+                    if (passwordVal !== confirmVal) throw new Error("Пароли не совпадают.");
+                    if (passwordVal.length < 6) throw new Error("Пароль должен содержать минимум 6 символов.");
+
+                    await window.supabaseSync.signUp(nickVal, emailVal, passwordVal);
+                    alert("Регистрация успешна! Теперь вы можете войти в систему.");
+                    window.toggleAuthMode(); // Переключаем на логин
+                } else {
+                    await window.supabaseSync.signIn(emailVal, passwordVal);
+                    window.toggleAuthModal(); // Закрываем модалку после входа
+                    if (window.synth) window.synth.playChime();
+                }
+            } catch (err) {
+                if (feedback) {
+                    feedback.textContent = err.message || "Произошла непредвиденная ошибка.";
+                    feedback.style.display = "block";
+                }
+                if (window.synth) window.synth.playClick();
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        };
+
         window.syncUserProfileUI = function() {
             const nickDisplay = document.getElementById("userNicknameDisplay");
             const avatarDisplay = document.getElementById("userAvatar");
             if (nickDisplay) nickDisplay.textContent = userProfile.nickname;
             if (avatarDisplay) {
                 avatarDisplay.textContent = userProfile.nickname.trim().substring(0, 2).toUpperCase() || "GU";
+            }
+
+            // Обновляем панель авторизации в настройках профиля
+            const statusBox = document.getElementById("settingsAuthStatusBox");
+            if (statusBox) {
+                const isLoggedIn = window.supabaseSync && window.supabaseSync.userId;
+                if (isLoggedIn) {
+                    statusBox.innerHTML = `
+                        <label><i class='bx bx-cloud' style="color: #10b981;"></i> Облачный аккаунт (Активен)</label>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.35;">Вы вошли в облако под никнеймом <b>${window.escapeHTML(userProfile.nickname)}</b>. Синхронизация файлов запущена.</p>
+                        <button class="btn" style="width: 100%; border-color: rgba(239, 68, 68, 0.3); color: #f87171; background: rgba(239, 68, 68, 0.05); justify-content: center;" onclick="window.supabaseSync.signOut()">
+                            <i class='bx bx-log-out-circle'></i> Выйти из аккаунта
+                        </button>
+                    `;
+                } else {
+                    statusBox.innerHTML = `
+                        <label><i class='bx bx-cloud-off' style="color: var(--text-muted);"></i> Гостевой режим (Офлайн)</label>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.35;">Без регистрации вы не сможете участвовать в командных воркспейсах или сохранять файлы в облако.</p>
+                        <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="toggleSettings(); window.toggleAuthModal();">
+                            <i class='bx bx-log-in-circle'></i> Войти / Зарегистрироваться
+                        </button>
+                    `;
+                }
             }
         };
 
@@ -15999,6 +16181,14 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
 
         window.createNewWorkspace = async function(e) {
             if (e) e.stopPropagation();
+
+            // Если не вошел — перенаправляем на регистрацию
+            if (!window.supabaseSync || !window.supabaseSync.userId) {
+                const switcher = document.getElementById("workspaceSwitcher");
+                if (switcher) switcher.classList.remove("open");
+                window.toggleAuthModal();
+                return;
+            }
 
             // КЛЮЧЕВОЙ CRO ТРИГГЕР: На Free тарифе лимит дополнительных пространств равен 0
             if (!window.isProUser) {
@@ -16348,41 +16538,163 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 this.init();
                 if (!this.client) return;
 
-                try {
-                    // Проверяем наличие активной сессии
-                    let { data: { session } } = await this.client.auth.getSession();
-                    if (!session) {
-                        // Бесшовный анонимный вход для совместной работы
-                        const { data, error } = await this.client.auth.signInAnonymously();
-                        if (error) {
-                            if (error.message && error.message.includes("Anonymous sign-ins are disabled")) {
-                                console.warn(
-                                    "🚨 [Supabase Configuration Error]: Anonymous Sign-ins are disabled on your Supabase backend.\n" +
-                                    "To fix this, go to your Supabase Dashboard -> Authentication -> Providers -> Anonymous and turn on 'Allow anonymous sign-ins'.\n" +
-                                    "Falling back to local-only guest session for now."
-                                );
-                                // Отображаем деликатную подсказку в виджете синхронизации сайдбара
-                                const widgetDesc = document.getElementById("cloudSyncWidgetDesc");
-                                if (widgetDesc) {
-                                    widgetDesc.innerHTML = "<span style='color: #f87171;'>Ошибка синхронизации: В панели Supabase отключен анонимный вход (Anonymous Sign-ins). Включите его в настройках проекта.</span>";
-                                }
-                            }
-                            throw error;
+                // Слушаем любые изменения авторизации (вход, выход, регистрация)
+                this.client.auth.onAuthStateChange(async (event, session) => {
+                    console.log("SupabaseSync: Событие Auth:", event);
+                    if (session && session.user) {
+                        this.userId = session.user.id;
+                        
+                        // Извлекаем никнейм, сохраненный в метаданных регистрации
+                        const meta = session.user.user_metadata || {};
+                        if (meta.nickname) {
+                            userProfile.nickname = meta.nickname;
                         }
-                        session = data.session;
+                        
+                        // Загружаем профиль пользователя из базы, если он там есть
+                        try {
+                            const { data: profileData } = await this.client
+                                .from('profiles')
+                                .select('nickname, about_me, dev_level')
+                                .eq('id', this.userId)
+                                .maybeSingle();
+                            if (profileData) {
+                                userProfile.nickname = profileData.nickname || userProfile.nickname;
+                                userProfile.aboutMe = profileData.about_me || userProfile.aboutMe;
+                                userProfile.devLevel = profileData.dev_level || userProfile.devLevel;
+                                
+                                // Синхронизируем инпуты в настройках
+                                const nickInput = document.getElementById("userNicknameInput");
+                                const aboutInput = document.getElementById("userAboutMeInput");
+                                const devLevelSelect = document.getElementById("userDevLevelSelect");
+                                if (nickInput) nickInput.value = userProfile.nickname;
+                                if (aboutInput) aboutInput.value = userProfile.aboutMe;
+                                if (devLevelSelect) devLevelSelect.value = userProfile.devLevel;
+                            }
+                        } catch (errProfile) {
+                            console.warn("Не удалось подгрузить профиль:", errProfile);
+                        }
+
+                        window.syncUserProfileUI();
+                        await this.syncProfileToCloud();
+                        
+                        // Настраиваем виджет синхронизации
+                        const dot = document.getElementById("cloudSyncDot");
+                        const label = document.getElementById("cloudStatusLabel");
+                        const widgetBtn = document.getElementById("cloudSyncBtn");
+                        if (dot) dot.className = "sync-status-dot online";
+                        if (label) {
+                            label.textContent = "Облако активно";
+                            label.style.color = "#10b981";
+                        }
+                        if (widgetBtn) {
+                            widgetBtn.style.display = "none";
+                        }
+
+                        // Если открыт командный воркспейс — подписываемся
+                        if (activeProfileId !== "profile-personal") {
+                            await this.subscribeToWorkspace(activeProfileId);
+                        } else {
+                            window.updateWorkspaceWidgets();
+                        }
+                    } else {
+                        // Очистка сессии при выходе
+                        this.userId = null;
+                        this.unsubscribe();
+                        
+                        const dot = document.getElementById("cloudSyncDot");
+                        const label = document.getElementById("cloudStatusLabel");
+                        const widgetBtn = document.getElementById("cloudSyncBtn");
+                        if (dot) dot.className = "sync-status-dot";
+                        if (label) {
+                            label.textContent = "Локально";
+                            label.style.color = "";
+                        }
+                        if (widgetBtn) {
+                            widgetBtn.style.display = "flex";
+                        }
+
+                        // Сбрасываем воркспейс на персональный
+                        if (activeProfileId !== "profile-personal") {
+                            window.switchWorkspace("profile-personal", true);
+                        } else {
+                            window.updateWorkspaceWidgets();
+                        }
+                        window.syncUserProfileUI();
                     }
+                });
+
+                // Первичная проверка сессии при старте страницы
+                const { data: { session } } = await this.client.auth.getSession();
+                if (session) {
                     this.userId = session.user.id;
-                    console.log("SupabaseSync: UID пользователя:", this.userId);
+                }
+            }
 
-                    // Синхронизируем никнейм и данные профиля в PostgreSQL
-                    await this.syncProfileToCloud();
-
-                    // Если открыто PRO-пространство, мгновенно подключаем канал связи
-                    if (activeProfileId !== "profile-personal") {
-                        await this.subscribeToWorkspace(activeProfileId);
-                    }
+            async signUp(nickname, email, password) {
+                if (!this.client) return;
+                try {
+                    const { data, error } = await this.client.auth.signUp({
+                        email: email,
+                        password: password,
+                        options: {
+                            data: {
+                                nickname: nickname,
+                                dev_level: "Middle"
+                            }
+                        }
+                    });
+                    if (error) throw error;
+                    return data;
                 } catch (e) {
-                    console.error("SupabaseSync: Ошибка авторизации:", e);
+                    console.error("SupabaseSync: Ошибка SignUp:", e);
+                    throw e;
+                }
+            }
+
+            async signIn(emailOrNickname, password) {
+                if (!this.client) return;
+                try {
+                    let email = emailOrNickname;
+                    
+                    // Если введен никнейм (в нем нет символа @), транслируем его в почту через RPC в базе данных
+                    if (!emailOrNickname.includes("@")) {
+                        const { data: fetchedEmail, error: rpcError } = await this.client
+                            .rpc('get_email_by_username', { p_username: emailOrNickname });
+                        
+                        if (rpcError || !fetchedEmail) {
+                            throw new Error("Пользователь с таким никнеймом не найден.");
+                        }
+                        email = fetchedEmail;
+                    }
+
+                    const { data, error } = await this.client.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
+                    if (error) throw error;
+                    return data;
+                } catch (e) {
+                    console.error("SupabaseSync: Ошибка SignIn:", e);
+                    throw e;
+                }
+            }
+
+            async signOut() {
+                if (!this.client) return;
+                try {
+                    const { error } = await this.client.auth.signOut();
+                    if (error) throw error;
+                    
+                    // Полная очистка локального PRO-состояния
+                    localStorage.removeItem("qn_pro_tier");
+                    localStorage.removeItem("qn_pro_expires");
+                    localStorage.removeItem("qn_pro_billing_cycle");
+                    window.isProUser = false;
+                    
+                    if (window.synth) window.synth.playSoftHum();
+                    window.location.reload(); // Перезагружаем страницу для очистки памяти
+                } catch (e) {
+                    console.error("SupabaseSync: Ошибка SignOut:", e);
                 }
             }
 
@@ -16640,6 +16952,23 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 } catch (e) {
                     console.warn("SupabaseSync: Ошибка загрузки чата:", e);
                     this.workspaceChatMessages = [];
+                }
+            }
+
+            async sendTeamChatMessage(text) {
+                if (!this.client || !this.currentWorkspaceId || !this.userId) return;
+                try {
+                    const { error } = await this.client
+                        .from('chat_messages')
+                        .insert({
+                            workspace_id: this.currentWorkspaceId,
+                            sender_id: this.userId,
+                            message: text
+                        });
+                    if (error) throw error;
+                    if (window.synth) window.synth.playClick();
+                } catch (e) {
+                    console.error("SupabaseSync: Ошибка отправки сообщения в чат:", e);
                 }
             }
 
@@ -17171,6 +17500,13 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
         // =======================================================================
         window.toggleJoinWorkspaceModal = function(e) {
             if (e) e.stopPropagation();
+
+            // Если не вошел — перенаправляем на регистрацию
+            if (!window.supabaseSync || !window.supabaseSync.userId) {
+                window.toggleAuthModal();
+                return;
+            }
+
             const modal = document.getElementById("joinWorkspaceModal");
             if (!modal) return;
             
