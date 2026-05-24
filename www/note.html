@@ -5558,12 +5558,16 @@
 <div class="modal-overlay" id="workspaceStatsDashboardModal" onclick="if (event.target === this) window.closeWorkspaceStatsDashboard();" style="z-index: 99999; backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);">
     <div class="modal" style="max-width: 840px; width: 95%; background: rgba(8, 8, 12, 0.9); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 50px rgba(var(--accent-rgb), 0.15); display: flex; flex-direction: column; max-height: 90vh; padding: 0; overflow: hidden; font-family: var(--font-ui);">
         
-        <!-- Шапка Дашборда -->
-        <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3);">
-            <div style="display: flex; align-items: center; gap: 10px;">
+        // Шапка Дашборда (С кнопкой Полноэкранного чата)
+        <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <div id="dashActiveWsColorDot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent);"></div>
                 <span id="dashActiveWsName" style="font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.01em;">Workspace Name</span>
                 <span id="dashActiveWsTier" style="font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 12px; letter-spacing: 0.3px;">Pro Team</span>
+                
+                <button class="btn" onclick="window.openWorkspaceTeamChat()" style="padding: 5px 12px; font-size: 11.5px; font-weight: 700; background: rgba(var(--accent-rgb), 0.15); border-color: rgba(var(--accent-rgb), 0.3); color: var(--accent); border-radius: 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
+                    <i class='bx bx-message-square-detail' style='font-size: 14px;'></i> Чат команды
+                </button>
             </div>
             <button class="btn-icon" onclick="window.closeWorkspaceStatsDashboard()"><i class='bx bx-x' style="font-size: 24px; color: var(--text-muted);"></i></button>
         </div>
@@ -16381,6 +16385,148 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 }
             }
 
+            async loadWorkspaceChatHistory(workspaceId) {
+                if (!this.client) return;
+                try {
+                    const { data: messages, error } = await this.client
+                        .from('chat_messages')
+                        .select('id, sender_id, message, created_at, profiles(nickname, dev_level)')
+                        .eq('workspace_id', workspaceId)
+                        .order('created_at', { ascending: true })
+                        .limit(100);
+                    
+                    if (error) throw error;
+                    this.workspaceChatMessages = messages || [];
+                    
+                    // Если модальное окно чата сейчас открыто — перерисовываем сообщения
+                    if (document.getElementById("workspaceTeamChatModal")?.classList.contains("active")) {
+                        this.renderTeamChatMessages();
+                    }
+                } catch (e) {
+                    console.warn("SupabaseSync: Ошибка загрузки чата:", e);
+                    this.workspaceChatMessages = [];
+                }
+            }
+
+            handleIncomingChatMessage(newMsg) {
+                // Предотвращаем дублирование, если сообщение уже добавлено оптимистичным рендером
+                if (this.workspaceChatMessages.some(m => m.id === newMsg.id)) return;
+                
+                // Связываем никнеймы и ранги на основе кэшированного списка участников воркспейса
+                const member = this.workspaceMembers.find(m => m.user_id === newMsg.sender_id);
+                const nickname = member && member.profiles ? member.profiles.nickname : "Коллега";
+                const devLevel = member && member.profiles ? member.profiles.dev_level : "Middle";
+                
+                const fullMsg = {
+                    id: newMsg.id,
+                    sender_id: newMsg.sender_id,
+                    message: newMsg.message,
+                    created_at: newMsg.created_at,
+                    profiles: {
+                        nickname,
+                        dev_level: devLevel
+                    }
+                };
+                
+                this.workspaceChatMessages.push(fullMsg);
+                
+                // Если чат открыт — дописываем сообщение в интерфейс
+                if (document.getElementById("workspaceTeamChatModal")?.classList.contains("active")) {
+                    this.renderTeamChatMessages();
+                    if (window.synth) window.synth.playSoftHum(); // Мягкий неоновый аудио-клик входящего сообщения
+                }
+            }
+
+            async sendTeamChatMessage(text) {
+                if (!this.client || !this.currentWorkspaceId || !this.userId) return;
+                try {
+                    const { data, error } = await this.client
+                        .from('chat_messages')
+                        .insert({
+                            workspace_id: this.currentWorkspaceId,
+                            sender_id: this.userId,
+                            message: text
+                        })
+                        .select('id, sender_id, message, created_at')
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    // Оптимистичный рендер: мгновенно выводим сообщение на экран отправителя
+                    const myMember = this.workspaceMembers.find(m => m.user_id === this.userId);
+                    const myNickname = myMember && myMember.profiles ? myMember.profiles.nickname : userProfile.nickname;
+                    const myDevLevel = myMember && myMember.profiles ? myMember.profiles.dev_level : userProfile.devLevel;
+                    
+                    const fullMsg = {
+                        id: data.id,
+                        sender_id: data.sender_id,
+                        message: data.message,
+                        created_at: data.created_at,
+                        profiles: {
+                            nickname: myNickname,
+                            dev_level: myDevLevel
+                        }
+                    };
+                    
+                    if (!this.workspaceChatMessages.some(m => m.id === data.id)) {
+                        this.workspaceChatMessages.push(fullMsg);
+                        this.renderTeamChatMessages();
+                    }
+                } catch (e) {
+                    console.error("SupabaseSync: Сбой отправки сообщения:", e);
+                }
+            }
+
+            renderTeamChatMessages() {
+                const box = document.getElementById("teamChatMessagesBox");
+                if (!box) return;
+                
+                box.innerHTML = "";
+                const msgs = this.workspaceChatMessages || [];
+                
+                if (msgs.length === 0) {
+                    box.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted); font-size:13px; font-style:italic;"><i class='bx bx-comment-detail' style='font-size:28px; color:var(--text-muted); margin-bottom:10px; display:block;'></i> Общий чат пуст. Задайте вектор работы!</div>`;
+                    return;
+                }
+                
+                msgs.forEach(m => {
+                    const isMe = m.sender_id === this.userId;
+                    const nickname = m.profiles ? m.profiles.nickname : "Коллега";
+                    const devLevel = m.profiles ? m.profiles.dev_level : "Middle";
+                    const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    let badgeBg = "rgba(59, 130, 246, 0.12)";
+                    let badgeColor = "#3b82f6";
+                    if (devLevel === "Junior") {
+                        badgeBg = "rgba(16, 185, 129, 0.12)";
+                        badgeColor = "#10b981";
+                    } else if (devLevel === "Senior") {
+                        badgeBg = "rgba(245, 158, 11, 0.12)";
+                        badgeColor = "#f59e0b";
+                    } else if (devLevel === "Lead") {
+                        badgeBg = "rgba(168, 85, 247, 0.12)";
+                        badgeColor = "#a855f7";
+                    }
+                    
+                    const row = document.createElement("div");
+                    row.style.cssText = `display: flex; flex-direction: column; align-items: ${isMe ? 'flex-end' : 'flex-start'}; gap: 4px; width: 100%;`;
+                    
+                    row.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; margin-left: ${isMe ? '0' : '6px'}; margin-right: ${isMe ? '6px' : '0'};">
+                            <span style="font-weight: 700; color: ${isMe ? 'var(--accent)' : '#fff'};">${window.escapeHTML(nickname)}</span>
+                            <span style="font-size: 8px; background: ${badgeBg}; color: ${badgeColor}; padding: 1px 4px; border-radius: 4px; font-weight: 700; text-transform: uppercase;">${devLevel}</span>
+                            <span style="color: var(--text-muted);">${time}</span>
+                        </div>
+                        <div style="max-width: 75%; background: ${isMe ? 'var(--accent)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isMe ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'}; color: #fff; padding: 10px 14px; border-radius: ${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; font-size: 13px; line-height: 1.45; word-wrap: break-word; text-align: left;">
+                            ${window.escapeHTML(m.message)}
+                        </div>
+                    `;
+                    box.appendChild(row);
+                });
+                
+                box.scrollTop = box.scrollHeight;
+            }
+
             async subscribeToWorkspace(workspaceId) {
                 if (!this.client) return;
                 this.unsubscribe(); // Отключаем старые каналы
@@ -16398,6 +16544,9 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
 
                 // 2. Загружаем полный список участников из базы данных для рендера в сайдбаре
                 await this.loadWorkspaceMembers(workspaceId);
+
+                // 3. Загружаем историю переписки командного чата
+                await this.loadWorkspaceChatHistory(workspaceId);
 
                 // 3. Загружаем роль текущего пользователя в выбранном Workspace
                 try {
@@ -16450,6 +16599,14 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         filter: `workspace_id=eq.${workspaceId}` // Высокопроизводительная серверная фильтрация
                     }, payload => {
                         this.handleIncomingDbChange(payload);
+                    })
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'chat_messages',
+                        filter: `workspace_id=eq.${workspaceId}`
+                    }, payload => {
+                        this.handleIncomingChatMessage(payload.new);
                     });
 
                 // Подписываем единый мультиплексированный канал совместной работы
@@ -16797,6 +16954,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         <div style="font-weight: 700; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: ${isCollapsed ? '0' : '10px'}; display: flex; align-items: center; justify-content: space-between; gap: 6px; cursor: pointer;" onclick="window.toggleTeamPanelCollapse(event)">
                             <span style="display: flex; align-items: center; gap: 6px;"><i class='bx bx-git-branch' style="color: var(--accent);"></i> Командная среда</span>
                             <div style="display: flex; align-items: center; gap: 6px;">
+                                <button class="btn-icon" style="padding: 2px; font-size: 15px; color: var(--text-muted); transition: 0.2s;" onclick="event.stopPropagation(); window.openWorkspaceTeamChat()" title="Чат команды"><i class='bx bx-message-square-detail'></i></button>
                                 <button class="btn-icon" style="padding: 2px; font-size: 15px; color: var(--text-muted); transition: 0.2s;" onclick="event.stopPropagation(); window.openWorkspaceStatsDashboard()" title="Инфо о команде"><i class='bx bx-grid-alt'></i></button>
                                 <span style="font-size: 10px; color: var(--text-muted); font-weight: 700; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px;">${membersList.length}/50</span>
                                 <i class='bx ${chevronClass}' style="font-size: 16px; color: var(--text-muted); margin-left: 2px;"></i>
@@ -17110,15 +17268,17 @@ window.openWorkspaceStatsDashboard = async function() {
             }
             const devLevelBadge = `<span style="font-size: 9px; background: ${lvlBadgeBg}; color: ${lvlBadgeColor}; padding: 1px 5px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">${devLevel}</span>`;
 
-            // Генерация селектора ролей (только Директор может менять роли других участников)
+            // Генерация премиального селектора ролей (только Директор может менять роли других участников)
             let roleSelectHtml = "";
             if (isCurrentUserDirector && !isMe) {
                 roleSelectHtml = `
-                    <select onchange="window.updateMemberRole('${m.user_id}', this.value)" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 6px; outline: none; font-family: var(--font-ui); cursor: pointer;">
-                        <option value="employee" ${m.role === 'employee' ? 'selected' : ''}>Работник</option>
-                        <option value="manager" ${m.role === 'manager' ? 'selected' : ''}>Менеджер</option>
-                        <option value="director" ${m.role === 'director' ? 'selected' : ''}>Директор</option>
-                    </select>
+                    <div class="premium-role-select-wrapper">
+                        <select class="premium-role-select" onchange="window.updateMemberRole('${m.user_id}', this.value)">
+                            <option value="employee" ${m.role === 'employee' ? 'selected' : ''}>Работник</option>
+                            <option value="manager" ${m.role === 'manager' ? 'selected' : ''}>Менеджер</option>
+                            <option value="director" ${m.role === 'director' ? 'selected' : ''}>Директор</option>
+                        </select>
+                    </div>
                 `;
             } else {
                 const roleLabels = {
@@ -17727,6 +17887,56 @@ window.toggleUserFilePermission = async function(noteId, userId, checkbox) {
         .CodeMirror.cm-read-only .CodeMirror-cursor {
             display: none !important;
         }
+
+        /* Премиальный селектор ролей в дашборде (Linear Style) */
+        .premium-role-select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            color: #fff !important;
+            font-size: 11.5px !important;
+            font-weight: 600 !important;
+            padding: 6px 32px 6px 12px !important;
+            border-radius: 8px !important;
+            outline: none !important;
+            font-family: var(--font-ui) !important;
+            cursor: pointer !important;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
+        }
+        .premium-role-select:hover {
+            background: rgba(255, 255, 255, 0.06) !important;
+            border-color: rgba(var(--accent-rgb), 0.35) !important;
+            box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.15) !important;
+        }
+        .premium-role-select-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .premium-role-select-wrapper::after {
+            content: "\ebd1"; /* Chevron Down из BoxIcons */
+            font-family: 'boxicons' !important;
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+        .premium-role-select-wrapper:hover::after {
+            color: #fff;
+        }
+        
+        /* Скрытие боковой панели чата на мобильных устройствах */
+        @media (max-width: 768px) {
+            .chat-sidebar-responsive {
+                display: none !important;
+            }
+        }
     </style>
 
     <!-- SVG Фильтры глитча и деформации воды -->
@@ -18057,7 +18267,137 @@ window.toggleUserFilePermission = async function(noteId, userId, checkbox) {
                 window.celestialSea = new CelestialSeaDock();
             }
         });
+
+        // =======================================================================
+        // КОНТРОЛЛЕР ПОЛНОЭКРАННОГО КОМАНДНОГО ЧАТА WORKSPACE
+        // =======================================================================
+        window.openWorkspaceTeamChat = function() {
+            if (activeProfileId === "profile-personal") {
+                alert("Командный чат недоступен в Личном пространстве.");
+                return;
+            }
+            
+            // Закрываем дашборд статистики, если он был открыт
+            window.closeWorkspaceStatsDashboard();
+            
+            const modal = document.getElementById("workspaceTeamChatModal");
+            if (!modal) return;
+            
+            // Настраиваем имя активного Workspace в заголовке чата
+            const activeProfile = profiles.find(p => p.id === activeProfileId);
+            const chatTitle = document.getElementById("chatWsName");
+            if (chatTitle && activeProfile) {
+                chatTitle.textContent = `Чат: ${activeProfile.name}`;
+            }
+
+            modal.classList.add("active");
+            if (window.synth) window.synth.playChime();
+            
+            // Вызываем принудительную перерисовку истории сообщений и списка команды
+            if (window.supabaseSync) {
+                window.supabaseSync.renderTeamChatMessages();
+                
+                // Отрисовываем список команды в левом статус-баре чата
+                const list = document.getElementById("teamChatActiveMembers");
+                if (list) {
+                    list.innerHTML = "";
+                    const onlineUids = new Set();
+                    if (window.supabaseSync.presenceState) {
+                        Object.keys(window.supabaseSync.presenceState).forEach(key => onlineUids.add(key));
+                    }
+                    
+                    (window.supabaseSync.workspaceMembers || []).forEach(m => {
+                        const isOnline = onlineUids.has(m.user_id);
+                        const name = m.profiles ? m.profiles.nickname : "Коллега";
+                        const isMe = m.user_id === window.supabaseSync.userId;
+                        
+                        const el = document.createElement("div");
+                        el.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 0;";
+                        el.innerHTML = `
+                            <div style="width: 6px; height: 6px; border-radius: 50%; background: ${isOnline ? '#10b981' : 'rgba(255,255,255,0.15)'}; box-shadow: ${isOnline ? '0 0 6px #10b981' : 'none'};"></div>
+                            <span style="color: ${isOnline ? '#fff' : 'var(--text-muted)'}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px; font-weight: 500;">${window.escapeHTML(name)} ${isMe ? '<span style="opacity:0.6">(Вы)</span>' : ''}</span>
+                        `;
+                        list.appendChild(el);
+                    });
+                }
+            }
+        };
+
+        window.closeWorkspaceTeamChat = function() {
+            const modal = document.getElementById("workspaceTeamChatModal");
+            if (modal) modal.classList.remove("active");
+            if (window.synth) window.synth.playSoftHum();
+        };
+
+        window.sendTeamChatMessage = function() {
+            const input = document.getElementById("teamChatMessageInput");
+            if (!input) return;
+            const text = input.value.trim();
+            if (!text) return;
+            
+            if (window.supabaseSync) {
+                window.supabaseSync.sendTeamChatMessage(text);
+            }
+            input.value = "";
+        };
+
+        window.handleTeamChatEnter = function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                window.sendTeamChatMessage();
+            }
+        };
     </script>
+
+
+<!-- ПОЛНОЭКРАННЫЙ ЧАТ КОМАНДЫ (TEAM WORKSPACE CHAT) -->
+<div class="modal-overlay" id="workspaceTeamChatModal" onclick="if (event.target === this) window.closeWorkspaceTeamChat();" style="z-index: 100000; backdrop-filter: blur(35px); -webkit-backdrop-filter: blur(35px);">
+    <div class="modal" style="max-width: 900px; width: 95%; height: 85vh; background: rgba(8, 8, 12, 0.95); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 50px rgba(var(--accent-rgb), 0.15); display: flex; flex-direction: column; padding: 0; overflow: hidden; font-family: var(--font-ui);">
+        
+        <!-- Шапка Чата -->
+        <div style="padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class='bx bx-message-square-detail' style="color: var(--accent); font-size: 22px;"></i>
+                <span id="chatWsName" style="font-size: 16px; font-weight: 700; color: #fff;">Чат Workspace</span>
+                <span style="font-size: 9px; background: rgba(16, 185, 129, 0.12); color: #10b981; padding: 2px 8px; border-radius: 12px; font-weight: 800; text-transform: uppercase;">Общий канал</span>
+            </div>
+            <button class="btn-icon" onclick="window.closeWorkspaceTeamChat()"><i class='bx bx-x' style="font-size: 24px; color: var(--text-muted);"></i></button>
+        </div>
+
+        <!-- Тело Чата -->
+        <div style="display: flex; flex: 1; overflow: hidden; position: relative;">
+            <!-- Левая сторона: Список участников -->
+            <div style="width: 250px; border-right: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.1); padding: 20px; display: flex; flex-direction: column; gap: 15px;" class="chat-sidebar-responsive">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Распределение Сил</div>
+                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">
+                    Используйте этот чат для обсуждения задач, делегирования файлов и получения новых ТЗ в реальном времени.
+                </div>
+                <div style="height: 1px; background: rgba(255,255,255,0.05);"></div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Участники в Workspace</div>
+                <div id="teamChatActiveMembers" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Заполняется динамически -->
+                </div>
+            </div>
+
+            <!-- Правая сторона: Сообщения чата -->
+            <div style="flex: 1; display: flex; flex-direction: column; background: rgba(0, 0, 0, 0.15);">
+                <!-- Окно сообщений -->
+                <div id="teamChatMessagesBox" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+                    <!-- Сюда вставляются сообщения -->
+                </div>
+
+                <!-- Форма отправки сообщения -->
+                <div style="padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.3); display: flex; gap: 10px; align-items: center; flex-shrink: 0;">
+                    <input type="text" id="teamChatMessageInput" placeholder="Напишите сообщение коллегам..." onkeydown="window.handleTeamChatEnter(event)" style="flex: 1; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.08); color: #fff; font-size: 13px; padding: 12px 16px; border-radius: 12px; outline: none; font-family: var(--font-ui);" />
+                    <button class="btn btn-primary" onclick="window.sendTeamChatMessage()" style="height: 42px; width: 42px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+                        <i class='bx bx-send' style="font-size: 20px;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 
 </html>
