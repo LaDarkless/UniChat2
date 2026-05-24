@@ -16827,10 +16827,13 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 if (askBtn) setAIMode("ask", askBtn);
             }
 
-            // Ищем первый доступный файл в этом профиле, при отсутствии - создаем новый
-            const firstFile = notes.find(n => n.type === 'file' && (n.profileId || "profile-personal") === activeProfileId);
-            if (firstFile) {
-                switchNote(firstFile.id);
+            // Ищем первый доступный файл в этом профиле, отдавая приоритет ранее активному файлу для бесшовного восстановления при перезагрузке
+            const currentWorkspaceNotes = notes.filter(n => n.type === 'file' && (n.profileId || "profile-personal") === activeProfileId);
+            const savedActiveIdInWorkspace = currentWorkspaceNotes.find(n => n.id === activeId);
+            const targetFile = savedActiveIdInWorkspace || currentWorkspaceNotes[0];
+
+            if (targetFile) {
+                switchNote(targetFile.id);
             } else {
                 const uniqueId = Date.now().toString() + "-" + Math.random().toString(36).substring(2, 9);
                 const welcomeNote = {
@@ -17309,6 +17312,9 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                             console.warn("Не удалось подгрузить профиль:", errProfile);
                         }
 
+                        // Сохраняем обновленный профиль в локальную IndexedDB для мгновенного восстановления без фликера при перезагрузке
+                        await QuantumDB.saveState("qn_user_profile", userProfile);
+
                         window.syncUserProfileUI();
                         await this.syncProfileToCloud();
                         
@@ -17328,8 +17334,8 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                                 window.updateWorkspaceWidgets();
                             }
                         }
-                    } else {
-                        // Очистка сессии при выходе
+                    } else if (event === 'SIGNED_OUT') {
+                        // Очистка сессии только при явном выходе или окончании срока действия токена
                         this.userId = null;
                         this.unsubscribe();
                         
@@ -17579,7 +17585,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 try {
                     const { data: dbMembers } = await this.client
                         .from('workspace_members')
-                        .select('user_id, role, profiles(nickname, dev_level)')
+                        .select('user_id, role, profiles(nickname, dev_level, about_me)')
                         .eq('workspace_id', workspaceId);
                     
                     this.workspaceMembers = dbMembers || [];
@@ -18646,28 +18652,39 @@ window.openWorkspaceStatsDashboard = async function() {
             const fileName = activeNote ? activeNote.title : "Бездельничает";
             const fileIcon = activeNote ? getFileIcon(activeNote.title) : "<i class='bx bx-sleepy' style='color:var(--text-muted);'></i>";
 
+            // Мягкий блок «О себе» в стиле Obsidian (показывается только если поле не пустое)
+            const aboutMeText = m.profiles && m.profiles.about_me ? m.profiles.about_me.trim() : "";
+            const aboutMeHtml = aboutMeText ? `
+                <div style="font-size: 11.5px; color: #a1a1aa; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px; padding: 6px 10px; margin-top: 6px; font-style: italic; line-height: 1.4; word-break: break-word; text-align: left; max-height: 60px; overflow-y: auto;">
+                    ${window.escapeHTML(aboutMeText)}
+                </div>
+            ` : "";
+
             membersHtml += `
-                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; transition: var(--transition-smooth); gap: 12px;">
-                    <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
-                        <div style="position: relative; flex-shrink: 0;">
-                            <div class="workspace-avatar" style="background: ${m.role === 'director' ? '#a855f7' : '#3b82f6'}; width: 36px; height: 36px; border-radius: 10px; font-size: 13px; font-weight: 700; color:#fff;">${initials}</div>
-                            <div style="position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: ${isOnline ? '#10b981' : 'rgba(255,255,255,0.15)'}; border: 2px solid #08080c; box-shadow: ${isOnline ? '0 0 6px #10b981' : 'none'};"></div>
+                <div style="display: flex; flex-direction: column; padding: 12px; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; transition: var(--transition-smooth); gap: 4px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+                            <div style="position: relative; flex-shrink: 0;">
+                                <div class="workspace-avatar" style="background: ${m.role === 'director' ? '#a855f7' : '#3b82f6'}; width: 36px; height: 36px; border-radius: 10px; font-size: 13px; font-weight: 700; color:#fff;">${initials}</div>
+                                <div style="position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: ${isOnline ? '#10b981' : 'rgba(255,255,255,0.15)'}; border: 2px solid #08080c; box-shadow: ${isOnline ? '0 0 6px #10b981' : 'none'};"></div>
+                            </div>
+                            <div style="min-width: 0; flex: 1; text-align: left;">
+                                <div style="font-size: 13.5px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${window.escapeHTML(nickname)}</span>
+                                    ${devLevelBadge}
+                                    ${isMe ? '<span style="font-size: 9px; background: rgba(var(--accent-rgb), 0.15); color: var(--accent); padding: 1px 5px; border-radius: 4px; font-weight: 700; text-transform: uppercase;">Вы</span>' : ''}
+                                </div>
+                                <div style="font-size: 10.5px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    ${fileIcon} <span style="overflow: hidden; text-overflow: ellipsis;">Фокус: ${window.escapeHTML(fileName)}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div style="min-width: 0; flex: 1; text-align: left;">
-                            <div style="font-size: 13.5px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${window.escapeHTML(nickname)}</span>
-                                ${devLevelBadge}
-                                ${isMe ? '<span style="font-size: 9px; background: rgba(var(--accent-rgb), 0.15); color: var(--accent); padding: 1px 5px; border-radius: 4px; font-weight: 700; text-transform: uppercase;">Вы</span>' : ''}
-                            </div>
-                            <div style="font-size: 10.5px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                ${fileIcon} <span style="overflow: hidden; text-overflow: ellipsis;">Фокус: ${window.escapeHTML(fileName)}</span>
-                            </div>
+                        <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                            ${roleSelectHtml}
+                            ${deleteMemberBtn}
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 4px;">
-                        ${roleSelectHtml}
-                        ${deleteMemberBtn}
-                    </div>
+                    ${aboutMeHtml}
                 </div>
             `;
         });
