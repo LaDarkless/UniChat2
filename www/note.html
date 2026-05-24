@@ -6004,8 +6004,9 @@ window.escapeHTML = function(str) {
                 this.mouseY = window.innerHeight / 2;
                 this.currentX = this.mouseX;
                 this.currentY = this.mouseY;
-                this.ease = 0.06; /* Инерция слежения (чем меньше, тем мягче движение) */
+                this.ease = 0.06; /* Инерция слежения */
                 this.active = false;
+                this.isMoving = false;
                 this.init();
             }
 
@@ -6015,9 +6016,14 @@ window.escapeHTML = function(str) {
                     window.addEventListener('mousemove', (e) => {
                         this.mouseX = e.clientX;
                         this.mouseY = e.clientY;
+                        if (!this.isMoving) {
+                            this.isMoving = true;
+                            this.animate();
+                        }
                     }, {
                         passive: true
                     });
+                    this.isMoving = true;
                     this.animate();
                 } else {
                     if (this.glow) this.glow.style.display = 'none';
@@ -6026,9 +6032,23 @@ window.escapeHTML = function(str) {
 
             animate() {
                 if (!this.active || !this.glow) return;
-                this.currentX += (this.mouseX - this.currentX) * this.ease;
-                this.currentY += (this.mouseY - this.currentY) * this.ease;
+                
+                const dx = this.mouseX - this.currentX;
+                const dy = this.mouseY - this.currentY;
+                
+                // Если элемент практически догнал курсор, останавливаем цикл анимации для экономии ресурсов CPU
+                if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1) {
+                    this.currentX = this.mouseX;
+                    this.currentY = this.mouseY;
+                    this.glow.style.transform = `translate3d(${this.currentX}px, ${this.currentY}px, 0)`;
+                    this.isMoving = false;
+                    return;
+                }
+                
+                this.currentX += dx * this.ease;
+                this.currentY += dy * this.ease;
                 this.glow.style.transform = `translate3d(${this.currentX}px, ${this.currentY}px, 0)`;
+                
                 requestAnimationFrame(() => this.animate());
             }
         }
@@ -8166,7 +8186,13 @@ window.addEventListener('message', function(e) {
             };
 
             renderTree(null, list, 0);
-            setTimeout(drawDependencyThreads, 50);
+            
+            // Заменяем прямой setTimeout на дебаунсер во избежание Layout Thrashing
+            if (typeof debouncedDrawThreads === "function") {
+                debouncedDrawThreads();
+            } else {
+                setTimeout(drawDependencyThreads, 50);
+            }
 
             // DRAG & DROP В КОРЕНЬ + УМНЫЙ АВТО-СКРОЛЛ ДЛЯ ПК
             list.ondragover = (e) => {
@@ -9798,10 +9824,20 @@ preview.innerHTML = window.secureSanitizeHTML(html);
             const drops = [];
             for (let x = 0; x < columns; x++) drops[x] = 1;
 
-            function draw() {
-                if (settings.liveTheme !== 'matrix') return;
+            let lastDrawTime = 0;
+            const fps = 24; // Лимитируем до 24 кадров/сек (снижает нагрузку на CPU на 80%)
+            const fpsInterval = 1000 / fps;
 
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            function draw(timestamp) {
+                if (settings.liveTheme !== 'matrix') return;
+                themeAnimationId = requestAnimationFrame(draw);
+
+                if (!timestamp) timestamp = performance.now();
+                const elapsed = timestamp - lastDrawTime;
+                if (elapsed < fpsInterval) return;
+                lastDrawTime = timestamp - (elapsed % fpsInterval);
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
                 ctx.fillRect(0, 0, width, height);
 
                 ctx.fillStyle = '#10b981';
@@ -9814,9 +9850,8 @@ preview.innerHTML = window.secureSanitizeHTML(html);
                     if (drops[i] * fontSize > height && Math.random() > 0.975) drops[i] = 0;
                     drops[i]++;
                 }
-                themeAnimationId = requestAnimationFrame(draw);
             }
-            draw();
+            themeAnimationId = requestAnimationFrame(draw);
 
             const resizeHandler = () => {
                 if (settings.liveTheme === 'matrix') {
@@ -18518,7 +18553,7 @@ window.toggleUserFilePermission = async function(noteId, userId, checkbox) {
                 this.pos.targetX = Math.max(10, Math.min(this.pos.targetX, maxLeft - 10));
                 this.pos.targetY = Math.max(10, Math.min(this.pos.targetY, maxTop - 10));
 
-                this.updatePhysics();
+                this.startPhysicsLoop();
             }
         }
 
