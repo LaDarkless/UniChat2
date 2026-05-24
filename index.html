@@ -16981,10 +16981,13 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     .single();
 
                 if (error) {
-                    if (error.code === "23505") {
-                        throw new Error(`Название "${name}" уже занято другим пользователем. Выберите другое уникальное название.`);
-                    }
+                    console.error("Ошибка вставки воркспейса в Supabase:", error);
+                    alert(`Ошибка СУБД: [${error.code}] ${error.message}\nДетали: ${error.details || 'нет'}`);
                     throw error;
+                }
+
+                if (!data) {
+                    throw new Error("Сервер успешно выполнил запрос, но вернул пустые данные (null). Проверьте RLS-политики.");
                 }
 
                 // 2. Если запись создалась, сохраняем её локально в IndexedDB
