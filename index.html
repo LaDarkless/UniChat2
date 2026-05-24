@@ -7330,16 +7330,18 @@ window.addEventListener('message', function(e) {
             }
         };
 
-        // Полное обновление всего приложения (абсолютная замена F5 с экстренным автосохранением)
+        // Горячее обновление превью сайта или рендерера Markdown (Hot-Reload без перезагрузки вкладки!)
         window.manualRefreshPreview = async function() {
             const icon = document.getElementById("refreshBtnIcon");
             if (icon) {
                 icon.classList.add("spin-refresh");
+                // Сбрасываем класс через 600мс, чтобы иконка крутилась при каждом последующем нажатии
+                setTimeout(() => icon.classList.remove("spin-refresh"), 600);
             }
 
             if (window.synth) window.synth.playBubble();
 
-            // Безопасность данных: Экстренно сохраняем текущие изменения в локальную БД и облако перед перезагрузкой
+            // Безопасность данных: Экстренно сохраняем текущие изменения в локальную БД и облако перед перезапуском фрейма
             if (activeId) {
                 const note = notes.find(n => n.id === activeId);
                 if (note) {
@@ -7355,13 +7357,21 @@ window.addEventListener('message', function(e) {
                             await window.supabaseSync.saveNoteToCloudDB(activeId, contentValue);
                         }
                     } catch (e) {
-                        console.warn("Ошибка автосохранения перед жесткой перезагрузкой:", e);
+                        console.warn("Ошибка автосохранения перед обновлением превью:", e);
                     }
                 }
             }
 
-            // Выполняем физическую перезагрузку всей вкладки браузера
-            window.location.reload();
+            // Точечно перезапускаем только превью, сохраняя рабочую сессию IDE нетронутой!
+            if (isWebPreview) {
+                console.log("Quantum Notes: Горячая перезагрузка фрейма сайта...");
+                updateWebFrame();
+            } else {
+                console.log("Quantum Notes: Принудительное обновление Markdown...");
+                if (typeof updatePreview === "function") {
+                    await updatePreview();
+                }
+            }
         };
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -17337,66 +17347,16 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         if (meta.nickname) {
                             userProfile.nickname = meta.nickname;
                         }
-                        
-                        // Загружаем профиль пользователя из базы, если он там есть
-                        try {
-                            const { data: profileData } = await this.client
-                                .from('profiles')
-                                .select('nickname, about_me, dev_level, is_pro, pro_expires_at, pro_billing_cycle')
-                                .eq('id', this.userId)
-                                .maybeSingle();
-                            if (profileData) {
-                                userProfile.nickname = profileData.nickname || userProfile.nickname;
-                                userProfile.aboutMe = profileData.about_me || userProfile.aboutMe;
-                                userProfile.devLevel = profileData.dev_level || userProfile.devLevel;
-                                
-                                // Восстановление PRO-статуса из облака при авторизации
-                                if (profileData.is_pro) {
-                                    const cloudExpires = profileData.pro_expires_at ? new Date(profileData.pro_expires_at).getTime() : 0;
-                                    const localExpires = parseInt(localStorage.getItem("qn_pro_expires") || "0", 10);
-                                    
-                                    if (cloudExpires > localExpires) {
-                                        localStorage.setItem("qn_pro_tier", "true");
-                                        localStorage.setItem("qn_pro_expires", cloudExpires.toString());
-                                        localStorage.setItem("qn_pro_billing_cycle", profileData.pro_billing_cycle || "monthly");
-                                        window.isProUser = true;
-                                    }
-                                }
 
-                                // Синхронизируем инпуты в настройках
-                                const nickInput = document.getElementById("userNicknameInput");
-                                const aboutInput = document.getElementById("userAboutMeInput");
-                                const devLevelSelect = document.getElementById("userDevLevelSelect");
-                                if (nickInput) nickInput.value = userProfile.nickname;
-                                if (aboutInput) aboutInput.value = userProfile.aboutMe;
-                                if (devLevelSelect) devLevelSelect.value = userProfile.devLevel;
-                            }
-                        } catch (errProfile) {
-                            console.warn("Не удалось подгрузить профиль:", errProfile);
-                        }
-
-                        // Сохраняем обновленный профиль в локальную IndexedDB для мгновенного восстановления без фликера при перезагрузке
-                        await QuantumDB.saveState("qn_user_profile", userProfile);
-
+                        // --- ОПТИМИСТИЧЕСКОЕ И БЕЗБОЛЕЗНЕННОЕ ОБНОВЛЕНИЕ UI ---
+                        // Мгновенно убираем кнопку "Войти" и "Guest Mode", не дожидаясь ответа от БД!
                         window.syncUserProfileUI();
-                        await this.syncProfileToCloud();
-                        
-                        // Безопасное обновление виджета с учетом нового статуса сессии
                         if (typeof window.updateCloudSyncWidget === "function") {
                             window.updateCloudSyncWidget();
                         }
-
-                        // Скачиваем и синхронизируем все рабочие области и файлы с облака в IndexedDB
-                        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-                            await this.restoreAllUserDataFromCloud();
-                        } else {
-                            // Если открыт командный воркспейс — подписываемся
-                            if (activeProfileId !== "profile-personal") {
-                                await this.subscribeToWorkspace(activeProfileId);
-                            } else {
-                                window.updateWorkspaceWidgets();
-                            }
-                        }
+                        
+                        // Запускаем асинхронную фоновую загрузку данных
+                        this.loadProfileAndSync(event, session);
                     } else if (event === 'SIGNED_OUT') {
                         // Очистка сессии только при явном выходе или окончании срока действия токена
                         this.userId = null;
@@ -17424,15 +17384,91 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 }
             }
 
+            async loadProfileAndSync(event, session) {
+                // Загружаем профиль пользователя из базы (таймаут 3 секунды для предотвращения зависания)
+                try {
+                    const { data: profileData } = await Promise.race([
+                        this.client
+                            .from('profiles')
+                            .select('nickname, about_me, dev_level, is_pro, pro_expires_at, pro_billing_cycle')
+                            .eq('id', this.userId)
+                            .maybeSingle(),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3000))
+                    ]);
+
+                    if (profileData) {
+                        userProfile.nickname = profileData.nickname || userProfile.nickname;
+                        userProfile.aboutMe = profileData.about_me || userProfile.aboutMe;
+                        userProfile.devLevel = profileData.dev_level || userProfile.devLevel;
+                        
+                        // Восстановление PRO-статуса из облака при авторизации
+                        if (profileData.is_pro) {
+                            const cloudExpires = profileData.pro_expires_at ? new Date(profileData.pro_expires_at).getTime() : 0;
+                            const localExpires = parseInt(localStorage.getItem("qn_pro_expires") || "0", 10);
+                            
+                            if (cloudExpires > localExpires) {
+                                localStorage.setItem("qn_pro_tier", "true");
+                                localStorage.setItem("qn_pro_expires", cloudExpires.toString());
+                                localStorage.setItem("qn_pro_billing_cycle", profileData.pro_billing_cycle || "monthly");
+                                window.isProUser = true;
+                            }
+                        }
+
+                        // Синхронизируем инпуты в настройках
+                        const nickInput = document.getElementById("userNicknameInput");
+                        const aboutInput = document.getElementById("userAboutMeInput");
+                        const devLevelSelect = document.getElementById("userDevLevelSelect");
+                        if (nickInput) nickInput.value = userProfile.nickname;
+                        if (aboutInput) aboutInput.value = userProfile.aboutMe;
+                        if (devLevelSelect) devLevelSelect.value = userProfile.devLevel;
+                    }
+                } catch (errProfile) {
+                    console.warn("SupabaseSync: Не удалось загрузить профиль или запрос превысил таймаут:", errProfile);
+                }
+
+                // Кэшируем профиль в IndexedDB
+                await QuantumDB.saveState("qn_user_profile", userProfile);
+
+                // Финальный рендер UI профиля
+                window.syncUserProfileUI();
+                
+                try {
+                    await Promise.race([
+                        this.syncProfileToCloud(),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2500))
+                    ]);
+                } catch (e) {
+                    console.warn("SupabaseSync: Ошибка фонового сохранения профиля на сервере:", e);
+                }
+                
+                if (typeof window.updateCloudSyncWidget === "function") {
+                    window.updateCloudSyncWidget();
+                }
+
+                // Скачиваем облачные рабочие пространства и файлы
+                if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                    await this.restoreAllUserDataFromCloud();
+                } else {
+                    if (activeProfileId !== "profile-personal") {
+                        await this.subscribeToWorkspace(activeProfileId);
+                    } else {
+                        window.updateWorkspaceWidgets();
+                    }
+                }
+            }
+
             async restoreAllUserDataFromCloud() {
                 if (!this.client || !this.userId) return;
                 try {
                     console.log("SupabaseSync: Запуск восстановления облачных данных...");
 
-                    // 1. Извлекаем воркспейсы из Supabase (RLS автоматически вернет только те, где юзер является членом или создателем)
-                    const { data: workspacesData, error: wsError } = await this.client
-                        .from('workspaces')
-                        .select('*');
+                    // 1. Извлекаем воркспейсы из Supabase (таймаут 3.5 сек)
+                    const { data: workspacesData, error: wsError } = await Promise.race([
+                        this.client
+                            .from('workspaces')
+                            .select('*'),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3500))
+                    ]);
 
                     if (wsError) throw wsError;
 
@@ -17458,18 +17494,20 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     profiles = cloudProfiles;
                     await QuantumDB.saveState("qn_profiles", profiles);
 
-                    // 2. Скачиваем файлы для всех доступных пользователю рабочих пространств
+                    // 2. Скачиваем файлы для всех доступных пользователю рабочих пространств (таймаут 4 сек)
                     const wsIds = workspacesData ? workspacesData.map(ws => ws.id) : [];
                     if (wsIds.length > 0) {
-                        const { data: notesData, error: notesError } = await this.client
-                            .from('notes')
-                            .select('*')
-                            .in('workspace_id', wsIds);
+                        const { data: notesData, error: notesError } = await Promise.race([
+                            this.client
+                                .from('notes')
+                                .select('*')
+                                .in('workspace_id', wsIds),
+                            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 4000))
+                        ]);
 
                         if (notesError) throw notesError;
 
                         if (notesData) {
-                            // Исключаем старые облачные файлы, сохраняя личные заметки из локальной песочницы
                             notes = notes.filter(n => !n.profileId || n.profileId === "profile-personal");
                             notesData.forEach(dbNote => {
                                 notes.push({
@@ -17500,7 +17538,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     console.log("SupabaseSync: Данные успешно синхронизированы с облаком!");
 
                 } catch (e) {
-                    console.error("SupabaseSync: Не удалось восстановить данные сессии:", e);
+                    console.error("SupabaseSync: Не удалось восстановить данные сессии с облака:", e);
                 }
             }
 
@@ -18452,24 +18490,34 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
 
             try {
                 let data, error;
+                let timedOut = false;
                 
-                // Сначала пробуем извлечь с джоином профилей
-                let queryBuilder = window.supabaseSync.client
-                    .from('workspaces')
-                    .select('id, name, color, rgb, owner_id, profiles(nickname)');
+                // Чтобы избежать длительного зависания на продакшене из-за кривых RLS/отношений на удаленной СУБД,
+                // мы принудительно ограничиваем сложный запрос таймаутом в 2.5 секунды.
+                try {
+                    let queryBuilder = window.supabaseSync.client
+                        .from('workspaces')
+                        .select('id, name, color, rgb, owner_id, profiles(nickname)');
 
-                if (query) {
-                    queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+                    if (query) {
+                        queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+                    }
+
+                    const result = await Promise.race([
+                        queryBuilder.limit(15),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2500))
+                    ]);
+                    
+                    data = result.data;
+                    error = result.error;
+                } catch (e) {
+                    console.warn("handleWsSearch: Запрос с джоином не удался или превысил таймаут:", e);
+                    timedOut = true;
                 }
 
-                const result = await queryBuilder.limit(15);
-                data = result.data;
-                error = result.error;
-
-                // ФОЛБЭК: Если ошибка из-за отсутствия колонки nickname/таблицы profiles, 
-                // пробуем загрузить чистые данные без джоина, чтобы интерфейс не падал!
-                if (error && (error.message.includes("nickname") || error.message.includes("profiles"))) {
-                    console.warn("handleWsSearch: Сбой джоина profiles. Запуск фолбэка без профилей...");
+                // СВЕРХБЫСТРЫЙ ФОЛБЭК: Если первый запрос завис, выдал ошибку или RLS запретил выборку джоина
+                if (timedOut || error || !data) {
+                    console.log("handleWsSearch: Запуск упрощенного фолбэка без джоина для моментального ответа...");
                     let fallbackQuery = window.supabaseSync.client
                         .from('workspaces')
                         .select('id, name, color, rgb, owner_id');
@@ -18483,8 +18531,6 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     error = fallbackResult.error;
                 }
 
-                if (error) throw error;
-
                 list.innerHTML = "";
 
                 if (!data || data.length === 0) {
@@ -18493,10 +18539,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 }
 
                 data.forEach(ws => {
-                    // Проверяем, не добавлен ли этот Workspace уже у нас локально в IndexedDB
                     const isAlreadyJoined = profiles.some(p => p.id === ws.id);
-                    
-                    // Безопасно извлекаем никнейм создателя, вернувшегося из связанной структуры Supabase
                     const creatorName = ws.profiles && ws.profiles.nickname ? ws.profiles.nickname : "Cloud Developer";
                     
                     const actionBtn = isAlreadyJoined 
