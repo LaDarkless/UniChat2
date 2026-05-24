@@ -5568,6 +5568,8 @@
                         <input type="text" class="otp-input" maxlength="1" pattern="[0-9]*" inputmode="numeric" required>
                         <input type="text" class="otp-input" maxlength="1" pattern="[0-9]*" inputmode="numeric" required>
                         <input type="text" class="otp-input" maxlength="1" pattern="[0-9]*" inputmode="numeric" required>
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]*" inputmode="numeric" required>
+                        <input type="text" class="otp-input" maxlength="1" pattern="[0-9]*" inputmode="numeric" required>
                     </div>
 
                     <div id="otpFeedback" style="font-size: 11.5px; color: #ef4444; display: none; text-align: center; font-weight: 500;"></div>
@@ -16540,11 +16542,11 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 input.onpaste = (e) => {
                     e.preventDefault();
                     const pasted = e.clipboardData.getData("text").trim();
-                    if (pasted.length === 6 && /^\d+$/.test(pasted)) {
+                    if (pasted.length === 8 && /^\d+$/.test(pasted)) {
                         inputs.forEach((inp, idx) => {
                             inp.value = pasted[idx];
                         });
-                        inputs[5].focus();
+                        inputs[7].focus();
                         window.checkOtpComplete();
                     }
                 };
@@ -16556,9 +16558,9 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             const code = Array.from(inputs).map(inp => inp.value).join("");
             const btn = document.getElementById("otpVerifyBtn");
             if (btn) {
-                btn.disabled = (code.length !== 6);
-                // Автоматическая отправка формы при вводе всех 6 цифр (UX Onboarding)
-                if (code.length === 6 && !btn.disabled) {
+                btn.disabled = (code.length !== 8);
+                // Автоматическая отправка формы при вводе всех 8 цифр (UX Onboarding)
+                if (code.length === 8 && !btn.disabled) {
                     const form = document.getElementById("otpVerifyForm");
                     if (form) {
                         if (typeof form.requestSubmit === "function") {
@@ -16582,7 +16584,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             const inputs = document.querySelectorAll(".otp-input");
             const code = Array.from(inputs).map(inp => inp.value).join("");
 
-            if (code.length !== 6) return;
+            if (code.length !== 8) return;
 
             verifyBtn.disabled = true;
             verifyBtn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Проверка...";
