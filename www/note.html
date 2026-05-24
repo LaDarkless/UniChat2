@@ -1472,15 +1472,24 @@
             overflow-y: auto;
         }
 
-        .modal-overlay.active .modal {
-            transform: translateY(0);
-        }
-
         .modal h2 {
             font-size: 20px;
             margin-bottom: 20px;
             border-bottom: 1px solid var(--panel-border);
             padding-bottom: 10px;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .auth-card {
+            transform: translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.active .auth-card {
+            transform: translateY(0);
         }
 
         .setting-group {
@@ -16050,6 +16059,21 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             if (!container) return;
 
             container.innerHTML = "";
+
+            // Добавление виджета быстрой авторизации для гостевого режима
+            const isLoggedIn = window.supabaseSync && window.supabaseSync.userId;
+            if (!isLoggedIn) {
+                const loginPrompt = document.createElement("div");
+                loginPrompt.style.cssText = "padding: 12px; background: rgba(var(--accent-rgb), 0.05); border: 1px dashed rgba(var(--accent-rgb), 0.2); border-radius: 8px; margin: 4px 6px 12px 6px; text-align: center;";
+                loginPrompt.innerHTML = `
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4;">Войдите, чтобы синхронизировать проекты и начать командную работу.</div>
+                    <button class="btn btn-primary" onclick="window.toggleWorkspaceMenu(event); window.toggleAuthModal();" style="width: 100%; font-size: 11px; padding: 6px; justify-content: center; height: auto;">
+                        <i class='bx bx-log-in-circle'></i> Войти в аккаунт
+                    </button>
+                `;
+                container.appendChild(loginPrompt);
+            }
+
             profiles.forEach(p => {
                 const isActive = p.id === activeProfileId;
                 const item = document.createElement("button");
@@ -16590,11 +16614,16 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                             widgetBtn.style.display = "none";
                         }
 
-                        // Если открыт командный воркспейс — подписываемся
-                        if (activeProfileId !== "profile-personal") {
-                            await this.subscribeToWorkspace(activeProfileId);
+                        // Скачиваем и синхронизируем все рабочие области и файлы с облака в IndexedDB
+                        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                            await this.restoreAllUserDataFromCloud();
                         } else {
-                            window.updateWorkspaceWidgets();
+                            // Если открыт командный воркспейс — подписываемся
+                            if (activeProfileId !== "profile-personal") {
+                                await this.subscribeToWorkspace(activeProfileId);
+                            } else {
+                                window.updateWorkspaceWidgets();
+                            }
                         }
                     } else {
                         // Очистка сессии при выходе
@@ -16630,6 +16659,86 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 }
             }
 
+            async restoreAllUserDataFromCloud() {
+                if (!this.client || !this.userId) return;
+                try {
+                    console.log("SupabaseSync: Запуск восстановления облачных данных...");
+
+                    // 1. Извлекаем воркспейсы из Supabase (RLS автоматически вернет только те, где юзер является членом или создателем)
+                    const { data: workspacesData, error: wsError } = await this.client
+                        .from('workspaces')
+                        .select('*');
+
+                    if (wsError) throw wsError;
+
+                    let cloudProfiles = [
+                        { id: "profile-personal", name: "Личное пространство", avatar: "ЛП", tier: "free", color: "#8b5cf6", rgb: "139, 92, 246" }
+                    ];
+
+                    if (workspacesData && workspacesData.length > 0) {
+                        workspacesData.forEach(ws => {
+                            cloudProfiles.push({
+                                id: ws.id,
+                                name: ws.name,
+                                password: ws.password,
+                                avatar: ws.name.substring(0, 2).toUpperCase(),
+                                tier: ws.tier || "pro",
+                                color: ws.color,
+                                rgb: ws.rgb,
+                                owner_id: ws.owner_id
+                            });
+                        });
+                    }
+
+                    profiles = cloudProfiles;
+                    await QuantumDB.saveState("qn_profiles", profiles);
+
+                    // 2. Скачиваем файлы для всех доступных пользователю рабочих пространств
+                    const wsIds = workspacesData ? workspacesData.map(ws => ws.id) : [];
+                    if (wsIds.length > 0) {
+                        const { data: notesData, error: notesError } = await this.client
+                            .from('notes')
+                            .select('*')
+                            .in('workspace_id', wsIds);
+
+                        if (notesError) throw notesError;
+
+                        if (notesData) {
+                            // Исключаем старые облачные файлы, сохраняя личные заметки из локальной песочницы
+                            notes = notes.filter(n => !n.profileId || n.profileId === "profile-personal");
+                            notesData.forEach(dbNote => {
+                                notes.push({
+                                    id: dbNote.id,
+                                    title: dbNote.title,
+                                    content: dbNote.content,
+                                    type: dbNote.type,
+                                    parentId: dbNote.parent_id,
+                                    profileId: dbNote.workspace_id,
+                                    date: new Date(dbNote.updated_at).toLocaleDateString()
+                                });
+                            });
+                            await QuantumDB.saveNotes(notes);
+                        }
+                    }
+
+                    // 3. Синхронизируем интерфейс
+                    window.syncUserProfileUI();
+                    window.renderWorkspaceList();
+
+                    // Определяем активную рабочую область
+                    let lastActiveWs = await QuantumDB.getState("qn_active_profile");
+                    if (!lastActiveWs || !profiles.some(p => p.id === lastActiveWs)) {
+                        lastActiveWs = wsIds.length > 0 ? wsIds[0] : "profile-personal";
+                    }
+
+                    window.switchWorkspace(lastActiveWs, true); // Принудительный свитч с рендером файлов
+                    console.log("SupabaseSync: Данные успешно синхронизированы с облаком!");
+
+                } catch (e) {
+                    console.error("SupabaseSync: Не удалось восстановить данные сессии:", e);
+                }
+            }
+
             async signUp(nickname, email, password) {
                 if (!this.client) return;
                 try {
@@ -16656,7 +16765,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 try {
                     let email = emailOrNickname;
                     
-                    // Если введен никнейм (в нем нет символа @), транслируем его в почту через RPC в базе данных
+                    // Трансляция никнейма в почту
                     if (!emailOrNickname.includes("@")) {
                         const { data: fetchedEmail, error: rpcError } = await this.client
                             .rpc('get_email_by_username', { p_username: emailOrNickname });
@@ -16682,17 +16791,33 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             async signOut() {
                 if (!this.client) return;
                 try {
+                    // Выход из сессии Supabase
                     const { error } = await this.client.auth.signOut();
                     if (error) throw error;
                     
-                    // Полная очистка локального PRO-состояния
+                    // Сброс PRO-состояния и подписки
                     localStorage.removeItem("qn_pro_tier");
                     localStorage.removeItem("qn_pro_expires");
                     localStorage.removeItem("qn_pro_billing_cycle");
                     window.isProUser = false;
+
+                    // Защита приватности: Полная очистка облачных воркспейсов и файлов из IndexedDB
+                    notes = notes.filter(n => !n.profileId || n.profileId === "profile-personal");
+                    await QuantumDB.saveNotes(notes);
+
+                    profiles = [
+                        { id: "profile-personal", name: "Личное пространство", avatar: "ЛП", tier: "free", color: "#8b5cf6", rgb: "139, 92, 246" }
+                    ];
+                    await QuantumDB.saveState("qn_profiles", profiles);
+                    await QuantumDB.saveState("qn_active_profile", "profile-personal");
+
+                    const personalNote = notes.find(n => !n.profileId || n.profileId === "profile-personal");
+                    if (personalNote) {
+                        await QuantumDB.saveState("qn_active", personalNote.id);
+                    }
                     
                     if (window.synth) window.synth.playSoftHum();
-                    window.location.reload(); // Перезагружаем страницу для очистки памяти
+                    window.location.reload(); // Перезагрузка страницы для очистки ОЗУ
                 } catch (e) {
                     console.error("SupabaseSync: Ошибка SignOut:", e);
                 }
@@ -16704,31 +16829,15 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     const { error } = await this.client.from('profiles').upsert({
                         id: this.userId,
                         nickname: userProfile.nickname,
-                        username: userProfile.nickname, // Дублируем никнейм в поле username для совместимости со стартовым шаблоном Supabase
-                        first_name: userProfile.nickname, // Дублируем в first_name на случай ограничений NOT NULL в вашей схеме БД
-                        last_name: "", // Передаем пустую строку во избежание ограничений NOT NULL в вашей схеме БД
+                        username: userProfile.nickname, // Для совместимости
+                        first_name: userProfile.nickname, 
+                        last_name: "", 
                         about_me: userProfile.aboutMe,
-                        dev_level: userProfile.devLevel || "Middle" // Наш уровень квалификации для дашборда и рейтинга
+                        dev_level: userProfile.devLevel || "Middle" 
                     });
                     if (error) throw error;
                 } catch (e) {
                     console.warn("SupabaseSync: Ошибка синхронизации профиля:", e);
-                }
-            }
-
-            async loadWorkspaceMembers(workspaceId) {
-                if (!this.client) return;
-                try {
-                    const { data: dbMembers } = await this.client
-                        .from('workspace_members')
-                        .select('user_id, role, profiles(nickname, dev_level)')
-                        .eq('workspace_id', workspaceId);
-                    
-                    this.workspaceMembers = dbMembers || [];
-                    this.renderActiveTeamPresence();
-                } catch (err) {
-                    console.warn("SupabaseSync: Не удалось подгрузить команду для сайдбара:", err);
-                    this.workspaceMembers = [];
                 }
             }
 
@@ -17658,7 +17767,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
 
                 profiles.push(newProfile);
                 await QuantumDB.saveState("qn_profiles", profiles);
-                window.switchWorkspace(data.id);
+                window.switchWorkspace(wsData.id);
 
             } catch (err) {
                 alert("Доступ отклонен: " + err.message);
@@ -17742,7 +17851,7 @@ window.openWorkspaceStatsDashboard = async function() {
             });
         }
         
-        // Рендерим участников
+        // Рендерим участников (изменено на let для возможности сложения строк)
         let membersHtml = "";
         const isCurrentUserDirector = window.supabaseSync.userRole === 'director';
 
