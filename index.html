@@ -1464,8 +1464,8 @@
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
+            width: 100% !important;
+            height: 100% !important;
             background: #020204 !important;
             background-image: 
                 linear-gradient(var(--grid-color) 1px, transparent 1px),
@@ -1479,6 +1479,8 @@
             opacity: 0;
             transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
             pointer-events: none;
+            overflow-y: auto !important; /* Разрешаем вертикальный скролл на мобилках при открытии клавиатуры */
+            padding: 20px 15px !important;
         }
 
         #authModal.active {
@@ -1503,11 +1505,24 @@
             transform: scale(0.95) translateY(15px) !important;
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
             position: relative;
-            overflow: hidden;
+            overflow: visible !important; /* Убираем жесткий overflow для предотвращения багов сжатия содержимого */
+            margin: auto !important; /* Авто-выравнивание при переполнении */
         }
 
         #authModal.active .auth-card {
             transform: scale(1) translateY(0) !important;
+        }
+
+        /* На мобильных устройствах делаем отступы компактнее */
+        @media (max-width: 480px) {
+            #authModal {
+                align-items: flex-start !important; /* Прижимаем кверху при открытой клавиатуре */
+            }
+            .auth-card {
+                padding: 25px 20px !important;
+                border-radius: 16px !important;
+                margin-top: 10px !important;
+            }
         }
 
         /* ПОЛЯ ВВОДА ДЛЯ КОДА OTP */
@@ -5445,6 +5460,20 @@
         </div>
     </div>
 
+    <!-- МОДАЛКА CUSTOM PROMPT (СОВРЕМЕННЫЙ ОБСИДИАНОВЫЙ ПОДСКАЗЧИК) -->
+    <div class="modal-overlay" id="customPromptModal">
+        <div class="modal" style="max-width: 400px; padding: 25px; border-color: rgba(255,255,255,0.08); background: rgba(10, 10, 14, 0.95); backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);">
+            <h2 id="customPromptTitle" style="font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 12px; border-bottom: none; padding-bottom: 0; text-align: left;">Запрос данных</h2>
+            <div class="setting-group" style="margin-bottom: 20px;">
+                <input type="text" id="customPromptInput" style="width: 100%; padding: 10px 12px; background: #000; border: 1px solid var(--panel-border); color: #fff; border-radius: 8px; font-family: var(--font-ui); outline: none;" />
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn" id="customPromptCancel" style="background: rgba(255,255,255,0.03);">Отмена</button>
+                <button class="btn btn-primary" id="customPromptOk">ОК</button>
+            </div>
+        </div>
+    </div>
+
     <!-- МОДАЛКА ПРИСОЕДИНЕНИЯ К ЧУЖОМУ WORKSPACE (КОСМИЧЕСКИЙ ЛОББИ) -->
     <div class="modal-overlay" id="joinWorkspaceModal" onclick="if (event.target === this) window.toggleJoinWorkspaceModal();">
         <div class="modal" style="max-width: 460px; padding: 25px; border-color: rgba(59, 130, 246, 0.3); box-shadow: 0 0 30px rgba(59, 130, 246, 0.15), 0 15px 40px rgba(0,0,0,0.85); background: rgba(10, 10, 14, 0.95); backdrop-filter: blur(20px);">
@@ -5639,6 +5668,14 @@
                 <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                     Живой просмотр (Единое окно)
                     <input type="checkbox" id="livePreviewToggle" onchange="updateSettings()"
+                        style="width: 18px; height: 18px;">
+                </label>
+            </div>
+
+            <div class="setting-group" style="margin-top: 15px;">
+                <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                    Эффект шума (Grain/Noise)
+                    <input type="checkbox" id="noiseToggle" onchange="window.toggleNoiseEffect()"
                         style="width: 18px; height: 18px;">
                 </label>
             </div>
@@ -9834,7 +9871,8 @@ preview.innerHTML = window.secureSanitizeHTML(html);
             thinking: settings.thinking || "off",
             ttsVoice: settings.ttsVoice || "Eve",
             supabaseUrl: settings.supabaseUrl || "",
-            supabaseKey: settings.supabaseKey || ""
+            supabaseKey: settings.supabaseKey || "",
+            noiseEnabled: settings.noiseEnabled !== undefined ? settings.noiseEnabled : true
         };
 
         // Гарантируем наличие параметров тонкой настройки ИИ
@@ -9866,6 +9904,26 @@ preview.innerHTML = window.secureSanitizeHTML(html);
 
         // Допишите вызов нашей безопасной обертки внутри оригинального метода applySettings():
 
+        window.toggleNoiseEffect = function() {
+            const checkbox = document.getElementById("noiseToggle");
+            if (!checkbox) return;
+            settings.noiseEnabled = checkbox.checked;
+            safeLocalStorage.setItem("qn_settings", JSON.stringify(settings));
+            applyNoiseStyle();
+            if (window.synth) window.synth.playSoftHum();
+        };
+
+        function applyNoiseStyle() {
+            const overlay = document.querySelector(".noise-overlay");
+            if (overlay) {
+                overlay.style.display = settings.noiseEnabled ? "block" : "none";
+            }
+            const checkbox = document.getElementById("noiseToggle");
+            if (checkbox) {
+                checkbox.checked = !!settings.noiseEnabled;
+            }
+        }
+
         function originalApplySettings() {
             safeLocalStorage.setItem("qn_settings", JSON.stringify(settings));
             const root = document.documentElement;
@@ -9882,6 +9940,8 @@ preview.innerHTML = window.secureSanitizeHTML(html);
             if (document.getElementById("sizeSelect")) document.getElementById("sizeSelect").value = settings.size;
             if (document.getElementById("livePreviewToggle")) document.getElementById("livePreviewToggle").checked =
                 settings.livePreview;
+
+            applyNoiseStyle();
 
             // Подсветка активной кнопки анимации в сетке
             document.querySelectorAll("#liveThemeGrid .theme-btn").forEach(btn => {
