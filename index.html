@@ -7330,18 +7330,16 @@ window.addEventListener('message', function(e) {
             }
         };
 
-        // Горячее обновление превью сайта или рендерера Markdown (Hot-Reload без перезагрузки вкладки!)
+        // Полное обновление всего приложения (абсолютная замена F5 с экстренным автосохранением перед перезагрузкой)
         window.manualRefreshPreview = async function() {
             const icon = document.getElementById("refreshBtnIcon");
             if (icon) {
                 icon.classList.add("spin-refresh");
-                // Сбрасываем класс через 600мс, чтобы иконка крутилась при каждом последующем нажатии
-                setTimeout(() => icon.classList.remove("spin-refresh"), 600);
             }
 
             if (window.synth) window.synth.playBubble();
 
-            // Безопасность данных: Экстренно сохраняем текущие изменения в локальную БД и облако перед перезапуском фрейма
+            // Безопасность данных: Экстренно сохраняем текущие изменения в локальную БД и облако перед перезагрузкой
             if (activeId) {
                 const note = notes.find(n => n.id === activeId);
                 if (note) {
@@ -7357,21 +7355,13 @@ window.addEventListener('message', function(e) {
                             await window.supabaseSync.saveNoteToCloudDB(activeId, contentValue);
                         }
                     } catch (e) {
-                        console.warn("Ошибка автосохранения перед обновлением превью:", e);
+                        console.warn("Ошибка автосохранения перед жесткой перезагрузкой:", e);
                     }
                 }
             }
 
-            // Точечно перезапускаем только превью, сохраняя рабочую сессию IDE нетронутой!
-            if (isWebPreview) {
-                console.log("Quantum Notes: Горячая перезагрузка фрейма сайта...");
-                updateWebFrame();
-            } else {
-                console.log("Quantum Notes: Принудительное обновление Markdown...");
-                if (typeof updatePreview === "function") {
-                    await updatePreview();
-                }
-            }
+            // Выполняем физическую перезагрузку всей вкладки браузера
+            window.location.reload();
         };
 
         document.addEventListener("DOMContentLoaded", () => {
