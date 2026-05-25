@@ -1841,8 +1841,8 @@
             }
         }
 
-        /* === НАСТОЯЩИЙ ЖИВОЙ ПРОСМОТР (ОДНО ОКНО) === */
-        .workspace.live-mode {
+        /* === ЕДИНЫЙ ХОЛСТ БЕЗ РАЗДЕЛЕНИЯ НА ЭКРАНЫ === */
+        .workspace:not(.web-preview-active) {
             display: block;
             padding: 0;
             background: var(--panel-bg);
@@ -1851,7 +1851,7 @@
             position: relative;
         }
 
-        .workspace.live-mode .pane {
+        .workspace:not(.web-preview-active) .pane {
             display: flex !important;
             position: absolute;
             top: 0;
@@ -1865,13 +1865,13 @@
             transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .workspace.live-mode .pane-header,
-        .workspace.live-mode .mobile-tabs {
+        .workspace:not(.web-preview-active) .pane-header,
+        .workspace:not(.web-preview-active) .mobile-tabs {
             display: none !important;
         }
 
-        /* Пакет перекрытия слоев в Едином окне (Превью по умолчанию активно) */
-        .workspace.live-mode .preview-pane {
+        /* Превью активно по умолчанию */
+        .workspace:not(.web-preview-active) .preview-pane {
             z-index: 2;
             opacity: 1;
             transform: scale(1);
@@ -1880,26 +1880,41 @@
             cursor: text;
         }
 
-        .workspace.live-mode .editor-pane {
+        .workspace:not(.web-preview-active) .editor-pane {
             z-index: 1;
             opacity: 0;
             transform: scale(0.98);
             pointer-events: none;
         }
 
-        /* Когда идет активный набор текста (editing) */
-        .workspace.live-mode.editing .preview-pane {
+        /* Ввод текста в простом режиме (накладываем на тот же экран) */
+        .workspace:not(.web-preview-active).editing .preview-pane {
             z-index: 1;
             opacity: 0;
             transform: scale(1.02);
             pointer-events: none;
         }
 
-        .workspace.live-mode.editing .editor-pane {
+        .workspace:not(.web-preview-active).editing .editor-pane {
             z-index: 3;
             opacity: 1;
             transform: scale(1);
             pointer-events: auto;
+        }
+
+        /* В режиме IDE превью-панель СТРОГО скрыта, показывается только код на 100% ширины */
+        .workspace:not(.web-preview-active).ide-active-mode .preview-pane {
+            display: none !important;
+        }
+
+        .workspace:not(.web-preview-active).ide-active-mode .editor-pane {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            z-index: 3 !important;
+            position: relative !important;
+            transform: scale(1) !important;
+            width: 100% !important;
+            height: 100% !important;
         }
 
         /* === УМНЫЙ AI АССИСТЕНТ (ПРЕМИУМ ДИЗАЙН) === */
@@ -6819,6 +6834,7 @@ window.escapeHTML = function(str) {
                 // Активируем полноэкранный класс для всего превью-контейнера
                 if (ws) {
                     ws.classList.add('show-web-preview-full');
+                    ws.classList.add('web-preview-active'); // Активируем split-screen для Live-сервера
                 }
 
                 btn.innerHTML = '<i class="bx bx-stop-circle" style="color: #ef4444;"></i>';
@@ -6845,6 +6861,7 @@ window.escapeHTML = function(str) {
 
                 if (ws) {
                     ws.classList.remove('show-web-preview-full');
+                    ws.classList.remove('web-preview-active'); // Гасим split-screen при выключении сайта
                 }
 
                 btn.innerHTML = '<i class="bx bx-play-circle" style="color: #3b82f6;"></i>';
@@ -8172,6 +8189,8 @@ window.addEventListener('message', function(e) {
                     saveAndRender(currentVal);
                 }
             }
+            // Пересчитываем разметку Единого окна при переключении режимов
+            applySettings();
         }
         // ==========================================
 
@@ -9666,13 +9685,9 @@ window.addEventListener('message', function(e) {
         const workspace = document.getElementById("workspace");
 
         preview.addEventListener("click", () => {
-            if (settings.livePreview) {
+            if (!isIdeMode && !isWebPreview) {
                 workspace.classList.add("editing");
-                if (isIdeMode && typeof ideEditor !== 'undefined') {
-                    ideEditor.focus();
-                } else {
-                    editor.focus();
-                }
+                editor.focus();
             }
         });
 
@@ -9690,7 +9705,7 @@ window.addEventListener('message', function(e) {
 
         // Умный менеджер фокуса для Живого Просмотра (Единое окно)
         document.addEventListener("focusout", (e) => {
-            if (settings.livePreview && workspace.classList.contains("editing")) {
+            if (!isIdeMode && !isWebPreview && workspace.classList.contains("editing")) {
                 setTimeout(() => {
                     const activeEl = document.activeElement;
                     const editorPane = document.querySelector(".editor-pane");
@@ -9710,7 +9725,7 @@ window.addEventListener('message', function(e) {
 
         // Закрытие режима редактирования при клике за пределы рабочей области редактора
         document.addEventListener("mousedown", (e) => {
-            if (settings.livePreview && workspace.classList.contains("editing")) {
+            if (!isIdeMode && !isWebPreview && workspace.classList.contains("editing")) {
                 const editorPane = document.querySelector(".editor-pane");
                 const clickedHints = e.target.closest(".CodeMirror-hints") || e.target.closest(".CodeMirror-lint-tooltip") || e.target.closest(".CodeMirror-search-match");
                 const clickedContextMenu = e.target.closest("#dynamicNoteMenu") || e.target.closest("#dynamicChatMenu") || e.target.closest("#dynamicWorkspaceMenu") || e.target.closest("#dynamicTeamChatMenu");
@@ -10054,8 +10069,6 @@ if (window.MathJax && window.MathJax.typesetPromise) {
 
             const ws = document.getElementById("workspace");
             if (ws) {
-                // Вычисляем, является ли текущий файл исходным кодом (HTML, JS, CSS, Python и др.)
-                // По умолчанию файлы без расширения (например, "Инструкция") или .md / .txt считаются документами Markdown
                 const activeNote = notes.find(n => n.id === activeId);
                 const isCodeFile = activeNote && (
                     activeNote.title.toLowerCase().endsWith(".html") ||
@@ -10067,19 +10080,26 @@ if (window.MathJax && window.MathJax.typesetPromise) {
                     activeNote.title.toLowerCase().endsWith(".xml")
                 );
 
-                // Если это файл кода и живой запуск сайта выключен — убираем деление экрана
+                // Настраиваем класс режима IDE на воркспейсе
+                if (isIdeMode) {
+                    ws.classList.add("ide-active-mode");
+                    ws.classList.remove("editing");
+                } else {
+                    ws.classList.remove("ide-active-mode");
+                }
+
+                // Синхронизируем класс активного веб-превью
+                if (isWebPreview) {
+                    ws.classList.add("web-preview-active");
+                } else {
+                    ws.classList.remove("web-preview-active");
+                }
+
+                // Логика сокрытия неактивных панелей в сплит-режиме (только когда запущен запуск сайта)
                 if (isCodeFile && !isWebPreview) {
                     ws.classList.add("hide-preview-pane");
                 } else {
                     ws.classList.remove("hide-preview-pane");
-                }
-
-                // Активируем единое окно (Live Preview) только для Markdown/текстовых заметок и только если выключен режим запуска сайта (Web Preview)
-                if (settings.livePreview && !isCodeFile && !isWebPreview) {
-                    ws.classList.add("live-mode");
-                } else {
-                    ws.classList.remove("live-mode");
-                    ws.classList.remove("editing");
                 }
             }
 
@@ -20298,39 +20318,39 @@ window.cancelInlineRename = function() {
             const style = document.createElement("style");
             style.id = "liveWysiwygStyles";
             style.textContent = `
-                /* Скрываем маркдаун-теги форматирования на неактивных строках в режиме Единого окна */
-                .workspace.live-mode .CodeMirror-line:not(.CodeMirror-activeline) .cm-formatting {
+                /* Скрываем маркдаун-теги форматирования на неактивных строках, когда режим IDE выключен */
+                .workspace:not(.ide-active-mode) .CodeMirror-line:not(.CodeMirror-activeline) .cm-formatting {
                     display: none !important;
                 }
                 
                 /* Премиальная стилизация элементов прямо внутри CodeMirror */
-                .workspace.live-mode .CodeMirror .cm-header-1 {
+                .workspace:not(.ide-active-mode) .CodeMirror .cm-header-1 {
                     font-size: 2em !important;
                     font-weight: 700 !important;
                     color: #fff !important;
                 }
-                .workspace.live-mode .CodeMirror .cm-header-2 {
+                .workspace:not(.ide-active-mode) .CodeMirror .cm-header-2 {
                     font-size: 1.6em !important;
                     font-weight: 700 !important;
                     color: #fff !important;
                 }
-                .workspace.live-mode .CodeMirror .cm-header-3 {
+                .workspace:not(.ide-active-mode) .CodeMirror .cm-header-3 {
                     font-size: 1.3em !important;
                     font-weight: 600 !important;
                     color: #fff !important;
                 }
-                .workspace.live-mode .CodeMirror .cm-strong {
+                .workspace:not(.ide-active-mode) .CodeMirror .cm-strong {
                     font-weight: 700 !important;
                     color: #fff !important;
                 }
-                .workspace.live-mode .CodeMirror .cm-em {
+                .workspace:not(.ide-active-mode) .CodeMirror .cm-em {
                     font-style: italic !important;
                 }
-                .workspace.live-mode .CodeMirror .cm-link {
+                .workspace:not(.ide-active-mode) .CodeMirror .cm-link {
                     color: var(--accent) !important;
                     text-decoration: underline !important;
                 }
-                .workspace.live-mode .CodeMirror .cm-comment {
+                .workspace:not(.ide-active-mode) .CodeMirror .cm-comment {
                     background: rgba(255, 255, 255, 0.08) !important;
                     padding: 2px 4px !important;
                     border-radius: 4px !important;
