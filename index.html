@@ -1844,16 +1844,15 @@
         /* === НАСТОЯЩИЙ ЖИВОЙ ПРОСМОТР (ОДНО ОКНО) === */
         .workspace.live-mode {
             display: block;
-            /* Убираем разделение на две колонки */
             padding: 0;
             background: var(--panel-bg);
             border-radius: 16px;
             border: 1px solid var(--panel-border);
+            position: relative;
         }
 
         .workspace.live-mode .pane {
             display: flex !important;
-            /* Принудительно отменяет мобильное скрытие (display: none), опираясь только на opacity */
             position: absolute;
             top: 0;
             left: 0;
@@ -1863,7 +1862,7 @@
             border-radius: 16px;
             background: transparent;
             box-shadow: none;
-            transition: opacity 0.25s ease;
+            transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .workspace.live-mode .pane-header,
@@ -1871,29 +1870,35 @@
             display: none !important;
         }
 
-        /* Логика перекрытия (Превью лежит поверх Редактора) */
+        /* Пакет перекрытия слоев в Едином окне (Превью по умолчанию активно) */
         .workspace.live-mode .preview-pane {
             z-index: 2;
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
             background: var(--panel-bg);
             cursor: text;
-            /* Чтобы казалось, что это текстовое поле */
         }
 
         .workspace.live-mode .editor-pane {
             z-index: 1;
             opacity: 0;
+            transform: scale(0.98);
             pointer-events: none;
         }
 
-        /* Когда кликнули (editing) - Редактор выходит на первый план */
+        /* Когда идет активный набор текста (editing) */
         .workspace.live-mode.editing .preview-pane {
+            z-index: 1;
             opacity: 0;
+            transform: scale(1.02);
             pointer-events: none;
         }
 
         .workspace.live-mode.editing .editor-pane {
             z-index: 3;
             opacity: 1;
+            transform: scale(1);
             pointer-events: auto;
         }
 
@@ -8721,10 +8726,31 @@ window.addEventListener('message', function(e) {
                 toggleWebPreview();
             }
 
-            // Автоматическая коррекция экранированных переносов строк при открытии файла (убирает текстовые \n)
-            if (note && note.content && typeof note.content === 'string' && note.content.includes('\\n')) {
-                note.content = note.content.replace(/\\n/g, '\n');
-                saveNotes();
+            // Автоматическая коррекция экранированных переносов строк и самовосстановление сломанных LaTeX-формул
+            if (note && note.content && typeof note.content === 'string') {
+                let changed = false;
+                
+                // 1. Исправление текстовых переносов строк \\n
+                if (note.content.includes('\\n')) {
+                    note.content = note.content.replace(/\\n/g, '\n');
+                    changed = true;
+                }
+                
+                // 2. Исправление избыточного экранирования LaTeX (четверные бэкслеши \\\\ -> одиночные бэкслеши)
+                if (note.content.includes('\\\\psi') || note.content.includes('\\\\int') || note.content.includes('\\\\infty')) {
+                    note.content = note.content
+                        .replace(/\\\\psi/g, '\\psi')
+                        .replace(/\\\\omega/g, '\\omega')
+                        .replace(/\\\\int/g, '\\int')
+                        .replace(/\\\\infty/g, '\\infty')
+                        .replace(/\\\\sqrt/g, '\\sqrt')
+                        .replace(/\\\\pi/g, '\\pi');
+                    changed = true;
+                }
+                
+                if (changed) {
+                    saveNotes();
+                }
             }
 
             // Премиальный звуковой отклик при открытии файла
@@ -8800,7 +8826,7 @@ window.addEventListener('message', function(e) {
                 const ws = document.getElementById("workspace");
                 if (ws) {
                     ws.classList.add("live-mode");
-                    ws.classList.add("editing");
+                    ws.classList.remove("editing"); // Открываем файл сразу в чистовом превью!
                 }
             }
 
@@ -9662,8 +9688,7 @@ window.addEventListener('message', function(e) {
             }
         };
 
-        /* 
-        // Умный менеджер фокуса для Живого Просмотра
+        // Умный менеджер фокуса для Живого Просмотра (Единое окно)
         document.addEventListener("focusout", (e) => {
             if (settings.livePreview && workspace.classList.contains("editing")) {
                 setTimeout(() => {
@@ -9672,13 +9697,14 @@ window.addEventListener('message', function(e) {
                     
                     // Проверяем, остался ли фокус внутри панели редактора, панели поиска или тулбара
                     const focusStillInPane = editorPane && (editorPane.contains(activeEl) || activeEl === editorPane);
-                    const focusInHints = activeEl && (activeEl.closest(".CodeMirror-hints") || activeEl.closest(".CodeMirror-lint-tooltip"));
-                    const focusInModal = activeEl && (activeEl.closest(".modal") || activeEl.closest(".modal-overlay"));
-                    
-                    if (!focusStillInPane && !focusInHints && !focusInModal) {
+                    const focusInHints = activeEl && (activeEl.closest(".CodeMirror-hints") || activeEl.closest(".CodeMirror-lint-tooltip") || activeEl.closest(".CodeMirror-search-match"));
+                    const focusInModal = activeEl && (activeEl.closest(".modal") || activeEl.closest(".modal-overlay") || activeEl.closest("#dynamicNoteMenu") || activeEl.closest("#dynamicChatMenu") || activeEl.closest("#dynamicWorkspaceMenu") || activeEl.closest("#dynamicTeamChatMenu"));
+                    const focusInToolbar = activeEl && (activeEl.closest(".toolbar") || activeEl.closest(".editor-toolbar-wrapper"));
+
+                    if (!focusStillInPane && !focusInHints && !focusInModal && !focusInToolbar) {
                         workspace.classList.remove("editing");
                     }
-                }, 100);
+                }, 150);
             }
         });
 
@@ -9686,17 +9712,16 @@ window.addEventListener('message', function(e) {
         document.addEventListener("mousedown", (e) => {
             if (settings.livePreview && workspace.classList.contains("editing")) {
                 const editorPane = document.querySelector(".editor-pane");
-                const clickedHints = e.target.closest(".CodeMirror-hints") || e.target.closest(".CodeMirror-lint-tooltip");
-                const clickedContextMenu = e.target.closest("#dynamicNoteMenu") || e.target.closest("#dynamicChatMenu");
+                const clickedHints = e.target.closest(".CodeMirror-hints") || e.target.closest(".CodeMirror-lint-tooltip") || e.target.closest(".CodeMirror-search-match");
+                const clickedContextMenu = e.target.closest("#dynamicNoteMenu") || e.target.closest("#dynamicChatMenu") || e.target.closest("#dynamicWorkspaceMenu") || e.target.closest("#dynamicTeamChatMenu");
                 const clickedModal = e.target.closest(".modal") || e.target.closest(".modal-overlay");
-                const clickedToolbar = e.target.closest(".toolbar");
+                const clickedToolbar = e.target.closest(".toolbar") || e.target.closest(".editor-toolbar-wrapper");
 
                 if (editorPane && !editorPane.contains(e.target) && !clickedHints && !clickedContextMenu && !clickedModal && !clickedToolbar) {
                     workspace.classList.remove("editing");
                 }
             }
         }, { passive: true });
-*/
 
         // Парсер (Markdown + MathJax)
         async function updatePreview() {
@@ -14122,13 +14147,7 @@ if (settings.livePreview && !isCodeFile && !isWebPreview) {
     const ws = document.getElementById("workspace");
     if (ws) {
         ws.classList.add("live-mode");
-        ws.classList.add("editing"); // Оставляем активным режим редактирования
-    }
-    if (isIdeMode && typeof ideEditor !== 'undefined') {
-        ideEditor.focus();
-        setTimeout(() => ideEditor.refresh(), 50);
-    } else {
-        editor.focus();
+        ws.classList.remove("editing"); // Возвращаем в красивое чистовое превью после правок ИИ
     }
 } else {
     if (isIdeMode && typeof ideEditor !== 'undefined') {
@@ -16292,13 +16311,6 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             }
             localStorage.setItem("qn_settings", JSON.stringify(settings));
         };
-
-        // Единственная точка инициализации док-панели после загрузки документа
-        document.addEventListener("DOMContentLoaded", () => {
-            if (!window.celestialSea) {
-                window.celestialSea = new CelestialSeaDock();
-            }
-        });
 
         // =======================================================================
         // КОНТРОЛЛЕР СИСТЕМЫ ПРОФИЛЕЙ И РАБОЧИХ ПРОСТРАНСТВ (WORKSPACES)
@@ -20276,11 +20288,57 @@ window.cancelInlineRename = function() {
             }
         }
 
-        // Единственная точка инициализации док-панели после загрузки документа
+        // Единственная точка инициализации док-панели после загрузки документа + инжектор WYSIWYG-стилей
         document.addEventListener("DOMContentLoaded", () => {
             if (!window.celestialSea) {
                 window.celestialSea = new CelestialSeaDock();
             }
+
+            // Инжектируем премиальные стили для Obsidian-style Live Preview (WYSIWYG прямо внутри редактора)
+            const style = document.createElement("style");
+            style.id = "liveWysiwygStyles";
+            style.textContent = `
+                /* Скрываем маркдаун-теги форматирования на неактивных строках в режиме Единого окна */
+                .workspace.live-mode .CodeMirror-line:not(.CodeMirror-activeline) .cm-formatting {
+                    display: none !important;
+                }
+                
+                /* Премиальная стилизация элементов прямо внутри CodeMirror */
+                .workspace.live-mode .CodeMirror .cm-header-1 {
+                    font-size: 2em !important;
+                    font-weight: 700 !important;
+                    color: #fff !important;
+                }
+                .workspace.live-mode .CodeMirror .cm-header-2 {
+                    font-size: 1.6em !important;
+                    font-weight: 700 !important;
+                    color: #fff !important;
+                }
+                .workspace.live-mode .CodeMirror .cm-header-3 {
+                    font-size: 1.3em !important;
+                    font-weight: 600 !important;
+                    color: #fff !important;
+                }
+                .workspace.live-mode .CodeMirror .cm-strong {
+                    font-weight: 700 !important;
+                    color: #fff !important;
+                }
+                .workspace.live-mode .CodeMirror .cm-em {
+                    font-style: italic !important;
+                }
+                .workspace.live-mode .CodeMirror .cm-link {
+                    color: var(--accent) !important;
+                    text-decoration: underline !important;
+                }
+                .workspace.live-mode .CodeMirror .cm-comment {
+                    background: rgba(255, 255, 255, 0.08) !important;
+                    padding: 2px 4px !important;
+                    border-radius: 4px !important;
+                    font-family: var(--font-code) !important;
+                    color: #fca5a5 !important;
+                }
+            `;
+            document.head.appendChild(style);
         });
 
         // =======================================================================
