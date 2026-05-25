@@ -17767,16 +17767,16 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     .on('postgres_changes', {
                         event: '*', // Отслеживаем все типы изменений (INSERT, UPDATE, DELETE)
                         schema: 'public',
-                        table: 'notes',
-                        filter: `workspace_id=eq.${workspaceId}` // Высокопроизводительная серверная фильтрация
+                        table: 'notes'
+                        // Убираем серверный фильтр из-за частых багов сопоставления UUID в Supabase Realtime
                     }, payload => {
                         this.handleIncomingDbChange(payload);
                     })
                     .on('postgres_changes', {
                         event: '*', // Мультиплексируем сокет на ЛЮБЫЕ транзакции в чате (синхронизация удалений и закрепов)
                         schema: 'public',
-                        table: 'chat_messages',
-                        filter: `workspace_id=eq.${workspaceId}`
+                        table: 'chat_messages'
+                        // Убираем серверный фильтр для повышения отказоустойчивости доставки сообщений
                     }, payload => {
                         this.handleIncomingChatDbChange(payload);
                     });
@@ -17949,6 +17949,14 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             handleIncomingChatDbChange(payload) {
                 const { eventType, new: newRecord, old: oldRecord } = payload;
                 
+                // --- КЛИЕНТСКИЙ ФИЛЬТР ЧАТА ---
+                if (eventType === 'INSERT' || eventType === 'UPDATE') {
+                    if (newRecord && newRecord.workspace_id !== this.currentWorkspaceId) return;
+                } else if (eventType === 'DELETE') {
+                    const exists = (this.workspaceChatMessages || []).some(m => m.id === oldRecord.id);
+                    if (!exists) return;
+                }
+
                 if (eventType === 'INSERT') {
                     this.handleIncomingChatMessage(newRecord);
                 } else if (eventType === 'UPDATE') {
@@ -18229,8 +18237,14 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 // Игнорируем изменения, которые инициировали мы сами (для предотвращения петель рендеринга)
                 if (newRecord && newRecord.updated_by === this.userId) return;
 
-                // КЛИЕНТСКИЙ ФИЛЬТР: Игнорируем изменения из других пространств (обход RLS-багов Supabase Realtime)
-                if (newRecord && newRecord.workspace_id !== this.currentWorkspaceId) return;
+                // --- НАДЕЖНЫЙ КЛИЕНТСКИЙ ФИЛЬТР (Фикс багов UUID-фильтрации на стороне Realtime-сервера) ---
+                if (eventType === 'INSERT' || eventType === 'UPDATE') {
+                    if (newRecord && newRecord.workspace_id !== this.currentWorkspaceId) return;
+                } else if (eventType === 'DELETE') {
+                    // При удалении проверяем, относится ли удаленный локальный файл к текущему воркспейсу
+                    const localNote = notes.find(n => n.id === oldRecord.id);
+                    if (!localNote || localNote.profileId !== this.currentWorkspaceId) return;
+                }
 
                 window.isReceivingRemoteEdit = true;
                 try {
