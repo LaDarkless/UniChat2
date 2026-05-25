@@ -17022,7 +17022,7 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             }
         };
 
-        // Контекстное меню для управления рабочими областями
+        // Контекстное меню для управления рабочими областями (с автоматическим определением роли)
         window.showWorkspaceContextMenu = function(clientX, clientY, wsId) {
             window.ignoreMenuClickTime = Date.now() + 300;
             window.hideNoteContextMenu();
@@ -17036,16 +17036,28 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
             const menuEl = document.createElement('div');
             menuEl.id = 'dynamicWorkspaceMenu';
 
-            const deleteOption = profile.id !== "profile-personal" 
-                ? `<button class="dyn-menu-btn del-btn" onclick="window.handleWorkspaceDelete('${profile.id}')"><i class='bx bx-trash'></i> Удалить Workspace</button>`
-                : `<span style="font-size:11px; color:var(--text-muted); padding: 8px 12px; display:block; font-family:var(--font-ui);">Нельзя удалить дефолтный Workspace</span>`;
+            const currentUserId = window.supabaseSync ? window.supabaseSync.userId : null;
+            const isOwner = profile.owner_id === currentUserId;
+
+            let actionOption = "";
+            if (profile.id !== "profile-personal") {
+                if (isOwner) {
+                    // Если пользователь является создателем — он может удалить воркспейс полностью
+                    actionOption = `<button class="dyn-menu-btn del-btn" onclick="window.handleWorkspaceDelete('${profile.id}')"><i class='bx bx-trash'></i> Удалить Workspace</button>`;
+                } else {
+                    // Если приглашенный участник — он видит только кнопку "Выйти"
+                    actionOption = `<button class="dyn-menu-btn" style="color: #f43f5e;" onclick="window.handleWorkspaceLeave('${profile.id}')"><i class='bx bx-log-out'></i> Выйти из Workspace</button>`;
+                }
+            } else {
+                actionOption = `<span style="font-size:11px; color:var(--text-muted); padding: 8px 12px; display:block; font-family:var(--font-ui);">Нельзя изменить дефолтный Workspace</span>`;
+            }
 
             menuEl.innerHTML = `
                 <div style="font-size:10px; color:var(--text-muted); padding:6px 12px; font-weight:700; text-transform:uppercase; font-family:var(--font-ui);">Workspace: ${profile.name}</div>
                 <button class="dyn-menu-btn" onclick="window.handleWorkspaceRename('${profile.id}')"><i class='bx bx-edit-alt'></i> Переименовать</button>
                 <button class="dyn-menu-btn" onclick="window.handleWorkspaceColorChange('${profile.id}')"><i class='bx bx-palette'></i> Сменить цвет</button>
                 <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 4px 0;"></div>
-                ${deleteOption}
+                ${actionOption}
             `;
 
             menuEl.style.cssText =
@@ -17193,6 +17205,68 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                     console.error("Ошибка деструктора воркспейса:", err);
                     alert("Не удалось завершить удаление: " + err.message);
                 }
+            }
+            window.hideWorkspaceContextMenu();
+        };
+
+        // Логика добровольного выхода участника из чужого рабочего пространства
+        window.handleWorkspaceLeave = async function(wsId) {
+            if (wsId === "profile-personal") {
+                alert("Нельзя выйти из личного пространства.");
+                return;
+            }
+
+            const profile = profiles.find(p => p.id === wsId);
+            if (!profile) return;
+
+            const currentUserId = window.supabaseSync ? window.supabaseSync.userId : null;
+            if (!currentUserId) {
+                alert("Необходима авторизация для выхода из облачного воркспейса.");
+                window.hideWorkspaceContextMenu();
+                return;
+            }
+
+            const wantToLeave = confirm(`Вы действительно хотите выйти из Workspace "${profile.name}"? Вы потеряете доступ к его файлам и чату, пока владелец не пригласит вас снова или вы не введете пароль в Лобби.`);
+            if (!wantToLeave) {
+                window.hideWorkspaceContextMenu();
+                return;
+            }
+
+            if (window.synth) window.synth.playClick();
+
+            try {
+                // 1. Удаляем запись участника из таблицы workspace_members в Supabase
+                if (window.supabaseSync && window.supabaseSync.client) {
+                    const { error } = await window.supabaseSync.client
+                        .from('workspace_members')
+                        .delete()
+                        .eq('workspace_id', wsId)
+                        .eq('user_id', currentUserId);
+
+                    if (error) throw error;
+                }
+
+                // 2. Локально удаляем заметки этого воркспейса из IndexedDB
+                notes = notes.filter(n => n.profileId !== wsId);
+                await QuantumDB.saveNotes(notes);
+
+                // 3. Удаляем воркспейс из локального списка профилей
+                profiles = profiles.filter(p => p.id !== wsId);
+                await QuantumDB.saveState("qn_profiles", profiles);
+
+                // 4. Переключаемся в Личное пространство
+                if (wsId === activeProfileId) {
+                    window.switchWorkspace("profile-personal", true);
+                } else {
+                    window.renderWorkspaceList();
+                }
+
+                if (window.synth) window.synth.playChime();
+                alert(`Вы успешно вышли из рабочего пространства "${profile.name}".`);
+
+            } catch (err) {
+                console.error("Ошибка при выходе из воркспейса:", err);
+                alert("Не удалось выйти из воркспейса: " + err.message);
             }
             window.hideWorkspaceContextMenu();
         };
