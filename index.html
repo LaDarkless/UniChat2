@@ -18985,10 +18985,34 @@ window.checkWriteAccess = async function(noteId) {
     }
 };
 
-// Блокировка/разблокировка редактора (CodeMirror и textarea) + вывод индикатора
+// Блокировка/разблокировка редактора + вывод индикатора + запрет выделения и копирования (SaaS DLP-Security)
 window.updateEditorReadOnlyState = function(readOnly) {
     const saveBtn = document.getElementById("manualSaveBtn");
     const titleInput = document.getElementById("noteTitle");
+    
+    // Переключаем глобальный класс защиты от копирования на уровне body
+    document.body.classList.toggle("note-read-only-active", readOnly);
+
+    // Динамически инжектируем стили блокировки выделения при первой активации
+    if (readOnly && !document.getElementById("readOnlyRestrictionStyles")) {
+        const style = document.createElement("style");
+        style.id = "readOnlyRestrictionStyles";
+        style.textContent = `
+            body.note-read-only-active #editor,
+            body.note-read-only-active .CodeMirror,
+            body.note-read-only-active #preview,
+            body.note-read-only-active .CodeMirror-line,
+            body.note-read-only-active .CodeMirror-lines,
+            body.note-read-only-active .CodeMirror-scroll,
+            body.note-read-only-active #htmlPreviewFrame {
+                user-select: none !important;
+                -webkit-user-select: none !important;
+                -moz-user-select: none !important;
+                -ms-user-select: none !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
     
     if (saveBtn) {
         saveBtn.disabled = readOnly;
@@ -19000,6 +19024,7 @@ window.updateEditorReadOnlyState = function(readOnly) {
         titleInput.style.opacity = readOnly ? "0.6" : "1";
     }
     if (typeof ideEditor !== 'undefined' && ideEditor) {
+        // nocursor полностью запрещает ставить каретку ввода и выделять текст в CodeMirror
         ideEditor.setOption("readOnly", readOnly ? "nocursor" : false);
         const wrapper = ideEditor.getWrapperElement();
         if (readOnly) wrapper.classList.add("cm-read-only");
@@ -19023,6 +19048,56 @@ window.updateEditorReadOnlyState = function(readOnly) {
     } else {
         if (lockBadge) lockBadge.remove();
     }
+};
+
+// Бронебойный перехват буфера обмена для режима "Только чтение" (DLP)
+document.addEventListener("copy", (e) => {
+    if (document.body.classList.contains("note-read-only-active")) {
+        e.preventDefault();
+        window.showCopyBlockedWarning();
+    }
+});
+
+document.addEventListener("cut", (e) => {
+    if (document.body.classList.contains("note-read-only-active")) {
+        e.preventDefault();
+        window.showCopyBlockedWarning();
+    }
+});
+
+document.addEventListener("dragstart", (e) => {
+    if (document.body.classList.contains("note-read-only-active")) {
+        // Блокируем перетаскивание выделенного текста за пределы редакторов
+        if (e.target.closest("#editor") || e.target.closest(".CodeMirror") || e.target.closest("#preview")) {
+            e.preventDefault();
+        }
+    }
+});
+
+// SaaS-уведомление (Toast) о блокировке копирования с мягким щелчком интерфейса
+window.showCopyBlockedWarning = function() {
+    if (window.synth) window.synth.playClick();
+    
+    let toast = document.getElementById("copyBlockedToast");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "copyBlockedToast";
+        toast.style.cssText = "position: fixed; bottom: 100px; left: 50%; transform: translate(-50%, 20px); background: rgba(239, 68, 68, 0.95); color: #fff; border: 1px solid rgba(255, 255, 255, 0.15); padding: 10px 20px; border-radius: 30px; font-size: 12.5px; font-weight: 600; font-family: var(--font-ui); z-index: 2147483647; box-shadow: 0 10px 25px rgba(0,0,0,0.5); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; align-items: center; gap: 8px;";
+        toast.innerHTML = "<i class='bx bx-shield-quarter' style='font-size: 16px; color: #ff8a8a;'></i> Копирование заблокировано политикой безопасности";
+        document.body.appendChild(toast);
+    }
+    
+    // Анимация показа
+    setTimeout(() => {
+        toast.style.opacity = "1";
+        toast.style.transform = "translate(-50%, 0)";
+    }, 10);
+    
+    clearTimeout(window.copyBlockedToastTimeout);
+    window.copyBlockedToastTimeout = setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translate(-50%, 20px)";
+    }, 2200);
 };
 
 // Модальное окно Директора для управления индивидуальным доступом сотрудников к файлу
