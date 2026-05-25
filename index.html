@@ -9053,11 +9053,16 @@ window.addEventListener('message', function(e) {
             const menuEl = document.createElement('div');
             menuEl.id = 'dynamicNoteMenu';
 
+            // Проверяем роль пользователя для папки (скрываем опцию управления правами у рядовых сотрудников)
+            const isDirector = activeProfileId !== "profile-personal" && window.supabaseSync && window.supabaseSync.userRole === 'director';
+            const permissionsOption = isDirector ? `<button class="dyn-menu-btn" onclick="window.openFilePermissionsModal('${folderId}')"><i class='bx bx-shield-quarter' style='color:#3b82f6;'></i> Доступ сотрудников...</button>` : "";
+
             menuEl.innerHTML = `
             <button class="dyn-menu-btn" onclick="window.createNewNoteInFolder('${folderId}')"><i class='bx bx-file-blank'></i> Создать файл здесь</button>
             <button class="dyn-menu-btn" onclick="window.createNewFolderInFolder('${folderId}')"><i class='bx bx-folder-plus'></i> Создать папку здесь</button>
             <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0;"></div>
             <button class="dyn-menu-btn" onclick="handleFolderRename('${folderId}')"><i class='bx bx-edit-alt'></i> Переименовать папку</button>
+            ${permissionsOption}
             <button class="dyn-menu-btn del-btn" onclick="handleFolderDelete('${folderId}')"><i class='bx bx-trash'></i> Удалить папку и всё внутри</button>
         `;
 
