@@ -8104,6 +8104,9 @@ window.addEventListener('message', function(e) {
             const toggleBtn = document.getElementById('ideToggleBtnMenu'); // <-- ИСПРАВЛЕНО
             const ideConsoleBtn = document.getElementById('ideConsoleToggleBtn'); // Кнопка ошибок
 
+            // Находим активную заметку для корректной передачи имени файла (предотвращает падение функции)
+            const note = notes.find(n => n.id === activeId);
+
             if (isIdeMode) {
                 cmWrapper.style.display = "block";
                 editor.style.display = "none";
@@ -8119,10 +8122,18 @@ window.addEventListener('message', function(e) {
                     toggleBtn.style.background = "rgba(16, 185, 129, 0.15)";
                 }
 
-                // ФИКС 3: setValue сам вызывает обновление. Вызываем вручную только если текст не менялся.
                 const currentVal = editor.value;
-                setIdeModeByFilename(note.title, ideEditor); // Установка линтера до изменения контента
-                if (ideEditor.getValue() !== currentVal) {
+                if (note) {
+                    setIdeModeByFilename(note.title, ideEditor); // Установка линтера до изменения контента
+                } else {
+                    setIdeModeByFilename("file.md", ideEditor);
+                }
+
+                // Нормализация переносов строк (\r\n -> \n) для устранения багов сравнения на Windows/macOS
+                const normalizedIdeVal = ideEditor.getValue().replace(/\r\n/g, "\n");
+                const normalizedCurrentVal = currentVal.replace(/\r\n/g, "\n");
+
+                if (normalizedIdeVal !== normalizedCurrentVal) {
                     ideEditor.setValue(currentVal);
                 } else {
                     saveAndRender(currentVal);
@@ -8144,7 +8155,12 @@ window.addEventListener('message', function(e) {
                 }
 
                 const currentVal = ideEditor.getValue();
-                if (editor.value !== currentVal) {
+                
+                // Нормализация переносов строк (\r\n -> \n) при возврате в стандартную Textarea
+                const normalizedEditorVal = editor.value.replace(/\r\n/g, "\n");
+                const normalizedCurrentVal = currentVal.replace(/\r\n/g, "\n");
+
+                if (normalizedEditorVal !== normalizedCurrentVal) {
                     editor.value = currentVal;
                     editor.dispatchEvent(new Event("input")); // Безопасный вызов
                 } else {
