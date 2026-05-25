@@ -17526,11 +17526,12 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                 try {
                     console.log("SupabaseSync: Запуск восстановления облачных данных...");
 
-                    // 1. Извлекаем воркспейсы из Supabase (таймаут 3.5 сек)
-                    const { data: workspacesData, error: wsError } = await Promise.race([
+                    // 1. Извлекаем только те воркспейсы, в которых текущий пользователь состоит членом или создателем (JOIN-запрос)
+                    const { data: memberRecords, error: wsError } = await Promise.race([
                         this.client
-                            .from('workspaces')
-                            .select('*'),
+                            .from('workspace_members')
+                            .select('role, workspaces(*)')
+                            .eq('user_id', this.userId),
                         new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 3500))
                     ]);
 
@@ -17540,7 +17541,16 @@ ${JSON.stringify(notesDirectory)}` + textAccessRule;
                         { id: "profile-personal", name: "Личное пространство", avatar: "ЛП", tier: "free", color: "#8b5cf6", rgb: "139, 92, 246" }
                     ];
 
-                    if (workspacesData && workspacesData.length > 0) {
+                    const workspacesData = [];
+                    if (memberRecords && memberRecords.length > 0) {
+                        memberRecords.forEach(record => {
+                            if (record.workspaces) {
+                                workspacesData.push(record.workspaces);
+                            }
+                        });
+                    }
+
+                    if (workspacesData.length > 0) {
                         workspacesData.forEach(ws => {
                             cloudProfiles.push({
                                 id: ws.id,
