@@ -1678,6 +1678,76 @@
 
 
     <script>
+
+        // --- СИНТЕЗАТОР ЗВУКОВЫХ ЭФФЕКТОВ (Web Audio API) ---
+        class SaaSFeedbackSynth {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+            init() {
+                if (this.ctx) return;
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.warn("Web Audio API не поддерживается");
+                }
+            }
+            playChime() {
+                this.init();
+                if (this.muted || !this.ctx) return;
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const now = this.ctx.currentTime;
+                
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(880, now); // Нота A5
+                osc1.frequency.exponentialRampToValueAtTime(1760, now + 0.08);
+                
+                osc2.type = 'triangle';
+                osc2.frequency.setValueAtTime(440, now); // Нота A4
+                osc2.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+                
+                gain.gain.setValueAtTime(0.03, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.25);
+                osc2.stop(now + 0.25);
+            }
+            playBubble() {
+                this.init();
+                if (this.muted || !this.ctx) return;
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const now = this.ctx.currentTime;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.exponentialRampToValueAtTime(980, now + 0.1);
+                
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start(now);
+                osc.stop(now + 0.18);
+            }
+        }
+        window.sound = new SaaSFeedbackSynth();
+
         // Инициализация Supabase
         const SUPABASE_URL = 'https://qnklmktpzfphqynomsgw.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFua2xta3RwemZwaHF5bm9tc2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NzY1NzIsImV4cCI6MjA5MjQ1MjU3Mn0.gfyXStXf1zkmDHV0Q-4LDwb7Az4UNmSL0BkMMqp1SdA'; // <--- Заменить здесь
@@ -1800,6 +1870,11 @@
         await initDB();
         updateHomeStats();
         openNavTab('home'); // Стартуем с нового экрана Home
+        
+        // Разблокировка контекста веб-аудио после первого клика
+        document.body.addEventListener('click', () => {
+            if (window.sound) window.sound.init();
+        }, { once: true });
         
 
         // НОВОЕ: Перетаскивание блоков памяти мышкой на ПК (Drag-to-scroll)
@@ -1925,7 +2000,14 @@ function saveSummaryEditor() {
 
     function goHome() {
         currentId = null;
-        openNavTab('chat'); // При возврате из чата возвращаемся в список чатов
+        const activeScreen = document.querySelector('.screen.active');
+        // Если выходим из экрана чата — возвращаемся на вкладку со списком чатов
+        if (activeScreen && activeScreen.id === 'chat-screen') {
+            openNavTab('chat');
+        } else {
+            // В остальных случаях корректно возвращаемся на главный экран Home
+            openNavTab('home');
+        }
     }
 
     // --- ЛОГИКА ЗАКРЕПА И УДАЛЕНИЯ ---
@@ -2536,6 +2618,7 @@ function saveSummaryEditor() {
         const newMsg = { role: 'user', name: userName, content: text, timestamp: Date.now() };
         
         if (currentMode === 'solo') {
+            if (window.sound) window.sound.playBubble();
             appState.chats[currentId].push(newMsg);
             input.value = ''; autoResizeTextarea(input); renderMessages(); scrollToBottom(); saveData();
             await fetchAIResponseSolo();
@@ -3573,6 +3656,7 @@ function updateTokenCounterDisplay() {
     // --- ОБНОВЛЕНИЕ НАВИГАЦИИ (Добавлен 'discover') ---
     // Найдите старую функцию openNavTab и ЗАМЕНИТЕ ЕЁ на эту:
     function openNavTab(tabName) {
+        if (window.sound) window.sound.playChime();
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         if(tabName === 'home') {
             document.getElementById('nav-home').classList.add('active');
@@ -3942,7 +4026,6 @@ function togglePlusMenu(e) {
         showToast("Персонаж успешно удален.");
     }
 </script>
-</body>
 <!-- PREMIUM CELESTIAL SEA NAV DOCK (Kanata x Gura Theme)                    -->
 <!-- ======================================================================= -->
 <style>
@@ -3958,17 +4041,24 @@ function togglePlusMenu(e) {
     --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
   }
 
-  /* Враппер плавающей кнопки */
+  /* Враппер плавающей кнопки с динамической привязкой к фрейму приложения */
   .fab-wrapper {
     position: fixed;
     bottom: 30px;
-    right: 30px;
+    right: calc(50% - 240px + 20px); /* 50% экрана минус половина контейнера (240px) плюс отступ */
     z-index: 999999;
     width: 68px;
     height: 68px;
     pointer-events: none;
     will-change: transform;
     filter: drop-shadow(0 10px 30px rgba(0, 229, 255, 0.25));
+  }
+
+  /* На мобильных устройствах позиционируем по правому краю экрана */
+  @media (max-width: 480px) {
+    .fab-wrapper {
+      right: 20px;
+    }
   }
 
   /* Основная круглая кнопка (Триггер) */
@@ -4445,6 +4535,7 @@ function togglePlusMenu(e) {
       this.height = parent.offsetHeight;
       this.canvas.width = this.width * this.dpr;
       this.canvas.height = this.height * this.dpr;
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0); // Сбрасываем старую матрицу трансформации
       this.ctx.scale(this.dpr, this.dpr);
       
       // Перегенерируем звезды, чтобы они гармонично заполнили новые границы экрана
