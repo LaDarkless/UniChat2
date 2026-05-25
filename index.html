@@ -9741,13 +9741,23 @@ html = html.replace(/%%M_I_(\d+)%%/g, (m, i) => mInline[i]);
 
 preview.innerHTML = window.secureSanitizeHTML(html);
 
-            if (window.MathJax && window.MathJax.typesetPromise) {
+if (window.MathJax && window.MathJax.typesetPromise) {
                 try {
-                    MathJax.startup.document.state(0);
-                    MathJax.texReset();
-                    await MathJax.typesetPromise([preview]);
-                    status.textContent = "Готово";
-                    status.style.color = "#10b981";
+                    // ФИКС: Если панель превью скрыта (на мобильных или в режиме Единого окна),
+                    // измерение размеров контейнера вернет 0, что вызовет баг MathJax "NaNex".
+                    // Мы безопасно пропускаем рендеринг LaTeX до тех пор, пока превью не станет видимым на экране.
+                    const isPreviewVisible = !!(preview.offsetWidth || preview.offsetHeight || preview.getClientRects().length);
+                    
+                    if (isPreviewVisible) {
+                        MathJax.startup.document.state(0);
+                        MathJax.texReset();
+                        await MathJax.typesetPromise([preview]);
+                        status.textContent = "Готово";
+                        status.style.color = "#10b981";
+                    } else {
+                        status.textContent = "Готово (Ожидание показа)";
+                        status.style.color = "var(--text-muted)";
+                    }
                 } catch (e) {
                     status.textContent = "Ошибка LaTeX";
                     status.style.color = "#ef4444";
@@ -9797,6 +9807,12 @@ preview.innerHTML = window.secureSanitizeHTML(html);
                 ws.classList.add("show-preview");
                 btnPreview.classList.add("active");
                 btnEdit.classList.remove("active");
+                
+                // Форсируем обновление превью при переключении вкладки на мобильном,
+                // чтобы мгновенно отрисовать LaTeX-формулы, как только они стали видимы.
+                if (typeof updatePreview === "function") {
+                    updatePreview();
+                }
             } else {
                 ws.classList.remove("show-preview");
                 btnEdit.classList.add("active");
