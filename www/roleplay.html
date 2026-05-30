@@ -1651,15 +1651,69 @@
 
     <!-- ... конец кода chat-screen (закрывающий тег </div>) ... -->
 
-    <!-- ЭКРАН 4.1: ПОЛНОЭКРАННЫЕ ЗАКРЕПЛЕННЫЕ СООБЩЕНИЯ -->
+    <!-- ЭКРАН 4.1: ПОЛНОЭКРАННЫЕ ЗАКРЕПЛЕННЫЕ СООБЩЕНИЯ И УМНАЯ ПАМЯТЬ -->
     <div id="pinned-screen" class="screen">
-        <div class="header">
+        <div class="header" style="border-bottom: none;">
             <button class="icon-btn" onclick="closePinnedScreen()"><i class="fa-solid fa-arrow-left"></i></button>
-            <div class="header-title">Закреплено (Память ИИ)</div>
+            <div class="header-title">Память и воспоминания</div>
             <div style="width: 40px;"></div> <!-- Spacer -->
         </div>
-        <div class="ps-list" id="pinned-list-container">
-            <!-- Карточки генерируются JS -->
+        
+        <!-- Переключатель вкладок памяти -->
+        <div style="display: flex; justify-content: center; padding: 5px 20px 15px 20px; background: rgba(28, 30, 38, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-color); flex-shrink: 0;">
+            <div class="header-tabs">
+                <span id="ps-tab-messages" class="active" onclick="switchPinnedTab('messages')">Закрепы</span>
+                <span id="ps-tab-memory" onclick="switchPinnedTab('memory')">Умная память</span>
+            </div>
+        </div>
+
+        <!-- Контейнер для прокрутки вкладок -->
+        <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
+            <!-- Вкладка 1: Закрепленные сообщения -->
+            <div id="ps-messages-view" class="ps-list" style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Сюда рендерятся сообщения, сгруппированные по отправителю -->
+            </div>
+
+            <!-- Вкладка 2: Умная индивидуальная память -->
+            <div id="ps-memory-view" class="ps-list" style="display: none; flex-direction: column; gap: 20px; padding: 20px;">
+                <!-- Компактный блок создания и редактирования памяти -->
+                <div class="profile-section" style="margin-bottom: 0;" id="ps-memory-creator-block">
+                    <div class="profile-section-title" id="ps-mem-form-title"><i class="fa-solid fa-brain"></i> Создать факт / Секрет</div>
+                    <div class="form-group">
+                        <textarea class="profile-input" id="new-mem-content" rows="3" placeholder="Опишите секрет или важный факт... Используйте *звездочки* для действий." style="background: rgba(0,0,0,0.35); font-size: 13.5px;"></textarea>
+                    </div>
+                    
+                    <div class="toggle-row" style="margin: 10px 0;">
+                        <span class="profile-setting-name" style="font-size: 13.5px; font-weight: 600;">Общая память (Знают все)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="new-mem-shared-toggle" checked onchange="toggleNewMemKnowers()">
+                            <span class="slider-round"></span>
+                        </label>
+                    </div>
+
+                    <!-- Выбор знающих сущностей (скрыт, если память общая) -->
+                    <div id="new-mem-knowers-container" style="display: none; flex-direction: column; gap: 10px; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.03); max-height: 150px; overflow-y: auto;">
+                        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Кто владеет этим фактом?</div>
+                        <div id="new-mem-knowers-list" style="display: flex; flex-direction: column; gap: 8px;">
+                            <!-- Интерактивные аватарки участников генерируются динамически через JS -->
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button class="btn-primary" id="save-mem-btn" onclick="saveCustomMemory()" style="flex: 2; padding: 12px; font-size: 14px; border-radius: 12px; margin: 0;">
+                            <i class="fa-solid fa-plus"></i> Внедрить в память
+                        </button>
+                        <button class="ps-btn unpin" id="cancel-mem-edit-btn" onclick="cancelMemoryEdit()" style="display: none; flex: 1; padding: 12px; font-size: 14px; border-radius: 12px; margin: 0; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1);">
+                            Отмена
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Список добавленных умных воспоминаний -->
+                <div style="display: flex; flex-direction: column; gap: 12px;" id="custom-memories-list">
+                    <!-- Рендер списка из БД -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1944,6 +1998,7 @@
         groupChats: {}, // group chats
         chatHistories: {}, // { [entityId]: [ { date: timestamp, messages: [] } ] }
         wallpapers: [], // <-- НОВОЕ: Добавили массив обоев сюда
+        customMemories: {}, // <-- Хранилище умной сегрегированной памяти
         settings: { apiKey: '', openRouterKey: '', model: 'mistralai/mistral-medium-3.1' },
         userProfile: { name: 'User', description: '', avatar: '' }
     };
@@ -1981,6 +2036,7 @@
                     if(!appState.groupChats) appState.groupChats = {};
                     if(!appState.chatHistories) appState.chatHistories = {};
                     if(!appState.wallpapers) appState.wallpapers = []; // <-- НОВОЕ
+                    if(!appState.customMemories) appState.customMemories = {}; // Инициализация умной памяти
                 }
                 resolve();
             };
@@ -2636,8 +2692,20 @@ function saveSummaryEditor() {
         dbTarget[currentId] = [];
         const entity = currentMode === 'groups' ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
         
+        // Сбрасываем старую сжатую память (Summary), чтобы она не загрязняла новый сеанс
+        if (entity) {
+            entity.currentSummary = "";
+            if (!entity.traits) entity.traits = {};
+            entity.traits.summaryEnabled = false;
+        }
+
+        // Очищаем «Умную память» (Базу умных фактов / Секретов) для этого чата при перезапуске
+        if (appState.customMemories && appState.customMemories[currentId]) {
+            appState.customMemories[currentId] = [];
+        }
+
         // Выдаем приветствие
-        if (entity.greeting && entity.greeting.trim() !== '') {
+        if (entity && entity.greeting && entity.greeting.trim() !== '') {
             dbTarget[currentId].push({
                 role: 'ai',
                 name: currentMode === 'groups' ? 'System/Сценарий' : entity.name,
@@ -2959,13 +3027,20 @@ function saveSummaryEditor() {
         }
 
         if (char.memoryBoxes && char.memoryBoxes.length > 0) {
-    sys += `Character Memory:\n`;
-    char.memoryBoxes.forEach(box => {
-        if (typeof box === 'string') sys += `${box}\n`;
-        else sys += `[${box.title || 'Memory'}]: ${box.content}\n`;
-    });
-    sys += `\n`;
-}
+            sys += `Character Memory:\n`;
+            char.memoryBoxes.forEach(box => {
+                if (typeof box === 'string') sys += `${box}\n`;
+                else sys += `[${box.title || 'Memory'}]: ${box.content}\n`;
+            });
+            sys += `\n`;
+        }
+        
+        // Внедряем умную индивидуальную/общую память для соло-чата
+        const customMemsPrompt = getInjectedMemories(currentId, char.id, false);
+        if (customMemsPrompt) {
+            sys += `[DYNAMIC MEMORIES / KNOWLEDGE BASE]:\n${customMemsPrompt}\n`;
+        }
+
         sys += `Character Name: ${char.name}\nGender: ${char.gender}\n\n`;
         sys += `--- USER INFO ---\nName: ${appState.userProfile.name}\nDesc: ${appState.userProfile.description}\n\n`;
 
@@ -3000,13 +3075,19 @@ function saveSummaryEditor() {
         await callOpenRouter(apiMsgs, char.name, appState.chats[currentId]);
     }
 
-    // --- ФЕТЧ ГРУППОВОГО ЧАТА ---
+    // --- ФЕТЧ ГРУППОВОГО ЧАТА (С защитой от пустых ссылок) ---
     async function triggerAIGroupReply(botCharId) {
         if (isWaitingForAI) return;
-        isWaitingForAI = true; showLoader();
-
+        
         const group = appState.groups.find(g => g.id === currentId);
         const activeChar = appState.characters.find(c => c.id === botCharId);
+        
+        if (!activeChar) {
+            showToast("Выбранный персонаж был удален из базы данных!", true);
+            return;
+        }
+
+        isWaitingForAI = true; showLoader();
         const history = appState.groupChats[currentId];
 
         // Строим контекст для конкретного ИИ для максимального реализма в группах
@@ -3038,15 +3119,21 @@ function saveSummaryEditor() {
         if (group.scenario) sys += `Current Situation/Scenario: ${group.scenario}\n\n`;
         if (activeChar.protocol) sys += `Your Personality Protocol:\n${activeChar.protocol}\n\n`;
         if (activeChar.memoryBoxes && activeChar.memoryBoxes.length > 0) {
-    sys += `Your Memories:\n`;
-    activeChar.memoryBoxes.forEach(box => {
-        if (typeof box === 'string') sys += `${box}\n`;
-        else sys += `[${box.title || 'Memory'}]: ${box.content}\n`;
-    });
-    sys += `\n`;
-}
+            sys += `Your Memories:\n`;
+            activeChar.memoryBoxes.forEach(box => {
+                if (typeof box === 'string') sys += `${box}\n`;
+                else sys += `[${box.title || 'Memory'}]: ${box.content}\n`;
+            });
+            sys += `\n`;
+        }
+
+        // Внедряем умную индивидуальную/общую память для группового чата
+        const customMemsPrompt = getInjectedMemories(currentId, activeChar.id, true);
+        if (customMemsPrompt) {
+            sys += `[DYNAMIC MEMORIES / KNOWLEDGE BASE]:\n${customMemsPrompt}\n`;
+        }
         
-        // Список кто в чате
+        // Список кто в чате    
         let members = [appState.userProfile.name];
         group.participants.forEach(pid => members.push(appState.characters.find(c=>c.id===pid).name));
         sys += `Chat Members: ${members.join(', ')}.\n`;
@@ -3135,14 +3222,21 @@ function saveSummaryEditor() {
         document.getElementById('chat-menu-overlay').classList.remove('active');
     }
 
-    // --- ВЫЗОВ СЛУЧАЙНОГО БОТА В ГРУППЕ ---
+    // --- ВЫЗОВ СЛУЧАЙНОГО БОТА В ГРУППЕ (Безопасный) ---
     function triggerRandomAIGroupReply() {
         if (isWaitingForAI) return;
         const group = appState.groups.find(g => g.id === currentId);
         if (!group || !group.participants || group.participants.length === 0) return;
         
-        // Выбираем случайный ID из массива участников
-        const randomCharId = group.participants[Math.floor(Math.random() * group.participants.length)];
+        // Оставляем только тех участников, которые реально присутствуют в базе данных
+        const activeParticipants = group.participants.filter(pid => appState.characters.some(c => c.id === pid));
+        if (activeParticipants.length === 0) {
+            showToast("В этой группе нет доступных ИИ персонажей!", true);
+            return;
+        }
+        
+        // Выбираем случайный ID из отфильтрованного массива участников
+        const randomCharId = activeParticipants[Math.floor(Math.random() * activeParticipants.length)];
         
         // Показываем микро-уведомление, кто был выбран (для визуала)
         const chosenChar = appState.characters.find(c => c.id === randomCharId);
@@ -3774,10 +3868,15 @@ function updateTokenCounterDisplay() {
     activeMessages.forEach(m => totalChars += m.content.length);
 
     // 4. Закрепленные сообщения (если они еще не учтены в activeMessages)
-    messages.filter(m => m.isPinned && !activeMessages.includes(m)).forEach(m => totalChars += m.content.length);
-    
-    // 5. Вывод результата в UI
-    const tokenDisplay = document.getElementById('sp-token-count');
+        messages.filter(m => m.isPinned && !activeMessages.includes(m)).forEach(m => totalChars += m.content.length);
+        
+        // Учет умной индивидуальной/общей памяти в токенах
+        if (appState.customMemories && appState.customMemories[currentId]) {
+            appState.customMemories[currentId].forEach(m => totalChars += m.content.length);
+        }
+        
+        // 5. Вывод результата в UI
+        const tokenDisplay = document.getElementById('sp-token-count');
     if (tokenDisplay) {
         tokenDisplay.innerText = `~${Math.ceil(totalChars / 3.5)}`;
     }
@@ -3804,53 +3903,398 @@ function updateTokenCounterDisplay() {
     updateTokenCounterDisplay();
 }
 
-    // --- ПОЛНОЭКРАННОЕ ОКНО ПРИКРЕПЛЕННЫХ СООБЩЕНИЙ ---
+    // --- ИНТЕРФЕЙС ПАМЯТИ И УМНЫХ ВОСПОМИНАНИЙ (ВКЛАДКИ) ---
     function openPinnedModal() {
         document.getElementById('chat-menu-overlay').classList.remove('active'); // Закрываем боковое меню
-        switchScreen('pinned-screen'); // Открываем новый полноэкранный интерфейс
+        switchScreen('pinned-screen');
+        switchPinnedTab('messages'); // По умолчанию открываем вкладку с закрепленными сообщениями
+    }
+
+    function switchPinnedTab(tabName) {
+        document.getElementById('ps-tab-messages').classList.toggle('active', tabName === 'messages');
+        document.getElementById('ps-tab-memory').classList.toggle('active', tabName === 'memory');
         
-        const container = document.getElementById('pinned-list-container');
+        document.getElementById('ps-messages-view').style.display = tabName === 'messages' ? 'flex' : 'none';
+        document.getElementById('ps-memory-view').style.display = tabName === 'memory' ? 'flex' : 'none';
+        
+        if (tabName === 'messages') {
+            renderPinnedMessages();
+        } else {
+            renderCustomMemories();
+        }
+    }
+
+    // Отрисовка закрепленных сообщений с группировкой по отправителю и Markdown
+    function renderPinnedMessages() {
+        const container = document.getElementById('ps-messages-view');
         container.innerHTML = '';
         const messages = currentMode === 'solo' ? appState.chats[currentId] : appState.groupChats[currentId];
-        let hasPins = false;
-
+        
+        // Группируем закрепы по именам отправителей
+        const grouped = {};
         messages.forEach((msg, originalIndex) => {
             if (msg.isPinned) {
-                hasPins = true;
-                const div = document.createElement('div');
-                div.className = 'ps-card';
-                
-                // Семантический выбор иконки отправителя
-                let iconClass = 'fa-robot';
-                if (msg.role === 'user') {
-                    iconClass = 'fa-user';
-                } else if (msg.role === 'system' || msg.name === 'System' || msg.name === 'System/Сценарий') {
-                    iconClass = 'fa-bullhorn';
+                if (!grouped[msg.name]) {
+                    grouped[msg.name] = [];
                 }
-                
-                // В карточке отображается полный текст, можно скроллить, если он гигантский
-                div.innerHTML = `
-                    <div style="font-weight:600; color:#fff; display:flex; align-items:center; gap:8px;">
-                        <i class="fa-solid ${iconClass}" style="color:var(--accent-color);"></i> ${msg.name}
-                    </div>
-                    <div class="ps-card-content">${msg.content}</div>
-                    <div class="ps-actions">
-                        <button class="ps-btn edit" onclick="editMessage(${originalIndex}); closePinnedScreen();"><i class="fa-solid fa-pen"></i> Ред.</button>
-                        <button class="ps-btn unpin" onclick="toggleMessagePin(${originalIndex}); openPinnedModal();"><i class="fa-solid fa-thumbtack-slash"></i> Открепить</button>
-                        <button class="ps-btn delete" onclick="deleteMessage(${originalIndex}); openPinnedModal();"><i class="fa-solid fa-trash"></i> Удалить</button>
-                    </div>
-                `;
-                container.appendChild(div);
+                grouped[msg.name].push({ msg, originalIndex });
             }
         });
 
-        if (!hasPins) {
+        const senders = Object.keys(grouped);
+        
+        if (senders.length === 0) {
             container.innerHTML = `
                 <div class="empty-state" style="margin-top: 100px;">
                     <i class="fa-solid fa-thumbtack" style="font-size: 50px; margin-bottom: 20px; opacity: 0.2;"></i>
-                    <br>У ИИ нет закрепленных воспоминаний
+                    <br>В этом чате нет закрепленных сообщений
                 </div>`;
+            return;
         }
+
+        senders.forEach(senderName => {
+            const section = document.createElement('div');
+            section.style.display = 'flex';
+            section.style.flexDirection = 'column';
+            section.style.gap = '12px';
+            
+            // Определяем иконку для заголовка отправителя
+            let iconClass = 'fa-robot';
+            const firstMsg = grouped[senderName][0].msg;
+            if (firstMsg.role === 'user') {
+                iconClass = 'fa-user';
+            } else if (firstMsg.role === 'system' || firstMsg.name === 'System' || firstMsg.name === 'System/Сценарий') {
+                iconClass = 'fa-bullhorn';
+            }
+
+            section.innerHTML = `
+                <div class="section-title" style="margin: 10px 0 0 0; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                    <i class="fa-solid ${iconClass}" style="color: var(--accent-color);"></i> ${senderName}
+                </div>
+            `;
+
+            grouped[senderName].forEach(({ msg, originalIndex }) => {
+                const card = document.createElement('div');
+                card.className = 'ps-card';
+                
+                // Рендер Markdown и применение кавычек для прямой речи
+                let processedContent = msg.content.replace(/\*(.*?)\*/g, '\n\n*$1*\n\n');
+                let mdHtml = marked.parse(processedContent);
+                mdHtml = mdHtml
+                    .replace(/"([^"\n<>\/]+)"/g, '<strong class="quote-highlight">"$1"</strong>')
+                    .replace(/«([^»\n<>\/]+)»/g, '<strong class="quote-highlight">«$1»</strong>')
+                    .replace(/“([^”\n<>\/]+)”/g, '<strong class="quote-highlight">“$1”</strong>');
+
+                card.innerHTML = `
+                    <div class="ps-card-content" style="max-height: 250px; overflow-y: auto;">${mdHtml}</div>
+                    <div class="ps-actions">
+                        <button class="ps-btn edit" onclick="editMessage(${originalIndex}); closePinnedScreen();"><i class="fa-solid fa-pen"></i> Ред.</button>
+                        <button class="ps-btn unpin" onclick="toggleMessagePin(${originalIndex}); renderPinnedMessages();"><i class="fa-solid fa-thumbtack-slash"></i> Открепить</button>
+                        <button class="ps-btn delete" onclick="deleteMessage(${originalIndex}); renderPinnedMessages();"><i class="fa-solid fa-trash"></i> Удалить</button>
+                    </div>
+                `;
+                section.appendChild(card);
+            });
+            container.appendChild(section);
+        });
+    }
+
+    // Логика отображения выбора знающих лиц с именами и аватарками
+    function toggleNewMemKnowers(precheckedList = null) {
+        const isShared = document.getElementById('new-mem-shared-toggle').checked;
+        const container = document.getElementById('new-mem-knowers-container');
+        container.style.display = isShared ? 'none' : 'flex';
+        
+        if (!isShared) {
+            const list = document.getElementById('new-mem-knowers-list');
+            list.innerHTML = '';
+            
+            const participants = [];
+            // Селектор пользователя
+            participants.push({ 
+                id: 'user', 
+                name: `Я (${appState.userProfile.name || 'User'})`, 
+                avatar: appState.userProfile.avatar || 'https://via.placeholder.com/150/1e2028/FFFFFF?text=ME' 
+            });
+            
+            if (currentMode === 'groups') {
+                const group = appState.groups.find(g => g.id === currentId);
+                if (group) {
+                    group.participants.forEach(pid => {
+                        const c = appState.characters.find(char => char.id === pid);
+                        if (c) participants.push({ id: c.id, name: c.name, avatar: c.avatar });
+                    });
+                }
+            } else {
+                const char = appState.characters.find(c => c.id === currentId);
+                if (char) participants.push({ id: char.id, name: char.name, avatar: char.avatar });
+            }
+            
+            participants.forEach(p => {
+                // Если передан список знающих лиц (в режиме редактирования), сверяемся с ним. 
+                // В режиме создания по умолчанию выбраны все участники чата.
+                const isChecked = precheckedList ? precheckedList.includes(p.id) : true;
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `knower-checkbox-item ${isChecked ? 'checked' : ''}`;
+                itemDiv.id = `knower-item-${p.id}`;
+                
+                itemDiv.innerHTML = `
+                    <input type="checkbox" value="${p.id}" ${isChecked ? 'checked' : ''} style="display: none;">
+                    <img src="${p.avatar || 'https://via.placeholder.com/40/1e2028/FFFFFF?text=AI'}" class="knower-avatar">
+                    <span class="knower-name">${p.name}</span>
+                    <i class="fa-solid fa-circle-check knower-check-icon"></i>
+                `;
+                
+                // Обработчик интерактивного клика по плашке
+                itemDiv.onclick = (e) => {
+                    const cb = itemDiv.querySelector('input[type="checkbox"]');
+                    cb.checked = !cb.checked;
+                    itemDiv.classList.toggle('checked', cb.checked);
+                    if (window.sound) window.sound.playBubble();
+                };
+                
+                list.appendChild(itemDiv);
+            });
+        }
+    }
+
+    // Глобальная переменная для отслеживания редактируемого воспоминания
+    let currentEditingMemoryId = null;
+
+    // Включение режима редактирования умного секрета
+    function editCustomMemory(memId) {
+        if (!appState.customMemories || !appState.customMemories[currentId]) return;
+        const mem = appState.customMemories[currentId].find(m => m.id === memId);
+        if (!mem) return;
+
+        currentEditingMemoryId = memId;
+
+        // Корректируем заголовок формы и наполнение текстового поля
+        document.getElementById('ps-mem-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> Редактировать факт / Секрет`;
+        document.getElementById('new-mem-content').value = mem.content;
+        
+        const isShared = mem.knowers.includes('all');
+        const toggle = document.getElementById('new-mem-shared-toggle');
+        toggle.checked = isShared;
+        
+        // Рендерим плашки участников с подсветкой только тех, кто знает секрет
+        toggleNewMemKnowers(isShared ? null : mem.knowers);
+
+        // Обновляем состояние управляющих кнопок формы
+        document.getElementById('save-mem-btn').innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Сохранить изменения`;
+        document.getElementById('cancel-mem-edit-btn').style.display = 'block';
+
+        // Плавная прокрутка наверх к форме редактора
+        const scrollContainer = document.getElementById('pinned-screen').querySelector('div[style*="overflow-y: auto"]');
+        if (scrollContainer) {
+            scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    // Сброс и возврат к режиму создания нового секрета
+    function cancelMemoryEdit() {
+        currentEditingMemoryId = null;
+        document.getElementById('ps-mem-form-title').innerHTML = `<i class="fa-solid fa-brain"></i> Создать факт / Секрет`;
+        document.getElementById('new-mem-content').value = '';
+        
+        const toggle = document.getElementById('new-mem-shared-toggle');
+        toggle.checked = true;
+        
+        toggleNewMemKnowers();
+
+        document.getElementById('save-mem-btn').innerHTML = `<i class="fa-solid fa-plus"></i> Внедрить в память`;
+        document.getElementById('cancel-mem-edit-btn').style.display = 'none';
+    }
+
+    // Сохранение воспоминания в IndexedDB (Поддерживает создание и обновление)
+    function saveCustomMemory() {
+        const textarea = document.getElementById('new-mem-content');
+        const content = textarea.value.trim();
+        if (!content) return showToast("Заполните текст воспоминания!", true);
+        
+        const isShared = document.getElementById('new-mem-shared-toggle').checked;
+        let knowers = [];
+        
+        if (isShared) {
+            knowers = ['all'];
+        } else {
+            // Ищем все скрытые чекбоксы внутри красивых карточек знающих лиц
+            knowers = Array.from(document.querySelectorAll('#new-mem-knowers-list input:checked')).map(cb => cb.value);
+            if (knowers.length === 0) return showToast("Выберите хотя бы одного знающего!", true);
+        }
+        
+        if (!appState.customMemories) appState.customMemories = {};
+        if (!appState.customMemories[currentId]) appState.customMemories[currentId] = [];
+        
+        if (currentEditingMemoryId) {
+            // Сценарий 1: Редактирование существующего закрепа
+            const memIndex = appState.customMemories[currentId].findIndex(m => m.id === currentEditingMemoryId);
+            if (memIndex !== -1) {
+                appState.customMemories[currentId][memIndex].content = content;
+                appState.customMemories[currentId][memIndex].knowers = knowers;
+                showToast("Умное воспоминание успешно обновлено!");
+            }
+        } else {
+            // Сценарий 2: Создание новой записи памяти
+            const newMem = {
+                id: 'mem_' + Date.now() + Math.floor(Math.random() * 1000),
+                content: content,
+                knowers: knowers
+            };
+            appState.customMemories[currentId].push(newMem);
+            showToast("Новый факт успешно добавлен в умную память!");
+        }
+        
+        saveData();
+        cancelMemoryEdit(); // Возвращает форму в исходное состояние
+        renderCustomMemories();
+        updateTokenCounterDisplay();
+    }
+
+    // Удаление воспоминания
+    function deleteCustomMemory(memId) {
+        if (!confirm("Удалить это умное воспоминание?")) return;
+        
+        if (appState.customMemories && appState.customMemories[currentId]) {
+            appState.customMemories[currentId] = appState.customMemories[currentId].filter(m => m.id !== memId);
+            saveData();
+            renderCustomMemories();
+            showToast("Факт стерт из памяти!");
+            
+            updateTokenCounterDisplay();
+        }
+    }
+
+    // Отрисовка списка воспоминаний с разграничением прав доступа
+    function renderCustomMemories() {
+        const container = document.getElementById('custom-memories-list');
+        container.innerHTML = '';
+        
+        if (!appState.customMemories) appState.customMemories = {};
+        const memories = appState.customMemories[currentId] || [];
+        
+        toggleNewMemKnowers(); // Обновляем чекбоксы в форме
+        
+        if (memories.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: var(--text-muted); font-size: 13px; margin-top: 20px; padding: 20px; border: 1px dashed rgba(255,255,255,0.02); border-radius:12px;">
+                    Умных воспоминаний еще нет. Сформируйте и сохраните первое над этим полем!
+                </div>`;
+            return;
+        }
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'section-title';
+        titleDiv.style.margin = '15px 0 5px 0';
+        titleDiv.innerHTML = `<i class="fa-solid fa-list-check"></i> База умных фактов (${memories.length})`;
+        container.appendChild(titleDiv);
+
+        // Формируем карту имен для расшифровки ID
+        const participantsMap = {};
+        participantsMap['user'] = `Я (${appState.userProfile.name || 'User'})`;
+        
+        if (currentMode === 'groups') {
+            const group = appState.groups.find(g => g.id === currentId);
+            if (group) {
+                group.participants.forEach(pid => {
+                    const c = appState.characters.find(char => char.id === pid);
+                    if (c) participantsMap[pid] = c.name;
+                });
+            }
+        } else {
+            const char = appState.characters.find(c => c.id === currentId);
+            if (char) participantsMap[char.id] = char.name;
+        }
+
+        memories.forEach(mem => {
+            const card = document.createElement('div');
+            card.className = 'ps-card';
+            card.style.background = 'rgba(22, 25, 38, 0.4)';
+            card.style.border = '1px solid rgba(129, 94, 255, 0.1)';
+            
+            // Парсим Markdown для содержимого
+            let processedContent = mem.content.replace(/\*(.*?)\*/g, '\n\n*$1*\n\n');
+            let mdHtml = marked.parse(processedContent);
+            mdHtml = mdHtml
+                .replace(/"([^"\n<>\/]+)"/g, '<strong class="quote-highlight">"$1"</strong>')
+                .replace(/«([^»\n<>\/]+)»/g, '<strong class="quote-highlight">«$1»</strong>')
+                .replace(/“([^”\n<>\/]+)”/g, '<strong class="quote-highlight">“$1”</strong>');
+
+            // Расшифровка списка доступа
+            let knowersText = '';
+            if (mem.knowers.includes('all')) {
+                knowersText = `<span style="color: #6eff8f; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-users"></i> ОБЩИЙ ФАКТ (Знают все)</span>`;
+            } else {
+                const names = mem.knowers.map(id => participantsMap[id] || "Неизвестно").filter(n => n);
+                knowersText = `<span style="color: var(--accent-color); font-weight: 700; font-size: 11px;"><i class="fa-solid fa-user-secret"></i> ТАЙНА ДЛЯ:</span> <span style="font-size: 11px; color:#fff;">${names.join(', ')}</span>`;
+            }
+
+            card.innerHTML = `
+                <div style="font-size: 11px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.03); display: flex; justify-content: space-between; align-items: center;">
+                    ${knowersText}
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button onclick="editCustomMemory('${mem.id}')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; transition: var(--transition-smooth);"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteCustomMemory('${mem.id}')" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 4px; transition: var(--transition-smooth);"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="ps-card-content" style="max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.15); padding: 10px; border-radius: 10px; font-size: 13px;">${mdHtml}</div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // Генератор промпта на основе ограничений доступа к секретам
+    function getInjectedMemories(entityId, activeCharId, isGroup) {
+        if (!appState.customMemories) appState.customMemories = {};
+        const memories = appState.customMemories[entityId] || [];
+        if (memories.length === 0) return '';
+
+        let prompt = '';
+        const participants = [];
+        participants.push({ id: 'user', name: appState.userProfile.name || 'User' });
+        
+        if (isGroup) {
+            const group = appState.groups.find(g => g.id === entityId);
+            if (group) {
+                group.participants.forEach(pid => {
+                    const c = appState.characters.find(char => char.id === pid);
+                    if (c) participants.push({ id: c.id, name: c.name });
+                });
+            }
+        } else {
+            const char = appState.characters.find(c => c.id === entityId);
+            if (char) participants.push({ id: char.id, name: char.name });
+        }
+
+        memories.forEach(mem => {
+            const isShared = mem.knowers.includes('all');
+            const knowsSecret = isShared || mem.knowers.includes(activeCharId);
+
+            if (knowsSecret) {
+                if (isShared) {
+                    prompt += `[SHARED MEMORY (All participants in this chat are fully aware of this information)]:\n${mem.content}\n\n`;
+                } else {
+                    const knowersNames = participants
+                        .filter(p => mem.knowers.includes(p.id) && p.id !== activeCharId)
+                        .map(p => p.name);
+                    
+                    const unawareNames = participants
+                        .filter(p => !mem.knowers.includes(p.id))
+                        .map(p => p.name);
+
+                    prompt += `[SECRET PRIVATE MEMORY (Only known to you and: ${knowersNames.length > 0 ? knowersNames.join(', ') : 'nobody else'})]:\n`;
+                    prompt += `${mem.content}\n`;
+                    
+                    if (unawareNames.length > 0) {
+                        prompt += `*CRITICAL ROLEPLAY INSTRUCTION*: The following participants are completely UNAWARE of this secret: ${unawareNames.join(', ')}. You must NEVER reveal, hint at, or speak about this information to them under any circumstances. You must act naturally, as if this fact does not exist in their presence.\n`;
+                    }
+                    prompt += `[END SECRET MEMORY]\n\n`;
+                }
+            }
+        });
+
+        return prompt;
     }
 
     function closePinnedScreen() {
@@ -3881,13 +4325,16 @@ function updateTokenCounterDisplay() {
     // Добавляем подгрузку обоев при открытии чата. Найдите функцию openChat() и в самый ее конец (ПЕРЕД switchScreen('chat-screen');) добавьте:
     // document.getElementById('chat-screen').style.backgroundImage = entity.wallpaper ? `url('${entity.wallpaper}')` : "url('https://i.imgur.com/8Q8XG0S.jpeg')";
 
-    // --- НОВОЕ: Закрепление сообщений ---
+    // --- НОВОЕ: Закрепление сообщений (С обновлением счетчиков) ---
     function toggleMessagePin(index) {
         const messages = currentMode === 'solo' ? appState.chats[currentId] : appState.groupChats[currentId];
-        messages[index].isPinned = !messages[index].isPinned; // Меняем статус
-        saveData();
-        renderMessages(); // Перерисовываем чат, чтобы появилась скрепка
-        showToast(messages[index].isPinned ? "Сообщение успешно закреплено в памяти ИИ!" : "Сообщение откреплено!");
+        if (messages && messages[index]) {
+            messages[index].isPinned = !messages[index].isPinned; // Меняем статус
+            saveData();
+            renderMessages(); // Перерисовываем чат, чтобы появилась скрепка
+            updateTokenCounterDisplay(); // Обновляем счетчик токенов в реальном времени
+            showToast(messages[index].isPinned ? "Сообщение успешно закреплено в памяти ИИ!" : "Сообщение откреплено!");
+        }
     }
 
     // --- ЛОГИКА ДОЛГОГО ЗАЖАТИЯ И МЕНЮ СООБЩЕНИЙ ---
@@ -4297,6 +4744,19 @@ function togglePlusMenu(e) {
         
         dbTarget[selectedCharId] = [];
         const entity = selectedCharIsGroup ? appState.groups.find(g => g.id === selectedCharId) : appState.characters.find(c => c.id === selectedCharId);
+        
+        // Сбрасываем старую сжатую память (Summary), чтобы она не загрязняла новый сеанс
+        if (entity) {
+            entity.currentSummary = "";
+            if (!entity.traits) entity.traits = {};
+            entity.traits.summaryEnabled = false;
+        }
+
+        // Очищаем «Умную память» (Базу умных фактов / Секретов) для этого чата при сбросе
+        if (appState.customMemories && appState.customMemories[selectedCharId]) {
+            appState.customMemories[selectedCharId] = [];
+        }
+
         if (entity && entity.greeting && entity.greeting.trim() !== '') {
             dbTarget[selectedCharId].push({
                 role: 'ai',
@@ -4675,6 +5135,63 @@ function togglePlusMenu(e) {
       transition: none !important;
     }
   }
+
+  /* Премиальный выбор знающих секрет в умной памяти */
+        .knower-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            height: 48px;
+        }
+        .knower-checkbox-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(129, 94, 255, 0.25);
+        }
+        .knower-checkbox-item.checked {
+            border-color: var(--accent-color);
+            background: rgba(129, 94, 255, 0.15);
+            box-shadow: inset 0 0 10px rgba(129, 94, 255, 0.2);
+        }
+        .knower-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 1.5px solid rgba(255, 255, 255, 0.05);
+        }
+        .knower-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+        .knower-checkbox-item.checked .knower-name {
+            color: #fff;
+        }
+        .knower-check-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%) scale(0.5);
+            color: var(--accent-color);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 16px;
+        }
+        .knower-checkbox-item.checked .knower-check-icon {
+            opacity: 1;
+            transform: translateY(-50%) scale(1);
+        }
 </style>
 
 <!-- SVG Фильтры глитча и деформации воды -->
