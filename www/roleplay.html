@@ -3057,6 +3057,14 @@ function saveSummaryEditor() {
             sys += `\n[OVERALL PLOT SUMMARY]: ${entity.currentSummary}\n`;
         }
 
+        // Внедряем закрепленные сообщения в память для участников группы
+        const pinnedMessages = history.filter(m => m.isPinned);
+        if (pinnedMessages.length > 0) {
+            sys += `\n[CRITICAL PINNED MEMORIES (You MUST remember this context)]:\n`;
+            pinnedMessages.forEach(m => sys += `${m.name}: ${m.content}\n`);
+            sys += `[END PINNED MEMORIES]\n\n`;
+        }
+
         const apiMsgs = [{ role: 'system', content: sys }];
         
         const tokenLimit = entity.maxHistory || appState.settings.maxHistory || 4000;
@@ -3811,10 +3819,19 @@ function updateTokenCounterDisplay() {
                 hasPins = true;
                 const div = document.createElement('div');
                 div.className = 'ps-card';
+                
+                // Семантический выбор иконки отправителя
+                let iconClass = 'fa-robot';
+                if (msg.role === 'user') {
+                    iconClass = 'fa-user';
+                } else if (msg.role === 'system' || msg.name === 'System' || msg.name === 'System/Сценарий') {
+                    iconClass = 'fa-bullhorn';
+                }
+                
                 // В карточке отображается полный текст, можно скроллить, если он гигантский
                 div.innerHTML = `
                     <div style="font-weight:600; color:#fff; display:flex; align-items:center; gap:8px;">
-                        <i class="fa-solid ${msg.role === 'user' ? 'fa-user' : 'fa-robot'}" style="color:var(--accent-color);"></i> ${msg.name}
+                        <i class="fa-solid ${iconClass}" style="color:var(--accent-color);"></i> ${msg.name}
                     </div>
                     <div class="ps-card-content">${msg.content}</div>
                     <div class="ps-actions">
@@ -3870,6 +3887,7 @@ function updateTokenCounterDisplay() {
         messages[index].isPinned = !messages[index].isPinned; // Меняем статус
         saveData();
         renderMessages(); // Перерисовываем чат, чтобы появилась скрепка
+        showToast(messages[index].isPinned ? "Сообщение успешно закреплено в памяти ИИ!" : "Сообщение откреплено!");
     }
 
     // --- ЛОГИКА ДОЛГОГО ЗАЖАТИЯ И МЕНЮ СООБЩЕНИЙ ---
