@@ -4180,10 +4180,10 @@
 
         /* =======================================================================
          УЛЬТРА-ПРОФЕССИОНАЛЬНЫЙ ДВУХСЛОЙНЫЙ НЕОНОВЫЙ КУРСОР (БЕЗ ТОЧЕК)
-         ======================================================================= */
+         ====================================================================== */
         
-        /* 1. Базовый курсор для абсолютно всех элементов (Предотвращает утечки на пустые зоны в файлах и списках) */
-        *, *::before, *::after {
+        /* 1. Базовый курсор для элементов (Безопасно исключаем инпуты и интерактивные поля для стабильности в Electron) */
+        *:not(input):not(textarea):not(select):not(option):not(.CodeMirror-line):not(.CodeMirror-cursor) {
             cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M2 2 L9 22 L12 13 L21 10 Z' fill='%23111115' stroke='%238b5cf6' stroke-width='3.5' stroke-linejoin='round'/%3E%3Cpath d='M2 2 L9 22 L12 13 L21 10 Z' fill='%23111115' stroke='%23ffffff' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 2 2, default !important;
         }
 
@@ -4205,6 +4205,34 @@
         html:active, html:active *, body.cursor-pressed, body.cursor-pressed *,
         body.cursor-dragging, body.cursor-dragging * {
             cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M4 4 L10 19 L12 12 L19 10 Z' fill='%23111115' stroke='%23f43f5e' stroke-width='3.5' stroke-linejoin='round'/%3E%3Cpath d='M4 4 L10 19 L12 12 L19 10 Z' fill='%23111115' stroke='%23ffffff' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 4 4, move !important;
+        }
+
+        /* Жизненно важные свойства для Electron: принудительно разрешаем выделение текста и ввод во всех формах */
+        .auth-input, 
+        .otp-input, 
+        #authModal input, 
+        #settingsModal input, 
+        #customPromptInput, 
+        #wsSearchInput, 
+        #modalPromoInput, 
+        #teamChatMessageInput {
+            user-select: text !important;
+            -webkit-user-select: text !important;
+            pointer-events: auto !important;
+            
+            /* ФИКС ДЛЯ ELECTRON 1: Возвращаем стандартный системный курсор. 
+               Кастомные графические курсоры в Electron перехватывают клики мыши, мешая инпутам получать фокус. */
+            cursor: text !important;
+            
+            /* ФИКС ДЛЯ ELECTRON 2: Принудительно отключаем перетаскивание на полях ввода */
+            -webkit-app-region: no-drag !important;
+        }
+
+        /* Полная разблокировка кликов на модальных окнах и картах авторизации */
+        #authModal, .auth-card, #settingsModal, .modal {
+            -webkit-app-region: no-drag !important;
+            user-select: text !important;
+            -webkit-user-select: text !important;
         }
 
         /* Welcome Screen Gemini Style */
@@ -7513,6 +7541,12 @@ window.addEventListener('message', function(e) {
                 clearTimeout(localStorageSaveTimeout);
                 localStorageSaveTimeout = setTimeout(() => {
                     saveNotes();
+                    
+                    // === АВТОМАТИЧЕСКАЯ ЗАПИСЬ НА ЖЕСТКИЙ ДИСК В РЕАЛЬНОМ ВРЕМЕНИ ===
+                    // Изменения в файле будут мгновенно сохраняться на диск спустя 500мс после окончания ввода
+                    if (note.localFileHandle) {
+                        window.writeToHardDisk(note, textValue);
+                    }
                 }, 500);
 
                 // Мгновенная отправка изменений другим пользователям через WebSocket бродкаст
@@ -8601,6 +8635,19 @@ window.addEventListener('message', function(e) {
                 }
             }, 50);
         }
+
+        // Вспомогательная функция для фоновой автоматической записи файла на жесткий диск
+        window.writeToHardDisk = async function(note, content) {
+            if (!note || !note.localFileHandle) return;
+            try {
+                const writable = await note.localFileHandle.createWritable();
+                await writable.write(content);
+                await writable.close();
+                console.log(`Quantum Notes: Файл "${note.title}" автоматически синхронизирован на жестком диске.`);
+            } catch (fsError) {
+                console.warn("Не удалось записать изменения на диск (файл заблокирован или занят другой программой):", fsError);
+            }
+        };
 
         // Метод открытия произвольного файла с жесткого диска (для Electron / Chromium)
         window.openLocalHardDriveFile = async function() {
