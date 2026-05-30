@@ -523,6 +523,83 @@
             box-shadow: 0 0 15px rgba(255, 170, 0, 0.02);
             border-radius: 14px;
         }
+
+        /* Выделение слов в кавычках */
+        .bubble .quote-highlight {
+            font-weight: 800;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+        }
+        /* Особая яркая подсветка кавычек внутри курсивного отыгрыша действий */
+        .bubble em .quote-highlight {
+            font-weight: 800;
+            font-style: italic;
+            color: #ffffff !important;
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.45);
+        }
+
+        /* Пункты выбора отправителя внутри поповера плюсика */
+        .plus-sender-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .plus-sender-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: #fff;
+        }
+        .plus-sender-item img {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .plus-sender-item i {
+            font-size: 12px;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .plus-sender-item.active {
+            color: #fff;
+            background: rgba(129, 94, 255, 0.12);
+        }
+        .plus-sender-item.active.system-item {
+            background: rgba(255, 170, 0, 0.12);
+            color: #ffaa00;
+        }
+        .plus-sender-item.active.char-item {
+            background: rgba(0, 229, 255, 0.12);
+            color: #00e5ff;
+        }
+
+        /* Премиальный дизайн поля ввода */
+        .chat-input-pill { 
+            display: flex; 
+            align-items: flex-end; 
+            gap: 12px; 
+            background: rgba(18, 20, 29, 0.95); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px; /* Современный скругленный прямоугольник */
+            padding: 6px 14px; 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.03); 
+            transition: var(--transition-smooth);
+        }
         
         /* Специальный стиль для действий в звездочках (Отыгрыш) */
         .bubble em { 
@@ -657,19 +734,6 @@
     bottom: calc(85px + env(safe-area-inset-bottom)); 
     /* ... остальные стили ... */
 }
-.chat-input-pill { 
-            display: flex; 
-            align-items: flex-end; 
-            gap: 12px; 
-            background: rgba(15, 17, 26, 0.85); 
-            backdrop-filter: blur(20px); 
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 24px; 
-            padding: 8px 16px; 
-            border: 1px solid rgba(255, 255, 255, 0.05); 
-            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.01); 
-            transition: var(--transition-smooth);
-        }
         .chat-input-pill:focus-within {
             border-color: rgba(129, 94, 255, 0.4);
             box-shadow: 0 15px 45px rgba(129, 94, 255, 0.15), 0 0 0 1px rgba(129, 94, 255, 0.1);
@@ -1557,21 +1621,25 @@
             <!-- Токенизатор текущего сообщения -->
             <div id="typing-token-counter" style="position: absolute; right: 25px; top: -5px; font-size: 11px; font-weight: 600; color: var(--accent-color); background: rgba(20,21,26,0.9); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border-color); display: none;">0 tks</div>
             
-            <!-- Выпадающее меню Плюсика -->
+            <!-- Объединенное меню Плюсика (Быстрые действия + Выбор личности) -->
             <div id="plus-menu" class="plus-menu-container">
                 <div class="plus-menu-item" onclick="triggerRandomEvent()"><i class="fa-solid fa-dice" style="color: #ff9a9e;"></i> Бросить кубик (Событие)</div>
                 <div class="plus-menu-item" onclick="document.getElementById('chat-wallpaper-input').click()"><i class="fa-solid fa-image" style="color: #a78bfa;"></i> Сменить обои</div>
                 <div class="plus-menu-item" onclick="exportChat()"><i class="fa-solid fa-download" style="color: #6eff8f;"></i> Скачать лог чата</div>
                 <div class="plus-menu-item" onclick="restartChat()" style="color: #ff6b6b;"><i class="fa-solid fa-rotate-left"></i> Начать сначала</div>
+                
+                <!-- Разделитель -->
+                <div class="plus-menu-divider" style="height: 1px; background: rgba(255,255,255,0.06); margin: 6px 0;"></div>
+                
+                <!-- Раздел личностей -->
+                <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); padding: 4px 12px; text-transform: uppercase; letter-spacing: 0.05em;">Говорить от лица:</div>
+                <div id="plus-sender-list" style="display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; scrollbar-width: none;"></div>
             </div>
 
             <div class="chat-input-pill">
-                <!-- Плюсик -->
-                <button class="input-icon-btn" style="font-size: 20px;" onclick="togglePlusMenu(event)"><i class="fa-solid fa-circle-plus"></i></button>
-                
-                <!-- Кнопка "Сказать от имени системы" -->
-                <button class="input-icon-btn" id="system-mode-btn" onclick="toggleSystemMode(event)" title="Сказать от имени системы" style="font-size: 18px;">
-                    <i class="fa-solid fa-bullhorn" style="color: var(--text-muted); transition: var(--transition-smooth);"></i>
+                <!-- Плюсик (теперь он же вызывает меню и светится цветом выбранного отправителя) -->
+                <button class="input-icon-btn" style="font-size: 20px;" onclick="togglePlusMenu(event)" id="plus-btn">
+                    <i class="fa-solid fa-circle-plus" style="color: var(--text-muted); transition: var(--transition-smooth);"></i>
                 </button>
                 
                 <textarea id="chat-input" placeholder="Введите сообщение..." oninput="autoResizeTextarea(this)"></textarea>
@@ -2450,6 +2518,11 @@ function saveSummaryEditor() {
         }
 
         document.getElementById('chat-screen').style.backgroundImage = entity.wallpaper ? `url('${entity.wallpaper}')` : "url('https://i.imgur.com/8Q8XG0S.jpeg')";
+        
+        // Сбрасываем выбранного отправителя к состоянию пользователя при открытии любого чата
+        activeSender = { type: 'user', id: null, name: appState.userProfile.name || 'User' };
+        renderSenderSelector();
+
         renderMessages();
         switchScreen('chat-screen');
         scrollToBottom();
@@ -2485,7 +2558,13 @@ function saveSummaryEditor() {
 
             // Рендер Markdown (с принудительным переносом текста в звездочках на новые абзацы)
             let processedContent = msg.content.replace(/\*(.*?)\*/g, '\n\n*$1*\n\n');
-            const mdHtml = marked.parse(processedContent);
+            let mdHtml = marked.parse(processedContent);
+
+            // Безопасная подсветка кавычек и прямой речи внутри уже сгенерированного HTML-кода
+            mdHtml = mdHtml
+                .replace(/"([^"\n<>\/]+)"/g, '<strong class="quote-highlight">"$1"</strong>')
+                .replace(/«([^»\n<>\/]+)»/g, '<strong class="quote-highlight">«$1»</strong>')
+                .replace(/“([^”\n<>\/]+)”/g, '<strong class="quote-highlight">“$1”</strong>');
 
             // Индикатор, если сообщение закреплено
             const pinIndicator = msg.isPinned 
@@ -2669,30 +2748,109 @@ function saveSummaryEditor() {
             scrollToBottom();
         }
 
-        let isSystemMode = false;
+        // Глобальный объект выбранного отправителя
+        let activeSender = { type: 'user', id: null, name: 'User' };
 
-        function toggleSystemMode(e) {
-            if (e) e.stopPropagation();
-            isSystemMode = !isSystemMode;
-            const btn = document.getElementById('system-mode-btn');
-            const icon = btn.querySelector('i');
-            const input = document.getElementById('chat-input');
+        function renderSenderSelector() {
+            const listContainer = document.getElementById('plus-sender-list');
+            if (!listContainer) return;
+
+            const isGroup = currentMode === 'groups';
+            const entity = isGroup ? appState.groups.find(g => g.id === currentId) : appState.characters.find(c => c.id === currentId);
             
-            if (isSystemMode) {
-                icon.style.color = '#ffaa00';
-                icon.style.filter = 'drop-shadow(0 0 8px rgba(255, 170, 0, 0.6))';
-                input.placeholder = "Событие/Действие от лица Системы...";
-                input.style.borderLeft = "2px solid #ffaa00";
-                input.style.paddingLeft = "8px";
-                showToast("Режим системы активен: ИИ воспримут это как внешнее событие");
-            } else {
-                icon.style.color = 'var(--text-muted)';
-                icon.style.filter = 'none';
-                input.placeholder = "Введите сообщение...";
-                input.style.borderLeft = "none";
-                input.style.paddingLeft = "0";
-                showToast("Возвращен стандартный режим ввода");
+            if (!entity) {
+                listContainer.innerHTML = '';
+                return;
             }
+
+            listContainer.innerHTML = '';
+
+            // 1. Опция: Игрок (Я)
+            const isUserActive = activeSender.type === 'user';
+            const userItem = document.createElement('div');
+            userItem.className = `plus-sender-item ${isUserActive ? 'active' : ''}`;
+            userItem.innerHTML = `<i class="fa-solid fa-user-pen" style="color: ${isUserActive ? 'var(--accent-color)' : 'inherit'};"></i> <span>Я (${appState.userProfile.name || 'User'})</span>`;
+            userItem.onclick = (e) => { 
+                e.stopPropagation(); 
+                selectSender('user', null, appState.userProfile.name || 'User'); 
+                document.getElementById('plus-menu').classList.remove('active'); // Закрываем меню плюсика после выбора
+            };
+            listContainer.appendChild(userItem);
+
+            // 2. Опция: Система (Событие)
+            const isSysActive = activeSender.type === 'system';
+            const sysItem = document.createElement('div');
+            sysItem.className = `plus-sender-item system-item ${isSysActive ? 'active' : ''}`;
+            sysItem.innerHTML = `<i class="fa-solid fa-bullhorn" style="color: ${isSysActive ? '#ffaa00' : 'inherit'};"></i> <span>Система</span>`;
+            sysItem.onclick = (e) => { 
+                e.stopPropagation(); 
+                selectSender('system', null, 'System'); 
+                document.getElementById('plus-menu').classList.remove('active'); // Закрываем меню плюсика после выбора
+            };
+            listContainer.appendChild(sysItem);
+
+            // 3. Опции: ИИ-персонажи чата
+            if (isGroup) {
+                entity.participants.forEach(charId => {
+                    const c = appState.characters.find(char => char.id === charId);
+                    if (!c) return;
+                    const isCharActive = activeSender.type === 'char' && activeSender.id === charId;
+                    const item = document.createElement('div');
+                    item.className = `plus-sender-item char-item ${isCharActive ? 'active' : ''}`;
+                    item.innerHTML = `
+                        <img src="${c.avatar || 'https://via.placeholder.com/20'}">
+                        <span>${c.name}</span>
+                    `;
+                    item.onclick = (e) => { 
+                        e.stopPropagation(); 
+                        selectSender('char', charId, c.name); 
+                        document.getElementById('plus-menu').classList.remove('active'); // Закрываем меню плюсика после выбора
+                    };
+                    listContainer.appendChild(item);
+                });
+            } else {
+                const isCharActive = activeSender.type === 'char' && activeSender.id === entity.id;
+                const item = document.createElement('div');
+                item.className = `plus-sender-item char-item ${isCharActive ? 'active' : ''}`;
+                item.innerHTML = `
+                    <img src="${entity.avatar || 'https://via.placeholder.com/20'}">
+                    <span>${entity.name}</span>
+                `;
+                item.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    selectSender('char', entity.id, entity.name); 
+                    document.getElementById('plus-menu').classList.remove('active'); // Закрываем меню плюсика после выбора
+                };
+                listContainer.appendChild(item);
+            }
+        }
+
+        function selectSender(type, id, name) {
+            activeSender = { type, id, name };
+            const input = document.getElementById('chat-input');
+            const plusIcon = document.querySelector('#plus-btn i');
+            
+            // Динамически меняем placeholder инпута и цвет иконки кнопки плюса в качестве индикатора активной роли
+            if (type === 'system') {
+                input.placeholder = "Событие от лица Системы...";
+                if (plusIcon) {
+                    plusIcon.style.color = '#ffaa00';
+                    plusIcon.style.filter = 'drop-shadow(0 0 6px rgba(255, 170, 0, 0.6))';
+                }
+            } else if (type === 'char') {
+                input.placeholder = `Говорить от лица ${name}...`;
+                if (plusIcon) {
+                    plusIcon.style.color = '#00e5ff';
+                    plusIcon.style.filter = 'drop-shadow(0 0 6px rgba(0, 229, 255, 0.6))';
+                }
+            } else {
+                input.placeholder = "Введите сообщение...";
+                if (plusIcon) {
+                    plusIcon.style.color = 'var(--text-muted)';
+                    plusIcon.style.filter = 'none';
+                }
+            }
+            renderSenderSelector();
         }
 
         async function sendMessage() {
@@ -2701,25 +2859,44 @@ function saveSummaryEditor() {
             const text = input.value.trim();
             if (!text) return;
             
-            // Проверка наличия нужного ключа перед отправкой
             const isFree = appState.settings.model.endsWith(':free');
             if (isFree && !appState.settings.openRouterKey) return showToast("Укажите OpenRouter Key в настройках (My) для бесплатных моделей", true);
             if (!isFree && !appState.settings.apiKey) return showToast("Укажите ProxyAPI Key в настройках (My) для платных моделей", true);
 
-            const userName = isSystemMode ? 'System' : (appState.userProfile.name || 'User');
-            const msgRole = isSystemMode ? 'system' : 'user';
+            let msgRole = 'user';
+            let userName = activeSender.name;
+            let botCharId = null;
+
+            if (activeSender.type === 'system') {
+                msgRole = 'system';
+                userName = 'System';
+            } else if (activeSender.type === 'char') {
+                msgRole = 'ai'; // Роль 'ai' позволяет тексту уйти налево и выглядеть как родной ответ ИИ
+                userName = activeSender.name;
+                botCharId = activeSender.id;
+            } else {
+                msgRole = 'user';
+                userName = appState.userProfile.name || 'User';
+            }
+
             const newMsg = { role: msgRole, name: userName, content: text, timestamp: Date.now() };
+            if (botCharId) {
+                newMsg.charId = botCharId;
+            }
             
-            // Если отправка шла в режиме системы, выключаем его для следующего сообщения
-            if (isSystemMode) {
-                toggleSystemMode(null);
+            // Возвращаем режим ввода обратно на пользователя после отправки сообщения
+            if (activeSender.type !== 'user') {
+                selectSender('user', null, appState.userProfile.name || 'User');
             }
 
             if (currentMode === 'solo') {
                 if (window.sound) window.sound.playBubble();
                 appState.chats[currentId].push(newMsg);
                 input.value = ''; autoResizeTextarea(input); renderMessages(); scrollToBottom(); saveData();
-                await fetchAIResponseSolo();
+                // Запускаем автоматическую генерацию ответа ИИ только если пользователь не писал за самого ИИ
+                if (msgRole !== 'ai') {
+                    await fetchAIResponseSolo();
+                }
             } else {
                 if (window.sound) window.sound.playBubble();
                 appState.groupChats[currentId].push(newMsg);
@@ -4015,10 +4192,10 @@ function togglePlusMenu(e) {
         document.getElementById('plus-menu').classList.toggle('active');
     }
 
-    // Закрываем меню плюсика, если кликнули в любое другое место
+    // Закрываем всплывающее меню плюсика (и личностей) при тапе в пустую область чата
     document.addEventListener('click', () => {
         const pm = document.getElementById('plus-menu');
-        if(pm && pm.classList.contains('active')) pm.classList.remove('active');
+        if (pm && pm.classList.contains('active')) pm.classList.remove('active');
     });
 
     // Функция: Бросить кубик (Случайное событие)
