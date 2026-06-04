@@ -5838,8 +5838,8 @@
                             <i class='bx bx-download'></i> Скачать как Markdown
                         </button>
                         <div style="height: 1px; background: rgba(255,255,255,0.05); margin: 5px 0;"></div>
-                        <button class="t-menu-item" onclick="window.openCurrentInSystemBrowser(); closeMasterMenu();" style="color: #60a5fa;">
-                            <i class='bx bx-export' style="color: #60a5fa;"></i> Открыть в системном браузере
+                        <button class="t-menu-item" onclick="window.openCurrentInBuiltInBrowser(); closeMasterMenu();" style="color: #60a5fa;">
+                            <i class='bx bx-globe' style="color: #60a5fa;"></i> Открыть во встроенном браузере
                         </button>
                     </div>
                 </div>
@@ -6966,6 +6966,9 @@ window.customPrompt = function(title, defaultValue = "") {
 
         container.innerHTML = ""; // Сбрасываем предыдущее содержимое для очистки памяти
 
+        // Находим иконку обновления встроенного браузера
+        const refreshIcon = document.querySelector("#inIdeBrowserModal button[onclick*='refresh'] svg");
+
         if (isElectron) {
             // В Electron используем <webview> tag (он полностью обходит CORS и заголовки X-Frame-Options)
             const webview = document.createElement("webview");
@@ -6976,12 +6979,26 @@ window.customPrompt = function(title, defaultValue = "") {
             webview.style.border = "none";
             webview.setAttribute("allowpopups", "true");
 
+            // ИСПРАВЛЕНИЕ: Перехват открытия новых вкладок (ссылки с target="_blank" открываем внутри этого же webview)
+            webview.addEventListener("new-window", (event) => {
+                event.preventDefault();
+                webview.src = event.url;
+            });
+
             // Навешиваем слушатели для динамического обновления адресной строки при внутренних переходах
             webview.addEventListener("did-navigate", (event) => {
                 addressBar.value = event.url;
             });
             webview.addEventListener("did-navigate-in-page", (event) => {
                 addressBar.value = event.url;
+            });
+
+            // Индикация начала и окончания загрузки страницы во встроенном браузере
+            webview.addEventListener("did-start-loading", () => {
+                if (refreshIcon) refreshIcon.classList.add("spin-icon");
+            });
+            webview.addEventListener("did-stop-loading", () => {
+                if (refreshIcon) refreshIcon.classList.remove("spin-icon");
             });
 
             container.appendChild(webview);
@@ -6994,6 +7011,11 @@ window.customPrompt = function(title, defaultValue = "") {
             iframe.style.height = "100%";
             iframe.style.border = "none";
             iframe.sandbox = "allow-scripts allow-same-origin allow-forms allow-popups";
+
+            if (refreshIcon) refreshIcon.classList.add("spin-icon");
+            iframe.onload = () => {
+                if (refreshIcon) refreshIcon.classList.remove("spin-icon");
+            };
 
             container.appendChild(iframe);
             
@@ -7073,14 +7095,102 @@ window.customPrompt = function(title, defaultValue = "") {
     window.openInSystemBrowser = function() {
         const addressBar = document.getElementById("inIdeBrowserAddressBar");
         if (addressBar && addressBar.value) {
-            window.open(addressBar.value, '_blank');
+            const url = addressBar.value;
+            // Локальные Blob-ссылки изолированы песочницей текущего окна и не могут быть переданы внешней системе напрямую
+            if (url.startsWith("blob:")) {
+                alert("Локальный предпросмотр (Blob URL) изолирован средой разработки. Для открытия этого проекта во внешнем браузере сначала выполните облачный деплой.");
+                return;
+            }
+            if (window.electronAPI && typeof window.electronAPI.openInSystemBrowser === 'function') {
+                window.electronAPI.openInSystemBrowser(url);
+            } else {
+                window.open(url, '_blank');
+            }
         }
     };
 
-    window.openCurrentInSystemBrowser = function() {
-        // Получаем текущий веб-адрес приложения и вызываем безопасный запуск внешнего окна
-        const currentUrl = window.location.href;
-        window.open(currentUrl, '_blank');
+    window.openCurrentInBuiltInBrowser = function() {
+        // Находим текущую точку входа (HTML-файл) или активную редактируемую заметку
+        const entryNote = getWebEntryPoint();
+        if (entryNote) {
+            let currentCode = entryNote.content;
+            if (entryNote.id === activeId) {
+                currentCode = isIdeMode && typeof ideEditor !== 'undefined' ? ideEditor.getValue() : editor.value;
+            }
+            
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(currentCode, "text/html");
+
+                // Инлайним CSS стили из виртуальной файловой системы для полной автономности предпросмотра
+                doc.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && !href.startsWith("http://") && !href.startsWith("https://")) {
+                        const depNote = resolveRelativePath(entryNote.id, href);
+                        if (depNote) {
+                            const styleEl = doc.createElement('style');
+                            styleEl.textContent = bundleCssImports(depNote.id);
+                            link.replaceWith(styleEl);
+                        }
+                    }
+                });
+
+                // Инлайним JS скрипты для предотвращения CORS-ошибок при чтении локальных Blob модулей
+                doc.querySelectorAll('script[src]').forEach(script => {
+                    const src = script.getAttribute('src');
+                    if (src && !src.startsWith("http://") && !src.startsWith("https://")) {
+                        const depNote = resolveRelativePath(entryNote.id, src);
+                        if (depNote) {
+                            const scriptEl = doc.createElement('script');
+                            scriptEl.textContent = bundleJsModule(depNote.id);
+                            if (script.hasAttribute('type')) {
+                                scriptEl.setAttribute('type', script.getAttribute('type'));
+                            }
+                            script.replaceWith(scriptEl);
+                        }
+                    }
+                });
+
+                // Конвертируем все вложенные изображения и медиаресурсы в Base64 формат
+                doc.querySelectorAll('img, audio, video, source').forEach(el => {
+                    const src = el.getAttribute('src');
+                    if (src && !src.startsWith("http://") && !src.startsWith("https://") && !src.startsWith("data:")) {
+                        const depNote = resolveRelativePath(entryNote.id, src);
+                        if (depNote) {
+                            const ext = depNote.title.split('.').pop().toLowerCase();
+                            const mimeMap = {
+                                'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+                                'gif': 'image/gif', 'svg': 'image/svg+xml', 'webp': 'image/webp'
+                            };
+                            const mimeType = mimeMap[ext] || 'application/octet-stream';
+
+                            if (depNote.content.startsWith("data:")) {
+                                el.setAttribute('src', depNote.content);
+                            } else {
+                                const b64Data = btoa(unescape(encodeURIComponent(depNote.content)));
+                                el.setAttribute('src', `data:${mimeType};base64,${b64Data}`);
+                            }
+                        }
+                    }
+                });
+
+                // Создаем Blob-объект и открываем его во встроенном браузере приложения
+                const compiledHtml = doc.documentElement.outerHTML;
+                const blob = new Blob([compiledHtml], { type: "text/html" });
+                const blobUrl = URL.createObjectURL(blob);
+                
+                window.openUrlInIdeBrowser(blobUrl);
+            } catch (e) {
+                console.error("Ошибка компиляции кода для встроенного браузера:", e);
+                // Фолбэк на базовое сырое содержимое HTML без инлайнинга связей
+                const blob = new Blob([currentCode], { type: "text/html" });
+                const blobUrl = URL.createObjectURL(blob);
+                window.openUrlInIdeBrowser(blobUrl);
+            }
+        } else {
+            // Если HTML-файлы отсутствуют в проекте, по умолчанию открываем поисковик Google
+            window.openUrlInIdeBrowser("https://www.google.com");
+        }
     };
 
     // Глобальный перехват кликов по ссылкам в preview-панели Markdown для вывода во встроенный браузер
@@ -7096,6 +7206,13 @@ window.customPrompt = function(title, defaultValue = "") {
             }
         }
     });
+
+    // Слушатель событий от IPC Electron для перехвата всех внешних переходов и открытия во встроенном webview
+    if (window.electronAPI && typeof window.electronAPI.onOpenInAppBrowser === 'function') {
+        window.electronAPI.onOpenInAppBrowser((url) => {
+            window.openUrlInIdeBrowser(url);
+        });
+    }
 
         // Легковесный и производительный HTML-санитайзер для предотвращения XSS
 window.secureSanitizeHTML = function(htmlString) {
@@ -22501,6 +22618,11 @@ window.toggleUserFilePermission = async function(noteId, userId, checkbox) {
             0% { opacity: 0.2; transform: scaleY(0.8); }
             100% { opacity: 1; transform: scaleY(1.1); }
         }
+        
+        /* Анимация вращения иконки обновления встроенного браузера */
+        .spin-icon {
+            animation: spinAround 1s linear infinite !important;
+        }
         </style>
 
     <!-- SVG Фильтры глитча и деформации воды -->
@@ -22561,11 +22683,11 @@ window.toggleUserFilePermission = async function(noteId, userId, checkbox) {
                 <div class="dock-icon-wrapper"><i class="bx bx-edit"></i></div>
                 <span class="dock-text">Note</span>
             </a>
-            <a href="googleweb.html" class="dock-item">
+            <a href="#" onclick="event.preventDefault(); window.openUrlInIdeBrowser('https://www.google.com');" class="dock-item">
                 <div class="dock-icon-wrapper"><i class="bx bxl-google"></i></div>
                 <span class="dock-text">Google</span>
             </a>
-            <a href="browser.html" class="dock-item">
+            <a href="#" onclick="event.preventDefault(); window.openUrlInIdeBrowser('https://searx.be');" class="dock-item">
                 <div class="dock-icon-wrapper"><i class="bx bx-globe"></i></div>
                 <span class="dock-text">SearX</span>
             </a>
