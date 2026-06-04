@@ -7050,7 +7050,7 @@ window.customPrompt = function(title, defaultValue = "") {
         if (isElectron && !isBlob) {
             frame = document.createElement("webview");
             frame.src = url;
-            frame.style.cssText = "width: 100%; height: 100%; border: none; display: none;";
+            frame.className = "hidden-tab"; // Скрываем по умолчанию через безопасный класс
             frame.setAttribute("allowpopups", "true");
             
             // КЛЮЧЕВАЯ ФИЧА: persistent-раздел сессий гарантирует сохранение всех кук и авторизаций аккаунтов на диске
@@ -7097,7 +7097,7 @@ window.customPrompt = function(title, defaultValue = "") {
         } else {
             frame = document.createElement("iframe");
             frame.src = url;
-            frame.style.cssText = "width: 100%; height: 100%; border: none; display: none;";
+            frame.className = "hidden-tab"; // Скрываем по умолчанию через безопасный класс
             frame.sandbox = "allow-scripts allow-same-origin allow-forms allow-modals allow-popups";
 
             frame.onload = () => {
@@ -7143,10 +7143,10 @@ window.customPrompt = function(title, defaultValue = "") {
 
         window.inIdeBrowserTabs.forEach(tab => {
             if (tab.id === tabId) {
-                tab.frame.style.display = "block";
+                tab.frame.classList.remove("hidden-tab"); // Показываем вкладку
                 document.getElementById("inIdeBrowserAddressBar").value = tab.url;
             } else {
-                tab.frame.style.display = "none";
+                tab.frame.classList.add("hidden-tab"); // Скрываем вкладку без разрушения shadow DOM
             }
         });
 
@@ -22849,6 +22849,7 @@ window.toggleUserFilePermission = async function(noteId, userId, checkbox) {
             padding: 0 !important;
             transform: none !important; /* Отменяет сдвиг translateY от анимации появления */
             z-index: 200010 !important; /* Устанавливает приоритет выше фоновой подложки */
+            overflow: hidden !important; /* Предотвращает появление двойных полос прокрутки */
         }
 
         /* Панель вкладок встроенного браузера */
@@ -22902,6 +22903,30 @@ window.toggleUserFilePermission = async function(noteId, userId, checkbox) {
         .browser-tab-close:hover {
             background: rgba(239, 68, 68, 0.2);
             color: #ef4444;
+        }
+
+        /* Корректная растяжка встраиваемого браузера на весь родительский контейнер */
+        #inIdeBrowserContainer webview, 
+        #inIdeBrowserContainer iframe {
+            width: 100% !important;
+            height: 100% !important;
+            border: none;
+            display: flex !important; /* Принудительно сохраняем flex для shadow DOM в Electron */
+            position: relative;
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+            transition: opacity 0.25s ease;
+        }
+
+        /* Безопасное сокрытие неактивных вкладок без деструктивного display: none */
+        #inIdeBrowserContainer .hidden-tab {
+            position: absolute !important;
+            width: 0 !important;
+            height: 0 !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            visibility: hidden !important;
         }
         </style>
 
