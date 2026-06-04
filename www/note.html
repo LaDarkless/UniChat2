@@ -7043,9 +7043,11 @@ window.customPrompt = function(title, defaultValue = "") {
         if (!container) return;
 
         const isElectron = navigator.userAgent.toLowerCase().indexOf(' electron/') > -1;
+        const isBlob = url.startsWith("blob:");
         let frame;
 
-        if (isElectron) {
+        // Если мы в Electron, но ссылка локальная (blob), мы принудительно рендерим iframe для обхода песочницы webview
+        if (isElectron && !isBlob) {
             frame = document.createElement("webview");
             frame.src = url;
             frame.style.cssText = "width: 100%; height: 100%; border: none; display: none;";
@@ -7096,7 +7098,7 @@ window.customPrompt = function(title, defaultValue = "") {
             frame = document.createElement("iframe");
             frame.src = url;
             frame.style.cssText = "width: 100%; height: 100%; border: none; display: none;";
-            frame.sandbox = "allow-scripts allow-same-origin allow-forms allow-popups";
+            frame.sandbox = "allow-scripts allow-same-origin allow-forms allow-modals allow-popups";
 
             frame.onload = () => {
                 const refreshIcon = document.querySelector("#inIdeBrowserModal button[onclick*='refresh'] svg");
