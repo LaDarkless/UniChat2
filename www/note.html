@@ -6952,6 +6952,54 @@ window.customPrompt = function(title, defaultValue = "") {
         return activeTab ? activeTab.frame : null;
     };
 
+    // Сохранение структуры вкладок в localStorage (исключая blob-адреса)
+    window.saveInIdeBrowserState = function() {
+        const state = {
+            tabs: window.inIdeBrowserTabs
+                .filter(t => t.url && !t.url.startsWith("blob:"))
+                .map(t => ({ url: t.url, title: t.title })),
+            activeTabIdx: window.inIdeBrowserTabs
+                .filter(t => t.url && !t.url.startsWith("blob:"))
+                .findIndex(t => t.id === window.activeInIdeBrowserTabId)
+        };
+        localStorage.setItem("qn_browser_tabs_state", JSON.stringify(state));
+    };
+
+    // Восстановление структуры вкладок из localStorage
+    window.loadInIdeBrowserState = function() {
+        try {
+            const raw = localStorage.getItem("qn_browser_tabs_state");
+            if (!raw) return false;
+            const state = JSON.parse(raw);
+            if (!state || !state.tabs || state.tabs.length === 0) return false;
+
+            // Очищаем DOM-контейнер перед импортом
+            const container = document.getElementById("inIdeBrowserContainer");
+            if (container) container.innerHTML = "";
+            window.inIdeBrowserTabs = [];
+            window.activeInIdeBrowserTabId = null;
+
+            state.tabs.forEach((savedTab) => {
+                // Создаем вкладку без триггера немедленного переключения во избежание рекурсии сохранения
+                window.addInIdeBrowserTab(savedTab.url, false);
+                const newlyAdded = window.inIdeBrowserTabs[window.inIdeBrowserTabs.length - 1];
+                if (newlyAdded && savedTab.title) {
+                    newlyAdded.title = savedTab.title;
+                }
+            });
+
+            const activeIdx = state.activeTabIdx >= 0 && state.activeTabIdx < window.inIdeBrowserTabs.length ? state.activeTabIdx : 0;
+            const targetTab = window.inIdeBrowserTabs[activeIdx];
+            if (targetTab) {
+                window.switchInIdeBrowserTab(targetTab.id);
+            }
+            return true;
+        } catch (e) {
+            console.warn("Ошибка восстановления сохраненного состояния браузера:", e);
+            return false;
+        }
+    };
+
     window.openUrlInIdeBrowser = function(url) {
         if (!url) return;
         
@@ -6964,10 +7012,20 @@ window.customPrompt = function(title, defaultValue = "") {
 
         modal.classList.add("active");
 
+        // Если в памяти нет открытых вкладок, пробуем восстановить их из localStorage
         if (window.inIdeBrowserTabs.length === 0) {
-            window.addInIdeBrowserTab(url);
+            const loaded = window.loadInIdeBrowserState();
+            if (!loaded) {
+                window.addInIdeBrowserTab(url);
+            } else {
+                const existingTab = window.inIdeBrowserTabs.find(t => t.url === url);
+                if (existingTab) {
+                    window.switchInIdeBrowserTab(existingTab.id);
+                } else {
+                    window.addInIdeBrowserTab(url);
+                }
+            }
         } else {
-            // Ищем вкладку, в которой уже открыта эта целевая страница
             const existingTab = window.inIdeBrowserTabs.find(t => t.url === url);
             if (existingTab) {
                 window.switchInIdeBrowserTab(existingTab.id);
@@ -6979,7 +7037,7 @@ window.customPrompt = function(title, defaultValue = "") {
         if (window.synth) window.synth.playChime();
     };
 
-    window.addInIdeBrowserTab = function(url = "https://www.google.com") {
+    window.addInIdeBrowserTab = function(url = "https://www.google.com", switchAndSave = true) {
         const tabId = "tab-" + Date.now() + "-" + Math.random().toString(36).substring(2, 9);
         const container = document.getElementById("inIdeBrowserContainer");
         if (!container) return;
@@ -6993,7 +7051,7 @@ window.customPrompt = function(title, defaultValue = "") {
             frame.style.cssText = "width: 100%; height: 100%; border: none; display: none;";
             frame.setAttribute("allowpopups", "true");
             
-            // КЛЮЧЕВАЯ ФИЧА: persistent-раздел сессий гарантирует сохранение всех кук и аккаунтов
+            // КЛЮЧЕВАЯ ФИЧА: persistent-раздел сессий гарантирует сохранение всех кук и авторизаций аккаунтов на диске
             frame.setAttribute("partition", "persist:ide-browser");
 
             // Отслеживание навигации в рамках вкладки
@@ -7002,16 +7060,19 @@ window.customPrompt = function(title, defaultValue = "") {
                 if (window.activeInIdeBrowserTabId === tabId) {
                     document.getElementById("inIdeBrowserAddressBar").value = event.url;
                 }
+                window.saveInIdeBrowserState();
             });
             frame.addEventListener("did-navigate-in-page", (event) => {
                 tab.url = event.url;
                 if (window.activeInIdeBrowserTabId === tabId) {
                     document.getElementById("inIdeBrowserAddressBar").value = event.url;
                 }
+                window.saveInIdeBrowserState();
             });
             frame.addEventListener("page-title-updated", (event) => {
                 tab.title = event.title;
                 window.renderInIdeBrowserTabs();
+                window.saveInIdeBrowserState();
             });
 
             // Открытие новых окон/попапов строго в рамках текущей вкладки
@@ -7045,6 +7106,7 @@ window.customPrompt = function(title, defaultValue = "") {
                 try {
                     tab.title = frame.contentDocument.title || url;
                     window.renderInIdeBrowserTabs();
+                    window.saveInIdeBrowserState();
                 } catch(e) {}
             };
         }
@@ -7067,7 +7129,11 @@ window.customPrompt = function(title, defaultValue = "") {
         };
 
         window.inIdeBrowserTabs.push(tab);
-        window.switchInIdeBrowserTab(tabId);
+
+        if (switchAndSave) {
+            window.switchInIdeBrowserTab(tabId);
+            window.saveInIdeBrowserState();
+        }
     };
 
     window.switchInIdeBrowserTab = function(tabId) {
@@ -7083,6 +7149,7 @@ window.customPrompt = function(title, defaultValue = "") {
         });
 
         window.renderInIdeBrowserTabs();
+        window.saveInIdeBrowserState(); // Сохраняем состояние при смене вкладок
         if (window.synth) window.synth.playSoftHum();
     };
 
@@ -7091,7 +7158,7 @@ window.customPrompt = function(title, defaultValue = "") {
         if (index === -1) return;
 
         const tab = window.inIdeBrowserTabs[index];
-        if (tab.frame) tab.frame.remove(); // Высвобождаем ОЗУ
+        if (tab.frame) tab.frame.remove(); // Освобождаем ОЗУ
 
         window.inIdeBrowserTabs.splice(index, 1);
 
@@ -7103,6 +7170,7 @@ window.customPrompt = function(title, defaultValue = "") {
                 window.switchInIdeBrowserTab(nextActiveTab.id);
             } else {
                 window.renderInIdeBrowserTabs();
+                window.saveInIdeBrowserState();
             }
         }
         if (window.synth) window.synth.playClick();
@@ -7142,7 +7210,6 @@ window.customPrompt = function(title, defaultValue = "") {
 
     window.closeInIdeBrowser = function() {
         const modal = document.getElementById("inIdeBrowserModal");
-        const container = document.getElementById("inIdeBrowserContainer");
         if (modal) {
             modal.classList.remove("active");
             // Сбрасываем полноэкранный режим при закрытии встроенного браузера
@@ -7156,9 +7223,8 @@ window.customPrompt = function(title, defaultValue = "") {
                 }
             }
         }
-        if (container) container.innerHTML = "";
-        window.inIdeBrowserTabs = [];
-        window.activeInIdeBrowserTabId = null;
+        // ВНИМАНИЕ: Мы намеренно НЕ очищаем внутренний контейнер и массив вкладок в памяти при закрытии окна.
+        // Это сохраняет сессии, введенные данные на сайтах и текущие состояния запущенных Web-страниц во время работы.
         if (window.synth) window.synth.playSoftHum();
     };
 
@@ -7230,6 +7296,7 @@ window.customPrompt = function(title, defaultValue = "") {
         if (window.synth) window.synth.playClick();
         activeTab.url = url;
         activeTab.frame.src = url;
+        window.saveInIdeBrowserState();
     };
 
     window.openInSystemBrowser = function() {
@@ -22765,13 +22832,21 @@ window.toggleUserFilePermission = async function(noteId, userId, checkbox) {
 
         /* Класс развертывания встроенного браузера на весь экран */
         .modal-maximized {
-            max-width: 100% !important;
-            width: 100% !important;
-            height: 100vh !important;
-            border-radius: 0 !important;
-            border: none !important;
+            position: fixed !important;
             top: 0 !important;
             left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            border: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            transform: none !important; /* Отменяет сдвиг translateY от анимации появления */
+            z-index: 200010 !important; /* Устанавливает приоритет выше фоновой подложки */
         }
 
         /* Панель вкладок встроенного браузера */
