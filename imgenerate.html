@@ -1,3 +1,5 @@
+<!-- ГЕНЕРАТОР ИЗОБРАЖЕНИЙ -->
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -63,10 +65,10 @@
         }
 
         /* -------------------------------------------------------------
-           3D PARALLAX BACKGROUND LAYER ENGINE
+           HIGH-PERFORMANCE BACKGROUND SYSTEM
            ------------------------------------------------------------- */
         .background-stage {
-            position: absolute;
+            position: fixed;
             inset: 0;
             z-index: 1;
             overflow: hidden;
@@ -75,17 +77,15 @@
 
         .grid-bg {
             position: absolute;
-            inset: -10%;
-            width: 120%;
-            height: 120%;
+            inset: 0;
+            width: 100%;
+            height: 100%;
             background-image: 
                 radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.15) 0%, var(--bg-base) 90%),
                 linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
             background-size: 100% 100%, 48px 48px, 48px 48px;
             z-index: 1;
-            transform: translate3d(0,0,0);
-            will-change: transform;
         }
 
         .bg-blob {
@@ -93,7 +93,6 @@
             border-radius: 50%;
             filter: blur(140px);
             opacity: 0.12;
-            will-change: transform;
             z-index: 2;
         }
 
@@ -120,14 +119,12 @@
             position: relative;
             z-index: 10;
             width: 100vw;
-            height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
-            transform-style: preserve-3d;
-            transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
-            will-change: transform;
             padding: 16px;
             gap: 16px;
+            box-sizing: border-box;
         }
 
         /* -------------------------------------------------------------
@@ -1128,37 +1125,119 @@
             font-weight: 500;
         }
 
-        /* Responsive Optimization (Electron & Web Wrapper scales) */
-        @media (max-width: 900px) {
+        /* -------------------------------------------------------------
+           RESPONSIVE OPTIMIZATION & DEVICE ADAPTABILITY (MOBILE FIRST COMPATIBLE)
+           ------------------------------------------------------------- */
+        @media (max-width: 1024px) {
+            body, html {
+                overflow: auto;
+                height: auto;
+            }
+            #studio-container {
+                height: auto;
+                min-height: 100dvh;
+                overflow-y: visible;
+                padding: 12px;
+                gap: 12px;
+            }
+            header {
+                padding: 12px 16px;
+                height: auto;
+                min-height: 56px;
+                flex-direction: column;
+                align-items: flex-start;
+                justify-content: center;
+                gap: 12px;
+            }
+            .system-trace {
+                flex-wrap: wrap;
+                gap: 12px;
+                width: 100%;
+                justify-content: space-between;
+                border-top: 1px solid var(--border-primary);
+                padding-top: 10px;
+            }
             .workspace {
                 grid-template-columns: 1fr;
                 height: auto;
-                overflow-y: auto;
+                gap: 12px;
             }
             aside.configurator {
+                order: 2; /* Move configuration settings below the dynamic interface content */
                 height: auto;
-                max-height: 400px;
+                max-height: none;
+                overflow-y: visible;
+                padding: 16px;
+            }
+            main.console {
+                order: 1; /* Viewport and prompt input are elevated to the top for ergonomic interaction */
+                height: auto;
+            }
+            .prompt-architect {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+            }
+            .prompt-area {
+                height: 80px;
+                padding-right: 0;
+            }
+            .prompt-tools {
+                position: static;
+                justify-content: flex-end;
+                margin-top: 8px;
+            }
+            .generate-trigger {
+                width: 100%;
+                height: 52px;
             }
             .canvas-frame {
-                height: 400px;
-            }
-            #studio-container {
-                overflow-y: auto;
-                height: auto;
+                height: 420px;
+                min-height: 320px;
             }
             .history-shelf {
-                margin-top: 16px;
+                height: auto;
+                padding: 16px;
+                order: 3;
+            }
+            .shelf-carousel {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 8px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            header {
+                gap: 10px;
+            }
+            .logo-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .system-trace {
+                font-size: 10px;
+                gap: 8px;
+            }
+            .canvas-frame {
+                height: 320px;
+            }
+            .aspect-grid {
+                grid-template-columns: 1fr;
+            }
+            .render-showcase img {
+                border-radius: var(--radius-sm);
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- Dynamic 3D Parallax Background -->
+    <!-- Sleek Static High-Performance Background -->
     <div class="background-stage">
-        <div class="grid-bg" id="parallax-grid"></div>
-        <div class="bg-blob blob-1" id="parallax-blob-1"></div>
-        <div class="bg-blob blob-2" id="parallax-blob-2"></div>
+        <div class="grid-bg"></div>
+        <div class="bg-blob blob-1"></div>
+        <div class="bg-blob blob-2"></div>
     </div>
 
     <!-- Main Container -->
@@ -1370,14 +1449,13 @@
 
                 <!-- Accessibility / Settings Reset -->
                 <div class="config-block" style="margin-top: auto; border-top: 1px solid var(--border-primary); padding-top: 16px;">
-                    <div class="segmented-group">
-                        <button class="segment-btn" id="toggle-3d-btn">
-                            Enable 3D Effect
-                        </button>
-                        <button class="segment-btn" id="purge-db-btn" style="color: rgba(239, 68, 68, 0.8);">
-                            Clear Studio History
-                        </button>
-                    </div>
+                    <button class="segment-btn" id="purge-db-btn" style="color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.15); width: 100%; justify-content: center; background: rgba(239, 68, 68, 0.03);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; margin-right: 6px;">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        Clear Studio History
+                    </button>
                 </div>
 
             </aside>
@@ -1676,98 +1754,6 @@
         }
 
         /* -------------------------------------------------------------
-           3D INTUITIVE PARALLAX CONTROLLER
-           ------------------------------------------------------------- */
-        class ParallaxController {
-            constructor() {
-                this.grid = document.getElementById('parallax-grid');
-                this.blob1 = document.getElementById('parallax-blob-1');
-                this.blob2 = document.getElementById('parallax-blob-2');
-                this.container = document.getElementById('studio-container');
-                
-                this.targetX = 0;
-                this.targetY = 0;
-                this.currentX = 0;
-                this.currentY = 0;
-                this.ease = 0.08;
-                this.enabled = false; // Отключено по умолчанию для комфортного использования
-                this.animationFrameId = null;
-
-                this.init();
-            }
-
-            init() {
-                window.addEventListener('mousemove', (e) => {
-                    if (!this.enabled) return;
-                    const cx = window.innerWidth / 2;
-                    const cy = window.innerHeight / 2;
-                    this.targetX = (e.clientX - cx) / cx;
-                    this.targetY = (e.clientY - cy) / cy;
-                });
-
-                // Поддержка гироскопа для Electron и мобильных WebView (Capacitor)
-                window.addEventListener('deviceorientation', (e) => {
-                    if (!this.enabled) return;
-                    if (e.beta !== null && e.gamma !== null) {
-                        this.targetX = Math.min(Math.max(e.gamma / 24, -1), 1);
-                        this.targetY = Math.min(Math.max((e.beta - 45) / 24, -1), 1);
-                    }
-                });
-            }
-
-            animate() {
-                if (!this.enabled) {
-                    this.resetTransforms();
-                    return;
-                }
-
-                this.currentX += (this.targetX - this.currentX) * this.ease;
-                this.currentY += (this.targetY - this.currentY) * this.ease;
-
-                const rotX = this.currentY * -4;
-                const rotY = this.currentX * 4;
-
-                this.container.style.setProperty('--rx', `${rotX}deg`);
-                this.container.style.setProperty('--ry', `${rotY}deg`);
-
-                if (this.grid) {
-                    this.grid.style.transform = `translate3d(${this.currentX * -25}px, ${this.currentY * -25}px, 0)`;
-                }
-                if (this.blob1) {
-                    this.blob1.style.transform = `translate3d(${this.currentX * 40}px, ${this.currentY * 40}px, 0)`;
-                }
-                if (this.blob2) {
-                    this.blob2.style.transform = `translate3d(${this.currentX * -40}px, ${this.currentY * -40}px, 0)`;
-                }
-
-                this.animationFrameId = requestAnimationFrame(() => this.animate());
-            }
-
-            resetTransforms() {
-                if (this.animationFrameId) {
-                    cancelAnimationFrame(this.animationFrameId);
-                    this.animationFrameId = null;
-                }
-                this.container.style.setProperty('--rx', '0deg');
-                this.container.style.setProperty('--ry', '0deg');
-                if (this.grid) this.grid.style.transform = 'none';
-                if (this.blob1) this.blob1.style.transform = 'none';
-                if (this.blob2) this.blob2.style.transform = 'none';
-            }
-
-            disable() {
-                this.enabled = false;
-                this.resetTransforms();
-            }
-
-            enable() {
-                if (this.enabled) return;
-                this.enabled = true;
-                this.animate();
-            }
-        }
-
-        /* -------------------------------------------------------------
            PROCEDURAL SIMULATION ARTWORK ENGINE
            ------------------------------------------------------------- */
         class ProceduralArtGenerator {
@@ -2045,7 +2031,6 @@
         class AppController {
             constructor() {
                 this.db = new DatabaseController();
-                this.parallax = new ParallaxController();
                 
                 // Runtime Configuration Settings Cache
                 this.state = {
@@ -2058,7 +2043,6 @@
                     modalities: 'image', // 'image' or 'image-text'
                     aspectRatio: '1:1',
                     isGenerating: false,
-                    is3DEnabled: false, // Отключено по умолчанию
                     activeImage: null,
                     baseImageBase64: null,
                     baseImageId: null
@@ -2086,7 +2070,6 @@
                     
                     modalitiesGroup: document.getElementById('modalities-group'),
                     aspectMatrix: document.getElementById('aspect-matrix'),
-                    toggle3D: document.getElementById('toggle-3d-btn'),
                     purgeHistory: document.getElementById('purge-db-btn'),
                     
                     promptTextbox: document.getElementById('prompt-textbox'),
@@ -2171,9 +2154,6 @@
 
                 const savedAspect = await this.db.getSetting('aspectRatio');
                 if (savedAspect) this.state.aspectRatio = savedAspect;
-
-                const saved3D = await this.db.getSetting('is3DEnabled');
-                if (saved3D !== null) this.state.is3DEnabled = saved3D;
 
                 const savedReasoning = await this.db.getSetting('reasoningEffort');
                 if (savedReasoning) this.state.reasoningEffort = savedReasoning;
@@ -2262,15 +2242,6 @@
                         btn.classList.remove('active');
                     }
                 });
-
-                // Parallax control engine button sync
-                if (this.state.is3DEnabled) {
-                    this.parallax.enable();
-                    this.dom.toggle3D.textContent = "Disable 3D Effect";
-                } else {
-                    this.parallax.disable();
-                    this.dom.toggle3D.textContent = "Enable 3D Effect";
-                }
             }
 
             toggleCustomModelContainer() {
@@ -2372,13 +2343,6 @@
 
                     this.dom.aspectMatrix.querySelectorAll('.aspect-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                });
-
-                // Toggle 3D parallax mapping option
-                this.dom.toggle3D.addEventListener('click', () => {
-                    this.state.is3DEnabled = !this.state.is3DEnabled;
-                    this.db.setSetting('is3DEnabled', this.state.is3DEnabled);
-                    this.syncStateToUI();
                 });
 
                 // Purge active storage history index
