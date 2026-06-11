@@ -1478,6 +1478,12 @@
                                 </svg>
                                 Inspire Prompt
                             </button>
+                            <button class="tool-micro-btn" id="ai-prompt-gen-btn" style="color: var(--accent); border-color: rgba(59, 130, 246, 0.25);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
+                                </svg>
+                                Сгенерировать промпт
+                            </button>
                         </div>
                     </div>
                     <button class="generate-trigger" id="submit-prompt-btn">
@@ -2100,6 +2106,69 @@
                     text: responseMessage.content && !responseMessage.content.startsWith("data:image") ? responseMessage.content : null
                 };
             }
+
+            static async generatePrompt(apiKey, useOpenRouterDirect = false) {
+                const endpoint = useOpenRouterDirect 
+                    ? "https://openrouter.ai/api/v1/chat/completions" 
+                    : "https://api.proxyapi.ru/openrouter/v1/chat/completions";
+                
+                const bodyPayload = {
+                    model: "meta-llama/llama-3.2-1b-instruct:free",
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are an elite creative prompt generator for image AI systems like Midjourney, DALL-E 3, and Stable Diffusion. Generate ONE incredibly detailed, artistic, atmospheric, and highly creative scene description in English (up to 40 words). Focus on lighting, visual styles, mood, and texture. Do not include introductory text, quote marks, bullet points, or numbering. Return ONLY the plain text prompt."
+                        },
+                        {
+                            role: "user",
+                            content: "Provide a unique, jaw-dropping creative image prompt description."
+                        }
+                    ],
+                    max_tokens: 120,
+                    temperature: 0.85
+                };
+
+                const headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`,
+                };
+
+                if (useOpenRouterDirect) {
+                    headers["HTTP-Referer"] = window.location.href || "https://unirate-diffusion.studio";
+                    headers["X-Title"] = "UniRate Diffusion Studio";
+                }
+
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify(bodyPayload),
+                });
+
+                if (!response.ok) {
+                    const details = await response.text();
+                    let errMsg = `Gateway returned error status: ${response.status}`;
+                    try {
+                        const jsonDetails = JSON.parse(details);
+                        if (jsonDetails.error && jsonDetails.error.message) {
+                            errMsg = jsonDetails.error.message;
+                        }
+                    } catch(e) {}
+                    throw new Error(errMsg);
+                }
+
+                const payload = await response.json();
+                
+                if (payload.error) {
+                    throw new Error(payload.error.message || "Failed to generate prompt from LLM node.");
+                }
+
+                const textResult = payload.choices?.[0]?.message?.content;
+                if (!textResult) {
+                    throw new Error("Received empty text completions response from model node.");
+                }
+
+                return textResult.trim().replace(/^"|"$/g, ''); // strip wrapping quotes
+            }
         }
 
         /* -------------------------------------------------------------
@@ -2169,6 +2238,7 @@
                     pipelineProgressBar: document.getElementById('pipeline-progress-bar'),
                     
                     actionSetBase: document.getElementById('action-set-base-btn'),
+                    aiPromptGenBtn: document.getElementById('ai-prompt-gen-btn'),
                     actionDownload: document.getElementById('action-download-btn'),
                     actionCopy: document.getElementById('action-copy-btn'),
                     actionReuse: document.getElementById('action-reuse-btn'),
@@ -2446,6 +2516,7 @@
                 // Action controls layout buttons
                 this.dom.submitPromptBtn.addEventListener('click', () => this.executeDiffusionProcess());
                 this.dom.inspireBtn.addEventListener('click', () => this.populateInspiration());
+                this.dom.aiPromptGenBtn.addEventListener('click', () => this.generateAIPrompt());
                 this.dom.newCanvasBtn.addEventListener('click', () => this.startNewCanvas());
 
                 // Reference Base Image binding triggers
@@ -2496,6 +2567,86 @@
                 const randomPrompt = INSPIRATION_PROMPTS[Math.floor(Math.random() * INSPIRATION_PROMPTS.length)];
                 this.dom.promptTextbox.value = randomPrompt;
                 ToastNotificationHUD.show("Creative prompt trace injected.", "info");
+            }
+
+            static generateProceduralPrompt() {
+                const subjects = [
+                    "A cosmic jellyfish floating through a futuristic neon metropolitan skyline",
+                    "An ancient stone castle integrated into a giant glowing mystical tree",
+                    "A cybernetic samurai warrior meditating under a cherry blossom tree made of glass",
+                    "An astronaut discovery of an ancient library on a remote frozen planet",
+                    "A mystical fox with multiple tails made of pure starlight walking on water",
+                    "Flowing abstract ribbons of polished brass, copper, and glowing liquid plasma",
+                    "A steam-powered laboratory filled with floating glowing brass gears and clockwork machinery",
+                    "A magnificent coral reef thriving inside a giant floating glass sphere in space"
+                ];
+                const styles = [
+                    "moody cinematic illumination, Unreal Engine 5 render, highly detailed",
+                    "surreal digital matte painting, dramatic golden hour backlight",
+                    "high-fidelity vaporwave cyberpunk aesthetic, octane render, neon glow",
+                    "breathtaking volumetric lighting, photorealistic details, award-winning concept art",
+                    "futuristic architectural render, smooth obsidian surfaces, ambient occlusion"
+                ];
+                const modifiers = [
+                    "sharp focus, intricate patterns, 8k resolution, cosmic dust",
+                    "mystical atmosphere, dramatic reflections, masterpiece quality",
+                    "ultra-realistic textures, octane dispersion shaders, premium visual style",
+                    "cybernetic details, hyper-fine geometry structure, cinematic grading"
+                ];
+                
+                const sub = subjects[Math.floor(Math.random() * subjects.length)];
+                const sty = styles[Math.floor(Math.random() * styles.length)];
+                const mod = modifiers[Math.floor(Math.random() * modifiers.length)];
+                
+                return `${sub}, ${sty}, ${mod}`;
+            }
+
+            async generateAIPrompt() {
+                if (this.state.isGenerating) return;
+
+                const btn = this.dom.aiPromptGenBtn;
+                const originalText = btn.innerHTML;
+                
+                try {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.7';
+                    btn.innerHTML = `<span style="display:inline-block; animation:spin 1s linear infinite; margin-right:6px;">↻</span> Generating...`;
+
+                    let generatedPrompt = '';
+
+                    if (this.state.engineMode === 'live') {
+                        // Determine target API Gateway and corresponding credential key
+                        let useOpenRouter = true;
+                        let targetKey = this.state.apiKeyOpenRouter;
+                        
+                        // Smart routing fallback
+                        if (!targetKey && this.state.apiKeyProxy) {
+                            targetKey = this.state.apiKeyProxy;
+                            useOpenRouter = false;
+                        }
+
+                        if (!targetKey) {
+                            throw new Error("Authentication credentials are required in Live mode. Please configure your key or switch to Sandbox.");
+                        }
+
+                        ToastNotificationHUD.show("Contacting Llama 3.2 (1B) node...", "info");
+                        generatedPrompt = await GatewayAPIController.generatePrompt(targetKey, useOpenRouter);
+                    } else {
+                        // Instant offline fallback for Sandbox Mode
+                        await new Promise(resolve => setTimeout(resolve, 800));
+                        generatedPrompt = AppController.generateProceduralPrompt();
+                    }
+
+                    this.dom.promptTextbox.value = generatedPrompt;
+                    ToastNotificationHUD.show("Creative prompt successfully synthesized.", "success");
+                } catch (err) {
+                    console.error(err);
+                    ToastNotificationHUD.show(err.message || "Failed to generate prompt from text node.", "error");
+                } finally {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.innerHTML = originalText;
+                }
             }
 
             startNewCanvas() {
