@@ -1523,6 +1523,31 @@
                                 </svg>
                                 Inspire Prompt
                             </button>
+                            <button class="tool-micro-btn" id="ai-prompt-expand-btn" style="color: var(--accent); border-color: rgba(59, 130, 246, 0.25);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <polyline points="9 21 3 21 3 15"></polyline>
+                                    <line x1="21" y1="3" x2="14" y2="10"></line>
+                                    <line x1="3" y1="21" x2="10" y2="14"></line>
+                                </svg>
+                                Увеличить
+                            </button>
+                            <button class="tool-micro-btn" id="ai-prompt-shorten-btn" style="color: #10b981; border-color: rgba(16, 185, 129, 0.25);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="4 14 10 14 10 20"></polyline>
+                                    <polyline points="20 10 14 10 14 4"></polyline>
+                                    <line x1="14" y1="10" x2="21" y2="3"></line>
+                                    <line x1="10" y1="14" x2="3" y2="21"></line>
+                                </svg>
+                                Сократить
+                            </button>
+                            <button class="tool-micro-btn" id="ai-prompt-modify-btn" style="color: #8b5cf6; border-color: rgba(139, 92, 246, 0.25);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                </svg>
+                                Изменить...
+                            </button>
                             <div style="position: relative; display: inline-block;">
                                 <button class="tool-micro-btn" id="ai-prompt-gen-btn" style="color: var(--accent); border-color: rgba(59, 130, 246, 0.25);">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1696,6 +1721,24 @@
             <div style="display: flex; gap: 8px; justify-content: flex-end;">
                 <button class="tool-micro-btn" id="description-modal-cancel" style="padding: 8px 12px; height: auto;">Отмена</button>
                 <button class="generate-trigger" id="description-modal-submit" style="height: auto; padding: 8px 16px; font-size: 12px; font-weight: 600;">Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sleek Modal for Prompt Modification Input -->
+    <div id="modify-modal" style="display: none; position: fixed; inset: 0; background: rgba(3, 3, 5, 0.85); backdrop-filter: blur(16px); z-index: 1500; align-items: center; justify-content: center; opacity: 0; transition: var(--transition-smooth);">
+        <div style="background: rgba(10, 10, 12, 0.95); border: 1px solid var(--border-hover); padding: 24px; border-radius: var(--radius-lg); width: 360px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+            <div style="font-size: 13px; font-weight: 600; color: var(--fg-primary); display: flex; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Как изменить промпт?
+            </div>
+            <input type="text" id="modify-modal-input" placeholder="Например: сделай в дождливую погоду, добавь неон..." style="width: 100%; background: var(--bg-control); border: 1px solid var(--border-primary); color: var(--fg-primary); font-family: var(--font-sans); font-size: 13px; padding: 10px 14px; border-radius: var(--radius-md); outline: none; transition: var(--transition-smooth);">
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button class="tool-micro-btn" id="modify-modal-cancel" style="padding: 8px 12px; height: auto;">Отмена</button>
+                <button class="generate-trigger" id="modify-modal-submit" style="height: auto; padding: 8px 16px; font-size: 12px; font-weight: 600;">Изменить</button>
             </div>
         </div>
     </div>
@@ -2259,6 +2302,76 @@
 
                 return textResult.trim().replace(/^"|"$/g, ''); // strip wrapping quotes
             }
+
+            static async transformPrompt(apiKey, useOpenRouterDirect = false, currentPrompt, operation, instruction = null) {
+                const endpoint = useOpenRouterDirect 
+                    ? "https://openrouter.ai/api/v1/chat/completions" 
+                    : "https://api.proxyapi.ru/openrouter/v1/chat/completions";
+                
+                let systemPrompt = "";
+                let userPrompt = "";
+
+                if (operation === 'expand') {
+                    systemPrompt = "You are an elite prompt engineering AI. Your job is to expand and enrich the user's image prompt. Keep it descriptive, highly detailed, dramatic, and creative, in English. Limit the output to 40-50 words. Do not write any explanations or conversational text. Output ONLY the refined prompt.";
+                    userPrompt = `Expand this prompt: "${currentPrompt}"`;
+                } else if (operation === 'shorten') {
+                    systemPrompt = "You are an elite prompt engineering AI. Your job is to condense and shorten the user's image prompt, keeping only the core aesthetic and essential details. Limit the output to 15-20 words in English. Do not write any explanations. Output ONLY the condensed prompt.";
+                    userPrompt = `Shorten this prompt: "${currentPrompt}"`;
+                } else if (operation === 'modify') {
+                    systemPrompt = "You are an elite prompt engineering AI. Modify the existing image prompt according to the user's specific edit instructions. Keep the result descriptive, cohesive, in English, and under 45 words. Do not write any explanations. Output ONLY the modified prompt.";
+                    userPrompt = `Original Prompt: "${currentPrompt}"\nEdit Instruction: "${instruction}"`;
+                }
+
+                const bodyPayload = {
+                    model: "meta-llama/llama-3.2-1b-instruct:free",
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: userPrompt }
+                    ],
+                    max_tokens: 120,
+                    temperature: 0.75
+                };
+
+                const headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`,
+                };
+
+                if (useOpenRouterDirect) {
+                    headers["HTTP-Referer"] = window.location.href || "https://unirate-diffusion.studio";
+                    headers["X-Title"] = "UniRate Diffusion Studio";
+                }
+
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify(bodyPayload),
+                });
+
+                if (!response.ok) {
+                    const details = await response.text();
+                    let errMsg = `Gateway returned error status: ${response.status}`;
+                    try {
+                        const jsonDetails = JSON.parse(details);
+                        if (jsonDetails.error && jsonDetails.error.message) {
+                            errMsg = jsonDetails.error.message;
+                        }
+                    } catch(e) {}
+                    throw new Error(errMsg);
+                }
+
+                const payload = await response.json();
+                if (payload.error) {
+                    throw new Error(payload.error.message || "Failed to transform prompt.");
+                }
+
+                const textResult = payload.choices?.[0]?.message?.content;
+                if (!textResult) {
+                    throw new Error("Received empty response from text model.");
+                }
+
+                return textResult.trim().replace(/^"|"$/g, '');
+            }
         }
 
         /* -------------------------------------------------------------
@@ -2347,6 +2460,14 @@
                     descriptionModalInput: document.getElementById('description-modal-input'),
                     descriptionModalCancel: document.getElementById('description-modal-cancel'),
                     descriptionModalSubmit: document.getElementById('description-modal-submit'),
+
+                    aiPromptExpandBtn: document.getElementById('ai-prompt-expand-btn'),
+                    aiPromptShortenBtn: document.getElementById('ai-prompt-shorten-btn'),
+                    aiPromptModifyBtn: document.getElementById('ai-prompt-modify-btn'),
+                    modifyModal: document.getElementById('modify-modal'),
+                    modifyModalInput: document.getElementById('modify-modal-input'),
+                    modifyModalCancel: document.getElementById('modify-modal-cancel'),
+                    modifyModalSubmit: document.getElementById('modify-modal-submit'),
 
                     actionSetBase: document.getElementById('action-set-base-btn'),
                     aiPromptGenBtn: document.getElementById('ai-prompt-gen-btn'),
@@ -2684,6 +2805,41 @@
                     }
                 });
 
+                // Prompt transformations
+                this.dom.aiPromptExpandBtn.addEventListener('click', () => this.executePromptTransformation('expand'));
+                this.dom.aiPromptShortenBtn.addEventListener('click', () => this.executePromptTransformation('shorten'));
+                this.dom.aiPromptModifyBtn.addEventListener('click', () => {
+                    const val = this.dom.promptTextbox.value.trim();
+                    if (!val) {
+                        ToastNotificationHUD.show("Поле ввода промпта пустое.", "error");
+                        return;
+                    }
+                    this.openModifyModal();
+                });
+
+                // Modify modal actions
+                this.dom.modifyModalCancel.addEventListener('click', () => this.closeModifyModal());
+                this.dom.modifyModalSubmit.addEventListener('click', () => {
+                    const val = this.dom.modifyModalInput.value.trim();
+                    this.closeModifyModal();
+                    if (val) {
+                        this.executePromptTransformation('modify', val);
+                    } else {
+                        ToastNotificationHUD.show("Инструкция не может быть пустой.", "error");
+                    }
+                });
+                this.dom.modifyModalInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const val = this.dom.modifyModalInput.value.trim();
+                        this.closeModifyModal();
+                        if (val) {
+                            this.executePromptTransformation('modify', val);
+                        } else {
+                            ToastNotificationHUD.show("Инструкция не может быть пустой.", "error");
+                        }
+                    }
+                });
+
                 this.dom.downloadLocalAIBtn.addEventListener('click', () => this.downloadLocalAI());
                 this.dom.deleteLocalAIBtn.addEventListener('click', () => this.deleteLocalModel());
                 this.dom.newCanvasBtn.addEventListener('click', () => this.startNewCanvas());
@@ -2889,6 +3045,159 @@
                 setTimeout(() => {
                     modal.style.display = 'none';
                 }, 400);
+            }
+
+            openModifyModal() {
+                const modal = this.dom.modifyModal;
+                if (!modal) return;
+                modal.style.display = 'flex';
+                this.dom.modifyModalInput.value = '';
+                setTimeout(() => {
+                    modal.style.opacity = '1';
+                    this.dom.modifyModalInput.focus();
+                }, 20);
+            }
+
+            closeModifyModal() {
+                const modal = this.dom.modifyModal;
+                if (!modal) return;
+                modal.style.opacity = '0';
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 400);
+            }
+
+            static generateSandboxTransform(currentPrompt, operation, instruction = null) {
+                if (operation === 'expand') {
+                    return `${currentPrompt}, highly detailed matte painting, sharp focus, atmospheric volumetric lighting, 8k cinematic grade render`;
+                } else if (operation === 'shorten') {
+                    const words = currentPrompt.split(' ');
+                    return words.slice(0, Math.min(words.length, 5)).join(' ') + " aesthetic concept";
+                } else if (operation === 'modify') {
+                    return `${currentPrompt}, modified with: ${instruction}`;
+                }
+                return currentPrompt;
+            }
+
+            async runLocalPromptTransform(currentPrompt, operation, instruction = null) {
+                if (!this.localGeneratorInstance) {
+                    this.updateLocalAIStatus("Loading...", "var(--accent)");
+                    ToastNotificationHUD.show("Loading Local AI weights from browser cache...", "info");
+                    
+                    const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0');
+                    env.allowLocalModels = false;
+                    
+                    this.localGeneratorInstance = await pipeline('text-generation', 'onnx-community/SmolLM2-135M-Instruct-ONNX', {
+                        dtype: 'q4',
+                        progress_callback: (progress) => {
+                            if (progress.status === 'progress') {
+                                this.updateLocalDownloadProgress(progress.file, Math.round(progress.progress));
+                            }
+                        }
+                    });
+                }
+                
+                this.updateLocalAIStatus("Processing...", "var(--accent)");
+                this.dom.localAIProgressContainer.style.display = 'none';
+
+                let systemPrompt = "";
+                let userPrompt = "";
+
+                if (operation === 'expand') {
+                    systemPrompt = "You are an elite prompt engineering AI. Expand and enrich the user's prompt in English. Output ONLY the descriptive prompt, up to 35 words.";
+                    userPrompt = `Expand: "${currentPrompt}"`;
+                } else if (operation === 'shorten') {
+                    systemPrompt = "You are an elite prompt engineering AI. Shorten and condense the user's prompt in English. Output ONLY the shortened prompt, up to 15 words.";
+                    userPrompt = `Shorten: "${currentPrompt}"`;
+                } else if (operation === 'modify') {
+                    systemPrompt = "You are an elite prompt engineering AI. Modify the prompt according to edit instructions in English. Output ONLY the modified prompt, up to 35 words.";
+                    userPrompt = `Original: "${currentPrompt}"\nEdit: "${instruction}"`;
+                }
+
+                const messages = [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ];
+
+                const out = await this.localGeneratorInstance(messages, {
+                    max_new_tokens: 50,
+                    temperature: 0.7,
+                    do_sample: true
+                });
+
+                this.updateLocalAIUI();
+
+                let textResult = '';
+                const generated = out[0]?.generated_text;
+                if (Array.isArray(generated)) {
+                    const lastMsg = generated[generated.length - 1];
+                    textResult = lastMsg?.content || '';
+                } else if (typeof generated === 'string') {
+                    textResult = generated;
+                    if (textResult.includes("assistant\n")) {
+                        textResult = textResult.split("assistant\n").pop();
+                    }
+                }
+                return textResult.trim().replace(/^"|"$/g, '');
+            }
+
+            async executePromptTransformation(operation, instruction = null) {
+                if (this.state.isGenerating) return;
+
+                const currentPrompt = this.dom.promptTextbox.value.trim();
+                if (!currentPrompt) {
+                    ToastNotificationHUD.show("Поле ввода промпта пустое.", "error");
+                    return;
+                }
+
+                let targetBtn = null;
+                if (operation === 'expand') targetBtn = this.dom.aiPromptExpandBtn;
+                else if (operation === 'shorten') targetBtn = this.dom.aiPromptShortenBtn;
+                else if (operation === 'modify') targetBtn = this.dom.aiPromptModifyBtn;
+
+                if (!targetBtn) return;
+                const originalText = targetBtn.innerHTML;
+
+                try {
+                    targetBtn.disabled = true;
+                    targetBtn.style.opacity = '0.7';
+                    targetBtn.innerHTML = `<span style="display:inline-block; animation:spin 1s linear infinite; margin-right:4px;">↻</span> Processing...`;
+
+                    let transformed = '';
+
+                    if (this.state.localAIInstalled) {
+                        ToastNotificationHUD.show("Running Local AI transformations...", "info");
+                        transformed = await this.runLocalPromptTransform(currentPrompt, operation, instruction);
+                    } else if (this.state.engineMode === 'live') {
+                        let useOpenRouter = true;
+                        let targetKey = this.state.apiKeyOpenRouter;
+                        
+                        if (!targetKey && this.state.apiKeyProxy) {
+                            targetKey = this.state.apiKeyProxy;
+                            useOpenRouter = false;
+                        }
+
+                        if (!targetKey) {
+                            throw new Error("Authentication credentials are required in Live mode. Please configure your key or switch to Sandbox.");
+                        }
+
+                        ToastNotificationHUD.show("Transmitting prompt payload to Llama 3.2 (1B)...", "info");
+                        transformed = await GatewayAPIController.transformPrompt(targetKey, useOpenRouter, currentPrompt, operation, instruction);
+                    } else {
+                        await new Promise(resolve => setTimeout(resolve, 600));
+                        transformed = AppController.generateSandboxTransform(currentPrompt, operation, instruction);
+                    }
+
+                    this.dom.promptTextbox.value = transformed;
+                    ToastNotificationHUD.show("Prompt transformation applied successfully.", "success");
+                } catch (err) {
+                    console.error(err);
+                    ToastNotificationHUD.show(err.message || "Transformation failed.", "error");
+                } finally {
+                    targetBtn.disabled = false;
+                    targetBtn.style.opacity = '1';
+                    targetBtn.innerHTML = originalText;
+                }
             }
 
             async runLocalAIGeneration(userDescription = null) {
