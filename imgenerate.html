@@ -2061,20 +2061,39 @@
 
                 const payload = await response.json();
                 
+                // OpenRouter/ProxyAPI frequently return 200 OK responses containing error details inside the JSON payload
+                if (payload.error) {
+                    throw new Error(payload.error.message || `Gateway returned error block: ${payload.error.code || 'unknown'}`);
+                }
+                
                 const responseMessage = payload.choices?.[0]?.message;
                 if (!responseMessage) {
-                    throw new Error("Invalid schema payload returned from gateway node.");
+                    throw new Error("Invalid schema payload returned from gateway node (missing choices object).");
                 }
 
-                // Extract base64 image data address
-                const generatedImage = responseMessage.images?.[0]?.image_url?.url;
+                // Robust extraction of base64 image data supporting multiple OpenRouter schema variations
+                let generatedImage = null;
+                if (responseMessage.images && responseMessage.images.length > 0) {
+                    const firstImage = responseMessage.images[0];
+                    if (typeof firstImage === 'string') {
+                        generatedImage = firstImage;
+                    } else if (firstImage && typeof firstImage === 'object') {
+                        generatedImage = firstImage.image_url?.url || firstImage.url || null;
+                    }
+                }
+
                 if (!generatedImage) {
-                    throw new Error("No image base64 structure found in gateway return choice registry.");
+                    // Try fallback content checks in case the model responded with the image in content
+                    if (responseMessage.content && responseMessage.content.startsWith("data:image")) {
+                        generatedImage = responseMessage.content.trim();
+                    } else {
+                        throw new Error("No image base64 structure found in the gateway response registry choices.");
+                    }
                 }
 
                 return {
                     imageUrl: generatedImage,
-                    text: responseMessage.content || null
+                    text: responseMessage.content && !responseMessage.content.startsWith("data:image") ? responseMessage.content : null
                 };
             }
         }
@@ -2697,14 +2716,25 @@
 
                     if (this.state.engineMode === 'live') {
                         const isFreeModel = activeModel.includes(':free');
-                        const targetKey = isFreeModel ? this.state.apiKeyOpenRouter : this.state.apiKeyProxy;
-                        const keyLabel = isFreeModel ? "OpenRouter (Free Models)" : "ProxyAPI (Paid Models)";
-
-                        if (!targetKey) {
-                            throw new Error(`Authentication credentials for ${keyLabel} are missing. Please configure key or select Interactive Sandbox.`);
+                        let useOpenRouter = isFreeModel;
+                        let targetKey = isFreeModel ? this.state.apiKeyOpenRouter : this.state.apiKeyProxy;
+                        
+                        // Intelligent Gateway Fallback Routing
+                        if (!targetKey && !isFreeModel && this.state.apiKeyOpenRouter) {
+                            targetKey = this.state.apiKeyOpenRouter;
+                            useOpenRouter = true;
+                        }
+                        if (!targetKey && isFreeModel && this.state.apiKeyProxy) {
+                            targetKey = this.state.apiKeyProxy;
+                            useOpenRouter = false;
                         }
 
-                        this.updatePipelineStatus("API Gateway handshaking...", `Contacting secure route endpoint (${isFreeModel ? 'OpenRouter Direct' : 'ProxyAPI Node'})`, 15);
+                        const keyLabel = useOpenRouter ? "OpenRouter Gateway" : "ProxyAPI Gateway";
+                        if (!targetKey) {
+                            throw new Error(`Authentication credentials for ${keyLabel} are missing. Please enter your API credentials or select Interactive Sandbox mode.`);
+                        }
+
+                        this.updatePipelineStatus("API Gateway handshaking...", `Contacting secure route endpoint (${useOpenRouter ? 'OpenRouter Direct' : 'ProxyAPI Node'})`, 15);
                         
                         // Enforce modality constraints based on selected model compatibility
                         const currentModelObj = MODEL_REGISTRY.find(m => m.id === activeModel);
@@ -2727,7 +2757,7 @@
                             promptText, 
                             modalitiesPayload, 
                             extraParams, 
-                            isFreeModel,
+                            useOpenRouter,
                             this.state.baseImageBase64
                         );
                         resultImage = outcome.imageUrl;
