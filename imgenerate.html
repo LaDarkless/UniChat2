@@ -2003,13 +2003,14 @@
            LIVE GATEWAY API CONTROLLER
            ------------------------------------------------------------- */
         class GatewayAPIController {
-            static async diffuse(apiKey, modelId, prompt, modalities = ["image"], extraParams = {}, useOpenRouterDirect = false, baseImageBase64 = null) {
+            static async diffuse(apiKey, modelId, prompt, modalities = ["image"], extraParams = {}, useOpenRouterDirect = false, baseImageBase64 = null, aspectRatio = "1:1", isMultimodalCapable = false) {
                 const endpoint = useOpenRouterDirect 
                     ? "https://openrouter.ai/api/v1/chat/completions" 
                     : "https://api.proxyapi.ru/openrouter/v1/chat/completions";
                 
                 let messagesPayload;
-                if (baseImageBase64) {
+                // Only embed reference image if the model is explicitly multimodal vision-capable
+                if (baseImageBase64 && isMultimodalCapable) {
                     messagesPayload = [
                         {
                             role: "user",
@@ -2027,6 +2028,9 @@
                     model: modelId,
                     modalities: modalities,
                     messages: messagesPayload,
+                    image_config: {
+                        aspect_ratio: aspectRatio
+                    },
                     ...extraParams
                 };
 
@@ -2610,7 +2614,8 @@
                 reader.onload = (e) => {
                     const img = new Image();
                     img.onload = () => {
-                        const maxDim = 512;
+                        // Max dimension optimized to 384px to prevent large base64 payload size errors
+                        const maxDim = 384;
                         let width = img.width;
                         let height = img.height;
                         
@@ -2630,10 +2635,11 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
 
-                        this.state.baseImageBase64 = canvas.toDataURL('image/jpeg', 0.85);
+                        // Compression format is JPEG at 0.65 to drastically minimize base64 payload footprint
+                        this.state.baseImageBase64 = canvas.toDataURL('image/jpeg', 0.65);
                         this.state.baseImageId = null;
                         this.updateBaseImageUI();
-                        ToastNotificationHUD.show("Reference base image established and scaled.", "success");
+                        ToastNotificationHUD.show("Reference base image established and compressed.", "success");
                     };
                     img.src = e.target.result;
                 };
@@ -2652,10 +2658,41 @@
 
             setCurrentlyActiveAsBase() {
                 if (!this.state.activeImage) return;
-                this.state.baseImageBase64 = this.state.activeImage.imageUrl;
-                this.state.baseImageId = this.state.activeImage.id;
-                this.updateBaseImageUI();
-                ToastNotificationHUD.show("Canvas output established as editing parent node.", "info");
+                
+                const img = new Image();
+                img.onload = () => {
+                    const maxDim = 384;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxDim || height > maxDim) {
+                        if (width > height) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        } else {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    this.state.baseImageBase64 = canvas.toDataURL('image/jpeg', 0.65);
+                    this.state.baseImageId = this.state.activeImage.id;
+                    this.updateBaseImageUI();
+                    ToastNotificationHUD.show("Canvas output established as optimized editing parent node.", "info");
+                };
+                img.onerror = () => {
+                    this.state.baseImageBase64 = this.state.activeImage.imageUrl;
+                    this.state.baseImageId = this.state.activeImage.id;
+                    this.updateBaseImageUI();
+                    ToastNotificationHUD.show("Canvas output established as editing parent node.", "info");
+                };
+                img.src = this.state.activeImage.imageUrl;
             }
 
             async loadHistoryItemToViewport(item) {
@@ -2751,6 +2788,10 @@
                             };
                         }
 
+                        if (this.state.baseImageBase64 && !isMultimodalCapable) {
+                            ToastNotificationHUD.show("Active model lacks multimodal vision support. Processing text-to-image prompt only.", "info");
+                        }
+
                         const outcome = await GatewayAPIController.diffuse(
                             targetKey, 
                             activeModel, 
@@ -2758,7 +2799,9 @@
                             modalitiesPayload, 
                             extraParams, 
                             useOpenRouter,
-                            this.state.baseImageBase64
+                            this.state.baseImageBase64,
+                            this.state.aspectRatio,
+                            isMultimodalCapable
                         );
                         resultImage = outcome.imageUrl;
                         resultText = outcome.text;
