@@ -2953,7 +2953,7 @@
                         dtype: 'q4', // force quantized version (downloads ~70-95MB only!)
                         progress_callback: (progress) => {
                             if (progress.status === 'progress') {
-                                this.updateLocalDownloadProgress(progress.file, Math.round(progress.progress));
+                                this.updateLocalDownloadProgress(progress);
                             }
                         }
                     });
@@ -2975,11 +2975,24 @@
                 }
             }
 
-            updateLocalDownloadProgress(file, percent) {
+            updateLocalDownloadProgress(progress) {
+                if (!progress || progress.status !== 'progress') return;
+                
                 this.dom.localAIProgressContainer.style.display = 'flex';
+                const file = progress.file || 'model_weights.onnx';
                 this.dom.localAIFile.textContent = file.length > 25 ? '...' + file.slice(-22) : file;
-                this.dom.localAIPercent.textContent = `${percent}%`;
-                this.dom.localAIBar.style.width = `${percent}%`;
+                
+                // Intelligently handle cases where Content-Length is missing from CDN response headers
+                if (progress.progress !== undefined && !isNaN(progress.progress)) {
+                    const percent = Math.round(progress.progress);
+                    this.dom.localAIPercent.textContent = `${percent}%`;
+                    this.dom.localAIBar.style.width = `${percent}%`;
+                } else if (progress.loaded !== undefined && !isNaN(progress.loaded)) {
+                    // Fallback streaming metric: display total downloaded payload size in MBs
+                    const loadedMB = (progress.loaded / (1024 * 1024)).toFixed(1);
+                    this.dom.localAIPercent.textContent = `${loadedMB} MB`;
+                    this.dom.localAIBar.style.width = '100%'; // Full width pulse bar to convey active stream
+                }
             }
 
             updateLocalAIUI() {
@@ -3091,7 +3104,7 @@
                         dtype: 'q4',
                         progress_callback: (progress) => {
                             if (progress.status === 'progress') {
-                                this.updateLocalDownloadProgress(progress.file, Math.round(progress.progress));
+                                this.updateLocalDownloadProgress(progress);
                             }
                         }
                     });
@@ -3212,7 +3225,7 @@
                         dtype: 'q4',
                         progress_callback: (progress) => {
                             if (progress.status === 'progress') {
-                                this.updateLocalDownloadProgress(progress.file, Math.round(progress.progress));
+                                this.updateLocalDownloadProgress(progress);
                             }
                         }
                     });
