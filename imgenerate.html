@@ -1523,12 +1523,32 @@
                                 </svg>
                                 Inspire Prompt
                             </button>
-                            <button class="tool-micro-btn" id="ai-prompt-gen-btn" style="color: var(--accent); border-color: rgba(59, 130, 246, 0.25);">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
-                                </svg>
-                                Сгенерировать промпт
-                            </button>
+                            <div style="position: relative; display: inline-block;">
+                                <button class="tool-micro-btn" id="ai-prompt-gen-btn" style="color: var(--accent); border-color: rgba(59, 130, 246, 0.25);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
+                                    </svg>
+                                    Сгенерировать промпт
+                                </button>
+                                <!-- Sleek Dropdown Popover -->
+                                <div id="ai-prompt-dropdown" style="display: none; position: absolute; bottom: 100%; right: 0; margin-bottom: 8px; background: rgba(10, 10, 12, 0.95); border: 1px solid var(--border-hover); border-radius: var(--radius-md); box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(12px); padding: 4px; width: 220px; z-index: 200; flex-direction: column; gap: 2px;">
+                                    <button class="segment-btn" id="ai-prompt-opt-desc" style="width: 100%; justify-content: flex-start; font-size: 11px; padding: 8px 10px; border-radius: var(--radius-sm); text-align: left; border: none; background: transparent;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px; margin-right: 6px; color: var(--accent);">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                        Сгенерировать по описанию...
+                                    </button>
+                                    <button class="segment-btn" id="ai-prompt-opt-rand" style="width: 100%; justify-content: flex-start; font-size: 11px; padding: 8px 10px; border-radius: var(--radius-sm); text-align: left; border: none; background: transparent;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px; margin-right: 6px; color: #10b981;">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="8 12 12 16 16 12"></polyline>
+                                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                                        </svg>
+                                        Сгенерировать на рандом
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <button class="generate-trigger" id="submit-prompt-btn">
@@ -1658,6 +1678,24 @@
             <div class="modal-info-bar">
                 <span id="lightbox-meta-prompt">Prompt Context Specifier</span>
                 <span id="lightbox-meta-model">Model Node</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sleek Modal for Description Input -->
+    <div id="description-modal" style="display: none; position: fixed; inset: 0; background: rgba(3, 3, 5, 0.85); backdrop-filter: blur(16px); z-index: 1500; align-items: center; justify-content: center; opacity: 0; transition: var(--transition-smooth);">
+        <div style="background: rgba(10, 10, 12, 0.95); border: 1px solid var(--border-hover); padding: 24px; border-radius: var(--radius-lg); width: 360px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+            <div style="font-size: 13px; font-weight: 600; color: var(--fg-primary); display: flex; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Введите краткое описание
+            </div>
+            <input type="text" id="description-modal-input" placeholder="Например: неоновая кошка в лесу..." style="width: 100%; background: var(--bg-control); border: 1px solid var(--border-primary); color: var(--fg-primary); font-family: var(--font-sans); font-size: 13px; padding: 10px 14px; border-radius: var(--radius-md); outline: none; transition: var(--transition-smooth);">
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button class="tool-micro-btn" id="description-modal-cancel" style="padding: 8px 12px; height: auto;">Отмена</button>
+                <button class="generate-trigger" id="description-modal-submit" style="height: auto; padding: 8px 16px; font-size: 12px; font-weight: 600;">Создать</button>
             </div>
         </div>
     </div>
@@ -2152,21 +2190,28 @@
                 };
             }
 
-            static async generatePrompt(apiKey, useOpenRouterDirect = false) {
+            static async generatePrompt(apiKey, useOpenRouterDirect = false, userDescription = null) {
                 const endpoint = useOpenRouterDirect 
                     ? "https://openrouter.ai/api/v1/chat/completions" 
                     : "https://api.proxyapi.ru/openrouter/v1/chat/completions";
                 
+                const systemPrompt = "You are an elite creative prompt generator for image AI systems like Midjourney, DALL-E 3, and Stable Diffusion. Generate ONE incredibly detailed, artistic, atmospheric, and highly creative scene description in English (up to 40 words). Focus on lighting, visual styles, mood, and texture. Do not include introductory text, quote marks, bullet points, or numbering. Return ONLY the plain text prompt.";
+                
+                let userPrompt = "Provide a unique, jaw-dropping creative image prompt description.";
+                if (userDescription) {
+                    userPrompt = `Expand the following brief idea into an incredibly creative, atmospheric, and detailed image prompt description: "${userDescription}". Output must be in English, up to 40 words, and optimized for Stable Diffusion / Midjourney.`;
+                }
+
                 const bodyPayload = {
                     model: "meta-llama/llama-3.2-1b-instruct:free",
                     messages: [
                         {
                             role: "system",
-                            content: "You are an elite creative prompt generator for image AI systems like Midjourney, DALL-E 3, and Stable Diffusion. Generate ONE incredibly detailed, artistic, atmospheric, and highly creative scene description in English (up to 40 words). Focus on lighting, visual styles, mood, and texture. Do not include introductory text, quote marks, bullet points, or numbering. Return ONLY the plain text prompt."
+                            content: systemPrompt
                         },
                         {
                             role: "user",
-                            content: "Provide a unique, jaw-dropping creative image prompt description."
+                            content: userPrompt
                         }
                     ],
                     max_tokens: 120,
@@ -2295,6 +2340,14 @@
                     pipelineSecondaryStatus: document.getElementById('pipeline-status-secondary'),
                     pipelineProgressBar: document.getElementById('pipeline-progress-bar'),
                     
+                    aiPromptDropdown: document.getElementById('ai-prompt-dropdown'),
+                    aiPromptOptDesc: document.getElementById('ai-prompt-opt-desc'),
+                    aiPromptOptRand: document.getElementById('ai-prompt-opt-rand'),
+                    descriptionModal: document.getElementById('description-modal'),
+                    descriptionModalInput: document.getElementById('description-modal-input'),
+                    descriptionModalCancel: document.getElementById('description-modal-cancel'),
+                    descriptionModalSubmit: document.getElementById('description-modal-submit'),
+
                     actionSetBase: document.getElementById('action-set-base-btn'),
                     aiPromptGenBtn: document.getElementById('ai-prompt-gen-btn'),
                     actionDownload: document.getElementById('action-download-btn'),
@@ -2581,7 +2634,56 @@
                 // Action controls layout buttons
                 this.dom.submitPromptBtn.addEventListener('click', () => this.executeDiffusionProcess());
                 this.dom.inspireBtn.addEventListener('click', () => this.populateInspiration());
-                this.dom.aiPromptGenBtn.addEventListener('click', () => this.generateAIPrompt());
+                
+                // Toggle AI prompt options dropdown
+                this.dom.aiPromptGenBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isVisible = this.dom.aiPromptDropdown.style.display === 'flex';
+                    this.dom.aiPromptDropdown.style.display = isVisible ? 'none' : 'flex';
+                });
+
+                // Dropdown choices
+                this.dom.aiPromptOptDesc.addEventListener('click', () => {
+                    this.dom.aiPromptDropdown.style.display = 'none';
+                    this.openDescriptionModal();
+                });
+
+                this.dom.aiPromptOptRand.addEventListener('click', () => {
+                    this.dom.aiPromptDropdown.style.display = 'none';
+                    this.generateAIPrompt(null);
+                });
+
+                // Description modal interactions
+                this.dom.descriptionModalCancel.addEventListener('click', () => this.closeDescriptionModal());
+                this.dom.descriptionModalSubmit.addEventListener('click', () => {
+                    const desc = this.dom.descriptionModalInput.value.trim();
+                    this.closeDescriptionModal();
+                    if (desc) {
+                        this.generateAIPrompt(desc);
+                    } else {
+                        ToastNotificationHUD.show("Описание не может быть пустым.", "error");
+                    }
+                });
+
+                this.dom.descriptionModalInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const desc = this.dom.descriptionModalInput.value.trim();
+                        this.closeDescriptionModal();
+                        if (desc) {
+                            this.generateAIPrompt(desc);
+                        } else {
+                            ToastNotificationHUD.show("Описание не может быть пустым.", "error");
+                        }
+                    }
+                });
+
+                // Close dropdown on clicking anywhere outside
+                document.addEventListener('click', (e) => {
+                    if (this.dom.aiPromptDropdown && !this.dom.aiPromptDropdown.contains(e.target) && e.target !== this.dom.aiPromptGenBtn && !this.dom.aiPromptGenBtn.contains(e.target)) {
+                        this.dom.aiPromptDropdown.style.display = 'none';
+                    }
+                });
+
                 this.dom.downloadLocalAIBtn.addEventListener('click', () => this.downloadLocalAI());
                 this.dom.deleteLocalAIBtn.addEventListener('click', () => this.deleteLocalModel());
                 this.dom.newCanvasBtn.addEventListener('click', () => this.startNewCanvas());
@@ -2636,7 +2738,7 @@
                 ToastNotificationHUD.show("Creative prompt trace injected.", "info");
             }
 
-            static generateProceduralPrompt() {
+            static generateProceduralPrompt(userDescription = null) {
                 const subjects = [
                     "A cosmic jellyfish floating through a futuristic neon metropolitan skyline",
                     "An ancient stone castle integrated into a giant glowing mystical tree",
@@ -2661,7 +2763,7 @@
                     "cybernetic details, hyper-fine geometry structure, cinematic grading"
                 ];
                 
-                const sub = subjects[Math.floor(Math.random() * subjects.length)];
+                const sub = userDescription ? `A majestic representation of ${userDescription}` : subjects[Math.floor(Math.random() * subjects.length)];
                 const sty = styles[Math.floor(Math.random() * styles.length)];
                 const mod = modifiers[Math.floor(Math.random() * modifiers.length)];
                 
@@ -2769,7 +2871,27 @@
                 }
             }
 
-            async runLocalAIGeneration() {
+            openDescriptionModal() {
+                const modal = this.dom.descriptionModal;
+                if (!modal) return;
+                modal.style.display = 'flex';
+                this.dom.descriptionModalInput.value = '';
+                setTimeout(() => {
+                    modal.style.opacity = '1';
+                    this.dom.descriptionModalInput.focus();
+                }, 20);
+            }
+
+            closeDescriptionModal() {
+                const modal = this.dom.descriptionModal;
+                if (!modal) return;
+                modal.style.opacity = '0';
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 400);
+            }
+
+            async runLocalAIGeneration(userDescription = null) {
                 if (!this.localGeneratorInstance) {
                     this.updateLocalAIStatus("Loading...", "var(--accent)");
                     ToastNotificationHUD.show("Loading Local AI weights from browser cache...", "info");
@@ -2790,14 +2912,21 @@
                 this.updateLocalAIStatus("Generating...", "var(--accent)");
                 this.dom.localAIProgressContainer.style.display = 'none';
 
+                const systemPrompt = "You are an elite creative prompt generator. Generate ONE highly artistic, detailed, and dramatic scene description in English for image generation (up to 30 words). Return ONLY the prompt, no explanations.";
+                
+                let userPrompt = "Generate a brilliant creative prompt.";
+                if (userDescription) {
+                    userPrompt = `Expand this brief idea into a highly creative and detailed image prompt in English (up to 30 words): "${userDescription}". Return only the prompt, no explanations.`;
+                }
+
                 const messages = [
                     {
                         role: "system",
-                        content: "You are an elite creative prompt generator. Generate ONE highly artistic, detailed, and dramatic scene description in English for image generation (up to 30 words). Return ONLY the prompt, no explanations."
+                        content: systemPrompt
                     },
                     {
                         role: "user",
-                        content: "Generate a brilliant creative prompt."
+                        content: userPrompt
                     }
                 ];
 
@@ -2823,7 +2952,7 @@
                 return textResult.trim().replace(/^"|"$/g, '');
             }
 
-            async generateAIPrompt() {
+            async generateAIPrompt(userDescription = null) {
                 if (this.state.isGenerating) return;
 
                 const btn = this.dom.aiPromptGenBtn;
@@ -2838,7 +2967,7 @@
 
                     // Prioritize local offline AI model if cached and ready
                     if (this.state.localAIInstalled) {
-                        generatedPrompt = await this.runLocalAIGeneration();
+                        generatedPrompt = await this.runLocalAIGeneration(userDescription);
                     } else if (this.state.engineMode === 'live') {
                         // Determine target API Gateway and corresponding credential key
                         let useOpenRouter = true;
@@ -2855,11 +2984,11 @@
                         }
 
                         ToastNotificationHUD.show("Contacting Llama 3.2 (1B) node...", "info");
-                        generatedPrompt = await GatewayAPIController.generatePrompt(targetKey, useOpenRouter);
+                        generatedPrompt = await GatewayAPIController.generatePrompt(targetKey, useOpenRouter, userDescription);
                     } else {
                         // Instant offline fallback for Sandbox Mode
                         await new Promise(resolve => setTimeout(resolve, 800));
-                        generatedPrompt = AppController.generateProceduralPrompt();
+                        generatedPrompt = AppController.generateProceduralPrompt(userDescription);
                     }
 
                     this.dom.promptTextbox.value = generatedPrompt;
