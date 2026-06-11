@@ -2841,9 +2841,10 @@
                         timestamp: Date.now() 
                     };
                     
-                    // Automatically step forward in lineage tracking by establishing newly produced card as next edit base candidates
-                    this.state.baseImageBase64 = resultImage;
-                    this.state.baseImageId = id;
+                    // Reset editing anchor to prevent hijacking subsequent text-to-image generations.
+                    // The user can explicitly chain versions by clicking the "Set as Edit Base" control button.
+                    this.state.baseImageBase64 = null;
+                    this.state.baseImageId = null;
                     this.updateBaseImageUI();
 
                     await this.loadHistoryItemToViewport(record);
