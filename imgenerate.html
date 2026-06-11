@@ -1293,6 +1293,51 @@
                     </div>
                 </div>
 
+                <!-- Local AI Assistant (Offline WebGPU/WASM Model) -->
+                <div class="config-block" id="local-ai-container">
+                    <div class="section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                            <rect x="9" y="9" width="6" height="6"></rect>
+                            <line x1="9" y1="1" x2="9" y2="4"></line>
+                            <line x1="15" y1="1" x2="15" y2="4"></line>
+                            <line x1="9" y1="20" x2="9" y2="23"></line>
+                            <line x1="15" y1="20" x2="15" y2="23"></line>
+                            <line x1="20" y1="9" x2="23" y2="9"></line>
+                            <line x1="20" y1="15" x2="23" y2="15"></line>
+                            <line x1="1" y1="9" x2="4" y2="9"></line>
+                            <line x1="1" y1="15" x2="4" y2="15"></line>
+                        </svg>
+                        Local AI Assistant (Offline)
+                    </div>
+                    <div style="background: var(--bg-control); padding: 12px; border: 1px solid var(--border-primary); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 11px; color: var(--fg-secondary); font-family: var(--font-sans);">SmolLM2 135M</span>
+                            <span id="local-ai-status" style="font-size: 10px; font-family: var(--font-mono); color: var(--fg-mute); text-transform: uppercase; font-weight: 600;">Not Loaded</span>
+                        </div>
+                        
+                        <!-- Real-time Progress Bar -->
+                        <div id="local-ai-progress-container" style="display: none; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 9px; font-family: var(--font-mono); color: var(--accent);">
+                                <span id="local-ai-file">Downloading...</span>
+                                <span id="local-ai-percent">0%</span>
+                            </div>
+                            <div style="width: 100%; height: 4px; background: rgba(255, 255, 255, 0.05); border-radius: 2px; overflow: hidden; position: relative;">
+                                <div id="local-ai-bar" style="position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: var(--accent); transition: width 0.1s linear; box-shadow: 0 0 6px var(--accent);"></div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 8px; margin-top: 4px;">
+                            <button class="tool-micro-btn" id="download-local-ai-btn" style="flex: 1; justify-content: center; font-size: 11px; padding: 6px 8px; color: var(--accent); border-color: rgba(59, 130, 246, 0.25);">
+                                Скачать локальную ИИ
+                            </button>
+                            <button class="tool-micro-btn" id="delete-local-ai-btn" style="display: none; justify-content: center; font-size: 11px; padding: 6px 8px; color: #ef4444; border-color: rgba(239, 68, 68, 0.25);">
+                                Удалить модель
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- API Authentication Gateway -->
                 <div class="config-block" id="api-key-container" style="opacity: 0.5; pointer-events: none; transition: var(--transition-smooth); gap: 12px;">
                     <div class="section-title">
@@ -2178,6 +2223,9 @@
             constructor() {
                 this.db = new DatabaseController();
                 
+                // Local cached pipeline holder
+                this.localGeneratorInstance = null;
+
                 // Runtime Configuration Settings Cache
                 this.state = {
                     engineMode: 'mock', // 'mock' or 'live'
@@ -2191,7 +2239,8 @@
                     isGenerating: false,
                     activeImage: null,
                     baseImageBase64: null,
-                    baseImageId: null
+                    baseImageId: null,
+                    localAIInstalled: false
                 };
 
                 this.dom = {
@@ -2208,6 +2257,15 @@
                     reasoningEffortContainer: document.getElementById('reasoning-effort-container'),
                     reasoningEffortGroup: document.getElementById('reasoning-effort-group'),
                     
+                    localAIContainer: document.getElementById('local-ai-container'),
+                    localAIStatus: document.getElementById('local-ai-status'),
+                    localAIProgressContainer: document.getElementById('local-ai-progress-container'),
+                    localAIFile: document.getElementById('local-ai-file'),
+                    localAIPercent: document.getElementById('local-ai-percent'),
+                    localAIBar: document.getElementById('local-ai-bar'),
+                    downloadLocalAIBtn: document.getElementById('download-local-ai-btn'),
+                    deleteLocalAIBtn: document.getElementById('delete-local-ai-btn'),
+
                     baseImageContainer: document.getElementById('base-image-container'),
                     baseImagePreview: document.getElementById('base-image-preview'),
                     uploadBaseBtn: document.getElementById('upload-base-btn'),
@@ -2269,6 +2327,7 @@
                 this.renderModelOptions();
                 this.bindEvents();
                 await this.refreshHistoryShelf();
+                await this.tryLoadLocalAIOnStartup();
                 
                 ToastNotificationHUD.show("UniRate Studio System Context ready.", "success");
             }
@@ -2304,6 +2363,9 @@
 
                 const savedReasoning = await this.db.getSetting('reasoningEffort');
                 if (savedReasoning) this.state.reasoningEffort = savedReasoning;
+
+                const savedLocalAI = await this.db.getSetting('localAIInstalled');
+                if (savedLocalAI) this.state.localAIInstalled = savedLocalAI;
 
                 // Sync configs directly to UI View layout states
                 this.syncStateToUI();
@@ -2389,6 +2451,9 @@
                         btn.classList.remove('active');
                     }
                 });
+
+                // Update Local AI UI state
+                this.updateLocalAIUI();
             }
 
             toggleCustomModelContainer() {
@@ -2517,6 +2582,8 @@
                 this.dom.submitPromptBtn.addEventListener('click', () => this.executeDiffusionProcess());
                 this.dom.inspireBtn.addEventListener('click', () => this.populateInspiration());
                 this.dom.aiPromptGenBtn.addEventListener('click', () => this.generateAIPrompt());
+                this.dom.downloadLocalAIBtn.addEventListener('click', () => this.downloadLocalAI());
+                this.dom.deleteLocalAIBtn.addEventListener('click', () => this.deleteLocalModel());
                 this.dom.newCanvasBtn.addEventListener('click', () => this.startNewCanvas());
 
                 // Reference Base Image binding triggers
@@ -2601,6 +2668,161 @@
                 return `${sub}, ${sty}, ${mod}`;
             }
 
+            async tryLoadLocalAIOnStartup() {
+                const installed = await this.db.getSetting('localAIInstalled');
+                if (installed) {
+                    this.state.localAIInstalled = true;
+                    this.updateLocalAIUI();
+                }
+            }
+
+            async downloadLocalAI() {
+                const btn = this.dom.downloadLocalAIBtn;
+                const originalText = btn.innerHTML;
+                
+                try {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.7';
+                    this.updateLocalAIStatus("Downloading...", "var(--accent)");
+                    
+                    ToastNotificationHUD.show("Loading Hugging Face Transformers module...", "info");
+                    const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0');
+                    env.allowLocalModels = false;
+                    
+                    ToastNotificationHUD.show("Initiating SmolLM2 135M parameter caching...", "info");
+                    
+                    this.localGeneratorInstance = await pipeline('text-generation', 'onnx-community/SmolLM2-135M-Instruct-ONNX', {
+                        dtype: 'q4', // force quantized version (downloads ~70-95MB only!)
+                        progress_callback: (progress) => {
+                            if (progress.status === 'progress') {
+                                this.updateLocalDownloadProgress(progress.file, Math.round(progress.progress));
+                            }
+                        }
+                    });
+
+                    this.state.localAIInstalled = true;
+                    await this.db.setSetting('localAIInstalled', true);
+                    this.updateLocalAIUI();
+                    
+                    ToastNotificationHUD.show("Local AI Model cached successfully!", "success");
+                } catch (err) {
+                    console.error(err);
+                    this.updateLocalAIStatus("Error", "#ef4444");
+                    ToastNotificationHUD.show("Local AI download failed: " + err.message, "error");
+                } finally {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.innerHTML = originalText;
+                    this.dom.localAIProgressContainer.style.display = 'none';
+                }
+            }
+
+            updateLocalDownloadProgress(file, percent) {
+                this.dom.localAIProgressContainer.style.display = 'flex';
+                this.dom.localAIFile.textContent = file.length > 25 ? '...' + file.slice(-22) : file;
+                this.dom.localAIPercent.textContent = `${percent}%`;
+                this.dom.localAIBar.style.width = `${percent}%`;
+            }
+
+            updateLocalAIUI() {
+                const statusEl = this.dom.localAIStatus;
+                const downloadBtn = this.dom.downloadLocalAIBtn;
+                const deleteBtn = this.dom.deleteLocalAIBtn;
+
+                if (!statusEl || !downloadBtn || !deleteBtn) return;
+
+                if (this.state.localAIInstalled) {
+                    statusEl.textContent = "Cached";
+                    statusEl.style.color = "#10b981";
+                    downloadBtn.textContent = "Обновить ИИ";
+                    deleteBtn.style.display = 'block';
+                } else {
+                    statusEl.textContent = "Not Loaded";
+                    statusEl.style.color = "var(--fg-mute)";
+                    downloadBtn.textContent = "Скачать локальную ИИ";
+                    deleteBtn.style.display = 'none';
+                }
+            }
+
+            updateLocalAIStatus(text, color) {
+                const statusEl = this.dom.localAIStatus;
+                if (statusEl) {
+                    statusEl.textContent = text;
+                    statusEl.style.color = color;
+                }
+            }
+
+            async deleteLocalModel() {
+                try {
+                    const cacheExists = await caches.has('transformers-cache');
+                    if (cacheExists) {
+                        await caches.delete('transformers-cache');
+                    }
+                    this.localGeneratorInstance = null;
+                    this.state.localAIInstalled = false;
+                    await this.db.setSetting('localAIInstalled', false);
+                    this.updateLocalAIUI();
+                    ToastNotificationHUD.show("Local model cache cleared successfully.", "success");
+                } catch (err) {
+                    console.error(err);
+                    ToastNotificationHUD.show("Failed to remove local cache: " + err.message, "error");
+                }
+            }
+
+            async runLocalAIGeneration() {
+                if (!this.localGeneratorInstance) {
+                    this.updateLocalAIStatus("Loading...", "var(--accent)");
+                    ToastNotificationHUD.show("Loading Local AI weights from browser cache...", "info");
+                    
+                    const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0');
+                    env.allowLocalModels = false;
+                    
+                    this.localGeneratorInstance = await pipeline('text-generation', 'onnx-community/SmolLM2-135M-Instruct-ONNX', {
+                        dtype: 'q4',
+                        progress_callback: (progress) => {
+                            if (progress.status === 'progress') {
+                                this.updateLocalDownloadProgress(progress.file, Math.round(progress.progress));
+                            }
+                        }
+                    });
+                }
+                
+                this.updateLocalAIStatus("Generating...", "var(--accent)");
+                this.dom.localAIProgressContainer.style.display = 'none';
+
+                const messages = [
+                    {
+                        role: "system",
+                        content: "You are an elite creative prompt generator. Generate ONE highly artistic, detailed, and dramatic scene description in English for image generation (up to 30 words). Return ONLY the prompt, no explanations."
+                    },
+                    {
+                        role: "user",
+                        content: "Generate a brilliant creative prompt."
+                    }
+                ];
+
+                const out = await this.localGeneratorInstance(messages, {
+                    max_new_tokens: 50,
+                    temperature: 0.85,
+                    do_sample: true
+                });
+
+                this.updateLocalAIUI();
+
+                let textResult = '';
+                const generated = out[0]?.generated_text;
+                if (Array.isArray(generated)) {
+                    const lastMsg = generated[generated.length - 1];
+                    textResult = lastMsg?.content || '';
+                } else if (typeof generated === 'string') {
+                    textResult = generated;
+                    if (textResult.includes("assistant\n")) {
+                        textResult = textResult.split("assistant\n").pop();
+                    }
+                }
+                return textResult.trim().replace(/^"|"$/g, '');
+            }
+
             async generateAIPrompt() {
                 if (this.state.isGenerating) return;
 
@@ -2614,7 +2836,10 @@
 
                     let generatedPrompt = '';
 
-                    if (this.state.engineMode === 'live') {
+                    // Prioritize local offline AI model if cached and ready
+                    if (this.state.localAIInstalled) {
+                        generatedPrompt = await this.runLocalAIGeneration();
+                    } else if (this.state.engineMode === 'live') {
                         // Determine target API Gateway and corresponding credential key
                         let useOpenRouter = true;
                         let targetKey = this.state.apiKeyOpenRouter;
