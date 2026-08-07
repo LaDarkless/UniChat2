@@ -1166,24 +1166,51 @@ box-shadow:0 4px 14px hsla(0,0%,0%,.3)}
 }
 /* ═══ МОБИЛЬНАЯ ОПТИМИЗАЦИЯ ПРОИЗВОДИТЕЛЬНОСТИ ═══ */
 @media (pointer:coarse), (max-width:768px){
-/* Grain: inset:-100% = элемент 300% экрана + анимация = главный жратель */
-.grain{animation:none;inset:0;opacity:.03}
+/* Grain: полностью убираем слой — даже inset:0 + opacity .03
+   заставляет GPU держать отдельный композитный слой поверх всего */
+.grain{display:none}
 /* blur(2px) поверх канваса каждый кадр — смерть мобильного GPU */
 #bgFar{filter:none}
-/* Vignette: убираем лишний linear-gradient, оставляем один radial */
-.vignette{background:radial-gradient(145% 105% at 50% 42%, transparent 60%, hsla(230,8%,3%,.5) 97%)}
-html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 42%, transparent 62%, hsla(30,10%,30%,.28) 97%)}
-/* backdrop-filter: снижаем радиус blur — экономия GPU-композитинга */
-.topbar{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.input-shell{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.menu{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.drawer{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-.modal{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-.iv-back{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.hp-back{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+/* Vignette: один radial-градиент, без linear */
+.vignette{background:radial-gradient(145% 105% at 50% 42%, transparent 60%, hsla(230,8%,3%,.5) 97%);opacity:.4}
+html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 42%, transparent 62%, hsla(30,10%,30%,.28) 97%);opacity:.14}
+/* Изоляция перерисовок: браузер не перерисовывает весь документ
+   при изменениях внутри чата — фикс «серых кубиков» */
+.app{contain:layout style}
+.chat-wrap{contain:layout paint}
+/* ── backdrop-filter: радикально снижаем.
+   Каждый элемент с blur = отдельный проход GPU-композитинга.
+   Scrim/overlay убираем полностью — они и так полупрозрачные ── */
+.scrim{backdrop-filter:none;-webkit-backdrop-filter:none}
+.overlay{backdrop-filter:none;-webkit-backdrop-filter:none}
+.topbar{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.input-shell{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.menu,.slash-menu,.search-panel{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.drawer{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.modal{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.iv-back{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.hp-back{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.toast{backdrop-filter:none;-webkit-backdrop-filter:none}
+.ig-ctx{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.qa-toolbar{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+/* ── Анимации меню: transform на элементе с backdrop-filter
+   пересчитывает blur каждый кадр → серые тайлы.
+   Заменяем на чистый opacity — визуально мягче, GPU-дешевле ── */
+.menu{animation:menuFadeIn .16s cubic-bezier(.2,.9,.3,1)}
+.menu.out{animation:menuFadeOut .13s cubic-bezier(.16,1,.3,1) forwards}
+#modelMenu.anim,#thinkMenu.anim{animation:menuFadeIn .16s cubic-bezier(.2,.9,.3,1)}
+#modelMenu.out,#thinkMenu.out{animation:menuFadeOut .13s cubic-bezier(.16,1,.3,1) forwards}
+.slash-menu,.search-panel{animation:menuFadeIn .16s cubic-bezier(.2,.9,.3,1)}
+/* ── ThinkMenu: отключаем бесконечные CSS-анимации,
+   которые крутятся даже когда меню просто открыто ── */
+.tm-thumb::after{animation:none;border:none}
+.tm-mark.active .tm-dot::after{animation:none;opacity:0}
+.tm-label .tm-g::before,.tm-label .tm-g::after{animation:none !important;opacity:0 !important}
 /* Глитч: отключаем псевдоэлементы — лишние композитные слои */
 .glitch::before,.glitch::after{animation:none !important;opacity:0 !important}
 }
+@keyframes menuFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes menuFadeOut{from{opacity:1}to{opacity:0}}
 </style>
 </head>
 <body>
@@ -4783,14 +4810,17 @@ attach(cv){ this.cv = cv; this.ctx = cv.getContext('2d'); },
 resize(){
 if (!this.cv) return;
 const host = this.cv.parentElement;
-this.DPR = Math.min(window.devicePixelRatio || 1, 2);
+/* Мобильные: DPR 1 — канвас шкалы 520×150, retina-чёткость
+   не нужна, зато площадь перерисовки падает в 4–9 раз */
+this.DPR = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 2);
 this.W = Math.max(10, host.clientWidth); this.H = Math.max(10, host.clientHeight);
 this.cv.width = this.W * this.DPR; this.cv.height = this.H * this.DPR;
 this.ctx.setTransform(this.DPR, 0, 0, this.DPR, 0, 0);
 },
 setLevel(e, col){
 this.target = e; this.colTarget = col;
-const n = Math.round(4 + e * 12);
+/* Мобильные: вдвое меньше дрейфующих треугольников */
+const n = isMobile ? Math.round(3 + e * 6) : Math.round(4 + e * 12);
 while (this.tris.length < n) this.tris.push(this._mkTri());
 if (this.tris.length > Math.max(n, 3)) this.tris.length = Math.max(n, 3);
 if (!this.running){
@@ -4815,7 +4845,16 @@ return;
 }
 if (this.running) return;
 this.running = true;
-const loop = ts => { if (!this.running) return; this._frame(ts); this.raf = requestAnimationFrame(loop); };
+/* Мобильные: 24 fps — шкала меняется плавно, нагрузка в 2.5 раза ниже */
+let lastTm = 0;
+const tmInterval = isMobile ? 1000 / 24 : 0;
+const loop = ts => {
+if (!this.running) return;
+this.raf = requestAnimationFrame(loop);
+if (tmInterval && ts - lastTm < tmInterval) return;
+lastTm = ts;
+this._frame(ts);
+};
 this.raf = requestAnimationFrame(loop);
 },
 stop(){ this.running = false; if (this.raf) cancelAnimationFrame(this.raf); this.raf = null; },
@@ -4832,7 +4871,9 @@ const h = this.col.h, s = this.col.s, l = this.col.l, e = this.t;
 ctx.clearRect(0, 0, W, H);
 /* волны осциллографа */
 const baseY = H * .5;
-for (let w = 0; w < 3; w++){
+/* Мобильные: 2 волны вместо 3, без shadowBlur (дорогой проход GPU) */
+const waveCount = isMobile ? 2 : 3;
+for (let w = 0; w < waveCount; w++){
 const amp = (3 + e * 13) * (1 - w * .26);
 const freq = .016 + w * .006 + e * .009;
 const speed = (.7 + e * 2.4) * (w % 2 ? -1 : 1) * (1 + w * .18);
@@ -4844,8 +4885,10 @@ x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
 }
 ctx.strokeStyle = `hsla(${h},${s}%,${l}%,${(.14 + e * .42) * (1 - w * .27)})`;
 ctx.lineWidth = 1.4 - w * .3;
+if (!isMobile){
 ctx.shadowColor = `hsla(${h},${s}%,${l}%,${.3 + e * .4})`;
 ctx.shadowBlur = 6 + e * 14;
+}
 ctx.stroke();
 }
 ctx.shadowBlur = 0;
