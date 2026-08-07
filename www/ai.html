@@ -1164,6 +1164,26 @@ box-shadow:0 4px 14px hsla(0,0%,0%,.3)}
 @media (prefers-reduced-motion:reduce){
 *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
 }
+/* ═══ МОБИЛЬНАЯ ОПТИМИЗАЦИЯ ПРОИЗВОДИТЕЛЬНОСТИ ═══ */
+@media (pointer:coarse), (max-width:768px){
+/* Grain: inset:-100% = элемент 300% экрана + анимация = главный жратель */
+.grain{animation:none;inset:0;opacity:.03}
+/* blur(2px) поверх канваса каждый кадр — смерть мобильного GPU */
+#bgFar{filter:none}
+/* Vignette: убираем лишний linear-gradient, оставляем один radial */
+.vignette{background:radial-gradient(145% 105% at 50% 42%, transparent 60%, hsla(230,8%,3%,.5) 97%)}
+html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 42%, transparent 62%, hsla(30,10%,30%,.28) 97%)}
+/* backdrop-filter: снижаем радиус blur — экономия GPU-композитинга */
+.topbar{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.input-shell{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.menu{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.drawer{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.modal{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.iv-back{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.hp-back{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+/* Глитч: отключаем псевдоэлементы — лишние композитные слои */
+.glitch::before,.glitch::after{animation:none !important;opacity:0 !important}
+}
 </style>
 </head>
 <body>
@@ -1684,6 +1704,9 @@ box-shadow:0 4px 14px hsla(0,0%,0%,.3)}
 /* ============================================================
    MoonSSS — премиальный ИИ-клиент для ProxyAPI.ru
 ============================================================ */
+/* Мобильный режим: touch-устройство или узкий экран.
+   Управляет FPS фона, DPR канвасов и количеством объектов. */
+const isMobile = (window.matchMedia && matchMedia('(pointer:coarse)').matches) || window.innerWidth <= 768;
 
 /* ---------- Каталог моделей ----------
    Место для новых моделей: добавляйте объекты в массив MODELS.
@@ -6298,17 +6321,28 @@ ph: rnd(0, Math.PI*2), ps: rnd(.3,.9)
 }
 function initTris(){
 const area = W * H;
+if (isMobile){
+/* Мобильные: вдвое меньше объектов — визуальная плотность
+   сохраняется, а нагрузка на CPU/GPU падает кратно */
+const n1 = Math.max(4, Math.min(8,  Math.round(area / 220000)));
+const n2 = Math.max(6, Math.min(14, Math.round(area / 100000)));
+trisF = Array.from({length:n1}, ()=>makeTri(W,H,'far'));
+trisN = Array.from({length:n2}, ()=>makeTri(W,H,'near'));
+} else {
 const n1 = Math.max(6, Math.min(20, Math.round(area / 90000)));
 const n2 = Math.max(10, Math.min(36, Math.round(area / 38000)));
 trisF = Array.from({length:n1}, ()=>makeTri(W,H,'far'));
 trisN = Array.from({length:n2}, ()=>makeTri(W,H,'near'));
 }
+}
 function resize(){
-  DPR = Math.min(window.devicePixelRatio||1, 2);
-  W = window.innerWidth; H = window.innerHeight;
-  [cvFar, cvNear].forEach(cv => { cv.width = W*DPR; cv.height = H*DPR; cv.style.width = W+'px'; cv.style.height = H+'px'; });
-  ctxF.setTransform(DPR,0,0,DPR,0,0); ctxN.setTransform(DPR,0,0,DPR,0,0);
-  initTris();
+/* Мобильные: DPR 1 — фоновые треугольники не требуют retina-чёткости,
+   зато площадь перерисовки падает в 4–9 раз */
+DPR = isMobile ? 1 : Math.min(window.devicePixelRatio||1, 2);
+W = window.innerWidth; H = window.innerHeight;
+[cvFar, cvNear].forEach(cv => { cv.width = W*DPR; cv.height = H*DPR; cv.style.width = W+'px'; cv.style.height = H+'px'; });
+ctxF.setTransform(DPR,0,0,DPR,0,0); ctxN.setTransform(DPR,0,0,DPR,0,0);
+initTris();
 }
 window.addEventListener('resize', resize);
 window.addEventListener('mousemove', e => {
@@ -6329,26 +6363,27 @@ mouse.y = Math.max(-1, Math.min(1, (e.beta - 45) / 30));
 }
 }, { passive: true });
 function drawTri(ctx, t, time){
-  const px = par.x * t.depth * 34;
-  const py = par.y * t.depth * 26;
-  const pulse = .72 + .28 * Math.sin(time * t.ps + t.ph);
-  const alpha = t.a * pulse;
-  const [h,s,l] = t.tone;
-  ctx.save();
-  ctx.translate(t.x + px, t.y + py);
-  ctx.rotate(t.rot);
-  ctx.beginPath();
-  for (let k=0;k<3;k++){
-    const ang = k * (Math.PI*2/3) - Math.PI/2;
-    const x = Math.cos(ang)*t.r, y = Math.sin(ang)*t.r;
-    k===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
-  }
-  ctx.closePath();
-  if (t.filled){ ctx.fillStyle = `hsla(${h},${s}%,${l}%,${alpha*.5})`; ctx.fill(); }
-  ctx.strokeStyle = `hsla(${h},${s}%,${l}%,${alpha})`;
-  ctx.lineWidth = 1.1;
-  ctx.stroke();
-  ctx.restore();
+const px = par.x * t.depth * 34;
+const py = par.y * t.depth * 26;
+const pulse = .72 + .28 * Math.sin(time * t.ps + t.ph);
+const alpha = t.a * pulse;
+const [h,s,l] = t.tone;
+ctx.save();
+ctx.translate(t.x + px, t.y + py);
+ctx.rotate(t.rot);
+ctx.beginPath();
+for (let k=0;k<3;k++){
+const ang = k * (Math.PI*2/3) - Math.PI/2;
+const x = Math.cos(ang)*t.r, y = Math.sin(ang)*t.r;
+k===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+}
+ctx.closePath();
+/* Мобильные: только stroke без fill — экономия на растеризации */
+if (t.filled && !isMobile){ ctx.fillStyle = `hsla(${h},${s}%,${l}%,${alpha*.5})`; ctx.fill(); }
+ctx.strokeStyle = `hsla(${h},${s}%,${l}%,${alpha})`;
+ctx.lineWidth = 1.1;
+ctx.stroke();
+ctx.restore();
 }
 let bgRunning = true;
 let bgRafId = null;
@@ -6358,8 +6393,18 @@ if (bgRunning && !bgRafId) {
 bgRafId = requestAnimationFrame(bgLoop);
 }
 });
+/* Мобильные: 24 fps достаточно для плавного дрейфа треугольников,
+   но нагрузка на CPU/GPU падает в 2.5 раза по сравнению с 60 fps.
+   Десктоп: 0 = без throttle, как было. */
+let lastBgFrame = 0;
+const BG_FRAME_INTERVAL = isMobile ? 1000 / 24 : 0;
+
 function bgLoop(ts){
 if (!bgRunning) { bgRafId = null; return; }
+/* RAF запрашиваем всегда (для проверки времени), рендерим по расписанию */
+bgRafId = requestAnimationFrame(bgLoop);
+if (BG_FRAME_INTERVAL && ts - lastBgFrame < BG_FRAME_INTERVAL) return;
+lastBgFrame = ts;
 const time = ts / 1000;
 par.x += (mouse.x - par.x) * .045;
 par.y += (mouse.y - par.y) * .045;
@@ -6376,7 +6421,6 @@ drawTri(ctx, t, time);
 };
 step(trisF, ctxF);
 step(trisN, ctxN);
-bgRafId = requestAnimationFrame(bgLoop);
 }
 
 /* ============================================================
