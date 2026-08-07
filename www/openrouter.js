@@ -104,12 +104,15 @@ function buildOpenRouterMessages(history, systemPrompt){
      signal                — AbortController.signal для отмены
 */
 async function streamOpenRouterDirect(model, history, handlers, aiMsg){
-  const settings = window.state?.settings || {};
-  const apiKey = (settings.orKey || '').trim();
-  if (!apiKey) throw new Error('Не указан ключ OpenRouter (sk-or-…)');
-
-  const systemPrompt = settings.systemPrompt || '';
-  const messages = buildOpenRouterMessages(history, systemPrompt);
+const settings = window.state?.settings || {};
+const apiKey = (settings.orKey || '').trim();
+if (!apiKey) throw new Error('Не указан ключ OpenRouter (sk-or-…)');
+/* getSystemPromptText определена в proxymodel.js и доступна в рантайме.
+   Она добавляет инструкции imageGen / webSearch / artifacts к пользовательскому промпту. */
+const systemPrompt = (typeof getSystemPromptText === 'function')
+  ? getSystemPromptText(model)
+  : (settings.systemPrompt || '');
+const messages = buildOpenRouterMessages(history, systemPrompt);
   const reasoning = mapReasoningToOpenRouter(settings.reasoning, model.id);
 
   const payload = {

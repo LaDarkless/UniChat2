@@ -1910,7 +1910,7 @@ let state = {
 chats: [],
 activeId: null,
 favorites: [],
-settings: { proxyKey:'', orKey:'', systemPrompt:'', theme:'dark', apiSource:'auto', modelId: MODELS[0].id, reasoning:'medium', webSearch:false, editMode:false, artifacts:true,
+settings: { proxyKey:'', orKey:'', systemPrompt:'', theme:'dark', apiSource:'auto', modelId: MODELS[0].id, reasoning:'medium', webSearch:false, editMode:false, artifacts:true, imageGen:true,
 
 webSearchCfg: {
 anthropic: { max_uses: 5, context_size: 'medium', country: 'RU', city: 'Moscow', region: 'Moscow', timezone: 'Europe/Moscow', allowed_domains: '', blocked_domains: '' },
@@ -2117,14 +2117,15 @@ const fmtDate = ts => new Date(ts).toLocaleDateString('ru-RU',{day:'numeric',mon
 
 /* ---------- Тосты ---------- */
 function toast(msg, type='info', dur=3200){
-  const box = $('#toasts');
-  const el = document.createElement('div');
-  el.className = 'toast t-' + type;
-  const icon = type==='ok' ? 'i-check' : type==='err' ? 'i-alert' : 'i-info';
-  el.innerHTML = `<svg><use href="#${icon}"/></svg><span>${esc(msg)}</span>`;
-  box.appendChild(el);
-  setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 320); }, dur);
+const box = $('#toasts');
+const el = document.createElement('div');
+el.className = 'toast t-' + type;
+const icon = type==='ok' ? 'i-check' : type==='err' ? 'i-alert' : 'i-info';
+el.innerHTML = `<svg><use href="#${icon}"/></svg><span>${esc(msg)}</span>`;
+box.appendChild(el);
+setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 320); }, dur);
 }
+window.toast = toast;
 
 /* ---------- Тема ---------- */
 function applyTheme(){
@@ -2797,7 +2798,7 @@ if (d){ pendingWsCommand = { raw:d.raw, queries:d.queries, location:'content' };
 }
 /* Команда генерации завершилась прямо в потоке: сразу ставим карточку
 на её место и запрашиваем подтверждение, пока ответ дописывается */
-if (state.settings.imageGen && state.settings.proxyKey.trim() && (aiMsg.imageRequests || []).length < 2){
+if (state.settings.imageGen && (aiMsg.imageRequests || []).length < 2){
 const im = detectImageGenCommand(aiMsg.content);
 if (im) spawnImageRequest(chat, aiMsg, im.raw, im.prompt);
 }
@@ -3287,15 +3288,12 @@ else if (act === 'dl'){ downloadArtifact(art); }
 else if (act === 'edit'){ attachArtifactToComposer(art); }
 }
 function downloadArtifact(art){
-const blob = new Blob([art.code], { type:'text/html;charset=utf-8' });
-const url = URL.createObjectURL(blob);
-const a = document.createElement('a');
-a.href = url;
-const safe = (art.title || 'artifact').replace(/[^\wа-яё\d-]+/gi, '_').slice(0, 60) || 'artifact';
-a.download = 'MoonSSS_' + safe + (art.version > 1 ? '_v' + art.version : '') + '.html';
-document.body.appendChild(a); a.click(); a.remove();
-setTimeout(() => URL.revokeObjectURL(url), 5000);
-toast('Артефакт скачан как HTML-файл','ok');
+  const blob = new Blob([art.code], { type:'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const safe = (art.title || 'artifact').replace(/[^\wа-яё\d-]+/gi, '_').slice(0, 60) || 'artifact';
+  const filename = 'MoonSSS_' + safe + (art.version > 1 ? '_v' + art.version : '') + '.html';
+  saveFileUniversal(url, filename, 'text/html');
+  setTimeout(() => { try { URL.revokeObjectURL(url); } catch(_){} }, 5000);
 }
 function findLatestArtifact(artId){
 const chat = activeChat(); if (!chat) return null;
@@ -3914,6 +3912,7 @@ title: String(r.title || '').replace(/<[^>]+>/g, '').slice(0, 80)
 .slice(0, 4);
 } catch (e) { return []; }
 }
+window.fetchOpenverseImages = fetchOpenverseImages;
 
 function renderInlineSearchCard(s, idx){
 if (!s) return '';
@@ -4553,9 +4552,10 @@ document.querySelectorAll('#apiSrcChips .igm-chip').forEach(b => {
 /* ---------- Настройки генерации изображений ---------- */
 const igOverlay = $('#igOverlay');
 function getImgCfg(){
-  if (!state.settings.imgGen) state.settings.imgGen = { model: IMG_MODELS[0].id, ratio:'1:1', resolution:'2K', background:'auto' };
-  return state.settings.imgGen;
+if (!state.settings.imgGen) state.settings.imgGen = { model: IMG_MODELS[0].id, ratio:'1:1', resolution:'2K', background:'auto' };
+return state.settings.imgGen;
 }
+window.getImgCfg = getImgCfg;
 function updateIgHint(){
   const el = $('#igModelHint');
   if (el){
@@ -5613,7 +5613,7 @@ return m;
 /* 5. Стриминг ответа модели */
 const onText = t => {
 aiMsg.content += t;
-if (state.settings.imageGen && state.settings.proxyKey.trim() && (aiMsg.imageRequests || []).length < 2){
+if (state.settings.imageGen && (aiMsg.imageRequests || []).length < 2){
 const im = detectImageGenCommand(aiMsg.content);
 if (im) spawnImageRequest(chat, aiMsg, im.raw, im.prompt);
 }
@@ -5881,18 +5881,51 @@ if (window.matchMedia('(pointer:fine)').matches){
 }
 function cursorMove(){} // объединено с обработчиком mousemove выше
 
+/* ═══════════════════════════════════════════════════════════════
+RUNTIME-ЗАПРОС РАЗРЕШЕНИЙ CAPACITOR (Android 6+)
+Вызывается один раз при старте. Плагин Filesystem сам запрашивает
+WRITE_EXTERNAL_STORAGE / READ_MEDIA_IMAGES при первом writeFile.
+Без этого Android молча блокирует запись в Downloads.
+═══════════════════════════════════════════════════════════════ */
+async function requestAndroidPermissions() {
+  if (
+    typeof window === 'undefined' ||
+    !window.Capacitor ||
+    !Capacitor.Plugins ||
+    !Capacitor.Plugins.Filesystem
+  ) {
+    return; // не Capacitor-среда — ничего не делаем
+  }
+  try {
+    // checkPermissions не бросает, но показывает системный диалог при request
+    const chk = await Capacitor.Plugins.Filesystem.checkPermissions();
+    if (chk.publicStorage !== 'granted') {
+      const req = await Capacitor.Plugins.Filesystem.requestPermissions({
+        permissions: ['publicStorage'],
+      });
+      if (req.publicStorage !== 'granted') {
+        console.warn('[MoonSSS] Filesystem permission denied');
+      }
+    }
+  } catch (e) {
+    console.warn('[MoonSSS] Permission request failed:', e);
+  }
+}
+
 /* ---------- Инициализация ---------- */
 async function initApp() {
-  await load();
-  syncSettingsUI();
-  const searchInp = $('#searchInput');
-  if (searchInp) {
-    searchInp.value = '';
-    const searchWrap = $('#searchWrap');
-    if (searchWrap) searchWrap.classList.remove('has-q');
-  }
-  applyTheme();
+await load();
+syncSettingsUI();
+const searchInp = $('#searchInput');
+if (searchInp) {
+searchInp.value = '';
+const searchWrap = $('#searchWrap');
+if (searchWrap) searchWrap.classList.remove('has-q');
+}
+applyTheme();
 resize();
+// Android: запросить разрешения файловой системы до первого сохранения
+requestAndroidPermissions();
 if (!bgRafId) bgRafId = requestAnimationFrame(bgLoop);
 setTimeout(() => {
 if (W === 0 || H === 0 || (trisF.length === 0 && trisN.length === 0)) {

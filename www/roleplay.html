@@ -1792,17 +1792,27 @@
                 </div>
 
                 <!-- Карточка 2: API Ключи -->
-                <div class="profile-section">
-                    <div class="profile-section-title"><i class="fa-solid fa-key"></i> Ключи доступа</div>
-                    <div class="profile-input-group">
-                        <label>ProxyAPI Key (Для платных моделей)</label>
-                        <input type="password" class="profile-input" id="api-key-input" placeholder="sk-...">
-                    </div>
-                    <div class="profile-input-group" style="margin-top: 10px;">
-                        <label style="color: #a78bfa;">OpenRouter Key (Для бесплатных моделей)</label>
-                        <input type="password" class="profile-input" id="openrouter-key-input" placeholder="sk-or-v1-...">
-                    </div>
-                </div>
+<div class="profile-section">
+<div class="profile-section-title"><i class="fa-solid fa-key"></i> Ключи доступа</div>
+
+<div class="profile-input-group">
+<label>Провайдер платных моделей (Standard / Best)</label>
+<div class="header-tabs" style="display: flex; width: 100%;">
+<span id="provider-proxyapi" class="active" tabindex="0" onclick="selectPaidProvider('proxyapi')" onkeydown="if(event.key==='Enter')selectPaidProvider('proxyapi')">ProxyAPI</span>
+<span id="provider-openrouter" tabindex="0" onclick="selectPaidProvider('openrouter')" onkeydown="if(event.key==='Enter')selectPaidProvider('openrouter')">OpenRouter</span>
+</div>
+<div id="paid-provider-hint" style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">Платные модели будут работать через ваш ProxyAPI ключ.</div>
+</div>
+
+<div class="profile-input-group">
+<label>ProxyAPI Key</label>
+<input type="password" class="profile-input" id="api-key-input" placeholder="sk-...">
+</div>
+<div class="profile-input-group" style="margin-top: 10px;">
+<label style="color: #a78bfa;">OpenRouter Key (Бесплатные модели + платные при выборе OpenRouter)</label>
+<input type="password" class="profile-input" id="openrouter-key-input" placeholder="sk-or-v1-...">
+</div>
+</div>
 
                 <!-- Карточка 3: Настройки ИИ и Контекста -->
                 <div class="profile-section">
@@ -1999,7 +2009,7 @@
         chatHistories: {}, // { [entityId]: [ { date: timestamp, messages: [] } ] }
         wallpapers: [], // <-- НОВОЕ: Добавили массив обоев сюда
         customMemories: {}, // <-- Хранилище умной сегрегированной памяти
-        settings: { apiKey: '', openRouterKey: '', model: 'mistralai/mistral-medium-3.1' },
+        settings: { apiKey: '', openRouterKey: '', paidProvider: 'proxyapi', model: 'mistralai/mistral-medium-3.1' },
         userProfile: { name: 'User', description: '', avatar: '' }
     };
 
@@ -2037,6 +2047,8 @@
                     if(!appState.chatHistories) appState.chatHistories = {};
                     if(!appState.wallpapers) appState.wallpapers = []; // <-- НОВОЕ
                     if(!appState.customMemories) appState.customMemories = {}; // Инициализация умной памяти
+if(!appState.settings) appState.settings = { apiKey: '', openRouterKey: '', model: '' };
+if(!appState.settings.paidProvider) appState.settings.paidProvider = 'proxyapi'; // Миграция со старых версий
                 }
                 resolve();
             };
@@ -2928,8 +2940,10 @@ function saveSummaryEditor() {
             if (!text) return;
             
             const isFree = appState.settings.model.endsWith(':free');
-            if (isFree && !appState.settings.openRouterKey) return showToast("Укажите OpenRouter Key в настройках (My) для бесплатных моделей", true);
-            if (!isFree && !appState.settings.apiKey) return showToast("Укажите ProxyAPI Key в настройках (My) для платных моделей", true);
+const paidViaOR = appState.settings.paidProvider === 'openrouter';
+if (isFree && !appState.settings.openRouterKey) return showToast("Укажите OpenRouter Key в настройках (My) для бесплатных моделей", true);
+if (!isFree && paidViaOR && !appState.settings.openRouterKey) return showToast("Выбран провайдер OpenRouter — укажите OpenRouter Key в настройках (My)", true);
+if (!isFree && !paidViaOR && !appState.settings.apiKey) return showToast("Укажите ProxyAPI Key в настройках (My) для платных моделей", true);
 
             let msgRole = 'user';
             let userName = activeSender.name;
@@ -3254,10 +3268,12 @@ function saveSummaryEditor() {
             const reqTokens = Math.floor(Number(entity.maxTokens || 8000));
 
             const model = appState.settings.model;
-            const isFreeModel = model.endsWith(':free');
+const isFreeModel = model.endsWith(':free');
+// Флаг прямого доступа к OpenRouter: бесплатные модели ВСЕГДА, платные — если выбран провайдер OpenRouter
+const useOpenRouterDirect = isFreeModel || appState.settings.paidProvider === 'openrouter';
 
-            let apiUrl = '';
-            let authKey = isFreeModel ? appState.settings.openRouterKey : appState.settings.apiKey;
+let apiUrl = '';
+let authKey = useOpenRouterDirect ? appState.settings.openRouterKey : appState.settings.apiKey;
             let headers = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${authKey}`,
@@ -3268,9 +3284,10 @@ function saveSummaryEditor() {
             let reply = "";
 
             // --- УМНЫЙ РОУТИНГ PROXY API ---
-            let isNativeProxy = false;
-
-            if (!isFreeModel) {
+// Нативные эндпоинты (Anthropic/Google/OpenAI) нужны ТОЛЬКО для платных моделей через ProxyAPI.
+// Если выбран провайдер OpenRouter — все модели идут единым OpenRouter-шлюзом.
+let isNativeProxy = false;
+if (!useOpenRouterDirect) {
                 // Платные ключи ProxyAPI запрещают Google/Claude/OpenAI через свой OpenRouter эндпоинт.
                 // Поэтому принудительно переводим их на нативные эндпоинты.
                 if (model.includes('gemini') || model.includes('claude') || (model.includes('gpt') && !model.includes('gpt-oss'))) {
@@ -3284,14 +3301,13 @@ function saveSummaryEditor() {
             // Это нужно, так как нативный Google API не понимает приставку "google/"
             const cleanModelName = model.includes('/') ? model.split('/')[1] : model;
 
-            if (!isNativeProxy) {
-                // 1. OPENROUTER МОДЕЛИ (Все бесплатные + платные сторонние вроде Mistral/Llama)
-                apiUrl = isFreeModel 
-                    ? 'https://openrouter.ai/api/v1/chat/completions' 
-                    : 'https://api.proxyapi.ru/openrouter/v1/chat/completions';
-                
-                bodyPayload = {
-                    model: model, // Здесь передаем оригинальное полное имя
+           if (!isNativeProxy) {
+// 1. OPENROUTER МОДЕЛИ (Бесплатные + платные через выбранный провайдер)
+apiUrl = useOpenRouterDirect
+? 'https://openrouter.ai/api/v1/chat/completions'
+: 'https://api.proxyapi.ru/openrouter/v1/chat/completions';
+bodyPayload = {
+model: useOpenRouterDirect ? mapModelToOpenRouter(model) : model, // Для прямого OpenRouter — полный slug vendor/model
                     messages: apiMessages.filter(m => m.content && String(m.content).trim() !== ""), 
                     temperature: reqTemp,
                     max_tokens: reqTokens
@@ -3484,7 +3500,8 @@ function saveSummaryEditor() {
         document.getElementById('user-name').value = appState.userProfile.name;
         document.getElementById('user-desc').value = appState.userProfile.description;
         document.getElementById('api-key-input').value = appState.settings.apiKey || '';
-        document.getElementById('openrouter-key-input').value = appState.settings.openRouterKey || '';
+document.getElementById('openrouter-key-input').value = appState.settings.openRouterKey || '';
+renderPaidProviderUI(appState.settings.paidProvider || 'proxyapi');
         document.getElementById('model-input').value = appState.settings.model;
         document.getElementById('nsfw-toggle').checked = !!appState.settings.nsfwEnabled;
         if (appState.userProfile.avatar) { document.getElementById('user-avatar-img').src = appState.userProfile.avatar; document.getElementById('user-avatar-img').style.display = 'block'; document.getElementById('user-avatar-icon').style.display = 'none'; }
@@ -3503,12 +3520,43 @@ function saveSummaryEditor() {
         appState.userProfile.description = document.getElementById('user-desc').value.trim();
         appState.userProfile.avatar = document.getElementById('user-avatar-img').src || '';
         appState.settings.apiKey = document.getElementById('api-key-input').value.trim();
-        appState.settings.openRouterKey = document.getElementById('openrouter-key-input').value.trim();
-        appState.settings.model = document.getElementById('model-input').value;
-        appState.settings.nsfwEnabled = document.getElementById('nsfw-toggle').checked;
-        appState.settings.maxHistory = parseInt(document.getElementById('global-history-input').value);
-        saveData(); goHome();
-    }
+appState.settings.openRouterKey = document.getElementById('openrouter-key-input').value.trim();
+appState.settings.paidProvider = currentPaidProvider || 'proxyapi';
+appState.settings.model = document.getElementById('model-input').value;
+appState.settings.nsfwEnabled = document.getElementById('nsfw-toggle').checked;
+appState.settings.maxHistory = parseInt(document.getElementById('global-history-input').value);
+saveData(); goHome();
+}
+// --- ПЕРЕКЛЮЧАТЕЛЬ ПРОВАЙДЕРА ДЛЯ ПЛАТНЫХ МОДЕЛЕЙ (ProxyAPI / OpenRouter) ---
+let currentPaidProvider = 'proxyapi';
+function selectPaidProvider(provider) {
+renderPaidProviderUI(provider);
+}
+function renderPaidProviderUI(provider) {
+currentPaidProvider = provider || 'proxyapi';
+const proxyTab = document.getElementById('provider-proxyapi');
+const orTab = document.getElementById('provider-openrouter');
+const hint = document.getElementById('paid-provider-hint');
+if (proxyTab) proxyTab.classList.toggle('active', currentPaidProvider === 'proxyapi');
+if (orTab) orTab.classList.toggle('active', currentPaidProvider === 'openrouter');
+if (hint) {
+hint.innerText = currentPaidProvider === 'openrouter'
+? 'Платные модели (Standard/Best) будут работать напрямую через ваш OpenRouter ключ.'
+: 'Платные модели (Standard/Best) будут работать через ваш ProxyAPI ключ.';
+}
+}
+// Маппинг коротких имен моделей на полные slug'и OpenRouter (vendor/model).
+// ВАЖНО: при необходимости сверьте значения с реальными именами на openrouter.ai/models
+const OPENROUTER_MODEL_MAP = {
+'gpt-5-mini': 'openai/gpt-5-mini',
+'gpt-5-nano': 'openai/gpt-5-nano',
+'gpt-5.3-chat': 'openai/gpt-5.3-chat',
+'claude-haiku-4-5': 'anthropic/claude-haiku-4-5',
+'gemini-3-flash-preview': 'google/gemini-3-flash-preview'
+};
+function mapModelToOpenRouter(model) {
+return OPENROUTER_MODEL_MAP[model] || model;
+}
 
     // --- УПРАВЛЕНИЕ СООБЩЕНИЯМИ ---
     function copyMessage(index) {
@@ -4427,19 +4475,23 @@ function updateTokenCounterDisplay() {
     // Вспомогательная функция для одиночных быстрых запросов к ИИ
     async function fetchAIGeneration(systemPrompt, userPrompt) {
         const model = appState.settings.model;
-        const isFreeModel = model.endsWith(':free');
-        const authKey = isFreeModel ? appState.settings.openRouterKey : appState.settings.apiKey;
-        
-        if (!authKey) throw new Error("Укажите API ключ в профиле (My)!");
+const isFreeModel = model.endsWith(':free');
+const useOpenRouterDirect = isFreeModel || appState.settings.paidProvider === 'openrouter';
+const authKey = useOpenRouterDirect ? appState.settings.openRouterKey : appState.settings.apiKey;
+if (!authKey) throw new Error("Укажите API ключ в профиле (My)!");
 
         let apiUrl = '';
         let headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authKey}` };
         let bodyPayload = {};
 
-        if (model.includes('/')) {
-            apiUrl = isFreeModel ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.proxyapi.ru/openrouter/v1/chat/completions';
-            bodyPayload = { model: model, messages:[{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] };
-        } else if (model.includes('claude')) {
+        if (useOpenRouterDirect) {
+// Единый шлюз OpenRouter: бесплатные модели И платные при выборе провайдера OpenRouter
+apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+bodyPayload = { model: mapModelToOpenRouter(model), messages:[{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] };
+} else if (model.includes('/')) {
+apiUrl = 'https://api.proxyapi.ru/openrouter/v1/chat/completions';
+bodyPayload = { model: model, messages:[{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] };
+} else if (model.includes('claude')) {
             apiUrl = 'https://api.proxyapi.ru/anthropic/v1/messages';
             headers['x-api-key'] = authKey;
             headers['anthropic-version'] = '2023-06-01';

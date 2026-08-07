@@ -725,9 +725,15 @@ function buildArtifactInstructions() {
 function getSystemPromptText(model) {
   const s = state.settings;
   let text = (s.systemPrompt || "").trim();
-  if (s.imageGen)
+  /* Поиск и генерация изображений исполняются через ProxyAPI
+     (performWebSearch / requestImageGeneration требуют proxyKey).
+     Без ключа не обучаем модель командам, которые заведомо упадут —
+     критично на прямом маршруте OpenRouter с чистым sk-or-ключом.
+     Артефакты полностью клиентские — остаются безусловными. */
+  const hasProxy = !!(s.proxyKey || "").trim();
+  if (s.imageGen && hasProxy)
     text = (text ? text + "\n\n" : "") + buildImageGenInstructions();
-  if (s.webSearch)
+  if (s.webSearch && hasProxy)
     text = (text ? text + "\n" : "") + buildWebSearchInstructions(model);
   if (s.artifacts)
     text = (text ? text + "\n" : "") + buildArtifactInstructions();
@@ -848,18 +854,132 @@ async function requestImageGeneration(imgModel, opts, prompt, signal) {
   });
 }
 
+/* ============================================================
+УНИВЕРСАЛЬНОЕ СОХРАНЕНИЕ ФАЙЛОВ (Web + Capacitor + Electron)
+Каскад фолбэков:
+  1. Web Share API Level 2 (Android WebView / Capacitor / Chrome)
+  2. Capacitor.Plugins.Filesystem (если установлен нативно)
+  3. Стандартный <a download> (десктопные браузеры)
+  4. Electron IPC (если доступен window.electronAPI)
+============================================================ */
+async function saveFileUniversal(dataOrBlobUrl, filename, mimeType) {
+  /* 1. Подготовка File-объекта для Web Share API */
+  let file = null;
+  try {
+    const res = await fetch(dataOrBlobUrl);
+    const blob = await res.blob();
+    file = new File([blob], filename, {
+      type: mimeType || blob.type || "application/octet-stream",
+    });
+  } catch (e) {
+    console.warn("[MoonSSS] Blob conversion failed:", e);
+  }
+
+  /* 2. Web Share API Level 2 — нативное меню Android / iOS / Chrome */
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: filename });
+      if (typeof toast === "function") toast("Файл сохранён", "ok");
+      return;
+    } catch (e) {
+      if (e && e.name === "AbortError") return; /* пользователь отменил */
+      console.warn("[MoonSSS] Web Share failed:", e);
+    }
+  }
+
+  /* 3. Capacitor Filesystem (прямое сохранение в Documents/Downloads) */
+  if (
+    window.Capacitor &&
+    Capacitor.Plugins &&
+    Capacitor.Plugins.Filesystem &&
+    typeof dataOrBlobUrl === "string" &&
+    dataOrBlobUrl.indexOf("data:") === 0
+  ) {
+    try {
+      const base64Data = dataOrBlobUrl.split(",")[1];
+      const Filesystem = Capacitor.Plugins.Filesystem;
+      /* Android 10+: Documents не требует runtime-разрешений.
+         Для старых Android пробуем ExternalStorage/Download */
+      try {
+        await Filesystem.writeFile({
+          path: filename,
+          data: base64Data,
+          directory: 'DOCUMENTS',
+          recursive: true,
+        });
+        if (typeof toast === "function") toast("Сохранено в Документы", "ok");
+        return;
+      } catch (docErr) {
+        /* Фолбэк: ExternalStorage → Download (для Android ≤ 10) */
+        await Filesystem.writeFile({
+          path: 'Download/' + filename,
+          data: base64Data,
+          directory: 'EXTERNAL_STORAGE',
+          recursive: true,
+        });
+        if (typeof toast === "function") toast("Сохранено в Загрузки", "ok");
+        return;
+      }
+    } catch (e) {
+      console.warn("[MoonSSS] Capacitor Filesystem failed:", e);
+    }
+  }
+
+  /* 4. Electron IPC (если приложение собрано с preload-скриптом) */
+  if (
+    window.electronAPI &&
+    typeof window.electronAPI.saveFile === "function"
+  ) {
+    try {
+      await window.electronAPI.saveFile(dataOrBlobUrl, filename);
+      if (typeof toast === "function") toast("Файл сохранён", "ok");
+      return;
+    } catch (e) {
+      console.warn("[MoonSSS] Electron save failed:", e);
+    }
+  }
+
+  /* 5. Фолбэк: стандартный <a download> для десктопных браузеров */
+  try {
+    const a = document.createElement("a");
+    a.href = dataOrBlobUrl;
+    a.download = filename;
+    a.rel = "noopener";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try {
+        document.body.removeChild(a);
+      } catch (_) {}
+    }, 200);
+    if (typeof toast === "function") toast("Скачивание началось", "ok");
+  } catch (e) {
+    if (typeof toast === "function")
+      toast(
+        "Не удалось сохранить. Откройте изображение и удерживайте палец для сохранения.",
+        "err",
+        4200,
+      );
+  }
+}
+
 function downloadDataUrl(dataUrl, label) {
-  const a = document.createElement("a");
-  a.href = dataUrl;
   const ext =
     dataUrl.indexOf("image/jpeg") !== -1
       ? "jpg"
       : dataUrl.indexOf("image/webp") !== -1
         ? "webp"
         : "png";
+  const mime =
+    dataUrl.indexOf("image/jpeg") !== -1
+      ? "image/jpeg"
+      : dataUrl.indexOf("image/webp") !== -1
+        ? "image/webp"
+        : "image/png";
   const d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
-  a.download =
+  const filename =
     "MoonSSS_" +
     String(label || "image").replace(/[^\w\d-]+/gi, "-") +
     "_" +
@@ -872,10 +992,7 @@ function downloadDataUrl(dataUrl, label) {
     pad(d.getSeconds()) +
     "." +
     ext;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  toast("Скачивание началось", "ok");
+  saveFileUniversal(dataUrl, filename, mime);
 }
 
 function copyImageDataUrl(dataUrl) {
@@ -2187,3 +2304,21 @@ async function streamGemini(model, history, cb, aiMsg) {
     clearTimeout(timeoutId);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ЭКСПОРТ ФУНКЦИЙ В ГЛОБАЛЬНУЮ ОБЛАСТЬ (window)
+   openrouter.js вызывает getSystemPromptText через глобальный
+   скоуп. В Electron / Capacitor WebView function declarations
+   могут не попадать в window автоматически — привязываем явно.
+   ═══════════════════════════════════════════════════════════════ */
+window.getSystemPromptText = getSystemPromptText;
+window.buildImageGenInstructions = buildImageGenInstructions;
+window.buildWebSearchInstructions = buildWebSearchInstructions;
+window.buildArtifactInstructions = buildArtifactInstructions;
+window.getWsLimit = getWsLimit;
+window.textWithFiles = textWithFiles;
+window.stripImgCommands = stripImgCommands;
+window.IMG_CMD_RE = IMG_CMD_RE;
+window.MODELS = MODELS;
+window.IMG_MODELS = IMG_MODELS;
+window.modelThinkingConfigs = modelThinkingConfigs;
