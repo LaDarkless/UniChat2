@@ -475,11 +475,15 @@ const modelThinkingConfigs = {
   ],
   "tencent/hy3": [
     {
+      value: "off",
+      label: "Отключено",
+      desc: "Прямой быстрый ответ"
+    },
+    {
       value: "always",
       label: "Включено",
       desc: "Показывать пошаговые размышления",
     },
-    { value: "off", label: "Отключено", desc: "Прямой быстрый ответ" },
   ],
   "minimax/minimax-m3": [
     {
@@ -526,14 +530,22 @@ const THINK_BUDGET = {
 /* ── Генерация изображений: модели (логика из UniMG) ── */
 const IMG_MODELS = [
   {
+    id: "openai/gpt-image-2",
+    name: "GPT Image 2",
+    vendor: "OpenAI",
+    aliases: ["gpt image 2", "gpt-image-2", "openai image"],
+    resolutions: ["1K", "2K", "4K"], // Маппится в quality: low/medium/high
+    supportsResolution: true,
+    ratios: ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9", "auto"],
+    backgrounds: ["auto", "opaque"],
+    desc: "Флагманская генерация OpenAI с отключенной цензурой (moderation off)",
+  },
+  {
     id: "sourceful/riverflow-v2.5-pro",
     name: "Riverflow 2.5 Pro",
     vendor: "Sourceful",
     aliases: [
-      "riverflow 2.5 pro",
-      "riverflow pro",
-      "riverflow",
-      "sourceful",
+      "riverflow 2.5 pro", "riverflow pro", "riverflow", "sourceful",
       "sourceful/riverflow-v2.5-pro",
     ],
     resolutions: ["1K", "2K", "4K"],
@@ -547,21 +559,16 @@ const IMG_MODELS = [
     name: "FLUX 2 Klein",
     vendor: "Black Forest Labs",
     aliases: [
-      "flux 2 klein",
-      "flux 2",
-      "flux klein",
-      "flux.2 klein 4b",
-      "flux.2 klein",
-      "flux.2",
-      "flux",
-      "black forest labs",
+      "flux 2 klein", "flux 2", "flux klein", "flux.2 klein 4b",
+      "flux.2 klein", "flux.2", "flux", "black forest labs",
       "black-forest-labs/flux.2-klein-4b",
     ],
     resolutions: ["1K"],
     supportsResolution: false,
-    ratios: ["1:1", "4:5", "3:4", "4:3", "16:9", "9:16"],
+    ratios: ["1:1", "4:3", "3:4", "3:2", "2:3", "16:9", "9:16", "21:9", "auto"],
     backgrounds: [],
-    desc: "Скоростная модель для быстрых набросков",
+    supportsFluxParams: true, // Флаг для UI: steps + safety_tolerance
+    desc: "Мощная 4B модель. Настраиваемые шаги (steps) и полный анценз (safety_tolerance=5)",
   },
 ];
 
@@ -570,11 +577,20 @@ function buildImageGenInstructions() {
   const cfg = getImgCfg();
   const m = IMG_MODELS.find((x) => x.id === cfg.model) || IMG_MODELS[0];
   const quality = m.supportsResolution ? cfg.resolution || "2K" : "1K";
+  
+  // Для Flux формируем специальное примечание о параметрах, если они включены
+  let fluxNote = "";
+  if (m.supportsFluxParams) {
+     const steps = cfg.fluxSteps || 28;
+     const safety = cfg.fluxSafety ?? 5;
+     fluxNote = `\nВНИМАНИЕ: Для модели ${m.name} пользователь установил специальные параметры: Steps=${steps}, Safety_Tolerance=${safety}. Учитывай это при оценке времени генерации и свободы творчества.`;
+  }
+
   return [
     "=== ИНСТРУМЕНТ: ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ (image_generation) ===",
     'У тебя есть встроенный генератор изображений. Тебе доступна РОВНО ОДНА модель генерации: "' +
       m.name +
-      '". Других моделей генерации не существует — не упоминай и не предлагай их.',
+      '". Других моделей генерации не существует — не упоминай и не предлагай их.' + fluxNote,
     "Ты МОЖЕШЬ предложить генерацию изображения, но ТОЛЬКО когда пользователь явно и однозначно просит нарисовать / сгенерировать / создать изображение, картинку, арт, обои, логотип, иллюстрацию, фото и т.п. Если прямой просьбы нет — НЕ используй команду по собственной инициативе, даже если картинка могла бы дополнить ответ.",
     "Когда пользователь просит изображение, строй ответ СТРОГО по схеме: 1) короткое вступление ДО команды — что именно ты сейчас сгенерируешь и как понял задачу; 2) команда с новой строки; 3) ОБЯЗАТЕЛЬНОЕ продолжение ПОСЛЕ команды. Команда — НЕ стоп-сигнал и НЕ конец ответа: не завершай сообщение командой и не останавливайся на ней, система сама вырежет её, вставит на её место карточку генерации, и генерация пойдёт параллельно, пока ты дописываешь текст.",
     "Если пользователь попросил помимо генерации ещё что-то (предложить идеи улучшения, объяснить, доработать, продолжить) — эта часть ответа пишется ПОСЛЕ команды.",
@@ -725,18 +741,23 @@ function buildArtifactInstructions() {
 function getSystemPromptText(model) {
   const s = state.settings;
   let text = (s.systemPrompt || "").trim();
-  /* Поиск и генерация изображений исполняются через ProxyAPI
-     (performWebSearch / requestImageGeneration требуют proxyKey).
-     Без ключа не обучаем модель командам, которые заведомо упадут —
-     критично на прямом маршруте OpenRouter с чистым sk-or-ключом.
-     Артефакты полностью клиентские — остаются безусловными. */
-  const hasProxy = !!(s.proxyKey || "").trim();
-  if (s.imageGen && hasProxy)
+  
+  // Проверяем доступность API для генерации и поиска
+  const route = resolveApiRoute(s, { api: 'openrouter' });
+  const canGenerate = s.imageGen && (route.useProxy || route.useORDirect);
+  
+  // Веб-поиск доступен либо через ProxyAPI, либо через прямой OpenRouter (RAG)
+  const canSearch = s.webSearch && (route.useProxy || route.useORDirect);
+  
+  if (canGenerate)
     text = (text ? text + "\n\n" : "") + buildImageGenInstructions();
-  if (s.webSearch && hasProxy)
+    
+  if (canSearch)
     text = (text ? text + "\n" : "") + buildWebSearchInstructions(model);
+    
   if (s.artifacts)
     text = (text ? text + "\n" : "") + buildArtifactInstructions();
+    
   return text;
 }
 
@@ -765,86 +786,153 @@ function resolveImgModel(name) {
 
 async function requestImageGeneration(imgModel, opts, prompt, signal) {
   const s = state.settings;
-  const key = s.proxyKey.trim();
-  if (!key) throw new Error("Не указан ключ ProxyAPI");
-  const o = opts || {};
-  const body = {
-    model: imgModel.id,
-    modalities: ["image"],
-    messages: [{ role: "user", content: prompt }],
-  };
-  if (imgModel.id.indexOf("riverflow") !== -1) {
-    body.aspect_ratio = o.ratio || "auto";
-    body.output_format = "png";
-    body.background = o.background || "auto";
-    if (o.resolution && imgModel.supportsResolution)
-      body.resolution = o.resolution;
-  } else if (o.ratio) {
-    // FLUX и другие chat-модели тоже принимают aspect_ratio
-    body.aspect_ratio = o.ratio;
+  const route = resolveApiRoute(s, { api: 'openrouter' });
+  
+  let url, key, useNativeImageApi;
+  // Flux 2 Klein требует Native Image API даже через ProxyAPI, если мы хотим передавать provider.options
+  // Но ProxyAPI может проксировать /images эндпоинт. Проверим, есть ли он. 
+  // Если нет — используем chat/completions как фолбэк, но без специфичных flux-параметров.
+  // ДЛЯ МАКСИМАЛЬНОЙ МОЩИ: Всегда стараемся использовать Native Image API (/v1/images)
+  
+  const isFlux = imgModel.id.includes("flux");
+  
+  if (route.useORDirect) {
+    url = "https://openrouter.ai/api/v1/images";
+    key = s.orKey.trim();
+    useNativeImageApi = true;
+    if (!key) throw new Error("Не указан ключ OpenRouter (sk-or-…)");
+  } else if (route.useProxy) {
+    // ProxyAPI поддерживает /openrouter/v1/images для нативных вызовов
+    url = "https://api.proxyapi.ru/openrouter/v1/images";
+    key = s.proxyKey.trim();
+    useNativeImageApi = true; 
+    if (!key) throw new Error("Не указан ключ ProxyAPI");
+  } else {
+    throw new Error(route.missing === 'proxy' 
+      ? "Для генерации изображений укажите ключ ProxyAPI или переключитесь на OpenRouter" 
+      : "Укажите ключ OpenRouter для генерации изображений");
   }
-  const referer =
-    location && location.origin && !location.origin.startsWith("file")
-      ? location.origin
-      : "https://moonsss.app";
+
+  const o = opts || {};
+  const referer = (location && location.origin && !location.origin.startsWith("file"))
+    ? location.origin : "https://moonsss.app";
+    
+  const headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + key,
+    "HTTP-Referer": referer,
+    "X-Title": "MoonSSS",
+  };
+
+  let body;
+  if (useNativeImageApi) {
+    // Формат Native Image API OpenRouter (поддерживается и ProxyAPI)
+    body = {
+      model: imgModel.id,
+      prompt: prompt,
+      n: 1
+    };
+    
+    // Общие параметры
+    if (o.ratio) body.aspect_ratio = o.ratio;
+    if (o.background) body.background = o.background;
+    
+    // Специфичные параметры моделей
+    if (imgModel.id.includes("gpt-image")) {
+      body.quality = o.resolution === "4K" ? "high" : (o.resolution === "1K" ? "low" : "medium");
+      body.provider = { options: { moderation: "off" } };
+    } else if (imgModel.id.includes("riverflow")) {
+      if (o.resolution && imgModel.supportsResolution) body.resolution = o.resolution;
+      body.output_format = "png";
+    } else if (isFlux) {
+      // FLUX 2 KLEIN FULL POWER CONFIG
+      body.output_format = o.fluxFormat || "jpeg"; // По умолчанию jpeg для скорости/размера
+      
+      // Provider Passthrough Parameters
+      const fluxOpts = {};
+      
+      // Safety Tolerance: 0-5. 5 = max freedom (uncensored)
+      // Берем из настроек пользователя или дефолт 5
+      const safety = (s.imgGen?.fluxSafety !== undefined) ? parseInt(s.imgGen.fluxSafety, 10) : 5;
+      fluxOpts.safety_tolerance = String(safety); // API ожидает строку или число, обычно строка безопаснее
+      
+      // Steps: влияет на качество и цену. Дефолт ~28.
+      const steps = (s.imgGen?.fluxSteps !== undefined) ? parseInt(s.imgGen.fluxSteps, 10) : 28;
+      fluxOpts.steps = steps;
+      
+      body.provider = {
+        options: fluxOpts
+      };
+    }
+  } else {
+    // Фолбэк на Chat Completions (если вдруг /images не поддерживается прокси)
+    body = {
+      model: imgModel.id,
+      modalities: ["image"],
+      messages: [{ role: "user", content: prompt }],
+    };
+    if (o.ratio) body.aspect_ratio = o.ratio;
+    if (isFlux) body.output_format = "jpeg";
+  }
+
   let resp;
   try {
-    resp = await fetch(
-      "https://api.proxyapi.ru/openrouter/v1/chat/completions",
-      {
-        method: "POST",
-        signal,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + key,
-          "HTTP-Referer": referer,
-          "X-Title": "MoonSSS",
-        },
-        body: JSON.stringify(body),
-      },
-    );
+    resp = await fetch(url, {
+      method: "POST",
+      signal,
+      headers,
+      body: JSON.stringify(body),
+    });
   } catch (e) {
     if (signal && signal.aborted) throw e;
-    throw new Error(
-      "Не удалось связаться с ProxyAPI (" +
-        ((e && e.message) || "network") +
-        ")",
-    );
+    const target = route.useORDirect ? "OpenRouter" : "ProxyAPI";
+    throw new Error(`Не удалось связаться с ${target} (${(e && e.message) || "network"})`);
   }
-  if (!resp.ok) await parseError(resp);
+
+  if (!resp.ok) {
+    if (route.useORDirect && typeof parseOpenRouterError === 'function') {
+      throw new Error(await parseOpenRouterError(resp));
+    }
+    await parseError(resp);
+  }
+
   let data = null;
-  try {
-    data = await resp.json();
-  } catch (e) {}
+  try { data = await resp.json(); } catch (e) {}
   if (!data) throw new Error("Пустой ответ от API генерации");
-  const msg = data.choices && data.choices[0] && data.choices[0].message;
-  let url = null;
-  if (
-    msg &&
-    msg.images &&
-    msg.images[0] &&
-    msg.images[0].image_url &&
-    msg.images[0].image_url.url
-  ) {
-    url = msg.images[0].image_url.url;
+
+  let imgUrl = null;
+  if (useNativeImageApi) {
+    // Парсинг ответа Native Image API (data: [{b64_json, url}])
+    const item = (data.data || [])[0];
+    if (item) {
+      if (item.b64_json) imgUrl = "data:image/png;base64," + item.b64_json;
+      else if (item.url) imgUrl = item.url;
+    }
   } else {
-    const alt = (data.data || data.images || [])[0];
-    if (alt && alt.b64_json)
-      url = "data:" + (alt.mime || "image/png") + ";base64," + alt.b64_json;
-    else if (alt && alt.url) url = alt.url;
+    // Парсинг ответа Chat Completions
+    const msg = data.choices?.[0]?.message;
+    if (msg?.images?.[0]?.image_url?.url) {
+      imgUrl = msg.images[0].image_url.url;
+    } else {
+      const alt = (data.data || data.images || [])[0];
+      if (alt?.b64_json) imgUrl = "data:" + (alt.mime || "image/png") + ";base64," + alt.b64_json;
+      else if (alt?.url) imgUrl = alt.url;
+    }
   }
-  if (!url) {
-    const c = msg && msg.content;
-    if (typeof c === "string" && c.trim())
-      throw new Error(
-        "Модель вернула текст вместо изображения: " + c.trim().slice(0, 140),
-      );
+
+  if (!imgUrl) {
+    const c = data.choices?.[0]?.message?.content;
+    if (typeof c === "string" && c.trim()) {
+      throw new Error("Модель вернула текст вместо изображения: " + c.trim().slice(0, 140));
+    }
     throw new Error("Модель не вернула изображение");
   }
-  if (url.indexOf("data:") === 0) return url;
-  const rr = await fetch(url, { signal });
-  if (!rr.ok)
-    throw new Error("Не удалось загрузить изображение (" + rr.status + ")");
+
+  if (imgUrl.indexOf("data:") === 0) return imgUrl;
+  
+  // Загрузка внешнего URL в DataURL для единого формата хранения
+  const rr = await fetch(imgUrl, { signal });
+  if (!rr.ok) throw new Error("Не удалось загрузить изображение (" + rr.status + ")");
   const blob = await rr.blob();
   return await new Promise((res, rej) => {
     const r = new FileReader();
@@ -1052,22 +1140,33 @@ function buildWebSearchInstructions(model) {
     "Если для точного, актуального или проверяемого ответа тебе нужны свежие данные из интернета (факты, статистика, новости, цены, документация, актуальные версии библиотек, популярные тренды и т.п.), ты ОБЯЗАН выполнить поиск прямо во время ответа, даже если у тебя уже есть какие-то предварительные данные.",
     "",
     "Твоя ЕДИНСТВЕННАЯ команда для поиска:",
-    '{web-search: ["запрос 1", "запрос 2"]}',
+    '{web-search: ["latest artificial intelligence news august 2026", "OpenAI GPT-5 release date and capabilities"]}',
+    "",
+    "КРИТИЧЕСКИ ВАЖНО о поисковых запросах:",
+    "- В кавычках пиши ТОЛЬКО конкретные осмысленные фразы по теме пользователя — НИКОГДА не используй слова-плейсхолдеры «запрос», «query», «search», «test», «example», «запрос 1» и т.п. Это мета-слова, они дадут мусорные результаты.",
+    "- Каждый запрос — это 3–8 слов, максимально точно описывающих что нужно найти в интернете.",
+    "- Для технических, научных и международных тем ВСЕГДА пиши запросы на английском — результаты будут в разы точнее и свежее.",
+    "- Для сугубо локальных тем (погода в Москве, курсы рубля, местные новости РФ) можно писать на русском.",
+    "- В одном вызове можешь передать от 1 до 4 запросов в квадратных скобках — все они будут обработаны параллельно.",
+    "",
+    "Правильные примеры:",
+    '  Пользователь: «расскажи про последние новости в ИИ» → {web-search: ["latest AI breakthroughs 2026", "GPT-5 release news"]}',
+    '  Пользователь: «сколько стоит биткоин?» → {web-search: ["bitcoin price today USD", "BTC to USD exchange rate"]}',
+    '  Пользователь: «объясни квантовую запутанность» → НЕ вызывай поиск, ты уже знаешь эту тему.',
+    '  Пользователь: «курс доллара сегодня» → {web-search: ["курс доллара ЦБ РФ сегодня", "USD RUB exchange rate today"]}',
     "",
     "Как это работает:",
     "- Как только ты напишешь команду, генерация приостановится, система выполнит поиск по всем запросам в скобках и вернёт тебе реальные результаты со ссылками на источники.",
-    "- После этого продолжай ответ ровно с того места, где остановился, опираясь на полученные данные и делая выводы.",
-    "- Если нужно уточнить ещё что-то, выполни ещё один поиск. За один ответ доступно до " +
+    "- Дочитай результаты до конца, проанализируй их, и только ПОСЛЕ этого продолжай ответ ровно с того места, где остановился.",
+    "- Если информации недостаточно — выполни ещё один поиск с уточнёнными запросами. За один ответ доступно до " +
       limit +
       " поисков.",
     "- Когда информации достаточно для полного ответа, заверши ответ без команды.",
     "",
     "Важные правила:",
-    "- Формулируй запросы конкретно; для технических тем обычно лучше английский.",
-    "- В одном поиске можно передать сразу несколько запросов в квадратных скобках.",
     "- Не упоминай саму команду и механизм поиска в ответе — пользователь видит результаты поиска отдельно. Сосредоточься на задаче.",
-    "- Используй поиск когда он реально повышает качество ответа; не ищи то, что достоверно знаешь.",
-    "- КРИТИЧНО: НИКОГДА не используй маркеры вроде [[WS:0]], [[WS:1]] и т.д. — это служебные метки системы, а не команды для тебя. Если ты выведешь такой маркер, поиск НЕ сработает. Твоя единственная команда — {web-search: [...]}.",
+    "- Используй поиск когда он реально повышает качество ответа; не ищи то, что достоверно знаешь из обучения.",
+    "- КРИТИЧНО: НИКОГДА не используй маркеры вроде [[WS:0]], [[WS:1]] и т.д. — это служебные метки системы, а не команды для тебя.",
     '- НЕ выдумывай результаты поиска и не имитируй их. Если ты не вызвал команду {web-search: [...]}, значит поиска не было — не пиши, что "я поискал в интернете".',
     "=== КОНЕЦ ИНСТРУМЕНТА ===",
   ].join("\n");
@@ -1102,48 +1201,65 @@ function stripWsCommands(text) {
    fetchOpenverseImages, fetchCommonsImages, fetchWebImages —
    НЕ ProxyAPI (Openverse, Wikimedia Commons). В ai.html. */
 
-/* Перевод запроса на английский (gpt-5.4-nano, ~копейки) —
-кратно повышает попадание и в Openverse, и в Commons.
-Эта функция использует ProxyAPI, поэтому остаётся здесь. */
+/* Перевод запроса на английский для поиска картинок.
+   Приоритет: OpenRouter Direct (быстро, без зависимостей от ProxyAPI) →
+   фолбэк на ProxyAPI. Таймаут 15 сек, чтобы не вешать UI при плохой сети. */
 async function translateImageQuery(q, signal) {
-  const key = state.settings.proxyKey.trim();
+  const s = state.settings;
+  const route = resolveApiRoute(s, { api: 'openrouter' });
+  const query = String(q || '').slice(0, 120);
+  if (!query.trim()) return null;
+
+  /* 1. Прямой OpenRouter: дешёвая gpt-4o-mini, без ProxyAPI-зависимостей */
+  if (route.useORDirect && s.orKey && typeof window.translateQueryViaOpenRouter === 'function') {
+    try {
+      const t = await window.translateQueryViaOpenRouter(query, signal);
+      if (t) return t;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return null;
+      console.warn('[MoonSSS] OR translate failed, falling back to ProxyAPI:', e);
+    }
+  }
+
+  /* 2. Фолбэк на ProxyAPI с жёстким 15-секундным таймаутом */
+  const key = s.proxyKey.trim();
   if (!key) return null;
+  const timeoutCtrl = new AbortController();
+  const timeoutId = setTimeout(() => timeoutCtrl.abort(), 15000);
+  const combinedSignal = signal
+    ? signal /* внешний abort важнее внутреннего таймаута */
+    : timeoutCtrl.signal;
   try {
     const resp = await fetch(
       "https://api.proxyapi.ru/openai/v1/chat/completions",
       {
         method: "POST",
-        signal,
+        signal: combinedSignal,
         headers: {
           "Content-Type": "application/json",
           Authorization: "Bearer " + key,
         },
         body: JSON.stringify({
-          model: "gpt-5.4-nano",
+          model: "gpt-4o-mini",
           max_completion_tokens: 120,
-          reasoning_effort: "low",
           messages: [
             {
               role: "user",
               content:
-                "Translate the search query into 2-6 English keywords for image search. Reply with keywords only, no punctuation, no explanations.\nQuery: " +
-                String(q || "").slice(0, 120),
+                "Translate the search query into 2-6 English keywords for image search. Reply with keywords only, no punctuation, no explanations.\nQuery: " + query,
             },
           ],
         }),
       },
     );
+    clearTimeout(timeoutId);
     if (!resp.ok) return null;
     const j = await resp.json();
-    const t = (
-      (j.choices &&
-        j.choices[0] &&
-        j.choices[0].message &&
-        j.choices[0].message.content) ||
-      ""
-    ).trim();
+    const t = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || "").trim();
     return t && t.length < 140 ? t : null;
   } catch (e) {
+    clearTimeout(timeoutId);
+    if (e && e.name === 'AbortError') return null;
     return null;
   }
 }
@@ -1222,6 +1338,21 @@ async function fetchWebImages(query, signal) {
   return out.slice(0, 6);
 }
 async function performWebSearches(queries, signal) {
+  const s = state.settings;
+  const route = resolveApiRoute(s, { api: 'openrouter' });
+
+  // Оптимизация для OpenRouter Direct: выполняем батч-поиск одним вызовом
+  // чтобы сэкономить на latency и использовать общий контекст для Rerank
+  if (route.useORDirect && s.orKey && typeof window.performOpenRouterWebSearch === 'function') {
+    try {
+      return await window.performOpenRouterWebSearch(queries, signal);
+    } catch (e) {
+      // AbortError — пользователь остановил генерацию: не запускаем повторные поиски
+      if (e && (e.name === 'AbortError' || e.code === 20)) return { sources: [] };
+      console.warn('[MoonSSS] Batch OpenRouter Search failed, falling back to sequential:', e);
+    }
+  }
+
   const seen = new Set();
   const all = [];
   const qs = (queries || []).slice(0, 5);
@@ -1281,6 +1412,20 @@ function formatSearchResults(results, queries, used, max) {
 let searchWorkerBroken = false; // запоминаем до перезагрузки страницы
 async function performWebSearch(query, signal) {
   const s = state.settings;
+  const route = resolveApiRoute(s, { api: 'openrouter' });
+  
+  // ПРИОРИТЕТ: Если выбран прямой OpenRouter, используем RAG-конвейер (Tavily+Rerank)
+  if (route.useORDirect && s.orKey) {
+    try {
+      if (typeof window.performOpenRouterWebSearch === 'function') {
+        return await window.performOpenRouterWebSearch([query], signal);
+      }
+    } catch (e) {
+      console.warn('[MoonSSS] OpenRouter Web Search failed:', e);
+      // Fallback на ProxyAPI ниже, если поиск через OR не удался
+    }
+  }
+
   const key = s.proxyKey.trim();
   if (!key || searchWorkerBroken) return null;
   const referer =

@@ -71,6 +71,8 @@ html[data-theme="dark"]{
   --scrim:hsla(0,0%,4%,.55);
   --vig-op:.5;
   --glow:hsla(var(--acc-h),80%,70%,.22);
+  --sel-bg:hsla(var(--silver-h),14%,80%,.18);
+  --sel-color:hsla(0,0%,96%,1);
 }
 html[data-theme="light"]{
   --bg0:#f2f0ec; --bg1:#e9e7e2;
@@ -92,6 +94,8 @@ html[data-theme="light"]{
   --scrim:hsla(0,0%,10%,.35);
   --vig-op:.16;
   --glow:hsla(var(--acc-h),70%,50%,.14);
+  --sel-bg:hsla(var(--acc-h),32%,38%,.14);
+  --sel-color:hsla(0,0%,10%,1);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -100,7 +104,8 @@ body{
   font-family:var(--font-ui); color:var(--text); background:var(--bg0);
   overflow:hidden; -webkit-font-smoothing:antialiased;
 }
-::selection{background:hsla(var(--acc-h),var(--acc-s),var(--acc-l),.85); color:hsla(0,0%,6%,1)}
+::selection{background:var(--sel-bg);color:var(--sel-color)}
+::-moz-selection{background:var(--sel-bg);color:var(--sel-color)}
 button{font-family:inherit;color:inherit;background:none;border:none}
 input,textarea{font-family:inherit;color:inherit}
 svg.ic{width:20px;height:20px;flex:none;display:block}
@@ -632,7 +637,7 @@ html[data-theme="light"] .md-body pre code{color:hsla(0,0%,92%,1)}
 color:hsla(0,0%,70%,1);background:hsla(0,0%,100%,.07);border:1px solid hsla(0,0%,100%,.1);transition:.2s}
 .code-copy:hover{color:#fff;background:hsla(0,0%,100%,.16)}
 .code-copy svg{width:14px;height:14px}
-/* ============ LIVE-ПРЕВЬЮ HTML-КОДА ============ */
+/* ============ LIVE-ПРЕВЬЮ HTML-КОДА (v2 — Secure Sandbox) ============ */
 .code-run{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;
 color:hsla(152,55%,62%,1);background:hsla(152,55%,50%,.1);border:1px solid hsla(152,55%,55%,.25);transition:.2s}
 .code-run:hover{color:hsla(0,0%,100%,1);background:hsla(152,55%,48%,.24);border-color:hsla(152,55%,58%,.45);
@@ -640,29 +645,69 @@ box-shadow:0 0 14px hsla(152,55%,55%,.28);transform:translateY(-1px)}
 .code-run:active{transform:scale(.92)}
 .code-run svg{width:14px;height:14px}
 .code-run:focus-visible,.hp-actions button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.hp-back{position:fixed;inset:0;z-index:150;background:hsla(0,0%,3%,.86);
+.hp-back{position:fixed;inset:0;z-index:150;background:hsla(0,0%,3%,.88);
 backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
 display:flex;align-items:center;justify-content:center;padding:clamp(10px,3vw,32px);
-animation:fadeUp .28s cubic-bezier(.2,.8,.2,1)}
+animation:hpBackdropIn .35s cubic-bezier(.16,1,.3,1)}
 .hp-back[hidden]{display:none}
+@keyframes hpBackdropIn{from{opacity:0}to{opacity:1}}
+/* ── Окно превью ── */
 .hp-window{width:min(940px,100%);height:min(660px,calc(100dvh - 28px));display:flex;flex-direction:column;
 border-radius:16px;overflow:hidden;background:var(--panel-solid);border:1px solid var(--line-strong);
-box-shadow:0 34px 100px hsla(0,0%,0%,.65),inset 0 1px 0 hsla(0,0%,100%,.05)}
+box-shadow:0 34px 100px hsla(0,0%,0%,.65),inset 0 1px 0 hsla(0,0%,100%,.05);
+animation:hpWindowIn .5s cubic-bezier(.16,1,.3,1);
+transition:width .45s cubic-bezier(.16,1,.3,1),height .45s cubic-bezier(.16,1,.3,1),
+border-radius .3s,opacity .3s,transform .45s cubic-bezier(.16,1,.3,1)}
+@keyframes hpWindowIn{from{opacity:0;transform:scale(.92) translateY(18px)}to{opacity:1;transform:none}}
+/* ── Fullscreen-состояние ── */
+.hp-back.hp-fullscreen{padding:0}
+.hp-back.hp-fullscreen .hp-window{width:100%;height:100dvh;border-radius:0;border:none}
+/* ── Minimized-состояние ── */
+.hp-back.hp-minimized{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;
+pointer-events:none;padding:0;align-items:flex-end;justify-content:flex-end}
+.hp-back.hp-minimized .hp-window{width:220px;height:48px;border-radius:24px;overflow:hidden;
+pointer-events:auto;opacity:.92;transform:none;margin:0 20px 20px 0;
+box-shadow:0 8px 32px hsla(0,0%,0%,.5),inset 0 1px 0 hsla(0,0%,100%,.08);cursor:pointer}
+.hp-back.hp-minimized .hp-bar{border-bottom:none;padding:0 16px;height:100%}
+.hp-back.hp-minimized .hp-frame-wrap,
+.hp-back.hp-minimized .hp-boot,
+.hp-back.hp-minimized .hp-status,
+.hp-back.hp-minimized .hp-actions,
+.hp-back.hp-minimized .hp-badge,
+.hp-back.hp-minimized .hp-title span{display:none}
+.hp-back.hp-minimized .hp-title{justify-content:flex-start}
+.hp-min-pill{display:none;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ok);
+letter-spacing:.03em}
+.hp-back.hp-minimized .hp-min-pill{display:flex}
+.hp-min-pill .hp-live{width:7px;height:7px;border-radius:50%;background:var(--ok);
+box-shadow:0 0 8px hsla(152,55%,55%,.8);animation:pulse 1.4s ease-in-out infinite}
+/* ── Titlebar ── */
 .hp-bar{flex:none;display:flex;align-items:center;gap:12px;padding:10px 13px;
 border-bottom:1px solid var(--line);background:var(--panel-hover)}
-.hp-dots{display:flex;gap:6px;flex:none}
-.hp-dots span{width:11px;height:11px;border-radius:50%;transition:filter .2s}
-.hp-dots span:nth-child(1){background:hsla(354,72%,60%,.9)}
-.hp-dots span:nth-child(2){background:hsla(38,90%,60%,.9)}
-.hp-dots span:nth-child(3){background:hsla(152,55%,55%,.9)}
-.hp-window:hover .hp-dots span{filter:brightness(1.15)}
+/* ── Mac-dots: рабочие кнопки ── */
+.hp-dots{display:flex;gap:7px;flex:none}
+.hp-dot{width:13px;height:13px;border-radius:50%;border:none;cursor:pointer;position:relative;
+display:flex;align-items:center;justify-content:center;transition:transform .2s cubic-bezier(.3,1.4,.4,1),filter .2s,box-shadow .2s}
+.hp-dot:active{transform:scale(.82)}
+.hp-dot svg{width:7px;height:7px;opacity:0;transition:opacity .18s;color:hsla(0,0%,10%,.8);stroke-width:2.5}
+.hp-dots:hover .hp-dot svg{opacity:1}
+.hp-dot-close{background:hsla(354,72%,60%,.92)}
+.hp-dot-close:hover{box-shadow:0 0 10px hsla(354,72%,60%,.5);filter:brightness(1.12)}
+.hp-dot-min{background:hsla(38,90%,60%,.92)}
+.hp-dot-min:hover{box-shadow:0 0 10px hsla(38,90%,60%,.5);filter:brightness(1.12)}
+.hp-dot-max{background:hsla(152,55%,55%,.92)}
+.hp-dot-max:hover{box-shadow:0 0 10px hsla(152,55%,55%,.5);filter:brightness(1.12)}
+.hp-dot:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* ── Заголовок и бейдж ── */
 .hp-title{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;
 font-size:12px;font-weight:600;letter-spacing:.05em;color:var(--text-dim)}
 .hp-title>svg{width:13px;height:13px;color:var(--ok);flex:none}
 .hp-title span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hp-badge{flex:none;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
 padding:2.5px 8px;border-radius:20px;background:hsla(152,55%,50%,.12);color:var(--ok);
-border:1px solid hsla(152,55%,55%,.3)}
+border:1px solid hsla(152,55%,55%,.3);display:flex;align-items:center;gap:5px}
+.hp-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--ok);
+box-shadow:0 0 6px hsla(152,55%,55%,.7);animation:pulse 2s ease-in-out infinite}
 .hp-actions{display:flex;gap:4px;flex:none}
 .hp-actions button{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;
 color:var(--text-dim);transition:.15s}
@@ -670,8 +715,27 @@ color:var(--text-dim);transition:.15s}
 .hp-actions button.hp-close:hover{color:var(--danger);background:var(--danger-soft)}
 .hp-actions button:active{transform:scale(.92)}
 .hp-actions button svg{width:14px;height:14px}
+/* ── Frame area ── */
 .hp-frame-wrap{flex:1;position:relative;min-height:0;background:hsla(0,0%,100%,1)}
 .hp-frame-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:none;background:hsla(0,0%,100%,1)}
+/* ── Boot-последовательность ── */
+.hp-boot{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;
+background:linear-gradient(170deg,hsla(220,12%,8%,.98),hsla(220,10%,5%,.99));
+transition:opacity .5s cubic-bezier(.16,1,.3,1),visibility 0s linear 0s}
+.hp-boot.done{opacity:0;visibility:hidden;transition:opacity .5s cubic-bezier(.16,1,.3,1),visibility 0s linear .5s}
+.hp-boot-icon{width:48px;height:48px;margin-bottom:18px;color:var(--ok);animation:hpBootPulse 1.6s ease-in-out infinite}
+@keyframes hpBootPulse{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+.hp-boot-lines{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:11.5px;
+line-height:2;color:hsla(0,0%,60%,1);text-align:left;min-width:280px}
+.hp-boot-lines .bl{opacity:0;transform:translateX(-8px);animation:hpLineIn .35s cubic-bezier(.16,1,.3,1) forwards}
+.hp-boot-lines .bl.ok{color:hsla(152,55%,58%,.9)}
+.hp-boot-lines .bl.acc{color:var(--accent)}
+@keyframes hpLineIn{to{opacity:1;transform:none}}
+.hp-boot-bar{width:200px;height:3px;border-radius:3px;background:hsla(0,0%,100%,.08);margin-top:20px;overflow:hidden}
+.hp-boot-bar span{display:block;height:100%;width:0%;border-radius:3px;
+background:linear-gradient(90deg,hsla(152,55%,50%,.8),var(--accent));
+transition:width .4s cubic-bezier(.16,1,.3,1)}
+/* ── Статус ── */
 .hp-status{position:absolute;left:12px;bottom:11px;z-index:2;display:flex;align-items:center;gap:7px;
 padding:5px 12px;border-radius:9px;background:hsla(0,0%,5%,.74);
 backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
@@ -683,6 +747,12 @@ box-shadow:0 0 8px hsla(152,55%,55%,.8);animation:pulse 1.4s ease-in-out infinit
 @media (max-width:560px){
 .hp-title span{display:none}
 .hp-window{height:calc(100dvh - 20px);border-radius:13px}
+.hp-back.hp-minimized .hp-window{width:180px;margin:0 12px 12px 0}
+}
+@media (prefers-reduced-motion:reduce){
+.hp-window{animation:none}
+.hp-boot-lines .bl{animation:none;opacity:1;transform:none}
+.hp-boot-icon{animation:none}
 }
 
 /* Действия над сообщением */
@@ -1591,18 +1661,36 @@ html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 4
         <div class="igm-chips" id="igmRatios"></div>
       </section>
       <section class="set-sec" id="igmRiverSec">
-        <div class="set-title"><svg><use href="#i-spark"/></svg>Только для Riverflow 2.5 Pro</div>
-        <div class="igm-row2">
-          <div class="igm-col">
-            <div class="igm-cap">Качество</div>
-            <div class="igm-chips" id="igmRes"></div>
-          </div>
-          <div class="igm-col">
-            <div class="igm-cap">Задний фон</div>
-            <div class="igm-chips" id="igmBg"></div>
-          </div>
-        </div>
-      </section>
+<div class="set-title"><svg><use href="#i-spark"/></svg>Только для Riverflow 2.5 Pro</div>
+<div class="igm-row2">
+<div class="igm-col">
+<div class="igm-cap">Качество</div>
+<div class="igm-chips" id="igmRes"></div>
+</div>
+<div class="igm-col">
+<div class="igm-cap">Задний фон</div>
+<div class="igm-chips" id="igmBg"></div>
+</div>
+</div>
+</section>
+<section class="set-sec" id="igmFluxSec" style="display:none">
+<div class="set-title"><svg><use href="#i-chip"/></svg>Настройки FLUX 2 Klein</div>
+<div class="field">
+<label>Шаги генерации (Steps) <span class="opt">Больше = лучше качество, но дороже и дольше</span></label>
+<div class="ws-limit-row">
+<input type="range" id="fluxStepsRange" min="10" max="50" step="1" value="28">
+<span class="ws-limit-val" id="fluxStepsVal">28</span>
+</div>
+</div>
+<div class="field">
+<label>Safety Tolerance <span class="opt">5 = Без цензуры (NSFW/Gore разрешено)</span></label>
+<div class="ws-limit-row">
+<input type="range" id="fluxSafetyRange" min="0" max="5" step="1" value="5">
+<span class="ws-limit-val" id="fluxSafetyVal">5</span>
+</div>
+</div>
+<div class="igm-note">Параметр Safety Tolerance=5 снимает большинство ограничений модели. Используйте ответственно.</div>
+</section>
       <div style="display:flex;justify-content:flex-end;gap:9px">
         <button class="btn btn-acc" id="igDone"><svg><use href="#i-check"/></svg>Готово</button>
 </div>
@@ -1785,12 +1873,27 @@ html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 4
 <button id="ivZoomReset" aria-label="Сбросить масштаб" title="Сбросить"><svg><use href="#i-refresh"/></svg></button>
 </div>
 </div>
-<!-- LIVE-ПРЕВЬЮ HTML-КОДА -->
+<!-- LIVE-ПРЕВЬЮ HTML-КОДА (v2 — Secure Sandbox) -->
 <div class="hp-back" id="htmlPreview" hidden>
 <div class="hp-window" role="dialog" aria-modal="true" aria-label="Live-превью HTML-кода">
 <div class="hp-bar no-sel">
-<div class="hp-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-<div class="hp-title"><svg><use href="#i-play"/></svg><span>Live Preview</span><span class="hp-badge">sandbox</span></div>
+<div class="hp-dots">
+<button class="hp-dot hp-dot-close" id="hpDotClose" title="Закрыть" aria-label="Закрыть превью">
+<svg viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M1.5 1.5l5 5M6.5 1.5l-5 5"/></svg>
+</button>
+<button class="hp-dot hp-dot-min" id="hpDotMin" title="Свернуть" aria-label="Свернуть превью">
+<svg viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M1.5 4h5"/></svg>
+</button>
+<button class="hp-dot hp-dot-max" id="hpDotMax" title="Развернуть" aria-label="Развернуть на весь экран">
+<svg viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 3V1.5H3M5 1.5h1.5V3M6.5 5v1.5H5M3 6.5H1.5V5"/></svg>
+</button>
+</div>
+<div class="hp-title">
+<svg><use href="#i-play"/></svg>
+<span>Live Preview</span>
+<span class="hp-badge">sealed sandbox</span>
+<span class="hp-min-pill"><span class="hp-live"></span>Running</span>
+</div>
 <div class="hp-actions">
 <button id="hpRefresh" title="Перезапустить" aria-label="Перезапустить превью"><svg><use href="#i-refresh"/></svg></button>
 <button id="hpExternal" title="Открыть в новой вкладке" aria-label="Открыть в новой вкладке"><svg><use href="#i-external"/></svg></button>
@@ -1798,7 +1901,12 @@ html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 4
 </div>
 </div>
 <div class="hp-frame-wrap">
-<iframe id="hpFrame" sandbox="allow-scripts allow-modals allow-forms allow-popups" title="Результат выполнения HTML-кода"></iframe>
+<iframe id="hpFrame" sandbox="allow-scripts" title="Результат выполнения HTML-кода в изолированной среде"></iframe>
+<div class="hp-boot" id="hpBoot">
+<svg class="hp-boot-icon"><use href="#i-play"/></svg>
+<div class="hp-boot-lines" id="hpBootLines"></div>
+<div class="hp-boot-bar"><span id="hpBootBar"></span></div>
+</div>
 <div class="hp-status" id="hpStatus" aria-hidden="true"><span class="hp-live"></span><span id="hpStatusText">Рендеринг…</span></div>
 </div>
 </div>
@@ -1816,7 +1924,8 @@ html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 4
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
-<!-- ═══ API-СЛОЙ (ProxyAPI / OpenRouter) ═══ -->
+<!-- API-слой: proxymodel.js ДОЛЖЕН быть загружен ПЕРЕД основным скриптом ai.html, 
+     так как содержит определения MODELS, IMG_MODELS и resolveApiRoute -->
 <script src="proxymodel.js"></script>
 <script src="openrouter.js"></script>
 <script>
@@ -2067,51 +2176,163 @@ wrap.appendChild(b); pre.appendChild(wrap);
 });
 }
 /* ============================================================
-LIVE-ПРЕВЬЮ HTML-КОДА (sandboxed iframe srcdoc)
+LIVE-ПРЕВЬЮ HTML-КОДА v2 — SEALED SANDBOX
+Безопасность: sandbox="allow-scripts" (без popups/modals/forms),
+CSP инъектируется внутрь srcdoc, блокируя внешние запросы.
 ============================================================ */
-let hpSrc = '', hpBlobUrl = null;
+let hpSrc = '', hpBlobUrl = null, hpMinimized = false, hpFullscreen = false;
+
+/* CSP-обёртка: блокирует внешние ресурсы, скрипты извне, формы */
+function sealHtml(raw){
+const csp = '<meta http-equiv="Content-Security-Policy" content="' +
+"default-src 'none'; " +
+"script-src 'unsafe-inline' blob:; " +
+"style-src 'unsafe-inline'; " +
+"img-src data: blob:; " +
+"font-src data:; " +
+"connect-src 'none'; " +
+"form-action 'none'; " +
+"frame-src 'none'; " +
+"object-src 'none'; " +
+"base-uri 'none';" +
+'">';
+const reset = '<style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif}</style>';
+/* Если в коде уже есть <head>, вставляем CSP первым элементом */
+if (/<head[^>]*>/i.test(raw)){
+return raw.replace(/<head([^>]*)>/i, '<head$1>' + csp + reset);
+}
+/* Если нет — оборачиваем */
+if (/<html[^>]*>/i.test(raw)){
+return raw.replace(/<html([^>]*)>/i, '<html$1><head>' + csp + reset + '</head>');
+}
+return '<!DOCTYPE html><html><head>' + csp + reset + '</head><body>' + raw + '</body></html>';
+}
+
+/* Boot-последовательность: терминальные строки */
+function hpRunBoot(lang, cb){
+const lines = [
+{ t: '> инициализация песочницы…', c: '' },
+{ t: '> sandbox: allow-scripts only', c: 'acc' },
+{ t: '> CSP: sealed · no external I/O', c: 'acc' },
+{ t: '> компиляция ' + String(lang || 'html').toUpperCase() + '…', c: '' },
+{ t: '✓ среда готова', c: 'ok' }
+];
+const box = $('#hpBootLines');
+const bar = $('#hpBootBar');
+box.innerHTML = '';
+bar.style.width = '0%';
+$('#hpBoot').classList.remove('done');
+let i = 0;
+const step = () => {
+if (i >= lines.length){
+bar.style.width = '100%';
+setTimeout(() => { $('#hpBoot').classList.add('done'); if (cb) cb(); }, 350);
+return;
+}
+const l = lines[i];
+const el = document.createElement('div');
+el.className = 'bl' + (l.c ? ' ' + l.c : '');
+el.textContent = l.t;
+el.style.animationDelay = '0s';
+box.appendChild(el);
+bar.style.width = Math.round(((i + 1) / lines.length) * 90) + '%';
+i++;
+setTimeout(step, 220 + Math.random() * 180);
+};
+setTimeout(step, 200);
+}
+
 function openHtmlPreview(code, lang){
 hpSrc = String(code || '').trim();
 if (!hpSrc){ toast('Блок кода пуст','err'); return; }
+hpMinimized = false; hpFullscreen = false;
+$('#htmlPreview').classList.remove('hp-minimized','hp-fullscreen');
+$('#htmlPreview').hidden = false;
+/* Boot-последовательность, затем рендер */
+hpRunBoot(lang, () => {
 const frame = $('#hpFrame');
 $('#hpStatusText').textContent = 'Рендеринг…';
 $('#hpStatus').classList.add('show');
 frame.onload = () => {
 if ($('#htmlPreview').hidden) return;
-$('#hpStatusText').textContent = 'Готово · ' + String(lang || 'html').toUpperCase() + ' · sandbox';
-setTimeout(() => $('#hpStatus').classList.remove('show'), 1600);
+$('#hpStatusText').textContent = 'Sealed · ' + String(lang || 'html').toUpperCase() + ' · no external I/O';
+setTimeout(() => $('#hpStatus').classList.remove('show'), 2200);
 };
-frame.srcdoc = hpSrc;
-$('#htmlPreview').hidden = false;
-setTimeout(() => { try { $('#hpClose').focus({preventScroll:true}); } catch(e){} }, 90);
-toast('Live-превью запущено в изолированной песочнице','ok',2200);
+frame.srcdoc = sealHtml(hpSrc);
+});
+setTimeout(() => { try { $('#hpDotClose').focus({preventScroll:true}); } catch(e){} }, 90);
 }
+
 function closeHtmlPreview(){
 $('#htmlPreview').hidden = true;
+$('#htmlPreview').classList.remove('hp-minimized','hp-fullscreen');
 $('#hpFrame').removeAttribute('srcdoc');
+$('#hpBoot').classList.remove('done');
+hpMinimized = false; hpFullscreen = false;
 }
+
+function minimizeHtmlPreview(){
+hpMinimized = true;
+$('#htmlPreview').classList.add('hp-minimized');
+$('#htmlPreview').classList.remove('hp-fullscreen');
+hpFullscreen = false;
+}
+
+function restoreFromMinimize(){
+hpMinimized = false;
+$('#htmlPreview').classList.remove('hp-minimized');
+}
+
+function toggleFullscreen(){
+hpFullscreen = !hpFullscreen;
+$('#htmlPreview').classList.toggle('hp-fullscreen', hpFullscreen);
+const maxIcon = $('#hpDotMax svg');
+if (hpFullscreen){
+maxIcon.innerHTML = '<path d="M2.5 1.5H1.5v1M6.5 1.5h1v1M6.5 6.5h1v-1M1.5 6.5v-1h1"/>';
+} else {
+maxIcon.innerHTML = '<path d="M1.5 3V1.5H3M5 1.5h1.5V3M6.5 5v1.5H5M3 6.5H1.5V5"/>';
+}
+}
+
 function refreshHtmlPreview(){
 if (!hpSrc) return;
 const frame = $('#hpFrame');
 $('#hpStatusText').textContent = 'Перезапуск…';
 $('#hpStatus').classList.add('show');
 frame.srcdoc = '';
-requestAnimationFrame(() => { frame.srcdoc = hpSrc; });
+requestAnimationFrame(() => { frame.srcdoc = sealHtml(hpSrc); });
 }
+
 function openHtmlPreviewExternal(){
 if (!hpSrc){ toast('Нет кода для открытия','err'); return; }
 try {
 if (hpBlobUrl) URL.revokeObjectURL(hpBlobUrl);
-hpBlobUrl = URL.createObjectURL(new Blob([hpSrc], { type:'text/html;charset=utf-8' }));
-const w = window.open(hpBlobUrl, '_blank', 'noopener');
+hpBlobUrl = URL.createObjectURL(new Blob([sealHtml(hpSrc)], { type:'text/html;charset=utf-8' }));
+const w = window.open(hpBlobUrl, '_blank', 'noopener,noreferrer');
 if (!w){ toast('Среда заблокировала открытие новой вкладки','err'); return; }
-toast('Открыто в новой вкладке — там песочница снимается','info',3200);
+toast('Открыто с сохранением CSP-изоляции','ok',2600);
 } catch(e){ toast('Не удалось открыть в новой вкладке','err'); }
 }
+
+/* ── Привязка событий ── */
+$('#hpDotClose').addEventListener('click', closeHtmlPreview);
+$('#hpDotMin').addEventListener('click', minimizeHtmlPreview);
+$('#hpDotMax').addEventListener('click', toggleFullscreen);
 $('#hpClose').addEventListener('click', closeHtmlPreview);
 $('#hpRefresh').addEventListener('click', refreshHtmlPreview);
 $('#hpExternal').addEventListener('click', openHtmlPreviewExternal);
-$('#htmlPreview').addEventListener('click', e => { if (e.target === $('#htmlPreview')) closeHtmlPreview(); });
+$('#htmlPreview').addEventListener('click', e => {
+if (e.target === $('#htmlPreview')){
+if (hpMinimized) restoreFromMinimize();
+else closeHtmlPreview();
+}
+});
+/* Клик по свёрнутому пиллу — развернуть */
+$('#htmlPreview').addEventListener('click', e => {
+if (hpMinimized && e.target.closest('.hp-window')){
+restoreFromMinimize();
+}
+});
 const fmtTime = ts => new Date(ts).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
 const fmtDate = ts => new Date(ts).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
 
@@ -2848,28 +3069,12 @@ schedule();
   try {
 const history = chat.messages.slice(0, -1);
 const wsEnabled = !!state.settings.webSearch;
-// Предварительный веб-поиск (Grounding) — сохранён как был
-let webSearchContext = null;
-if (wsEnabled && !useORDirect) {
-const lastUserMsg = history.filter(m => m.role === 'user').pop();
-if (lastUserMsg) {
-const query = textWithFiles(lastUserMsg) || lastUserMsg.content || '';
-pushStage('Поиск в интернете');
-webSearchContext = await performWebSearch(query, abortCtrl.signal);
-if (webSearchContext && webSearchContext.sources.length) {
-onWebSearch({ queries: [], sources: webSearchContext.sources });
-pushStage('Найдено источников: ' + webSearchContext.sources.length);
-} else if (webSearchContext && webSearchContext.result) {
-// Воркер ответил из собственных знаний — живой поиск не понадобился
-pushStage('Поиск не потребовался: вопрос общего характера');
-} else {
-pushStage('Поиск завершён без источников');
-}
-}
-} else if (wsEnabled && useORDirect) {
-pushStage('Поиск в интернете');
-}
-if (wsEnabled && !webSearchContext && (model.api === 'anthropic' || model.api === 'gemini')) pushStage('Модель применяет встроенный веб-поиск');
+    // Предварительный веб-поиск (Grounding) ОТКЛЮЧЁН:
+    // поиск запускается ТОЛЬКО по команде модели {web-search: [...]} —
+    // никакого принудительного «первого блина комом» с запросом «запрос».
+    // Нативные провайдеры (Anthropic/Gemini) по-прежнему могут вызывать
+    // свои встроенные инструменты поиска — это решение самой модели.
+    let webSearchContext = null;
 // ── Агентный цикл: модель сама запрашивает поиск в процессе ответа ──
 const maxWsSearches = wsEnabled ? getWsLimit() : 0;
 let wsSearchesUsed = 0;
@@ -4596,10 +4801,48 @@ function renderImgGenSettings(){
     return `<button class="igm-chip ${cfg.ratio === r ? 'sel' : ''}" data-r="${r}" type="button">${g}<span>${r === 'auto' ? 'Авто' : r}</span></button>`;
   }).join('');
   ratioBox.querySelectorAll('.igm-chip').forEach(b => b.addEventListener('click', () => { cfg.ratio = b.dataset.r; save(); renderImgGenSettings(); }));
-  /* Качество и фон — секция видна только для Riverflow */
-  const riverSec = $('#igmRiverSec');
-  riverSec.classList.toggle('off', !m.supportsResolution);
-  if (m.supportsResolution){
+/* Качество и фон — секция видна только для Riverflow */
+const riverSec = $('#igmRiverSec');
+riverSec.classList.toggle('off', !m.supportsResolution);
+
+/* Flux Params — секция видна только для Flux */
+const fluxSec = $('#igmFluxSec');
+if (fluxSec) {
+  const isFlux = !!m.supportsFluxParams;
+  fluxSec.style.display = isFlux ? 'flex' : 'none';
+  
+  if (isFlux) {
+    // Инициализация значений из state
+    const curSteps = cfg.fluxSteps || 28;
+    const curSafety = cfg.fluxSafety ?? 5;
+    
+    const sRange = $('#fluxStepsRange');
+    const sVal = $('#fluxStepsVal');
+    if (sRange && sVal) {
+      sRange.value = curSteps;
+      sVal.textContent = curSteps;
+      sRange.oninput = () => {
+        sVal.textContent = sRange.value;
+        cfg.fluxSteps = parseInt(sRange.value, 10);
+        save();
+      };
+    }
+    
+    const safeRange = $('#fluxSafetyRange');
+    const safeVal = $('#fluxSafetyVal');
+    if (safeRange && safeVal) {
+      safeRange.value = curSafety;
+      safeVal.textContent = curSafety;
+      safeRange.oninput = () => {
+        safeVal.textContent = safeRange.value;
+        cfg.fluxSafety = parseInt(safeRange.value, 10);
+        save();
+      };
+    }
+  }
+}
+
+if (m.supportsResolution){
     const resBox = $('#igmRes');
     resBox.innerHTML = m.resolutions.map(r => `<button class="igm-chip ${cfg.resolution === r ? 'sel' : ''}" data-r="${r}" type="button">${r}</button>`).join('');
     resBox.querySelectorAll('.igm-chip').forEach(b => b.addEventListener('click', () => { cfg.resolution = b.dataset.r; save(); renderImgGenSettings(); }));
@@ -5686,7 +5929,10 @@ if ($('#cmdkOverlay').classList.contains('show')) return closeCmdk();
 if (slashOpen()){ closeSlash(); return; }
 if (!$('#searchPanel').hidden){ closeSearchPanel(); return; }
 if (!$('#imgViewer').hidden){ closeImageViewer(); return; }
-if (!$('#htmlPreview').hidden){ closeHtmlPreview(); return; }
+if (!$('#htmlPreview').hidden){
+if (hpFullscreen){ toggleFullscreen(); return; }
+closeHtmlPreview(); return;
+}
 if (camOverlay.classList.contains('show')) return closeCamera();
 if ($('#wsOverlay').classList.contains('show')) return closeWsSettings();
 if (igOverlay.classList.contains('show')) return closeImgGenSettings();
