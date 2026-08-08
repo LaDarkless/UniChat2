@@ -149,7 +149,8 @@ body.cur-down #curRing{width:26px;height:26px}
   border-bottom:1px solid var(--line);background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
   position:relative;z-index:30}
 .tb-group{display:flex;align-items:center;gap:clamp(4px,1.5vw,8px);flex:none}
-.tb-center{flex:1;display:flex;justify-content:center;align-items:center;gap:clamp(4px,1.5vw,8px);min-width:0;overflow:hidden}
+.tb-center{flex:1;display:flex;justify-content:center;align-items:center;gap:clamp(4px,1.5vw,8px);min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.tb-center::-webkit-scrollbar{display:none}
 .icon-btn{width:40px;height:40px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;
   color:var(--text-dim);border:1px solid transparent;transition:.2s;position:relative;flex:none}
 .icon-btn:hover{color:var(--text);background:var(--panel-hover);border-color:var(--line)}
@@ -420,7 +421,8 @@ display:flex;align-items:center;justify-content:center;color:var(--text-faint);t
 /* Контекстное меню изображения (ПКМ / long-press) */
 .ig-ctx{position:fixed;z-index:130;min-width:216px;padding:6px;border-radius:14px;
 background:var(--panel-solid);border:1px solid var(--line);box-shadow:var(--shadow);
-backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);animation:menuIn .18s cubic-bezier(.2,.9,.3,1.2)}
+backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);animation:menuIn .18s cubic-bezier(.2,.9,.3,1.2);
+user-select:none;-webkit-user-select:none}
 .ig-ctx button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border-radius:9px;
 font-size:13px;font-weight:500;color:var(--text-dim);text-align:left;transition:.15s}
 .ig-ctx button:hover{background:var(--panel-hover);color:var(--text)}
@@ -961,6 +963,8 @@ background:linear-gradient(150deg,var(--accent-soft),hsla(0,0%,100%,.03));border
   border-right:1px solid var(--line);display:flex;flex-direction:column;
   transform:translateX(-103%);transition:transform .48s cubic-bezier(.22,.9,.24,1);box-shadow:var(--shadow)}
 .drawer.open{transform:none}
+.drawer.dragging{transition:none !important;touch-action:pan-y}
+.drawer.dragging~*{}
 .drawer-head{flex:none;display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
 .drawer-head .logo{font-size:16px;margin-right:auto;padding-left:4px}
 .drawer-new{flex:none;margin:14px 16px 10px;padding:13px;border-radius:13px;font-weight:800;font-size:14px;
@@ -980,7 +984,8 @@ background:linear-gradient(150deg,var(--accent-soft),hsla(0,0%,100%,.03));border
 .drawer-search.has-q .clr{display:flex}
 .chat-list{flex:1;overflow-y:auto;padding:2px 16px 12px;display:flex;flex-direction:column;gap:7px}
 .chat-item{display:flex;align-items:center;gap:11px;padding:12px 13px;border-radius:13px;border:1px solid transparent;
-  transition:.18s;text-align:left;width:100%;animation:fadeUp .35s backwards}
+transition:.18s;text-align:left;width:100%;animation:fadeUp .35s backwards;
+-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 .chat-item:hover{background:var(--panel-hover);border-color:var(--line)}
 .chat-item.active{background:var(--accent-soft);border-color:var(--accent-line)}
 .ci-ico{width:34px;height:34px;flex:none;border-radius:10px;display:flex;align-items:center;justify-content:center;
@@ -993,21 +998,7 @@ background:linear-gradient(150deg,var(--accent-soft),hsla(0,0%,100%,.03));border
 .branch-badge{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:800;letter-spacing:.06em;
   text-transform:uppercase;color:var(--accent);padding:2px 6px;border-radius:5px;background:var(--accent-soft)}
 .branch-badge svg{width:10px;height:10px}
-.ci-pin{width:29px;height:29px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;
-color:var(--text-faint);opacity:0;transition:.18s}
-.chat-item:hover .ci-pin{opacity:1}
-.ci-pin:hover{color:var(--accent);background:var(--accent-soft)}
-.ci-pin svg{width:14px;height:14px;transition:transform .25s cubic-bezier(.3,1.5,.5,1)}
-.ci-pin:hover svg{transform:rotate(-12deg)}
-.chat-item.pinned .ci-pin{opacity:1;color:var(--accent)}
 .chat-item.pinned{border-color:hsla(var(--acc-h),var(--acc-s),var(--acc-l),.22)}
-@media (hover:none){.ci-pin{opacity:1}}
-.ci-del{width:29px;height:29px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;
-color:var(--text-faint);opacity:0;transition:.18s}
-.chat-item:hover .ci-del{opacity:1}
-.ci-del:hover{color:var(--danger);background:var(--danger-soft)}
-.ci-del svg{width:14px;height:14px}
-@media (hover:none){.ci-del{opacity:1}}
 .list-empty{padding:34px 16px;text-align:center;color:var(--text-faint);font-size:13px;line-height:1.6}
 .list-empty svg{width:30px;height:30px;margin:0 auto 10px;opacity:.5}
 .drawer-bottom{flex:none;border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:9px;align-items:center}
@@ -1138,7 +1129,7 @@ textarea.field-area:focus{border-color:var(--accent-line);box-shadow:0 0 0 3px v
   :root{--tb-h:54px}
   .topbar{padding:0 8px;gap:5px}
   .tb-group{gap:4px}
-  .tb-center{gap:5px;justify-content:center}
+  .tb-center{gap:5px;justify-content:flex-start;-webkit-overflow-scrolling:touch}
   .icon-btn{width:36px;height:36px;border-radius:9px}
   .chip{height:35px;padding:0 8px;gap:5px;font-size:12px;border-radius:9px}
   #modelBtn .chip-label{max-width:clamp(65px,24vw,130px)}
@@ -1861,6 +1852,7 @@ html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 4
 <input type="file" class="hidden-input" id="editImgInput" accept="image/*" multiple> */
 <div class="ig-ctx" id="igCtxMenu" hidden role="menu"></div>
 <div class="ig-ctx" id="favCtxMenu" hidden role="menu"></div>
+<div class="ig-ctx" id="chatCtxMenu" hidden role="menu"></div>
 <!-- ПОЛНОЭКРАННЫЙ ПРОСМОТР ИЗОБРАЖЕНИЯ -->
 <div class="iv-back" id="imgViewer" hidden>
 <div class="iv-hint no-sel">Колесо / щипок — масштаб · перетаскивание — перемещение · Esc — выход</div>
@@ -2446,9 +2438,10 @@ return b.updatedAt - a.updatedAt;
     return;
   }
   list.innerHTML = '';
-  items.forEach(({c, snippet}, i) => {
-    const el = document.createElement('button');
-    el.className = 'chat-item' + (c.id === state.activeId ? ' active' : '') + (c.pinned ? ' pinned' : '');
+items.forEach(({c, snippet}, i) => {
+const el = document.createElement('button');
+el.className = 'chat-item' + (c.id === state.activeId ? ' active' : '') + (c.pinned ? ' pinned' : '');
+el.dataset.cid = c.id;
 el.style.animationDelay = Math.min(i*0.03, .3) + 's';
 el.innerHTML = `
 <span class="ci-ico"><svg><use href="#i-chat"/></svg></span>
@@ -2457,16 +2450,13 @@ el.innerHTML = `
 <span class="ci-s">${c.parentId ? '<span class="branch-badge"><svg><use href="#i-branch"/></svg>ветвь</span>' : ''}
 ${fmtDate(c.updatedAt)} · ${c.messages.length} сообщ.</span>
 ${snippet ? `<span class="ci-s">${esc(snippet)}</span>` : ''}
-</span>
-<span class="ci-pin" title="${c.pinned ? 'Открепить' : 'Закрепить'}" aria-label="${c.pinned ? 'Открепить чат' : 'Закрепить чат'}"><svg><use href="#i-pin"/></svg></span>
-<span class="ci-del" title="Удалить чат"><svg><use href="#i-trash"/></svg></span>`;
+</span>`;
 el.addEventListener('click', e => {
-if (e.target.closest('.ci-del')){ e.stopPropagation(); deleteChat(c.id); return; }
-if (e.target.closest('.ci-pin')){ e.stopPropagation(); togglePin(c.id); return; }
+if (chatLpFired){ chatLpFired = false; return; }
 openChat(c.id);
 });
-    list.appendChild(el);
-  });
+list.appendChild(el);
+});
 }
 
 /* ---------- Отрисовка сообщений ---------- */
@@ -4692,6 +4682,136 @@ function closeDrawer(){ drawer.classList.remove('open'); $('#drawerScrim').class
 $('#btnMenu').addEventListener('click', openDrawer);
 $('#drawerClose').addEventListener('click', closeDrawer);
 $('#drawerScrim').addEventListener('click', closeDrawer);
+
+/* ── Свайп шторки: закрытие жестом влево + удержание пальцем ── */
+let drawerSwipe = null;
+
+drawer.addEventListener('pointerdown', e => {
+  if (!drawer.classList.contains('open')) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  drawerSwipe = {
+    id: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    x: 0,
+    horizontal: null,
+    velocity: 0,
+    lastX: e.clientX,
+    lastT: performance.now(),
+    captured: false
+  };
+}, { passive: true });
+
+drawer.addEventListener('pointermove', e => {
+  if (!drawerSwipe || e.pointerId !== drawerSwipe.id) return;
+  const dx = e.clientX - drawerSwipe.startX;
+  const dy = e.clientY - drawerSwipe.startY;
+
+  /* Определяем намерение: горизонталь влево vs вертикальный скролл */
+  if (drawerSwipe.horizontal === null) {
+    if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+    const isHoriz = Math.abs(dx) > Math.abs(dy) * 1.1 && dx < 0;
+    if (!isHoriz) { drawerSwipe = null; return; }
+    drawerSwipe.horizontal = true;
+    drawer.classList.add('dragging');
+    $('#drawerScrim').style.transition = 'none';
+    try { drawer.setPointerCapture(e.pointerId); drawerSwipe.captured = true; } catch(_){}
+  }
+
+  /* Скорость для инерции */
+  const now = performance.now();
+  const dt = now - drawerSwipe.lastT;
+  if (dt > 0) drawerSwipe.velocity = (e.clientX - drawerSwipe.lastX) / dt;
+  drawerSwipe.lastX = e.clientX;
+  drawerSwipe.lastT = now;
+
+  /* Позиция: только влево, не дальше 0 */
+  const x = Math.min(0, dx);
+  drawerSwipe.x = x;
+  const w = drawer.offsetWidth || 1;
+  drawer.style.transform = 'translateX(' + x + 'px)';
+  $('#drawerScrim').style.opacity = String(Math.max(0, 1 + x / w));
+}, { passive: true });
+
+const endDrawerSwipe = e => {
+  if (!drawerSwipe || e.pointerId !== drawerSwipe.id) return;
+  const sw = drawerSwipe;
+  drawerSwipe = null;
+
+  if (sw.horizontal === null) return;
+
+  drawer.classList.remove('dragging');
+  $('#drawerScrim').style.transition = '';
+  if (sw.captured) { try { drawer.releasePointerCapture(e.pointerId); } catch(_){} }
+
+  const w = drawer.offsetWidth || 1;
+  const shouldClose = sw.x < -(w * 0.35) || sw.velocity < -0.45;
+
+  /* Убираем inline-стили — CSS transition анимирует до финального состояния */
+  drawer.style.transform = '';
+  $('#drawerScrim').style.opacity = '';
+
+  if (shouldClose) closeDrawer();
+};
+
+drawer.addEventListener('pointerup', endDrawerSwipe);
+drawer.addEventListener('pointercancel', endDrawerSwipe);
+
+/* Свайп от левого края экрана — открыть шторку */
+let edgeSwipe = null;
+
+document.addEventListener('pointerdown', e => {
+  if (drawer.classList.contains('open')) return;
+  if (e.clientX > 28) return;
+  edgeSwipe = { id: e.pointerId, startX: e.clientX, startY: e.clientY, horizontal: null };
+}, { passive: true });
+
+document.addEventListener('pointermove', e => {
+  if (!edgeSwipe || e.pointerId !== edgeSwipe.id) return;
+  const dx = e.clientX - edgeSwipe.startX;
+  const dy = e.clientY - edgeSwipe.startY;
+
+  if (edgeSwipe.horizontal === null) {
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+    edgeSwipe.horizontal = Math.abs(dx) > Math.abs(dy) && dx > 0;
+    if (!edgeSwipe.horizontal) { edgeSwipe = null; return; }
+    drawer.classList.add('dragging');
+    $('#drawerScrim').style.transition = 'none';
+    $('#drawerScrim').classList.add('show');
+    $('#drawerScrim').style.pointerEvents = 'none';
+  }
+
+  const w = drawer.offsetWidth || 1;
+  const x = Math.max(-w, Math.min(0, -w + dx));
+  drawer.style.transform = 'translateX(' + x + 'px)';
+  $('#drawerScrim').style.opacity = String(Math.max(0, 1 + x / w));
+}, { passive: true });
+
+const endEdgeSwipe = e => {
+  if (!edgeSwipe || e.pointerId !== edgeSwipe.id) return;
+  const sw = edgeSwipe;
+  edgeSwipe = null;
+  if (sw.horizontal === null) return;
+
+  drawer.classList.remove('dragging');
+  $('#drawerScrim').style.transition = '';
+  $('#drawerScrim').style.pointerEvents = '';
+
+  const w = drawer.offsetWidth || 1;
+  const dx = e.clientX - sw.startX;
+  const progress = dx / w;
+  drawer.style.transform = '';
+  $('#drawerScrim').style.opacity = '';
+
+  if (progress > 0.35) {
+    openDrawer();
+  } else {
+    $('#drawerScrim').classList.remove('show');
+  }
+};
+
+document.addEventListener('pointerup', endEdgeSwipe);
+document.addEventListener('pointercancel', endEdgeSwipe);
 $('#btnNewChat').addEventListener('click', newChat);
 $('#searchInput').addEventListener('input', () => {
   $('#searchWrap').classList.toggle('has-q', !!$('#searchInput').value);
@@ -5025,8 +5145,12 @@ messagesBox.addEventListener('click', e => {
   if (img) openImageViewer(img.currentSrc || img.src, img.alt);
 }, true);
 document.addEventListener('pointerdown', e => {
-  if (!$('#igCtxMenu').hidden && !e.target.closest('#igCtxMenu')) closeImgCtxMenu();
-  if (!$('#favCtxMenu').hidden && !e.target.closest('#favCtxMenu')) closeFavCtxMenu();
+if (!$('#igCtxMenu').hidden && !e.target.closest('#igCtxMenu')) closeImgCtxMenu();
+if (!$('#favCtxMenu').hidden && !e.target.closest('#favCtxMenu')) closeFavCtxMenu();
+if (!$('#chatCtxMenu').hidden && !e.target.closest('#chatCtxMenu')){
+const isRightClickOnChat = e.button === 2 && e.target.closest('.chat-item');
+if (!isRightClickOnChat) closeChatCtxMenu();
+}
 }, true);
 $('#chatScroll').addEventListener('scroll', closeImgCtxMenu);
 /* ---------- Полноэкранный просмотр: события ---------- */
@@ -5115,12 +5239,67 @@ $('#favGrid').addEventListener('pointermove', e => {
   if (favLpTimer && Math.hypot(e.clientX - favLpX, e.clientY - favLpY) > 12){ clearTimeout(favLpTimer); favLpTimer = null; }
 });
 $('#favGrid').addEventListener('click', e => {
-  if (favLpFired){ favLpFired = false; e.preventDefault(); e.stopPropagation(); return; }
-  const card = e.target.closest('.fav-card');
-  if (!card) return;
-  const f = (state.favorites || [])[+card.dataset.fi];
-  if (f && f.dataUrl) openImageViewer(f.dataUrl, f.prompt);
+if (favLpFired){ favLpFired = false; e.preventDefault(); e.stopPropagation(); return; }
+const card = e.target.closest('.fav-card');
+if (!card) return;
+const f = (state.favorites || [])[+card.dataset.fi];
+if (f && f.dataUrl) openImageViewer(f.dataUrl, f.prompt);
 }, true);
+/* ---------- Контекстное меню чатов (ПКМ + long-press) ---------- */
+let chatCtxId = null, chatLpTimer = null, chatLpFired = false, chatLpX = 0, chatLpY = 0, lastPointerType = '';
+function openChatCtxMenu(chatId, x, y){
+const c = state.chats.find(ch => ch.id === chatId);
+if (!c) return;
+chatCtxId = chatId;
+const menu = $('#chatCtxMenu');
+menu.innerHTML = `
+<button data-cact="pin"><svg><use href="#i-pin"/></svg><span>${c.pinned ? 'Открепить' : 'Закрепить'}</span></button>
+<button data-cact="del" class="danger"><svg><use href="#i-trash"/></svg><span>Удалить</span></button>`;
+menu.hidden = false;
+requestAnimationFrame(() => {
+const r = menu.getBoundingClientRect();
+menu.style.left = Math.max(8, Math.min(x, innerWidth - r.width - 8)) + 'px';
+menu.style.top = Math.max(8, Math.min(y, innerHeight - r.height - 8)) + 'px';
+});
+menu.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+const act = b.dataset.cact;
+closeChatCtxMenu();
+if (act === 'pin') togglePin(chatId);
+else if (act === 'del') deleteChat(chatId);
+}));
+}
+function closeChatCtxMenu(){ $('#chatCtxMenu').hidden = true; chatCtxId = null; }
+const chatListEl = $('#chatList');
+chatListEl.addEventListener('pointerdown', e => {
+lastPointerType = e.pointerType;
+const item = e.target.closest('.chat-item');
+if (!item || e.button === 2 || e.pointerType === 'mouse') return;
+chatLpFired = false; chatLpX = e.clientX; chatLpY = e.clientY;
+const chatId = item.dataset.cid;
+clearTimeout(chatLpTimer);
+chatLpTimer = setTimeout(() => {
+chatLpFired = true;
+openChatCtxMenu(chatId, e.clientX, e.clientY);
+try { navigator.vibrate(12); } catch(err){}
+}, 1000);
+});
+chatListEl.addEventListener('pointermove', e => {
+if (chatLpTimer && Math.hypot(e.clientX - chatLpX, e.clientY - chatLpY) > 12){ clearTimeout(chatLpTimer); chatLpTimer = null; }
+});
+chatListEl.addEventListener('contextmenu', e => {
+const item = e.target.closest('.chat-item');
+if (!item) return;
+e.preventDefault();
+const chatId = item.dataset.cid;
+if (!chatId) return;
+if (lastPointerType !== 'mouse') return;
+if (!$('#chatCtxMenu').hidden && chatCtxId === chatId){ closeChatCtxMenu(); return; }
+openChatCtxMenu(chatId, e.clientX, e.clientY);
+});
+chatListEl.addEventListener('click', e => {
+if (chatLpFired){ chatLpFired = false; e.preventDefault(); e.stopPropagation(); return; }
+}, true);
+chatListEl.addEventListener('scroll', closeChatCtxMenu);
 /* Умный вход в редактирование: ПКМ / зажатие на превью прикреплённого изображения */
 function openAttCtxMenu(idx, x, y){
   const a = pendingAtt[idx];
@@ -5937,6 +6116,7 @@ if (camOverlay.classList.contains('show')) return closeCamera();
 if ($('#wsOverlay').classList.contains('show')) return closeWsSettings();
 if (igOverlay.classList.contains('show')) return closeImgGenSettings();
   if (!$('#favCtxMenu').hidden){ closeFavCtxMenu(); return; }
+if (!$('#chatCtxMenu').hidden){ closeChatCtxMenu(); return; }
   if ($('#favOverlay').classList.contains('show')){ $('#favOverlay').classList.remove('show'); return; }
   if ($('#editConfirmOverlay').classList.contains('show')){ closeEditConfirm(); return; }
   if ($('#textExpandOverlay').classList.contains('show')){ closeTextExpand(); return; }
