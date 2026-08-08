@@ -9,7 +9,49 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src https://cdn.jsdelivr.net data:; img-src 'self' data: blob: https:; connect-src https://api.proxyapi.ru https://openrouter.ai https://cdn.jsdelivr.net https://commons.wikimedia.org https://api.openverse.org; media-src blob:; object-src 'none'; base-uri 'self'">
 <title>MoonSSS — премиальный ИИ-ассистент</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a1a1a'/%3E%3Cpath d='M21.5 19.2A8.4 8.4 0 0 1 12.7 6.4a8.4 8.4 0 1 0 8.8 12.8Z' fill='%238fd0f5'/%3E%3C/svg%3E">
+<!-- Анти-FOUC: тема применяется до первой отрисовки -->
+<style>
+html{background:#1a1a1a}
+html[data-theme="light"]{background:#f2f0ec}
+html.theme-boot body{opacity:0}
+body{transition:opacity .22s cubic-bezier(.2,.8,.2,1)}
+</style>
+<script>
+(function(){
+var d=document.documentElement;
+d.classList.add('theme-boot');
+var fallback='dark';
+try{ if(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches) fallback='light'; }catch(e){}
+d.dataset.theme=fallback;
+var done=false;
+function finish(theme){
+if(done)return; done=true;
+if(theme==='light'||theme==='dark')d.dataset.theme=theme;
+d.classList.remove('theme-boot');
+try{
+var m=document.querySelector('meta[name="theme-color"]');
+if(m)m.setAttribute('content',d.dataset.theme==='light'?'#f2f0ec':'#1a1a1a');
+}catch(e){}
+}
+var timer=setTimeout(function(){finish(d.dataset.theme)},700);
+try{
+var rq=indexedDB.open('MoonSSS_DB',1);
+rq.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('app_state'))db.createObjectStore('app_state',{keyPath:'key'});};
+rq.onsuccess=function(e){
+var db=e.target.result;
+try{
+var g=db.transaction('app_state','readonly').objectStore('app_state').get('state');
+g.onsuccess=function(){var v=g.result&&g.result.value;finish(v&&v.settings?v.settings.theme:d.dataset.theme);clearTimeout(timer);try{db.close();}catch(x){}};
+g.onerror=function(){finish(d.dataset.theme);clearTimeout(timer);try{db.close();}catch(x){}};
+}catch(err){finish(d.dataset.theme);clearTimeout(timer);try{db.close();}catch(x){}}
+};
+rq.onerror=function(){finish(d.dataset.theme);clearTimeout(timer);};
+rq.onblocked=function(){finish(d.dataset.theme);clearTimeout(timer);};
+}catch(e){finish(d.dataset.theme);clearTimeout(timer);}
+})();
+</script>
 <!-- Шрифты (fontsource CDN): preload + async для неблокирующей загрузки -->
+
 <link rel="preload" href="https://cdn.jsdelivr.net/npm/@fontsource/manrope/300.css" as="style" crossorigin="anonymous">
 <link rel="preload" href="https://cdn.jsdelivr.net/npm/@fontsource/manrope/500.css" as="style" crossorigin="anonymous">
 <link rel="preload" href="https://cdn.jsdelivr.net/npm/@fontsource/manrope/800.css" as="style" crossorigin="anonymous">
@@ -98,7 +140,7 @@ html[data-theme="light"]{
   --sel-color:hsla(0,0%,10%,1);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 html.has-cursor, html.has-cursor *{cursor:none !important}
 body{
   font-family:var(--font-ui); color:var(--text); background:var(--bg0);
@@ -223,6 +265,7 @@ html[data-theme="light"] #themeBtn .ic-moon{display:none}
 .hchip span{font-size:13.5px;color:var(--text-dim);line-height:1.45}
 .hchip:hover span{color:var(--text)}
 .hero-keys{margin-top:30px}
+.hero-keys[hidden]{display:none}
 .link-btn{color:var(--accent);font-size:13.5px;font-weight:500;display:inline-flex;gap:8px;align-items:center;
   padding:9px 16px;border-radius:10px;border:1px dashed var(--accent-line);transition:.2s}
 .link-btn:hover{background:var(--accent-soft)}
@@ -834,6 +877,9 @@ html[data-theme="light"] .input-shell{box-shadow:0 12px 34px hsla(0,0%,20%,.14),
 #modelMenu{top:calc(var(--tb-h) + 6px);left:50%;transform:translateX(-50%);width:min(430px,calc(100vw - 20px));max-height:min(430px,60vh);overflow-y:auto}
 #modelMenu.anim{animation:menuCenter .22s cubic-bezier(.2,.9,.3,1.2)}
 #modelMenu.out{animation:menuCenterOut .18s cubic-bezier(.16,1,.3,1) forwards}
+#apiSrcMenu{top:calc(var(--tb-h) + 6px);left:50%;transform:translateX(-50%);width:min(320px,calc(100vw - 20px));max-height:min(300px,50vh);overflow-y:auto}
+#apiSrcMenu.anim{animation:menuCenter .22s cubic-bezier(.2,.9,.3,1.2)}
+#apiSrcMenu.out{animation:menuCenterOut .18s cubic-bezier(.16,1,.3,1) forwards}
 @keyframes menuCenter{from{opacity:0;transform:translateX(-50%) translateY(-8px) scale(.97)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
 @keyframes menuCenterOut{from{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}to{opacity:0;transform:translateX(-50%) translateY(-8px) scale(.97)}}
 /* ============ МЕНЮ РАЗМЫШЛЕНИЙ: ЖИВАЯ ГОРИЗОНТАЛЬНАЯ ШКАЛА ============ */
@@ -959,12 +1005,14 @@ background:linear-gradient(150deg,var(--accent-soft),hsla(0,0%,100%,.03));border
   opacity:0;pointer-events:none;transition:opacity .38s}
 .scrim.show{opacity:1;pointer-events:auto}
 .drawer{position:fixed;top:0;left:0;bottom:0;z-index:90;width:min(560px,100vw);
-  background:var(--panel-solid);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
-  border-right:1px solid var(--line);display:flex;flex-direction:column;
-  transform:translateX(-103%);transition:transform .48s cubic-bezier(.22,.9,.24,1);box-shadow:var(--shadow)}
+background:var(--panel-solid);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+border-right:1px solid var(--line);display:flex;flex-direction:column;
+transform:translateX(-103%);transition:transform .48s cubic-bezier(.22,.9,.24,1);box-shadow:var(--shadow);
+/* Горизонтальный свайп закрытия ведёт JS: браузер не отбирает жест
+через pointercancel, вертикальный скролл списка чатов остаётся нативным */
+touch-action:pan-y}
 .drawer.open{transform:none}
 .drawer.dragging{transition:none !important;touch-action:pan-y}
-.drawer.dragging~*{}
 .drawer-head{flex:none;display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
 .drawer-head .logo{font-size:16px;margin-right:auto;padding-left:4px}
 .drawer-new{flex:none;margin:14px 16px 10px;padding:13px;border-radius:13px;font-weight:800;font-size:14px;
@@ -1319,8 +1367,8 @@ html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 4
    Заменяем на чистый opacity — визуально мягче, GPU-дешевле ── */
 .menu{animation:menuFadeIn .16s cubic-bezier(.2,.9,.3,1)}
 .menu.out{animation:menuFadeOut .13s cubic-bezier(.16,1,.3,1) forwards}
-#modelMenu.anim,#thinkMenu.anim{animation:menuFadeIn .16s cubic-bezier(.2,.9,.3,1)}
-#modelMenu.out,#thinkMenu.out{animation:menuFadeOut .13s cubic-bezier(.16,1,.3,1) forwards}
+#modelMenu.anim,#thinkMenu.anim,#apiSrcMenu.anim{animation:menuFadeIn .16s cubic-bezier(.2,.9,.3,1)}
+#modelMenu.out,#thinkMenu.out,#apiSrcMenu.out{animation:menuFadeOut .13s cubic-bezier(.16,1,.3,1) forwards}
 .slash-menu,.search-panel{animation:menuFadeIn .16s cubic-bezier(.2,.9,.3,1)}
 /* ── ThinkMenu: отключаем бесконечные CSS-анимации,
    которые крутятся даже когда меню просто открыто ── */
@@ -1353,7 +1401,7 @@ html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 4
     <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9.5 7V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M6.5 7l.8 12a2 2 0 0 0 2 1.9h5.4a2 2 0 0 0 2-1.9l.8-12M10 11.5v5M14 11.5v5"/></symbol>
     <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19l-4 1ZM14.5 6.5l3 3"/></symbol>
     <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
-<symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 5.2v13.6a.7.7 0 0 0 1.06.6l10.9-6.8a.7.7 0 0 0 0-1.2L8.56 4.6a.7.7 0 0 0-1.06.6Z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 5.2v13.6a.7.7 0 0 0 1.06.6l10.9-6.8a.7.7 0 0 0 0-1.2L8.56 4.6a.7.7 0 0 0-1.06.6Z"/></symbol>
     <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 3.8v3.6h-3.6"/></symbol>
     <symbol id="i-branch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="8" r="2.2"/><path d="M6 7.2v9.6M18 10.2c0 3-2.5 4.3-5.5 4.6-2.6.3-4.5 1-4.5 2.2"/></symbol>
     <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5M9.5 13h5M9.5 16.5h5"/></symbol>
@@ -1371,18 +1419,18 @@ html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 4
     <symbol id="i-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5"/><path d="M9.5 2.8v3.7M14.5 2.8v3.7M9.5 17.5v3.7M14.5 17.5v3.7M2.8 9.5h3.7M2.8 14.5h3.7M17.5 9.5h3.7M17.5 14.5h3.7"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3c-2.5 3-4 6-4 9s1.5 6 4 9"/><path d="M12 3c2.5 3 4 6 4 9s-1.5 6-4 9"/><path d="M3.5 9h17M3.5 15h17"/></symbol>
     <symbol id="i-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5.5"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
-<symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5"/><path d="M4.5 17.5V19a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-1.5"/></symbol>
-<symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5Z"/></symbol>
-<symbol id="i-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 12h14"/></symbol>
-<symbol id="i-arrow-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13.5M6 13l6 6 6-6"/></symbol>
-<symbol id="i-command" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9V6.5A2.5 2.5 0 1 0 6.5 9H9Zm0 0v6m0-6h6m-6 6v2.5A2.5 2.5 0 1 1 6.5 15H9Zm6-6V6.5A2.5 2.5 0 1 1 17.5 9H15Zm0 0v6m0 0h2.5a2.5 2.5 0 1 1-2.5 2.5V15Z"/></symbol>
-<symbol id="i-drop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5c3.2 4 5.8 7.1 5.8 10.2a5.8 5.8 0 1 1-11.6 0C6.2 10.6 8.8 7.5 12 3.5Z"/></symbol>
-<symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 3.5h5.6l-.7 6.4 3.1 3.4a.7.7 0 0 1-.5 1.2H7.3a.7.7 0 0 1-.5-1.2l3.1-3.4-.7-6.4Z"/><path d="M12 14.5v6"/></symbol>
-<symbol id="i-volume" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5.5 7.5 8.5H4.5v7h3l3.5 3V5.5Z"/><path d="M15 9.2a4 4 0 0 1 0 5.6"/><path d="M17.4 6.8a7.4 7.4 0 0 1 0 10.4"/></symbol>
-<symbol id="i-quote" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 7.5C7.2 8.3 5.5 10.4 5.5 13v4.5H11V12H8.2c0-1.9 1-3.4 2.3-4.2L9.5 7.5Z"/><path d="M18 7.5c-2.3.8-4 2.9-4 5.5v4.5h5.5V12h-2.8c0-1.9 1-3.4 2.3-4.2L18 7.5Z"/></symbol>
-<symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 7 4 12l4.5 5M15.5 7 20 12l-4.5 5"/></symbol>
-<symbol id="i-cube" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 20 7v10l-8 4.2L4 17V7l8-4.2Z"/><path d="M4 7l8 4.2L20 7"/><path d="M12 11.2v10"/></symbol>
-</defs>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5"/><path d="M4.5 17.5V19a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-1.5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5Z"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 12h14"/></symbol>
+    <symbol id="i-arrow-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13.5M6 13l6 6 6-6"/></symbol>
+    <symbol id="i-command" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9V6.5A2.5 2.5 0 1 0 6.5 9H9Zm0 0v6m0-6h6m-6 6v2.5A2.5 2.5 0 1 1 6.5 15H9Zm6-6V6.5A2.5 2.5 0 1 1 17.5 9H15Zm0 0v6m0 0h2.5a2.5 2.5 0 1 1-2.5 2.5V15Z"/></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5c3.2 4 5.8 7.1 5.8 10.2a5.8 5.8 0 1 1-11.6 0C6.2 10.6 8.8 7.5 12 3.5Z"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 3.5h5.6l-.7 6.4 3.1 3.4a.7.7 0 0 1-.5 1.2H7.3a.7.7 0 0 1-.5-1.2l3.1-3.4-.7-6.4Z"/><path d="M12 14.5v6"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5.5 7.5 8.5H4.5v7h3l3.5 3V5.5Z"/><path d="M15 9.2a4 4 0 0 1 0 5.6"/><path d="M17.4 6.8a7.4 7.4 0 0 1 0 10.4"/></symbol>
+    <symbol id="i-quote" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 7.5C7.2 8.3 5.5 10.4 5.5 13v4.5H11V12H8.2c0-1.9 1-3.4 2.3-4.2L9.5 7.5Z"/><path d="M18 7.5c-2.3.8-4 2.9-4 5.5v4.5h5.5V12h-2.8c0-1.9 1-3.4 2.3-4.2L18 7.5Z"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 7 4 12l4.5 5M15.5 7 20 12l-4.5 5"/></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 20 7v10l-8 4.2L4 17V7l8-4.2Z"/><path d="M4 7l8 4.2L20 7"/><path d="M12 11.2v10"/></symbol>
+  </defs>
 </svg>
 
 <!-- Фоновые слои -->
@@ -1412,9 +1460,10 @@ html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 4
 <span class="lvl-badge" id="thinkLabel">Выкл</span>
 <svg class="chev"><use href="#i-chev"/></svg>
 </button>
-<button id="apiSrcBtn" class="chip" title="Источник API">
+<button id="apiSrcBtn" class="chip" title="Источник API" aria-haspopup="listbox">
 <svg class="ic" style="width:16px;height:16px"><use href="#i-key"/></svg>
 <span class="chip-label" id="apiSrcLabel">ProxyAPI</span>
+<svg class="chev"><use href="#i-chev"/></svg>
 </button>
 </div>
 <div class="tb-group">
@@ -1543,6 +1592,7 @@ html[data-theme="light"] .vignette{background:radial-gradient(145% 105% at 50% 4
 <!-- Меню модели / размышлений -->
 <div class="menu" id="modelMenu" hidden role="listbox"></div>
 <div class="menu" id="thinkMenu" hidden role="menu"></div>
+<div class="menu" id="apiSrcMenu" hidden role="listbox"></div>
 
 <!-- ШТОРКА -->
 <div class="scrim" id="drawerScrim"></div>
@@ -2022,6 +2072,7 @@ imgGen:{ model:'sourceful/riverflow-v2.5-pro', ratio:'1:1', resolution:'2K', bac
 };
 let pendingAtt = [];       // вложения в composer
 let streaming = false;
+let stickToBottom = true;  // автоприжатие к низу во время стриминга (false = пользователь читает выше)
 let abortCtrl = null;
 let curSnap = null;        // снимок камеры
 
@@ -2342,9 +2393,14 @@ window.toast = toast;
 
 /* ---------- Тема ---------- */
 function applyTheme(){
-  document.documentElement.dataset.theme = state.settings.theme;
-  const sw = $('#setThemeSwitch');
-  if (sw) sw.classList.toggle('on', state.settings.theme === 'light');
+document.documentElement.dataset.theme = state.settings.theme;
+document.documentElement.classList.remove('theme-boot');
+try{
+const meta = document.querySelector('meta[name="theme-color"]');
+if (meta) meta.setAttribute('content', state.settings.theme === 'light' ? '#f2f0ec' : '#1a1a1a');
+}catch(e){}
+const sw = $('#setThemeSwitch');
+if (sw) sw.classList.toggle('on', state.settings.theme === 'light');
 }
 function toggleTheme(){
 state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
@@ -2494,6 +2550,7 @@ box.appendChild(buildMsgEl(m));
 });
 enhanceCode(box);
 sdResetForChat();
+stickToBottom = true;
 requestAnimationFrame(()=>{
 const s=$('#chatScroll');
 sdSuppress = true;
@@ -2972,6 +3029,31 @@ inp.value = ''; autoGrow();
   save(); renderMessages(); renderChatList();
   runAssistant(chat);
 }
+/* ── FAILOVER: снимок и откат состояния сообщения между попытками провайдеров ── */
+function snapAiMsg(m){
+return {
+len: (m.content || '').length,
+think: (m.thinking || '').length,
+img: (m.imageRequests || []).length,
+art: (m.artifacts || []).length,
+rd: (m.reasoning_details || []).length,
+ws: !m.webSearch ? null : { q:(m.webSearch.queries || []).length, s:(m.webSearch.sources || []).length, t:(m.webSearch.stages || []).length }
+};
+}
+function rollbackAiMsg(m, sn){
+m.content = (m.content || '').slice(0, sn.len);
+m.thinking = (m.thinking || '').slice(0, sn.think);
+if (m.imageRequests) m.imageRequests.length = sn.img;
+if (m.artifacts) m.artifacts.length = sn.art;
+if (m.reasoning_details) m.reasoning_details.length = sn.rd;
+if (sn.ws === null) delete m.webSearch;
+else if (m.webSearch){
+if (m.webSearch.queries) m.webSearch.queries.length = sn.ws.q; else m.webSearch.queries = [];
+if (m.webSearch.sources) m.webSearch.sources.length = sn.ws.s; else m.webSearch.sources = [];
+if (m.webSearch.stages) m.webSearch.stages.length = sn.ws.t; else m.webSearch.stages = [];
+}
+igcQueue = igcQueue.filter(q => (m.imageRequests || []).includes(q.req));
+}
 async function runAssistant(chat){
 const settings = state.settings;
 const model = getModel(settings.modelId);
@@ -2982,11 +3064,20 @@ toast(route.missing === 'proxy'
   : 'Выбран OpenRouter, но ключ sk-or-… не указан', 'err');
 openSettings(); return;
 }
-const useProxy = route.useProxy;
-const useORDirect = route.useORDirect;
-  streaming = true; document.body.classList.add('is-streaming'); setSendBtn();
-  const aiMsg = { id:uid(), role:'assistant', content:'', thinking:'', ts:Date.now(),
-                  modelId:model.id, status:'streaming' };
+/* Цепочка провайдеров: в «Авто» при наличии ОБОИХ ключей добавляется
+резервный провайдер для прозрачного failover */
+const autoMode = (settings.apiSource || 'auto') === 'auto';
+const hasProxyKey = !!(settings.proxyKey || '').trim();
+const hasORKey = !!(settings.orKey || '').trim();
+const chain = [route.useProxy ? 'proxy' : 'openrouter'];
+if (autoMode && hasProxyKey && hasORKey) chain.push(chain[0] === 'proxy' ? 'openrouter' : 'proxy');
+let providerIdx = 0;
+let useProxy = chain[0] === 'proxy';
+let useORDirect = chain[0] === 'openrouter';
+const provErrors = []; // накопленные ошибки провайдеров для финального вердикта
+streaming = true; stickToBottom = true; document.body.classList.add('is-streaming'); setSendBtn();
+const aiMsg = { id:uid(), role:'assistant', content:'', thinking:'', ts:Date.now(),
+modelId:model.id, status:'streaming' };
   chat.messages.push(aiMsg);
   renderMessages();
   const el = $('#messages').querySelector(`[data-id="${aiMsg.id}"]`);
@@ -2995,9 +3086,8 @@ const useORDirect = route.useORDirect;
   const thinkBox = el.querySelector('.think');
   let rafId = null;
 const schedule = () => { if(!rafId) rafId = requestAnimationFrame(()=>{ rafId=null; refreshMsgBody(el, aiMsg); const wasNear = sdIsNearBottom(); scrollBottom(); sdTrackStream(chat, aiMsg, wasNear); }); };
-const scrollBottom = () => { const s=$('#chatScroll'); if (s.scrollHeight - s.scrollTop - s.clientHeight < 220) s.scrollTop = s.scrollHeight; };
-
-  abortCtrl = new AbortController();
+const scrollBottom = () => { if (stickToBottom){ const s=$('#chatScroll'); s.scrollTop = s.scrollHeight; } };
+abortCtrl = new AbortController();
 let pendingWsCommand = null;
 let turnCtrl = null;
 const artTrk = { start: null };
@@ -3072,11 +3162,12 @@ const convExt = []; // продолжение: частичный ответ м�
 let abortedByUser = false;
 let fatalErr = null;
 while (true){
-  pendingWsCommand = null;
-  turnCtrl = new AbortController();
-  abortCtrl = turnCtrl; // чтобы stopGeneration() прерывал текущий виток
-  const turnHistory = convExt.length ? [...history, ...convExt] : history;
-  try {
+pendingWsCommand = null;
+turnCtrl = new AbortController();
+abortCtrl = turnCtrl; // чтобы stopGeneration() прерывал текущий виток
+const turnHistory = convExt.length ? [...history, ...convExt] : history;
+const sn = snapAiMsg(aiMsg); // снимок хода для отката при failover
+try {
 if (useORDirect){
   /* Прямой вызов OpenRouter: отдельный модуль openrouter.js */
   await streamOpenRouterDirect(model, turnHistory,
@@ -3089,10 +3180,23 @@ if (useORDirect){
   await streamOpenRouter(model, turnHistory, {onText, onThink, onImage, onReasoningDetails, onWebSearch, wsEnabled, webSearchContext, signal: turnCtrl.signal, direct: false}, aiMsg);
 }
 } catch(e){
-    if (pendingWsCommand){ /* внутренний abort ради поиска — не ошибка */ }
-    else if (e.name === 'AbortError' || e.code === 20){ abortedByUser = true; break; }
-    else { fatalErr = e; break; }
-  }
+if (pendingWsCommand){ /* внутренний abort ради поиска — не ошибка */ }
+else if (e.name === 'AbortError' || e.code === 20){ abortedByUser = true; break; }
+else if (providerIdx + 1 < chain.length){
+/* FAILOVER: провайдер ошибся — не выводим ошибку в чат,
+откатываем незавершённый ход и регенерируем через резервный провайдер */
+provErrors.push({ name: useProxy ? 'ProxyAPI' : 'OpenRouter', msg: (e && e.message) || String(e) });
+rollbackAiMsg(aiMsg, sn);
+artTrk.start = null;
+providerIdx++;
+useProxy = chain[providerIdx] === 'proxy';
+useORDirect = chain[providerIdx] === 'openrouter';
+toast(provErrors[provErrors.length - 1].name + ' — ошибка, регенерация через ' + (useProxy ? 'ProxyAPI' : 'OpenRouter'), 'info', 3800);
+schedule();
+continue;
+}
+else { fatalErr = e; break; }
+}
   // Модель запросила поиск? (детект и в content, и в thinking)
   let finalDet = pendingWsCommand;
   if (!finalDet){
@@ -3133,13 +3237,21 @@ if (abortedByUser){
   if (!aiMsg.content) aiMsg.content = '*Генерация остановлена пользователем.*';
   toast('Генерация остановлена','info');
 } else if (fatalErr){
-  aiMsg.status = 'error';
-  aiMsg.content = `**Ошибка запроса**
-${fatalErr.message || fatalErr}
-Проверьте ключ ProxyAPI, баланс и корректность идентификатора модели.`;
-  toast('Ошибка при запросе к модели','err');
+aiMsg.status = 'error';
+if (provErrors.length){
+/* Failover в «Авто»: оба провайдера цепочки не справились */
+provErrors.push({ name: useProxy ? 'ProxyAPI' : 'OpenRouter', msg: (fatalErr && fatalErr.message) || String(fatalErr) });
+aiMsg.content = '**Оба провайдера не справились с ответом**\n' + provErrors.map(pe => '• ' + pe.name + ': ' + pe.msg).join('\n') + '\nПроверьте API-ключи, баланс и соединение с интернетом.';
+toast('Оба провайдера не справились с ответом','err');
 } else {
-  aiMsg.status = 'done';
+aiMsg.content = `**Ошибка запроса**
+${fatalErr.message || fatalErr}
+Проверьте ключ, баланс и корректность идентификатора модели.`;
+toast('Ошибка при запросе к модели','err');
+}
+} else {
+aiMsg.status = 'done';
+if (provErrors.length) toast('Ответ получен через ' + (useProxy ? 'ProxyAPI' : 'OpenRouter'), 'ok', 2600);
 }
 // Команды генерации изображений: показываем пользователю запрос на подтверждение
 if (state.settings.imageGen && (aiMsg.content || '').indexOf('{image_generation[') !== -1){
@@ -3174,12 +3286,12 @@ ${e.message || e}
 Проверьте ключ ProxyAPI, баланс и корректность идентификатора модели.`;
 toast('Ошибка при запросе к модели','err');
 }
-  aiMsg.ms = Date.now() - t0;
-  streaming = false; abortCtrl = null;
-  document.body.classList.remove('is-streaming'); setSendBtn();
-  chat.updatedAt = Date.now(); save();
-  refreshMsgBody(el, aiMsg); renderChatList();
-  const s = $('#chatScroll'); s.scrollTop = s.scrollHeight;
+aiMsg.ms = Date.now() - t0;
+streaming = false; abortCtrl = null;
+document.body.classList.remove('is-streaming'); setSendBtn();
+chat.updatedAt = Date.now(); save();
+refreshMsgBody(el, aiMsg); renderChatList();
+if (stickToBottom){ const s = $('#chatScroll'); s.scrollTop = s.scrollHeight; }
 }
 function stopGeneration(){ if (abortCtrl) abortCtrl.abort(); }
 
@@ -4059,18 +4171,29 @@ function runFavAction(act, i){
   }
 }
 function gotoFavSource(f){
-  const chat = state.chats.find(c => c.id === f.chatId);
-  if (!chat || !f.msgId){ toast('Исходный чат не найден','err'); return; }
-  $('#favOverlay').classList.remove('show');
-  openChat(chat.id);
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    const el = $('#messages').querySelector('[data-id="' + f.msgId + '"]');
-    if (el){
-      try { el.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){ el.scrollIntoView(); }
-      el.classList.add('msg-flash');
-      setTimeout(() => el.classList.remove('msg-flash'), 2400);
-    } else toast('Сообщение-источник не найдено в этом чате','err');
-  }));
+const chat = state.chats.find(c => c.id === f.chatId);
+if (!chat || !f.msgId){ toast('Исходный чат не найден','err'); return; }
+$('#favOverlay').classList.remove('show');
+openChat(chat.id);
+requestAnimationFrame(() => requestAnimationFrame(() => {
+const el = $('#messages').querySelector('[data-id="' + f.msgId + '"]');
+if (el){
+/* Ручная прокрутка ТОЛЬКО внутри #chatScroll.
+scrollIntoView прокручивает все scrollable-предки
+включая document.documentElement — страница «уходит вверх» */
+const scroller = $('#chatScroll');
+const scrollerRect = scroller.getBoundingClientRect();
+const elRect = el.getBoundingClientRect();
+const target = scroller.scrollTop + (elRect.top - scrollerRect.top) - (scroller.clientHeight / 2) + (elRect.height / 2);
+try { scroller.scrollTo({ top: Math.max(0, target), behavior: 'smooth' }); }
+catch(e){ scroller.scrollTop = Math.max(0, target); }
+/* Страховка: сброс скролла документа на случай если
+что-то всё-таки сдвинуло viewport */
+window.scrollTo(0, 0);
+el.classList.add('msg-flash');
+setTimeout(() => el.classList.remove('msg-flash'), 2400);
+} else toast('Сообщение-источник не найдено в этом чате','err');
+}));
 }
 
 /* --- Изображения из интернета (Wikimedia Commons: без ключа, CORS-safe) --- */
@@ -4220,6 +4343,7 @@ $('#imgInput').addEventListener('change', e => { addFiles(e.target.files, true);
 
 /* ---------- Меню модели ---------- */
 const modelMenu = $('#modelMenu');
+const apiSrcMenu = $('#apiSrcMenu');
 function renderModelMenu(){
   modelMenu.innerHTML = `<div class="menu-head">Доступные модели</div>` + MODELS.map(m => `
     <button class="m-item ${m.id===state.settings.modelId?'active':''}" data-mid="${m.id}" role="option">
@@ -4550,7 +4674,7 @@ $('#thinkBtn').addEventListener('click', e => { e.stopPropagation(); toggleMenu(
 function closeMenu(m, immediate = false){
 if (!m || m.hidden || m.classList.contains('out')) return;
 if (m === thinkMenu && typeof tmFx !== 'undefined') tmFx.stop();
-  const owner = m === modelMenu ? $('#modelBtn') : m === thinkMenu ? $('#thinkBtn') : m === plusMenu ? $('#btnPlus') : null;
+  const owner = m === modelMenu ? $('#modelBtn') : m === thinkMenu ? $('#thinkBtn') : m === plusMenu ? $('#btnPlus') : m === apiSrcMenu ? $('#apiSrcBtn') : null;
   if (owner) owner.classList.remove('open');
   if (immediate){
     m.hidden = true;
@@ -4573,12 +4697,12 @@ function showMenu(m){
   m.hidden = false;
   void m.offsetWidth;
   m.classList.add('anim');
-  const owner = m === modelMenu ? $('#modelBtn') : m === thinkMenu ? $('#thinkBtn') : m === plusMenu ? $('#btnPlus') : null;
+  const owner = m === modelMenu ? $('#modelBtn') : m === thinkMenu ? $('#thinkBtn') : m === plusMenu ? $('#btnPlus') : m === apiSrcMenu ? $('#apiSrcBtn') : null;
   if (owner) owner.classList.add('open');
 }
 
 function closeAllMenus(except, immediate = false){
-  [modelMenu, thinkMenu, plusMenu].forEach(m => {
+    [modelMenu, thinkMenu, plusMenu, apiSrcMenu].forEach(m => {
     if (m !== except) closeMenu(m, immediate);
   });
 }
@@ -4595,8 +4719,8 @@ function toggleMenu(m, renderFn){
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('.menu') && !e.target.closest('#modelBtn') && !e.target.closest('#thinkBtn') && !e.target.closest('#btnPlus'))
-    closeAllMenus();
+if (!e.target.closest('.menu') && !e.target.closest('#modelBtn') && !e.target.closest('#thinkBtn') && !e.target.closest('#btnPlus') && !e.target.closest('#apiSrcBtn'))
+closeAllMenus();
 });
 
 function updateTopChips(){
@@ -4641,16 +4765,31 @@ function updateApiSrcChip(){
   }
 }
 
-/* Циклическое переключение источника по клику на чип в шапке */
-function cycleApiSource(){
-  const order = ['auto', 'proxy', 'openrouter'];
-  const cur = state.settings.apiSource || 'auto';
-  const i = order.indexOf(cur);
-  const next = order[(i + 1) % order.length];
-  state.settings.apiSource = next;
-  save();
-  updateApiSrcChip();
-  toast('Источник API: ' + API_SRC_LABELS[next], 'ok', 1800);
+/* Выпадающий список источников API */
+const API_SRC_OPTIONS = [
+{ value:'auto',       label:'Авто',       desc:'ProxyAPI, при отсутствии — OpenRouter', icon:'i-spark' },
+{ value:'proxy',      label:'ProxyAPI',   desc:'Запросы через api.proxyapi.ru',         icon:'i-key' },
+{ value:'openrouter', label:'OpenRouter', desc:'Прямые запросы к openrouter.ai',        icon:'i-globe' }
+];
+function renderApiSrcMenu(){
+const cur = state.settings.apiSource || 'auto';
+apiSrcMenu.innerHTML = '<div class="menu-head">Источник API</div>' + API_SRC_OPTIONS.map(o => `
+<button class="m-item ${o.value === cur ? 'active' : ''}" data-src="${o.value}" role="option" aria-selected="${o.value === cur}">
+<span class="mi-ico"><svg><use href="#${o.icon}"/></svg></span>
+<span class="mi-body">
+<span class="mi-t">${esc(o.label)}</span>
+<span class="mi-s">${esc(o.desc)}</span>
+</span>
+<svg class="mi-check ic"><use href="#i-check"/></svg>
+</button>`).join('');
+apiSrcMenu.querySelectorAll('.m-item').forEach(b => b.addEventListener('click', () => {
+state.settings.apiSource = b.dataset.src;
+save();
+updateApiSrcChip();
+renderApiSrcMenu();
+closeAllMenus();
+toast('Источник API: ' + API_SRC_LABELS[b.dataset.src], 'ok', 1800);
+}));
 }
 
 /* Единая точка принятия решения: какой ключ использовать для данной модели.
@@ -4678,82 +4817,94 @@ function resolveApiRoute(settings, model){
 /* ---------- Шторка ---------- */
 const drawer = $('#drawer');
 function openDrawer(){ drawer.classList.add('open'); $('#drawerScrim').classList.add('show'); renderChatList(); }
-function closeDrawer(){ drawer.classList.remove('open'); $('#drawerScrim').classList.remove('show'); }
+function closeDrawer(){ drawer.classList.remove('open'); $('#drawerScrim').classList.remove('show'); closeChatCtxMenu(); }
 $('#btnMenu').addEventListener('click', openDrawer);
 $('#drawerClose').addEventListener('click', closeDrawer);
 $('#drawerScrim').addEventListener('click', closeDrawer);
 
-/* ── Свайп шторки: закрытие жестом влево + удержание пальцем ── */
+/* ── Свайп шторки: плавное закрытие с полным следованием за пальцем ──
+Шторка движется 1:1 за пальцем: можно тянуть медленно, остановиться
+в любой точке («закрывать или нет?») и передумать — потянуть обратно
+или завершить жест. Решение о закрытии принимается в момент отпускания
+по проекции позиции (текущее смещение + инерция) либо если пройдено
+больше половины ширины. Пауза пальца обнуляет скорость — решение
+становится чисто позиционным, без ложных срабатываний на «старую»
+скорость. */
 let drawerSwipe = null;
-
+const DRAWER_VEL_PAUSE = 160;   // мс тишины, после которых скорость считается нулевой
+const DRAWER_POS_CLOSE = 0.5;   // пройдено больше половины ширины — закрываем всегда
+const DRAWER_PROJ_CLOSE = 0.3;  // проекция (позиция + инерция) для фликов
 drawer.addEventListener('pointerdown', e => {
-  if (!drawer.classList.contains('open')) return;
-  if (e.pointerType === 'mouse' && e.button !== 0) return;
-  drawerSwipe = {
-    id: e.pointerId,
-    startX: e.clientX,
-    startY: e.clientY,
-    x: 0,
-    horizontal: null,
-    velocity: 0,
-    lastX: e.clientX,
-    lastT: performance.now(),
-    captured: false
-  };
-}, { passive: true });
-
-drawer.addEventListener('pointermove', e => {
-  if (!drawerSwipe || e.pointerId !== drawerSwipe.id) return;
-  const dx = e.clientX - drawerSwipe.startX;
-  const dy = e.clientY - drawerSwipe.startY;
-
-  /* Определяем намерение: горизонталь влево vs вертикальный скролл */
-  if (drawerSwipe.horizontal === null) {
-    if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
-    const isHoriz = Math.abs(dx) > Math.abs(dy) * 1.1 && dx < 0;
-    if (!isHoriz) { drawerSwipe = null; return; }
-    drawerSwipe.horizontal = true;
-    drawer.classList.add('dragging');
-    $('#drawerScrim').style.transition = 'none';
-    try { drawer.setPointerCapture(e.pointerId); drawerSwipe.captured = true; } catch(_){}
-  }
-
-  /* Скорость для инерции */
-  const now = performance.now();
-  const dt = now - drawerSwipe.lastT;
-  if (dt > 0) drawerSwipe.velocity = (e.clientX - drawerSwipe.lastX) / dt;
-  drawerSwipe.lastX = e.clientX;
-  drawerSwipe.lastT = now;
-
-  /* Позиция: только влево, не дальше 0 */
-  const x = Math.min(0, dx);
-  drawerSwipe.x = x;
-  const w = drawer.offsetWidth || 1;
-  drawer.style.transform = 'translateX(' + x + 'px)';
-  $('#drawerScrim').style.opacity = String(Math.max(0, 1 + x / w));
-}, { passive: true });
-
-const endDrawerSwipe = e => {
-  if (!drawerSwipe || e.pointerId !== drawerSwipe.id) return;
-  const sw = drawerSwipe;
-  drawerSwipe = null;
-
-  if (sw.horizontal === null) return;
-
-  drawer.classList.remove('dragging');
-  $('#drawerScrim').style.transition = '';
-  if (sw.captured) { try { drawer.releasePointerCapture(e.pointerId); } catch(_){} }
-
-  const w = drawer.offsetWidth || 1;
-  const shouldClose = sw.x < -(w * 0.35) || sw.velocity < -0.45;
-
-  /* Убираем inline-стили — CSS transition анимирует до финального состояния */
-  drawer.style.transform = '';
-  $('#drawerScrim').style.opacity = '';
-
-  if (shouldClose) closeDrawer();
+if (!drawer.classList.contains('open')) return;
+if (e.pointerType === 'mouse' && e.button !== 0) return;
+drawerSwipe = {
+id: e.pointerId,
+startX: e.clientX,
+startY: e.clientY,
+x: 0,
+horizontal: null,
+vel: 0,
+lastX: e.clientX,
+lastT: performance.now(),
+captured: false
 };
-
+}, { passive: true });
+drawer.addEventListener('pointermove', e => {
+if (!drawerSwipe || e.pointerId !== drawerSwipe.id) return;
+const dx = e.clientX - drawerSwipe.startX;
+const dy = e.clientY - drawerSwipe.startY;
+/* Определяем намерение: горизонталь влево vs вертикальный скролл.
+Порог мягче прежнего — медленный палец часто дрейфует по диагонали */
+if (drawerSwipe.horizontal === null) {
+if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+const isHoriz = dx < 0 && (Math.abs(dx) >= Math.abs(dy) || (dx < -20 && Math.abs(dy) < 26));
+if (!isHoriz) { drawerSwipe = null; return; }
+drawerSwipe.horizontal = true;
+drawer.classList.add('dragging');
+$('#drawerScrim').style.transition = 'none';
+try { drawer.setPointerCapture(e.pointerId); drawerSwipe.captured = true; } catch(_){}
+}
+/* Скорость: экспоненциальное сглаживание, чтобы дрожащий палец
+не давал рваных вердиктов. Пауза (>160 мс без событий) = скорость 0 */
+const now = performance.now();
+const dt = now - drawerSwipe.lastT;
+if (dt > 0){
+if (dt < DRAWER_VEL_PAUSE){
+const instV = (e.clientX - drawerSwipe.lastX) / dt;
+drawerSwipe.vel = drawerSwipe.vel * 0.65 + instV * 0.35;
+} else {
+drawerSwipe.vel = 0;
+}
+}
+drawerSwipe.lastX = e.clientX;
+drawerSwipe.lastT = now;
+/* Позиция: строго в диапазоне [-ширина, 0] — шторка не «отрывается» */
+const w = drawer.offsetWidth || 1;
+const x = Math.max(-w, Math.min(0, dx));
+drawerSwipe.x = x;
+drawer.style.transform = 'translateX(' + x + 'px)';
+$('#drawerScrim').style.opacity = String(Math.max(0, 1 + x / w));
+}, { passive: true });
+const endDrawerSwipe = e => {
+if (!drawerSwipe || e.pointerId !== drawerSwipe.id) return;
+const sw = drawerSwipe;
+drawerSwipe = null;
+if (sw.horizontal === null) return;
+if (sw.captured) { try { drawer.releasePointerCapture(e.pointerId); } catch(_){} }
+const w = drawer.offsetWidth || 1;
+/* Если палец замер перед отпусканием — пользователь «думает»:
+инерция не учитывается, решает только позиция */
+const vel = (performance.now() - sw.lastT > DRAWER_VEL_PAUSE) ? 0 : sw.vel;
+const projected = sw.x + vel * 150;
+const shouldClose = sw.x < -(w * DRAWER_POS_CLOSE) || projected < -(w * DRAWER_PROJ_CLOSE);
+/* Плавный доезд: возвращаем CSS transition и анимируем к финальному
+состоянию из текущей точки под пальцем — без скачка */
+drawer.classList.remove('dragging');
+$('#drawerScrim').style.transition = '';
+drawer.style.transform = '';
+$('#drawerScrim').style.opacity = '';
+if (shouldClose) closeDrawer();
+};
 drawer.addEventListener('pointerup', endDrawerSwipe);
 drawer.addEventListener('pointercancel', endDrawerSwipe);
 
@@ -4835,6 +4986,7 @@ function saveSettingsFromUI(){
   state.settings.systemPrompt = sPrompt;
   save();
   updateBalMini();
+  updateHeroKeysVisibility();
 }
 $('#btnSettings').addEventListener('click', () => { openSettings(); });
 $('#settingsClose').addEventListener('click', closeSettings);
@@ -4865,7 +5017,7 @@ save();
 toast(state.settings.artifacts ? 'Артефакты включены' : 'Артефакты выключены','info',1600);
 });
 $('#artRefCancel').addEventListener('click', () => { artEditRef = null; renderArtRef(); });
-$('#apiSrcBtn').addEventListener('click', e => { e.stopPropagation(); cycleApiSource(); });
+$('#apiSrcBtn').addEventListener('click', e => { e.stopPropagation(); toggleMenu(apiSrcMenu, renderApiSrcMenu); });
 document.querySelectorAll('#apiSrcChips .igm-chip').forEach(b => {
   b.addEventListener('click', () => {
     state.settings.apiSource = b.dataset.src;
@@ -5145,13 +5297,30 @@ messagesBox.addEventListener('click', e => {
   if (img) openImageViewer(img.currentSrc || img.src, img.alt);
 }, true);
 document.addEventListener('pointerdown', e => {
-if (!$('#igCtxMenu').hidden && !e.target.closest('#igCtxMenu')) closeImgCtxMenu();
-if (!$('#favCtxMenu').hidden && !e.target.closest('#favCtxMenu')) closeFavCtxMenu();
-if (!$('#chatCtxMenu').hidden && !e.target.closest('#chatCtxMenu')){
-const isRightClickOnChat = e.button === 2 && e.target.closest('.chat-item');
-if (!isRightClickOnChat) closeChatCtxMenu();
-}
+    if (!$('#igCtxMenu').hidden && !e.target.closest('#igCtxMenu')) closeImgCtxMenu();
+    if (!$('#favCtxMenu').hidden && !e.target.closest('#favCtxMenu')) closeFavCtxMenu();
+    if (!$('#chatCtxMenu').hidden && !e.target.closest('#chatCtxMenu')){
+        const isRightClickOnChat = e.button === 2 && e.target.closest('.chat-item');
+        if (!isRightClickOnChat) closeChatCtxMenu();
+    }
 }, true);
+/* Фикс: закрываем контекстное меню чата при отпускании пальца вне меню.
+Без этого меню остаётся видимым, если пользователь отпустил палец
+после long-press не на кнопке меню (например, на основном экране) */
+document.addEventListener('pointerup', e => {
+    if (!$('#chatCtxMenu').hidden && !e.target.closest('#chatCtxMenu')){
+        closeChatCtxMenu();
+    }
+});
+/* Фикс: глобальный pointermove — закрываем контекстное меню чата,
+если палец продолжает двигаться после long-press (свайп с зажатым
+пальцем). Работает даже если pointer захвачен drawer-свайпом */
+document.addEventListener('pointermove', e => {
+    if (chatLpFired && !$('#chatCtxMenu').hidden){
+        const dist = Math.hypot(e.clientX - chatLpX, e.clientY - chatLpY);
+        if (dist > 10) closeChatCtxMenu();
+    }
+}, { passive: true });
 $('#chatScroll').addEventListener('scroll', closeImgCtxMenu);
 /* ---------- Полноэкранный просмотр: события ---------- */
 $('#ivClose').addEventListener('click', closeImageViewer);
@@ -5284,7 +5453,14 @@ try { navigator.vibrate(12); } catch(err){}
 }, 1000);
 });
 chatListEl.addEventListener('pointermove', e => {
-if (chatLpTimer && Math.hypot(e.clientX - chatLpX, e.clientY - chatLpY) > 12){ clearTimeout(chatLpTimer); chatLpTimer = null; }
+    const dist = Math.hypot(e.clientX - chatLpX, e.clientY - chatLpY);
+    if (chatLpTimer && dist > 12){ clearTimeout(chatLpTimer); chatLpTimer = null; }
+    /* Фикс: если контекстное меню уже показано и палец продолжает
+    двигаться (свайп с зажатым пальцем) — закрываем меню, чтобы оно
+    не осталось «висеть» на главном экране после закрытия шторки */
+    if (chatLpFired && !$('#chatCtxMenu').hidden && dist > 10){
+        closeChatCtxMenu();
+    }
 });
 chatListEl.addEventListener('contextmenu', e => {
 const item = e.target.closest('.chat-item');
@@ -5375,6 +5551,7 @@ function syncSettingsUI(){
 const s = state.settings;
 $('#inpProxy').value = s.proxyKey;
 $('#inpOR').value = s.orKey;
+updateHeroKeysVisibility();
 $('#inpSys').value = s.systemPrompt;
 $('#setThemeSwitch').classList.toggle('on', s.theme === 'light');
 updateApiSrcChip();
@@ -5764,16 +5941,47 @@ sdMissed++;
 sdUpdate();
 }
 }
-$('#chatScroll').addEventListener('scroll', () => {
-if (sdIsNearBottom() && !sdSuppress) sdMissed = 0;
-sdUpdate();
+const chatScrollEl = $('#chatScroll');
+let lastManualUpTime = 0;
+function isAtVeryBottom(){
+  return chatScrollEl.scrollHeight - chatScrollEl.scrollTop - chatScrollEl.clientHeight < 80;
+}
+chatScrollEl.addEventListener('scroll', () => {
+  if (isAtVeryBottom()){
+    // пользователь сам вернулся в самый низ → снова прилипаем
+    if (performance.now() - lastManualUpTime > 150) stickToBottom = true;
+    if (!sdSuppress) sdMissed = 0;
+  }
+  sdUpdate();
+}, {passive:true});
+/* Отслеживаем намерение прокрутить вверх: wheel / touch / клавиатура */
+chatScrollEl.addEventListener('wheel', e => {
+  if (!streaming) return;
+  if (e.deltaY < 0){ stickToBottom = false; lastManualUpTime = performance.now(); }
+}, {passive:true});
+let lastTouchY = null;
+chatScrollEl.addEventListener('touchstart', e => {
+  if (e.touches.length) lastTouchY = e.touches[0].clientY;
+}, {passive:true});
+chatScrollEl.addEventListener('touchmove', e => {
+  if (!streaming || lastTouchY === null) return;
+  const y = e.touches[0].clientY;
+  if (y > lastTouchY + 8){ stickToBottom = false; lastManualUpTime = performance.now(); }
+  lastTouchY = y;
+}, {passive:true});
+chatScrollEl.addEventListener('keydown', e => {
+  if (!streaming) return;
+  if (e.key === 'PageUp' || e.key === 'ArrowUp' || e.key === 'Home'){
+    stickToBottom = false; lastManualUpTime = performance.now();
+  }
 }, {passive:true});
 $('#scrollDownBtn').addEventListener('click', () => {
-const s = $('#chatScroll');
-try { s.scrollTo({top:s.scrollHeight, behavior:'smooth'}); }
-catch(e){ s.scrollTop = s.scrollHeight; }
-sdMissed = 0;
-setTimeout(sdUpdate, 420);
+  stickToBottom = true;
+  const s = $('#chatScroll');
+  try { s.scrollTo({top:s.scrollHeight, behavior:'smooth'}); }
+  catch(e){ s.scrollTop = s.scrollHeight; }
+  sdMissed = 0;
+  setTimeout(sdUpdate, 420);
 });
 window.addEventListener('resize', sdUpdate);
 /* ============================================================
@@ -5990,8 +6198,16 @@ toast(route.missing === 'proxy'
   : 'Выбран OpenRouter, но ключ sk-or-… не указан', 'err');
 openSettings(); return;
 }
-const useProxy = route.useProxy;
-const useORDirect = route.useORDirect;
+/* Цепочка провайдеров для FAILOVER в режиме «Авто» */
+const autoMode = (settings.apiSource || 'auto') === 'auto';
+const hasProxyKey = !!(settings.proxyKey || '').trim();
+const hasORKey = !!(settings.orKey || '').trim();
+const chain = [route.useProxy ? 'proxy' : 'openrouter'];
+if (autoMode && hasProxyKey && hasORKey) chain.push(chain[0] === 'proxy' ? 'openrouter' : 'proxy');
+let provIdx = 0;
+let useProxy = chain[0] === 'proxy';
+let useORDirect = chain[0] === 'openrouter';
+const provErrors = [];
 /* 1. Сообщение пользователя: новое или существующее (регенерация) */
 let userMsg;
 if (reuseUserMsg){
@@ -6004,7 +6220,7 @@ chat.messages.push(userMsg);
 chat.updatedAt = Date.now();
 autoTitle(chat);
 }
-streaming = true; document.body.classList.add('is-streaming'); setSendBtn();
+streaming = true; stickToBottom = true; document.body.classList.add('is-streaming'); setSendBtn();
 /* 2. Сообщение ИИ */
 const aiMsg = { id:uid(), role:'assistant', content:'', thinking:'', ts:Date.now(),
 modelId:model.id, status:'streaming', viaSearch:true,
@@ -6014,7 +6230,7 @@ save(); renderMessages(); renderChatList();
 const el = $('#messages').querySelector('[data-id="' + aiMsg.id + '"]');
 let rafId = null;
 const schedule = () => { if(!rafId) rafId = requestAnimationFrame(()=>{ rafId=null; refreshMsgBody(el, aiMsg); const wasNear = sdIsNearBottom(); scrollBottom(); sdTrackStream(chat, aiMsg, wasNear); }); };
-const scrollBottom = () => { const s=$('#chatScroll'); if (s.scrollHeight - s.scrollTop - s.clientHeight < 220) s.scrollTop = s.scrollHeight; };
+const scrollBottom = () => { if (stickToBottom){ const s=$('#chatScroll'); s.scrollTop = s.scrollHeight; } };
 const pushStage = label => { aiMsg.webSearch.stages.push({ label, ts:Date.now() }); schedule(); };
 pushStage('Поиск в интернете');
 abortCtrl = new AbortController();
@@ -6050,17 +6266,48 @@ if (Array.isArray(rd)) aiMsg.reasoning_details.push(...rd);
 else aiMsg.reasoning_details.push(rd);
 };
 const noopWs = () => {};
+/* 5. Стриминг ответа модели с FAILOVER в «Авто»: ошибка провайдера
+откатывает попытку и регенерирует через резервный провайдер */
+const sn = snapAiMsg(aiMsg);
+let streamFailed = false;
+while (true){
+try {
 if (useORDirect){
-  await streamOpenRouterDirect(model, enrichedHistory,
-    { onText, onThink, onImage, onReasoningDetails, onWebSearch:noopWs, signal:abortCtrl.signal }, aiMsg);
+await streamOpenRouterDirect(model, enrichedHistory,
+{ onText, onThink, onImage, onReasoningDetails, onWebSearch:noopWs, signal:abortCtrl.signal }, aiMsg);
 } else if (model.api === 'anthropic'){
-  await streamAnthropic(model, enrichedHistory, { onText, onThink, onWebSearch:noopWs, wsEnabled:false, webSearchContext:null, signal:abortCtrl.signal }, aiMsg);
+await streamAnthropic(model, enrichedHistory, { onText, onThink, onWebSearch:noopWs, wsEnabled:false, webSearchContext:null, signal:abortCtrl.signal }, aiMsg);
 } else if (model.api === 'gemini'){
-  await streamGemini(model, enrichedHistory, { onText, onThink, onWebSearch:noopWs, wsEnabled:false, webSearchContext:null, signal:abortCtrl.signal }, aiMsg);
+await streamGemini(model, enrichedHistory, { onText, onThink, onWebSearch:noopWs, wsEnabled:false, webSearchContext:null, signal:abortCtrl.signal }, aiMsg);
 } else {
-  await streamOpenRouter(model, enrichedHistory, { onText, onThink, onImage, onReasoningDetails, onWebSearch:noopWs, wsEnabled:false, webSearchContext:null, signal:abortCtrl.signal, direct:false }, aiMsg);
+await streamOpenRouter(model, enrichedHistory, { onText, onThink, onImage, onReasoningDetails, onWebSearch:noopWs, wsEnabled:false, webSearchContext:null, signal:abortCtrl.signal, direct:false }, aiMsg);
 }
-aiMsg.status = 'done';
+break;
+} catch(e){
+if (e.name === 'AbortError' || e.code === 20) throw e; // стоп пользователем — во внешний catch
+if (provIdx + 1 < chain.length){
+provErrors.push({ name: useProxy ? 'ProxyAPI' : 'OpenRouter', msg: (e && e.message) || String(e) });
+rollbackAiMsg(aiMsg, sn);
+artTrk.start = null;
+provIdx++;
+useProxy = chain[provIdx] === 'proxy';
+useORDirect = chain[provIdx] === 'openrouter';
+abortCtrl = new AbortController(); // свежий контроллер: старый мог быть прерван timeout
+toast(provErrors[provErrors.length - 1].name + ' — ошибка, регенерация через ' + (useProxy ? 'ProxyAPI' : 'OpenRouter'), 'info', 3800);
+schedule();
+continue;
+}
+/* Оба провайдера цепочки не справились */
+provErrors.push({ name: useProxy ? 'ProxyAPI' : 'OpenRouter', msg: (e && e.message) || String(e) });
+rollbackAiMsg(aiMsg, sn);
+aiMsg.status = 'error';
+aiMsg.content = '**Оба провайдера не справились с ответом**\n' + provErrors.map(pe => '• ' + pe.name + ': ' + pe.msg).join('\n') + '\nПроверьте API-ключи, баланс и соединение с интернетом.';
+streamFailed = true;
+toast('Оба провайдера не справились с ответом','err');
+break;
+}
+}
+if (!streamFailed) aiMsg.status = 'done';
 } catch(e){
 if (e.name === 'AbortError' || e.code === 20){
 aiMsg.status = aiMsg.content ? 'done' : 'aborted';
@@ -6098,7 +6345,7 @@ streaming = false; abortCtrl = null;
 document.body.classList.remove('is-streaming'); setSendBtn();
 chat.updatedAt = Date.now(); save();
 refreshMsgBody(el, aiMsg); renderChatList();
-const s = $('#chatScroll'); s.scrollTop = s.scrollHeight;
+if (stickToBottom){ const s = $('#chatScroll'); s.scrollTop = s.scrollHeight; }
 }
 /* ---------- Esc ---------- */
 document.addEventListener('keydown', e => {
@@ -6131,12 +6378,17 @@ closeAllMenus();
 
 /* ---------- Приветственные чипы ---------- */
 function buildHeroChips(){
-  const box = $('#heroChips');
-  box.innerHTML = SUGGESTIONS.map(s => `
-    <button class="hchip"><svg><use href="#${s.icon}"/></svg><span>${esc(s.text)}</span></button>`).join('');
-  box.querySelectorAll('.hchip').forEach((b,i) => b.addEventListener('click', () => {
-    promptInput.value = SUGGESTIONS[i].text; autoGrow(); setSendBtn(); sendMessage();
-  }));
+const box = $('#heroChips');
+box.innerHTML = SUGGESTIONS.map(s => `
+<button class="hchip"><svg><use href="#${s.icon}"/></svg><span>${esc(s.text)}</span></button>`).join('');
+box.querySelectorAll('.hchip').forEach((b,i) => b.addEventListener('click', () => {
+promptInput.value = SUGGESTIONS[i].text; autoGrow(); setSendBtn(); sendMessage();
+}));
+}
+function updateHeroKeysVisibility(){
+const hasKey = !!(String(state.settings.proxyKey || '').trim() || String(state.settings.orKey || '').trim());
+const wrap = $('.hero-keys');
+if (wrap) wrap.hidden = hasKey;
 }
 
 /* ---------- ОБЩИЙ рендер ---------- */

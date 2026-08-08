@@ -115,9 +115,13 @@ const systemPrompt = (typeof getSystemPromptText === 'function')
 const messages = buildOpenRouterMessages(history, systemPrompt);
   const reasoning = mapReasoningToOpenRouter(settings.reasoning, model.id);
 
-  // Используем native ID если он задан (для совместимости с ProxyAPI-алиасами)
-  // или стандартный model.id. OpenRouter чувствителен к точному совпадению строк.
-  const actualModelId = model.native || model.id;
+  // OpenRouter требует полный ID с префиксом вендора (anthropic/claude-…,
+  // google/gemini-…). Поле native предназначено ТОЛЬКО для нативных
+  // эндпоинтов ProxyAPI — его использование здесь давало бы 404 при
+  // failover моделей anthropic/gemini.
+  const actualModelId = (model.api === 'anthropic' || model.api === 'gemini')
+    ? model.id
+    : (model.native || model.id);
 
   const payload = {
     model: actualModelId,
